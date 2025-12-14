@@ -1,0 +1,220 @@
+import re
+from typing import List, Optional
+from .llm_client import LLMClient
+from .cache_manager import CacheManager
+
+class Preprocessor:
+    """
+    Hybrid Preprocessor for Regulation Markdown.
+    1. Deterministic cleaning (Regex) for obvious line breaks and artifacts.
+    2. LLM-based cleaning for ambiguous paragraph merging.
+    """
+
+    def __init__(self, llm_client: LLMClient = None, cache_manager: Optional[CacheManager] = None):
+        self.llm_client = llm_client
+        self.cache_manager = cache_manager
+
+    def clean(self, text: str) -> str:
+        """
+        Main cleaning pipeline.
+        """
+        text = self._remove_artifacts(text)
+        text = self._join_broken_lines_regex(text)
+        
+        if self.llm_client:
+            text = self._join_paragraphs_llm(text)
+            
+        return text
+
+    def _remove_artifacts(self, text: str) -> str:
+        """Remove headers, footers, page numbers, and hwp artifacts using Regex."""
+        
+        # 1. Remove XML declaration (xml version=...)
+        text = re.sub(r'xml version=[^\n]+\n', '', text, flags=re.IGNORECASE)
+        
+        # 2. Remove long separators (underscores, dashes, special chars)
+        # Matches lines that are mostly special characters (e.g. ----------------)
+        text = re.sub(r'^[_\W\s]{5,}$', '', text, flags=re.MULTILINE)
+
+        # 3. Remove "동의대학교 규정집" repetitive header
+        text = re.sub(r'^동의대학교\s*규정집.*$', '', text, flags=re.MULTILINE)
+        
+        # 4. Remove page numbers/locations and TOC lines
+        # Format: "- 3 -"
+        text = re.sub(r'^\s*-\s*\d+\s*-\s*$', '', text, flags=re.MULTILINE)
+        # Format: "2-1-1~2" (Chapter-Section-Page) or "3-1-37~2"
+        # Matches lines ending with these patterns, often TOC entries
+        text = re.sub(r'.*\d+[-—]\d+[-—]\d+.*$', '', text, flags=re.MULTILINE)
+        
+        # 5. Remove specific HWP separator characters (Private Use Area)
+        # The character detected is likely in the PUA range. 
+        # We'll remove non-standard whitespace/separator glyphs.
+        text = re.sub(r'[󰠏]+', '', text)
+
+        # 6. Collapse multiple empty lines
+        # Reduce 3+ newlines to 2 (paragraph break).
+        text = re.sub(r'\n{3,}', '\n\n', text)
+        
+        return text.strip()
+
+    def _join_broken_lines_regex(self, text: str) -> str:
+        """
+        Join lines that are obviously broken but part of the same sentence.
+        E.g. ending with a non-sentence-ending character.
+        """
+        # Dictionary of sentence endings (Korean common endings)
+        # If a line does NOT end with these, and next line starts with text, join them.
+        # This is simple/naive; careful not to merge headers.
+        
+        lines = text.split('\n')
+        new_lines = []
+        buffer = ""
+
+        for line in lines:
+            line = line.strip()
+            if not line:
+                if buffer:
+                    new_lines.append(buffer)
+                    buffer = ""
+                new_lines.append("") # Keep empty lines for structure
+                continue
+
+            # Check if likely header (e.g. "제1조(목적)", "제1장", "제1절", "부칙")
+            # Added Section/Chapter/Part patterns to prevent merging headers into previous text
+            if (re.match(r'^제\s*\d+\s*조', line) or 
+                re.match(r'^부\s*칙', line) or
+                re.match(r'^제\s*\d+\s*[장절편]', line)):
+                
+                if buffer:
+                    new_lines.append(buffer)
+                    buffer = ""
+                new_lines.append(line)
+                continue
+            
+            # Check for list items (1., 가., (1), etc.)
+            if re.match(r'^(\d+\.|[가-하]\.|\(\d+\)|\d+\))', line):
+                 if buffer:
+                    new_lines.append(buffer)
+                    buffer = ""
+                 new_lines.append(line)
+                 continue
+
+            if buffer:
+                # Previous line in buffer. Join with space.
+                buffer += " " + line
+            else:
+                buffer = line
+            
+            # Decide if we should flush buffer
+            # If ends with ., ?, !, then likely end of sentence.
+            if buffer.endswith(('.', '?', '!')):
+                new_lines.append(buffer)
+                buffer = ""
+            
+            # Heuristic: If it looks like a table row (markdown), flush
+            if buffer.startswith('|'):
+                new_lines.append(buffer)
+                buffer = ""
+
+        if buffer:
+            new_lines.append(buffer)
+
+        return '\n'.join(new_lines)
+
+    def _join_paragraphs_llm(self, text: str) -> str:
+        """
+        Use LLM to fix semantic issues in checking if paragraphs are split.
+        Now uses logical units (Articles) to maximize cache reuse.
+        """
+        # 1. Split into logical units (Articles, Preamble, Appendices)
+        units = self._split_into_logical_units(text)
+        
+        processed_units = []
+        print(f"    [LLM] Split into {len(units)} logical units for processing...")
+        
+        for i, unit in enumerate(units):
+            # Skip empty units
+            if not unit.strip():
+                processed_units.append(unit)
+                continue
+
+            # Skip very short units (unlikely to need advanced merge logic, save tokens)
+            # e.g., just a title "제1조(목적)"
+            if len(unit.strip().splitlines()) <= 1:
+                processed_units.append(unit)
+                continue
+
+            # --- Cache Check ---
+            # We use the hash of the raw unit text as the key.
+            if self.cache_manager:
+                cached_resp = self.cache_manager.get_cached_llm_response(unit)
+                if cached_resp is not None:
+                     # cache hit
+                     processed_units.append(cached_resp)
+                     continue
+
+            prompt = f"""
+다음은 대학 규정 문서의 일부(조항 등)입니다. HWP에서 변환되어 줄바꿈이 불완전하거나 문맥이 끊겨 있을 수 있습니다.
+다음 규칙에 따라 텍스트를 정리해주세요:
+
+1. 문맥상 끊어진 문장은 한 줄로 이으세요.
+2. '제1조(목적)'과 같은 조항 제목은 반드시 줄바꿈으로 구분하세요.
+3. '①', '1.', '가.' 등의 항목 번호는 새로운 줄에서 시작하게 하세요.
+4. 원문의 내용을 왜곡하거나 삭제하지 마세요. 오직 줄바꿈과 띄어쓰기만 수정하세요.
+5. 결과는 오직 수정된 텍스트만 출력하세요 (부연 설명 금지).
+
+[텍스트 시작]
+{unit}
+[텍스트 끝]
+"""
+            try:
+                print(f"    [LLM] Processing unit {i+1}/{len(units)}...", end="\r", flush=True)
+                response = self.llm_client.complete(prompt)
+                
+                # Simple cleanup
+                cleaned_response = response.strip()
+                if cleaned_response.startswith("```"):
+                    lines = cleaned_response.splitlines()
+                    if lines[0].startswith("```"):
+                        lines = lines[1:]
+                    if lines[-1].startswith("```"):
+                        lines = lines[:-1]
+                    cleaned_response = "\n".join(lines)
+                
+                # --- Cache Save ---
+                if self.cache_manager:
+                    self.cache_manager.cache_llm_response(unit, cleaned_response)
+                
+                processed_units.append(cleaned_response)
+                
+            except Exception as e:
+                print(f"\n    [LLM] Warning: Unit {i+1} failed ({e}). Using raw text.")
+                processed_units.append(unit)
+        
+        print(f"\n    [LLM] Processing complete.")
+        return "\n".join(processed_units)
+
+    def _split_into_logical_units(self, text: str) -> List[str]:
+        """
+        Split text into Preamble, Articles, and Appendices based on headers.
+        This ensures that edits in one article don't shift the chunks for others, preserving cache.
+        """
+        lines = text.splitlines()
+        units = []
+        current_unit = []
+
+        for line in lines:
+            # Check for Article Header (e.g., "제1조", "제 2 조")
+            # We want to start a new unit *before* the header, unless it's the very first line.
+            is_header = re.match(r'^제\s*\d+\s*조', line.strip()) or re.match(r'^부\s*칙', line.strip())
+            
+            if is_header and current_unit:
+                units.append("\n".join(current_unit))
+                current_unit = []
+            
+            current_unit.append(line)
+        
+        if current_unit:
+            units.append("\n".join(current_unit))
+            
+        return units

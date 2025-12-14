@@ -1,0 +1,175 @@
+import sys
+from pathlib import Path
+from typing import List, Any
+from rich import print
+from rich.console import Console
+from rich.panel import Panel
+from rich.prompt import Prompt, Confirm, IntPrompt
+from rich.table import Table
+from rich.layout import Layout
+
+console = Console()
+
+class InteractiveWizard:
+    def __init__(self, root_dir: str = "."):
+        self.root_dir = Path(root_dir).resolve()
+
+    def run(self) -> Any:
+        console.clear()
+        welcome_panel = Panel(
+            "[bold cyan]규정 관리 프로그램 (Regulation Manager)[/bold cyan]\n"
+            "[white]규정 HWP 파일을 마크다운/JSON으로 변환하고 관리합니다.[/white]",
+            title="[bold green]환영합니다[/bold green]",
+            subtitle="v1.0",
+            style="bold blue",
+            expand=False
+        )
+        print(welcome_panel)
+        print("")
+
+        # 1. Scan for Files in '규정' subfolder
+        # Check current dir (handling NFD/NFC)
+        target_dir = None
+        base = self.root_dir
+        
+        # Try exact match first
+        if (base / "규정").exists():
+            target_dir = base / "규정"
+        else:
+            # Try glob for unicode safety (Mac NFD)
+            for path in base.iterdir():
+                if path.is_dir() and (path.name == "규정" or path.name == "규정"):
+                    target_dir = path
+                    break
+        
+        if not target_dir:
+            # Default to current dir/규정 for creation prompt
+            target_dir = self.root_dir / "규정"
+            console.print(f"[bold red](!) 필수 폴더 없음:[/bold red] {target_dir}")
+            console.print(f"    [yellow]'규정'[/yellow] 폴더를 생성하고 .hwp 파일을 넣어주세요.")
+            
+            if Confirm.ask(f"    지금 '{target_dir.name}' 폴더를 생성하시겠습니까?"):
+                target_dir.mkdir(exist_ok=True)
+                console.print(f"    [green]>> 생성 완료.[/green] 파일을 이동시킨 후 다시 실행해주세요.")
+            sys.exit(0)
+            
+        console.print(f"[blue]>> 규정 폴더 감지됨:[/blue] {target_dir}")
+            
+        with console.status("[bold green]파일 검색 중...[/bold green]", spinner="dots"):
+            hwp_files = sorted(list(target_dir.rglob("*.hwp")))
+        
+        if not hwp_files:
+            console.print(f"[bold red](!) 파일 없음:[/bold red] '{target_dir.name}' 폴더에 .hwp 파일이 없습니다.")
+            sys.exit(0)
+
+        selected_path = self._select_file_or_folder(hwp_files, target_dir)
+        
+        # 2. Configuration
+        config = self._configure_options()
+        config.input_path = str(selected_path)
+        
+        console.print(Panel("[bold green]설정 완료![/bold green] 처리를 시작합니다...", style="green"))
+        return config
+
+    def _select_file_or_folder(self, files: List[Path], base_dir: Path) -> Path:
+        """Rich Table Selection"""
+        # Default output dir assumption for status check
+        default_output_dir = self.root_dir / "output"
+        
+        table = Table(title="[bold]처리할 대상 선택[/bold]", show_header=True, header_style="bold magenta")
+        table.add_column("No.", style="cyan", justify="right")
+        table.add_column("상태", justify="center")
+        table.add_column("파일명", style="white")
+        table.add_column("경로", style="dim")
+
+        table.add_row("0", "", "[bold yellow]전체 일괄 처리[/bold yellow]", str(base_dir.relative_to(self.root_dir)))
+        
+        selection_map = {}
+        idx = 1
+        default_choice = 0 # Default to "All" if everything is converted
+        
+        for f in files:
+            rel_path = f.relative_to(base_dir)
+            
+            # Check status
+            json_path = default_output_dir / f"{f.stem}.json"
+            if json_path.exists():
+                status = "[green]✓ 변환됨[/green]"
+            else:
+                status = "[dim]-[/dim]"
+                # If we haven't found an unconverted file yet, set this as default
+                if default_choice == 0:
+                    default_choice = idx
+                
+            table.add_row(
+                str(idx), 
+                status, 
+                f.stem, 
+                str(rel_path.parent) if str(rel_path.parent) != "." else ""
+            )
+            selection_map[idx] = f
+            idx += 1
+
+        print(table)
+        
+        while True:
+            choice = IntPrompt.ask("\n파일 번호를 선택하세요", default=default_choice)
+            if choice == 0:
+                console.print("[blue]>> 전체 처리를 시작합니다.[/blue]")
+                return self.root_dir # Or base_dir? Logic in main expects input_path. If dir, it globs.
+            elif choice in selection_map:
+                selected = selection_map[choice]
+                console.print(f"[blue]>> 선택됨:[/blue] {selected.name}")
+                return selected
+            else:
+                console.print("[red]유효하지 않은 번호입니다.[/red]")
+
+    def _configure_options(self) -> Any:
+        class Config:
+            pass
+        config = Config()
+        
+        print("\n[bold]설정 옵션[/bold]")
+
+        # Output Directory (Fixed to 'output')
+        config.output_dir = "output"
+        
+        # LLM Settings
+        config.use_llm = Confirm.ask("LLM(AI)을 사용하여 텍스트 품질을 보정하시겠습니까?", default=False)
+        
+        config.provider = "openai"
+        config.model = None
+        config.base_url = None
+        
+        # Debug Options
+        config.verbose = Confirm.ask("상세 로그를 보시겠습니까? (디버깅용)", default=False)
+        
+        if config.use_llm:
+            providers = ["openai", "gemini", "openrouter", "ollama", "local", "lmstudio"]
+            msg = "[bold]LLM 제공자[/bold]\n" + "\n".join([f"[{i+1}] {p}" for i, p in enumerate(providers)])
+            console.print("\n" + msg)
+            
+            while True:
+                p_choice = IntPrompt.ask("제공자 번호", default=1)
+                if 1 <= p_choice <= len(providers):
+                    config.provider = providers[p_choice-1]
+                    break
+                console.print("[red]잘못된 선택입니다.[/red]")
+            
+            if config.provider in ["local", "ollama", "lmstudio"]:
+                default_url = "http://localhost:11434" if config.provider == "ollama" else "http://localhost:1234"
+                config.base_url = Prompt.ask("Base URL", default=default_url)
+            
+            config.model = Prompt.ask("모델 이름 (선택사항)", default="")
+            if not config.model:
+                 config.model = None
+
+        # Force Re-conversion
+        config.force = Confirm.ask("기존 캐시 무시 (강제 변환)?", default=False)
+        config.cache_dir = ".cache"
+        
+        return config
+
+def run_interactive() -> Any:
+    wizard = InteractiveWizard()
+    return wizard.run()

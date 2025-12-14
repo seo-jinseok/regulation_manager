@@ -1,0 +1,13 @@
+llama-index
+llama-index-llms-openai
+llama-index-llms-gemini
+llama-index-llms-openrouter
+python-dotenv
+pyhwp
+olefile
+pandas
+markdownify
+beautifulsoup4
+llama-index-llms-ollama
+llama-index-llms-openai-like
+rich
