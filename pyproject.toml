@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "markdownify>=1.2.2",
+    "pyhwp>=0.1b15",
     "python-dotenv>=1.2.1",
     "rich>=14.2.0",
 ]
