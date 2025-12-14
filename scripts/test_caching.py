@@ -10,10 +10,18 @@ def test_caching_simulation():
     cm = CacheManager(cache_dir=str(cache_dir))
     
     # 2. Mock File and Hash
-    hwp_path = Path("/Users/truestone/Dropbox/repo/University/규정/규정/규정집9-349(20251202).hwp")
+    # 2. Mock File and Hash
+    # Assuming file was moved to data/input
+    hwp_path = Path("data/input/규정집9-349(20251202).hwp")
     if not hwp_path.exists():
-        print(f"File not found: {hwp_path}")
-        return
+        # Fallback search
+        import glob
+        files = glob.glob("data/input/*.hwp")
+        if files:
+            hwp_path = Path(files[0])
+        else:
+            print(f"File not found in data/input: {hwp_path}")
+            return
 
     print("Computing HWP Hash...")
     real_hwp_hash = cm.compute_file_hash(hwp_path)

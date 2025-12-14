@@ -43,7 +43,7 @@ env/
 *.log
 
 # Data & Output
-output/*
-!output/.gitkeep
-규정/*
-!규정/.gitkeep
+data/output/*
+!data/output/.gitkeep
+data/input/*
+!data/input/.gitkeep
