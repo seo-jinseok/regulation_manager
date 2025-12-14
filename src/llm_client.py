@@ -1,10 +1,18 @@
 import os
-from typing import Optional
-from llama_index.core.llms import LLM
-from llama_index.llms.openai import OpenAI
-from llama_index.llms.gemini import Gemini
-from llama_index.llms.openrouter import OpenRouter
-from llama_index.llms.ollama import Ollama
+from typing import Optional, Any
+
+try:
+    from llama_index.core.llms import LLM
+    from llama_index.llms.openai import OpenAI
+    from llama_index.llms.gemini import Gemini
+    from llama_index.llms.openrouter import OpenRouter
+    from llama_index.llms.ollama import Ollama
+    LI_AVAILABLE = True
+except ImportError:
+    LI_AVAILABLE = False
+    LLM = Any # Dummy type for annotation
+    OpenAI = Gemini = OpenRouter = Ollama = None
+
 try:
     from llama_index.llms.openai_like import OpenAILike
 except ImportError:
@@ -19,6 +27,10 @@ class LLMClient:
         self.model = model
         self.api_key = api_key
         self.base_url = base_url
+        
+        if not LI_AVAILABLE:
+            raise ImportError("llama_index is not installed. LLM features are unavailable.")
+            
         self.llm = self._create_llm()
 
     def _get_api_key(self, provider: str) -> str:
