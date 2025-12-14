@@ -37,9 +37,10 @@ class HwpToMarkdownReader(BaseReader):
         # Create a temp directory for HTML output
         with tempfile.TemporaryDirectory() as tmp_dir:
             try:
-                # Run hwp5html
-                # Use python -m hwp5.hwp5html to avoid issues with broken shebangs in venv
-                cmd = [sys.executable, "-m", "hwp5.hwp5html", "--output", tmp_dir, str(file)]
+                # Try using the 'hwp5html' executable directly, which is more reliable in uv/venv.
+                # If that fails, fallback to python module? No, just stick to executable if in venv.
+                cmd = ["hwp5html", "--output", tmp_dir, str(file)]
+                print(f"DEBUG: Executing command: {cmd}")
                 
                 # Stream output for user feedback (Suppressed for clean CLI)
                 # print(f"    [hwp5html] Starting conversion for {file.name}...")
@@ -48,7 +49,8 @@ class HwpToMarkdownReader(BaseReader):
                     stdout=subprocess.PIPE, 
                     stderr=subprocess.STDOUT, 
                     text=True, 
-                    bufsize=1
+                    bufsize=1,
+                    env=os.environ.copy()
                 )
                 
                 # Start monitoring thread
