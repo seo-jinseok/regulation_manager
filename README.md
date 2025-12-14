@@ -17,13 +17,13 @@
 
 ## 설치 방법 (Installation)
 
-이 프로젝트는 Python 3.11+ 환경에서 동작합니다.
+이 프로젝트는 Python 3.11+ 환경에서 동작하며, `uv`를 사용한 의존성 관리를 권장합니다.
 
 ```bash
 # 디렉토리 이동
 cd regulation_manager
 
-# 가상환경 생성 (uv 사용)
+# 가상환경 생성 (uv)
 uv venv
 
 # 가상환경 활성화
@@ -35,21 +35,21 @@ uv pip install -r requirements.txt
 
 ### 환경 변수 설정 (.env)
 
-`cp .env.example .env` 명령어로 설정 파일을 생성하세요. 로컬 LLM이나 Regex 모드만 사용한다면 API 키 설정 없이 비워두어도 됩니다.
+`cp .env.example .env` 명령어로 설정 파일을 생성하세요.
 
 ---
 
 ## 사용법 (Usage)
 
-### 1. 기본 사용법 (권장) - LLM 미사용
-대부분의 경우 **LLM 옵션 없이** 실행하는 것이 빠르고 정확합니다.
+### 1. 기본 사용법
+입력 데이터는 `data/input` 폴더에 넣고 실행하는 것을 권장합니다.
 
 ```bash
 # 가상환경 활성화 상태에서:
-python -m src.main "/path/to/규정.hwp"
+python -m src.main "data/input/규정집.hwp"
 
 # 또는 `uv run` 사용 (활성화 불필요):
-uv run python -m src.main "/path/to/규정.hwp"
+uv run python -m src.main "data/input/규정집.hwp"
 ```
 
 ### 2. 고급 사용법 - LLM 사용 (화질이 나쁜 문서용)
