@@ -1,6 +1,17 @@
-from pathlib import Path
-from src.cache_manager import CacheManager
+import sys
+import os
 import json
+from pathlib import Path
+
+# Add parent directory to path to find currently moved src
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from src.cache_manager import CacheManager
+import sys
+import os
+
+# Add parent directory to path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 def test_caching_simulation():
     cache_dir = Path(".cache_test_sim")
