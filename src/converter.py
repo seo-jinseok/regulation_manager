@@ -34,21 +34,12 @@ class HwpToMarkdownReader(BaseReader):
         import shutil
         import sys
         
-        hwp5html_cmd = shutil.which("hwp5html")
-        if not hwp5html_cmd:
-            # Try to find it in the same directory as the python executable
-            potential_path = Path(sys.executable).parent / "hwp5html"
-            if potential_path.exists():
-                hwp5html_cmd = str(potential_path)
-            else:
-                raise FileNotFoundError("hwp5html command not found in PATH or python bin directory.")
-
         # Create a temp directory for HTML output
         with tempfile.TemporaryDirectory() as tmp_dir:
             try:
                 # Run hwp5html
-                # Command: hwp5html --output <output_dir> <input>
-                cmd = [hwp5html_cmd, "--output", tmp_dir, str(file)]
+                # Use python -m hwp5.hwp5html to avoid issues with broken shebangs in venv
+                cmd = [sys.executable, "-m", "hwp5.hwp5html", "--output", tmp_dir, str(file)]
                 
                 # Stream output for user feedback (Suppressed for clean CLI)
                 # print(f"    [hwp5html] Starting conversion for {file.name}...")
