@@ -41,3 +41,9 @@ env/
 
 # Logs
 *.log
+
+# Data & Output
+output/*
+!output/.gitkeep
+규정/*
+!규정/.gitkeep
