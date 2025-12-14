@@ -42,6 +42,11 @@ env/
 # Logs
 *.log
 
+# Caches
+.cache/
+.cache*/
+
+
 # Data & Output
 data/output/*
 !data/output/.gitkeep
