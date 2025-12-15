@@ -158,7 +158,7 @@ class RegulationFormatter:
         addenda = []
         attached_files = []
         
-        pattern = r'(?:^|\n)(?:\|\s*)?((?:부\s*칙)|(?:\[별표.*?\])|(?:\[별지.*?\]))'
+        pattern = r'(?:^|\n)(?:\|\s*)?((?:부\s*칙)|(?:\[\s*별\s*표.*?\])|(?:\[\s*별\s*지.*?\]))'
         segments = re.split(pattern, text)
         
         idx = 1
@@ -175,7 +175,7 @@ class RegulationFormatter:
                      "children": children_nodes 
                  })
     
-            elif "별표" in header or "별지" in header:
+            elif "별표" in header.replace(" ", "") or "별지" in header.replace(" ", ""):
                 attached_files.append({
                     "title": header,
                     "text": content
