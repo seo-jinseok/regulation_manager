@@ -77,5 +77,5 @@ def patch_json(file_path):
         print(f"No changes needed for {file_path}")
 
 if __name__ == "__main__":
-    target_file = "data/output/규정집9-343(20250909).json"
+    target_file = "output/규정집9-343-test1.json"
     patch_json(target_file)

@@ -158,16 +158,27 @@ class RegulationFormatter:
         addenda = []
         attached_files = []
         
-        pattern = r'(?:^|\n)(?:\|\s*)?((?:부\s*칙)|(?:\[\s*별\s*표.*?\])|(?:\[\s*별\s*지.*?\]))'
-        segments = re.split(pattern, text)
+        # Updated regex to match:
+        # 1. "부 칙" (Addenda)
+        # 2. "[ 별 표 ... ]" or "[ 별 지 ... ]" (Square brackets)
+        # 3. "< 별 표 ... >" or "< 별 지 ... >" (Angle brackets)
+        # Matches spaces flexibly.
+        pattern = r'(?:^|\n)(?:\|\s*)?((?:부\s*칙)|(?:\[\s*별\s*표.*?\])|(?:\[\s*별\s*지.*?\])|(?:<\s*별\s*표.*?>)|(?:<\s*별\s*지.*?>))'
+        segments = re.split(pattern, text, flags=re.IGNORECASE)
+        
+        # If the split separates the header from the content, segments[0] is usually empty or preamble before the first header.
+        # segments[1] is header, segments[2] is content, segments[3] header, segments[4] is content...
         
         idx = 1
         while idx < len(segments):
             header = segments[idx].strip()
             content = segments[idx+1].strip() if idx+1 < len(segments) else ""
             
-            if "부" in header and "칙" in header:
-                 # Try to parse structure provided in 'content'
+            # Normalize header for checking: remove spaces and brackets
+            header_norm = header.replace(" ", "").replace("[", "").replace("]", "").replace("<", "").replace(">", "")
+            
+            if "부칙" in header_norm:
+                 # Parse structure provided in 'content'
                  children_nodes = self._parse_addenda_text(content)
                  addenda.append({
                      "title": header,
@@ -175,7 +186,7 @@ class RegulationFormatter:
                      "children": children_nodes 
                  })
     
-            elif "별표" in header.replace(" ", "") or "별지" in header.replace(" ", ""):
+            elif "별표" in header_norm or "별지" in header_norm:
                 attached_files.append({
                     "title": header,
                     "text": content

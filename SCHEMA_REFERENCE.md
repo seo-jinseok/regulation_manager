@@ -31,7 +31,7 @@ JSON 파일의 최상위 루트는 단일 소스 파일에서 파싱된 문서(�
 
 | 필드명 | 타입 | 설명 |
 | :--- | :--- | :--- |
-| `level` | `string` | 구조적 레벨 타입입니다. Enum: `chapter`(장), `section`(절), `subsection`(관), `article`(조), `paragraph`(항), `item`(호), `subitem`(목), `text`. |
+| `level` | `string` | 구조적 레벨 타입입니다. Enum: `chapter`(장), `section`(절), `subsection`(관), `article`(조), `paragraph`(항), `item`(호), `subitem`(목), `addendum_item`(부칙항목), `text`. |
 | `number` | `string` | 식별 번호 문자열입니다 (예: "1", "제5조", "①", "1.", "가."). 없을 수 있습니다(null). |
 | `title` | `string` | 노드의 제목입니다 (예: "총칙", "목적"). 없을 수 있습니다(null). |
 | `text` | `string` | 해당 노드의 본문 텍스트입니다 (자식 노드의 텍스트는 포함하지 않음). |
@@ -88,17 +88,18 @@ JSON 파일의 최상위 루트는 단일 소스 파일에서 파싱된 문서(�
 
 ## 부칙 파싱 (Addenda Parsing)
 
-부칙(Addenda) 또한 노드 리스트로 구조화됩니다. 통상적으로 다음과 같이 모델링됩니다:
-*   **조항 스타일 항목**: 번호가 있는 개정 사항 (예: "1. (시행일) ...")은 `level: "article"`로 처리됩니다.
-*   **날짜**: 단순 제정일 표기 등은 `level: "article"` 또는 `text`로 처리됩니다.
+부칙(Addenda) 또한 노드 리스트로 구조화됩니다.
+*   **부칙 항목**: 번호가 있는 개정 사항 (예: "1. (시행일) ...")은 `level: "addendum_item"`으로 처리됩니다.
+*   **텍스트 처리**: `children` 노드가 생성된 경우, 상위 부칙 노드의 `text` 필드는 중복을 방지하기 위해 `null` 또는 빈 문자열로 설정될 수 있습니다.
 
 ```json
 "addenda": [
   {
     "title": "부 칙",
+    "text": null, 
     "children": [
       {
-        "level": "article",
+        "level": "addendum_item",
         "number": "1.",
         "text": "이 정관은 1981년 9월 11일부터 시행한다.",
         "children": []
