@@ -3,7 +3,12 @@ import sys
 import os
 
 def debug_hwp():
-    cmd = [sys.executable, "-m", "hwp5.hwp5html", "--output", "debug_output", "test.hwp"]
+    test_file = os.path.join("tests", "data", "test.hwp")
+    if not os.path.exists(test_file):
+        print(f"Error: {test_file} not found.")
+        return
+
+    cmd = [sys.executable, "-m", "hwp5.hwp5html", "--output", "debug_output", test_file]
     print(f"Running: {' '.join(cmd)}")
     
     env = os.environ.copy()

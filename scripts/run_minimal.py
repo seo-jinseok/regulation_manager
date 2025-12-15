@@ -2,9 +2,10 @@
 import sys
 import os
 
-# Add the current directory to sys.path to ensure src module is found
+# Add the project root directory to sys.path to ensure src module is found
 current_dir = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(current_dir)
+project_root = os.path.dirname(current_dir)
+sys.path.append(project_root)
 
 # Suppress annoying warnings from transformers/accelerate if PyTorch/TF not found
 os.environ["TRANSFORMERS_VERBOSITY"] = "error"
