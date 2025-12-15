@@ -180,9 +180,13 @@ class RegulationFormatter:
             if "부칙" in header_norm:
                  # Parse structure provided in 'content'
                  children_nodes = self._parse_addenda_text(content)
+                 # If we successfully parsed children, we don't need the huge chunk of text
+                 # duplicating the content.
+                 final_text = content if not children_nodes else None
+                 
                  addenda.append({
                      "title": header,
-                     "text": content,
+                     "text": final_text,
                      "children": children_nodes 
                  })
     
@@ -205,30 +209,34 @@ class RegulationFormatter:
             line = line.strip()
             if not line: continue
             
-            # 1. Article Style (제1조)
+            # 1. Article Style (제1조) - In addenda, sometimes used, but usually it's items.
+            # However, to distinguish from main articles, currently mapped to addendum_item?
+            # User requested: "일반 규정의 조(article)과 다른 항목(노드?)로 처리"
             art_match = re.match(r'^(제\s*\d+\s*조)\s*(?:\(([^)]+)\))?\s*(.*)', line)
             if art_match:
-                nodes.append(self._create_node("article", art_match.group(1), art_match.group(2), art_match.group(3)))
+                # Explicit Articles in Addenda might be treated as 'article' or 'addendum_item'?
+                # Let's use 'addendum_item' for consistency within Addenda as requested.
+                nodes.append(self._create_node("addendum_item", art_match.group(1), art_match.group(2), art_match.group(3)))
                 current_node = nodes[-1]
                 continue
                 
             # 2. Numbered Item Style acting as Article (1. (시행일)...)
             num_match = re.match(r'^(\d+\.)\s*(?:\(([^)]+)\))?\s*(.*)', line)
             if num_match:
-                # Treat as Item-level article
-                nodes.append(self._create_node("article", num_match.group(1), num_match.group(2), num_match.group(3)))
+                # Treat as Item-level article -> addendum_item
+                nodes.append(self._create_node("addendum_item", num_match.group(1), num_match.group(2), num_match.group(3)))
                 current_node = nodes[-1]
                 continue
             
             # 3. Paragraph Style (①)
             para_match = re.match(r'^([①-⑮])\s*(.*)', line)
             if para_match:
-                # If inside an article, add as child
+                # If inside an article/item, add as child
                 if current_node:
                     current_node["children"].append(self._create_node("paragraph", para_match.group(1), None, para_match.group(2)))
                 else:
-                    # Orphan paragraph -> treat as Article
-                    nodes.append(self._create_node("article", para_match.group(1), None, para_match.group(2)))
+                    # Orphan paragraph -> treat as Addenda Item
+                    nodes.append(self._create_node("addendum_item", para_match.group(1), None, para_match.group(2)))
                     current_node = nodes[-1]
                 continue
             

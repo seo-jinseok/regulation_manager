@@ -57,3 +57,6 @@ data/input/*
 debug_output/
 debug_output_test/
 hwp.log
+
+규정/
+output/

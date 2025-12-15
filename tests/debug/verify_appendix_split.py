@@ -20,6 +20,7 @@ def check_parsing(text_to_parse):
         print(f"Addenda {i} Title: {a['title']}")
         if a['children']:
             print(f"Addenda {i} Children Count: {len(a['children'])}")
+            print(f"Addenda {i} Text Field: {a['text']}") # Expect None
             for child in a['children']:
                 print(f"  - Child Level: {child['level']}, Text: {child['text'][:30]}...")
         else:

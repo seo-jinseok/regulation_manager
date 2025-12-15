@@ -64,7 +64,10 @@ def patch_json(file_path):
                     
                 if split_attached:
                     new_attached.extend(split_attached)
-                    modified = True
+                
+                # We always consider it modified if we re-parsed addenda, 
+                # because we changed the internal structure (level, text field).
+                modified = True
             
             doc['addenda'] = new_addenda
             doc['attached_files'] = new_attached
