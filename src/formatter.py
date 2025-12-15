@@ -8,7 +8,7 @@ class RegulationFormatter:
     Regulation -> Chapter -> Article -> Paragraph -> Item
     """
 
-    def parse(self, text: str) -> List[Dict[str, Any]]:
+    def parse(self, text: str, html_content: Optional[str] = None) -> List[Dict[str, Any]]:
         # 1. First Pass: Flat Parsing (Existing Logic)
         flat_doc_data = self._parse_flat(text)
         
@@ -20,7 +20,7 @@ class RegulationFormatter:
             title, preamble = self._extract_clean_title(doc_data)
             
             # Appendices Parsing
-            addenda, attached_files = self._parse_appendices(doc_data.get("appendices", []))
+            addenda, attached_files = self._parse_appendices(doc_data.get("appendices", []), html_content=html_content)
             
             # Build Metadata
             metadata = {
@@ -146,7 +146,7 @@ class RegulationFormatter:
                 
         return roots
 
-    def _parse_appendices(self, appendix_lines_or_str):
+    def _parse_appendices(self, appendix_lines_or_str, html_content: Optional[str] = None):
         if isinstance(appendix_lines_or_str, list):
             text = "\n".join(appendix_lines_or_str).strip()
         else:
@@ -197,8 +197,83 @@ class RegulationFormatter:
                 })
                 
             idx += 2
+        
+        # If HTML content is provided, try to extract corresponding HTML segments
+        if html_content and attached_files:
+            self._extract_html_segments(attached_files, html_content)
             
         return addenda, attached_files
+
+    def _extract_html_segments(self, attached_files: List[Dict], html_content: str):
+        """
+        Extracts HTML segments for each attached file from the full HTML content.
+        Adds an 'html' field to each attached_file dictionary.
+        """
+        # 1. Extract CSS Style block
+        style_match = re.search(r'(<style.*?>.*?</style>)', html_content, re.DOTALL | re.IGNORECASE)
+        style_block = style_match.group(1) if style_match else ""
+        
+        # 2. Find positions of each attached file header in HTML
+        # HTML output of hwp5html typically escapes characters: < -> &lt;, > -> &gt;
+        # And adds spans. e.g. <span ...>&lt;별지 1호 서식&gt;</span>
+        
+        lower_html = html_content.lower()
+        
+        # Helper to normalize title for search in HTML (simple approximation)
+        def make_html_search_key(title):
+            # Escape expected chars
+            escaped = title.replace("<", "&lt;").replace(">", "&gt;")
+            # Remove spaces for robust search (since HTML might have tags in between) -> strict match is hard.
+            # Let's try to match the visible text. 
+            # Ideally we find the sequence of characters.
+            return escaped.lower()
+
+        # Locate starts
+        # We need to preserve order.
+        # We search for the *text* of the headers.
+        
+        positions = []
+        for i, af in enumerate(attached_files):
+            title = af["title"] # e.g. <별지 1호 서식>
+            search_key = make_html_search_key(title)
+            
+            # Simple substring search.
+            pos = lower_html.find(search_key)
+            
+            if pos == -1:
+                # Fallback: if not found, try without escaping (rare) or generic fallback
+                pass
+            
+            if pos != -1:
+                positions.append((pos, i))
+        
+        # Sort by position to handle out-of-order detection if any (should be in order)
+        positions.sort()
+        
+        # Slice
+        for idx, (start_pos, af_index) in enumerate(positions):
+            # End pos is the start of the next attached file OR end of document
+            if idx + 1 < len(positions):
+                end_pos = positions[idx+1][0]
+            else:
+                end_pos = len(html_content)
+                
+            # Refine start_pos: include the container? 
+            # hwp5html usually puts headers in <div class="HeaderArea"> or similar?
+            # Or just Paragraphs <p>.
+            # Let's backtrace to a logical block start if possible, or just exact match.
+            # For "Table" preservation, we usually want the content *after* the header.
+            
+            # Actually, standard attached files in specific formats (Forms) usually follow the header immediately.
+            # Let's grab the content starting from the header position.
+            
+            segment = html_content[start_pos:end_pos]
+            
+            # Combine with style
+            # Wrap in a div to isolate?
+            full_html = f"<html><head>{style_block}</head><body>{segment}</body></html>"
+            
+            attached_files[af_index]["html"] = full_html
 
     def _parse_addenda_text(self, text: str) -> List[Dict]:
         nodes = []

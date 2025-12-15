@@ -135,6 +135,7 @@ class HwpToMarkdownReader(BaseReader):
                     metadata={
                         "file_name": file.name,
                         "source": str(file),
+                        "html_content": html_content,  # Store raw HTML for table preservation
                         **(extra_info or {})
                     }
                 )]

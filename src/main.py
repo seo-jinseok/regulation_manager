@@ -226,7 +226,10 @@ def main():
                     
                     # 4. Formatting (Step 4)
                     progress.console.print(f"  [magenta]• JSON 구조화 중...[/magenta]")
-                    regulations_list = formatter.parse(clean_md)
+                    
+                    # Extract HTML content if available (for Attached Files high-fidelity rendering)
+                    html_content = docs[0].metadata.get("html_content")
+                    regulations_list = formatter.parse(clean_md, html_content=html_content)
                     
                     # Refinement (Decommissioned - Formatter handles hierarchy)
                     # refined_list = [refine_doc(doc, i) for i, doc in enumerate(regulations_list)]
