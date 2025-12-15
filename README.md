@@ -86,9 +86,31 @@ python -m src.main "/path/to/규정.hwp" --use_llm --provider openai --model gpt
 | `--provider` | `ollama`, `lmstudio`, `local`, `openai`, `gemini` | `openai` | `--provider ollama` |
 | `--model` | 사용할 모델 이름 (LM Studio는 필수) | (Provider별 기본값) | `--model gemma2` |
 | `--base_url` | 로컬 서버 API 주소 (필요 시 변경) | (Provider별 기본값) | `--base_url http://localhost:11434` |
-Done (6322.32s)
-  > Preprocessing (Cleaning & Logic)... Done (0.75s)
-  > Formatting to JSON Structure... Done (0.03s)
-  > Refining JSON Structure... Done (0.01s)
-  > Saving JSON (373 docs found)... Done (0.06s)
-[20:53:44] Completed 규정집9-343(20250909).hwp in 6323.18s
+## 데이터 구조 (JSON Schema)
+
+본 시스템은 규정집을 데이터베이스화하기 용이하도록 엄격한 계층 구조를 가진 JSON으로 변환합니다. 상세한 스펙은 [SCHEMA_REFERENCE.md](./SCHEMA_REFERENCE.md) 문서를 참고하세요.
+
+### 구조 개요
+*   **Root**: 파일명과 `docs` 리스트를 포함합니다.
+*   **Document**: 개별 규정 단위(예: 학칙, 장학규정). `title`, `part`(편), `metadata`, `content` 등을 포함합니다.
+*   **Node (Content)**: `content` 내부는 `level` 필드를 통해 계층적으로 구조화됩니다.
+    *   **Level Hierarchy**: `chapter` (장) > `section` (절) > `subsection` (관) > `article` (조) > `paragraph` (항) > `item` (호) > `subitem` (목)
+    *   **Addenda**: 부칙 또한 `article`과 `item` 노드로 구조화되어 파싱됩니다.
+
+### 예시
+```json
+{
+  "level": "article",
+  "number": "6",
+  "title": "자산의 구분",
+  "children": [
+    {
+      "level": "paragraph",
+      "number": "①",
+      "text": "이 법인의 자산은 기본재산과 보통재산으로 구분한다."
+    }
+  ]
+}
+```
+
+---

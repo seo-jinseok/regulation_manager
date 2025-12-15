@@ -228,8 +228,9 @@ def main():
                     progress.console.print(f"  [magenta]• JSON 구조화 중...[/magenta]")
                     regulations_list = formatter.parse(clean_md)
                     
-                    # Refinement
-                    refined_list = [refine_doc(doc, i) for i, doc in enumerate(regulations_list)]
+                    # Refinement (Decommissioned - Formatter handles hierarchy)
+                    # refined_list = [refine_doc(doc, i) for i, doc in enumerate(regulations_list)]
+                    refined_list = regulations_list
                     progress.update(total_task, completed=current_file_base_step + 4)
                     
                     # 5. Save & Metadata (Step 5)
@@ -240,6 +241,12 @@ def main():
                     except:
                         scan_date = "unknown"
                         
+                    # Update metadata in each doc
+                    for doc in refined_list:
+                        if 'metadata' in doc:
+                            doc['metadata']['scan_date'] = scan_date
+                            doc['metadata']['file_name'] = file.name
+
                     final_json = {
                         "file_name": file.name,
                         "scan_date": scan_date,

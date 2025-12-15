@@ -1,159 +1,411 @@
 import re
 import json
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 class RegulationFormatter:
     """
-    Parses regulation text into structured JSON compatible with Korean Law Information Center structure.
-    Hierarchy:
-    - 조 (Article): "제1조(목적)"
-    - 항 (Paragraph): "①", "1." (sometimes)
-    - 호 (Item): "1.", "가."
+    Parses regulation text into structured JSON utilizing a nested Node structure:
+    Regulation -> Chapter -> Article -> Paragraph -> Item
     """
 
     def parse(self, text: str) -> List[Dict[str, Any]]:
-        lines = text.split('\n')
+        # 1. First Pass: Flat Parsing (Existing Logic)
+        flat_doc_data = self._parse_flat(text)
         
-        regulations = []
-        
-        # State capturing
-        # We need to capture lines into specific buckets based on where we are.
-        # But for multi-regulation files, the boundary is fuzzy until we hit "Article 1".
-        # Strategy:
-        # 1. Collect everything into 'current_regulation' dict buckets.
-        # 2. When 'Article 1' is found, we assume a new start. 
-        #    BUT we must retroactively check if the 'End' of the previous buffer claims to be the 'Title' of the new one.
-        
-        current_data = {
-            "preamble": [],
-            "articles": [],
-            "appendices": []
+        final_docs = []
+        for doc_data in flat_doc_data:
+            # 2. Refinement & Hierarchy Building
+            
+            # Title Extraction
+            title, preamble = self._extract_clean_title(doc_data)
+            
+            # Appendices Parsing
+            addenda, attached_files = self._parse_appendices(doc_data.get("appendices", []))
+            
+            # Build Metadata
+            metadata = {
+                "scan_date": "unknown", # To be populated by main/file stats if needed
+                "file_name": "",       # To be populated
+            }
+            
+            # Build Content Hierarchy (Chapter -> Article -> ...)
+            content_nodes = self._build_hierarchy(doc_data["articles"])
+            
+            # Add Appendices to content as specific nodes or separate fields?
+            # Schema "Special Cases" says: "Separate specific array"
+            # However, looking at the schema:
+            # { "content": [...], "metadata": { "amendments": ... } }
+            # But the user schema says "appendix array" in special cases.
+            # Let's keep them as root fields for now, or put them in 'appendices' lists.
+            
+            final_doc = {
+                "part": doc_data.get("part"),
+                "title": title,
+                "metadata": metadata, # Placeholder
+                "preamble": preamble, # Optional, maybe part of metadata or text?
+                "content": content_nodes,
+                "addenda": addenda,
+                "attached_files": attached_files
+            }
+            final_docs.append(final_doc)
+            
+        return final_docs
+
+    def _create_node(self, level: str, number: str, title: Optional[str], text: Optional[str], children: List[Dict] = None) -> Dict[str, Any]:
+        return {
+            "level": level,
+            "number": number,
+            "title": title,
+            "text": text,
+            "children": children if children is not None else []
+        }
+
+    def _build_hierarchy(self, articles: List[Dict]) -> List[Dict]:
+        roots = []
+        # State tracking for hierarchy
+        current_nodes = {
+            "chapter": {"name": None, "node": None},
+            "section": {"name": None, "node": None},
+            "subsection": {"name": None, "node": None}
         }
         
+        def get_parent_list(level):
+            # Determine where to append the new node
+            if level == "chapter": return roots
+            if level == "section":
+                if current_nodes["chapter"]["node"]: return current_nodes["chapter"]["node"]["children"]
+                return roots # Fallback
+            if level == "subsection":
+                if current_nodes["section"]["node"]: return current_nodes["section"]["node"]["children"]
+                if current_nodes["chapter"]["node"]: return current_nodes["chapter"]["node"]["children"]
+                return roots
+            if level == "article":
+                if current_nodes["subsection"]["node"]: return current_nodes["subsection"]["node"]["children"]
+                if current_nodes["section"]["node"]: return current_nodes["section"]["node"]["children"]
+                if current_nodes["chapter"]["node"]: return current_nodes["chapter"]["node"]["children"]
+                return roots
+            return roots
+
+        for art in articles:
+            # Hierarchy Levels to check in order
+            levels = [("chapter", r'^(제\s*(\d+)\s*[장편])\s*(.*)'), 
+                      ("section", r'^(제\s*(\d+)\s*절)\s*(.*)'), 
+                      ("subsection", r'^(제\s*(\d+)\s*관)\s*(.*)')]
+            
+            # 1. Update Hierarchy Nodes
+            for lvl, regex in levels:
+                raw_val = art.get(lvl)
+                if raw_val != current_nodes[lvl]["name"]:
+                    current_nodes[lvl]["name"] = raw_val
+                    # Reset lower levels
+                    if lvl == "chapter":
+                        current_nodes["section"] = {"name": None, "node": None}
+                        current_nodes["subsection"] = {"name": None, "node": None}
+                    elif lvl == "section":
+                        current_nodes["subsection"] = {"name": None, "node": None}
+
+                    if raw_val:
+                        match = re.match(regex, raw_val.strip())
+                        if match:
+                            num = match.group(2)
+                            title = match.group(3)
+                            node = self._create_node(lvl, num, title, None)
+                        else:
+                            node = self._create_node(lvl, "", raw_val, None)
+                        
+                        current_nodes[lvl]["node"] = node
+                        get_parent_list(lvl).append(node)
+                    else:
+                        current_nodes[lvl]["node"] = None
+            
+            # 2. Create Article Node
+            art_text = "\n".join(art.get('content', []))
+            art_node = self._create_node("article", art.get('article_no'), art.get('title'), art_text)
+            
+            # Paragraphs & Items
+            for para in art.get('paragraphs', []):
+                para_num = para.get('paragraph_no')
+                para_text = para.get('content')
+                para_node = self._create_node("paragraph", para_num, None, para_text)
+                
+                for item in para.get('items', []):
+                    item_num = item.get('item_no')
+                    item_content = item.get('content')
+                    item_node = self._create_node("item", item_num, None, item_content)
+                    
+                    for sub in item.get('subitems', []):
+                        sub_node = self._create_node("subitem", sub.get('subitem_no'), None, sub.get('content'))
+                        item_node["children"].append(sub_node)
+
+                    para_node["children"].append(item_node)
+                
+                art_node["children"].append(para_node)
+            
+            # Append Article to lowest active parent
+            get_parent_list("article").append(art_node)
+                
+        return roots
+
+    def _parse_appendices(self, appendix_lines_or_str):
+        if isinstance(appendix_lines_or_str, list):
+            text = "\n".join(appendix_lines_or_str).strip()
+        else:
+            text = str(appendix_lines_or_str).strip()
+            
+        if not text:
+            return [], []
+            
+        addenda = []
+        attached_files = []
+        
+        pattern = r'(?:^|\n)(?:\|\s*)?((?:부\s*칙)|(?:\[별표.*?\])|(?:\[별지.*?\]))'
+        segments = re.split(pattern, text)
+        
+        idx = 1
+        while idx < len(segments):
+            header = segments[idx].strip()
+            content = segments[idx+1].strip() if idx+1 < len(segments) else ""
+            
+            if "부" in header and "칙" in header:
+                 # Try to parse structure provided in 'content'
+                 children_nodes = self._parse_addenda_text(content)
+                 addenda.append({
+                     "title": header,
+                     "text": content,
+                     "children": children_nodes 
+                 })
+    
+            elif "별표" in header or "별지" in header:
+                attached_files.append({
+                    "title": header,
+                    "text": content
+                })
+                
+            idx += 2
+            
+        return addenda, attached_files
+
+    def _parse_addenda_text(self, text: str) -> List[Dict]:
+        nodes = []
+        lines = text.split('\n')
+        current_node = None
+        
+        for line in lines:
+            line = line.strip()
+            if not line: continue
+            
+            # 1. Article Style (제1조)
+            art_match = re.match(r'^(제\s*\d+\s*조)\s*(?:\(([^)]+)\))?\s*(.*)', line)
+            if art_match:
+                nodes.append(self._create_node("article", art_match.group(1), art_match.group(2), art_match.group(3)))
+                current_node = nodes[-1]
+                continue
+                
+            # 2. Numbered Item Style acting as Article (1. (시행일)...)
+            num_match = re.match(r'^(\d+\.)\s*(?:\(([^)]+)\))?\s*(.*)', line)
+            if num_match:
+                # Treat as Item-level article
+                nodes.append(self._create_node("article", num_match.group(1), num_match.group(2), num_match.group(3)))
+                current_node = nodes[-1]
+                continue
+            
+            # 3. Paragraph Style (①)
+            para_match = re.match(r'^([①-⑮])\s*(.*)', line)
+            if para_match:
+                # If inside an article, add as child
+                if current_node:
+                    current_node["children"].append(self._create_node("paragraph", para_match.group(1), None, para_match.group(2)))
+                else:
+                    # Orphan paragraph -> treat as Article
+                    nodes.append(self._create_node("article", para_match.group(1), None, para_match.group(2)))
+                    current_node = nodes[-1]
+                continue
+            
+            # 4. Text Content (append to current node)
+            if current_node:
+                if current_node["text"]:
+                    current_node["text"] += " " + line
+                else:
+                    current_node["text"] = line
+            else:
+                # Top level text (Prologue of Addenda?)
+                # Create a generic node or ignore?
+                # Usually dates: "1988. 3. 1. 제정"
+                # Let's treat as a 'text' node or preamble Article?
+                # Create dummy node
+                nodes.append(self._create_node("text", "", None, line))
+                current_node = nodes[-1]
+                
+        return nodes
+
+    def _extract_clean_title(self, doc_data):
+        # Heuristic combined from refine_json.py and previous formatter
+        
+        # 1. Try explicit tracking from parse
+        regulation_title = doc_data.get('title') # from previous logic, might be None
+        
+        preamble_lines = doc_data.get('preamble', [])
+        if isinstance(preamble_lines, str):
+            preamble_lines = preamble_lines.split('\n')
+            
+        preamble_text = "\n".join(preamble_lines).strip()
+
+        if regulation_title:
+            return regulation_title, preamble_text
+            
+        # 2. Extract from Preamble (Refine Logic)
+        candidates = [line.strip() for line in preamble_lines if line.strip()]
+        
+        best_title = ""
+        for line in reversed(candidates):
+            # Skip if meta info
+            if (line.startswith('<') and line.endswith('>')) or (line.startswith('(') and line.endswith(')')):
+                continue
+            
+            # Clean
+            cleaned = re.sub(r'\s*[<\[\(].*?[>\]\)]', '', line).strip()
+            cleaned = re.sub(r'\s*제\s*\d+\s*장.*', '', cleaned).strip()
+             
+            if not cleaned: continue
+            
+            # Verify if it looks like a title
+            suffixes = ("규정", "세칙", "지침", "요령", "강령", "내규", "학칙", "헌장", "기준", "수칙", "준칙", "요강", "운영", "정관")
+            if cleaned.endswith(suffixes) or "규정" in cleaned:
+                best_title = cleaned
+                break
+        
+        # Fallback to last line if nothing found (Previous formatter heuristic)
+        if not best_title and candidates:
+             best_title = candidates[-1]
+
+        return best_title, preamble_text
+
+    def _parse_flat(self, text: str) -> List[Dict[str, Any]]:
+        # Encapsulated existing logic
+        lines = text.split('\n')
+        regulations = []
+        current_data = {"preamble": [], "articles": [], "appendices": []}
         current_article = None
         current_paragraph = None
-        
-        # Mode: 'PREAMBLE' | 'ARTICLES' | 'APPENDICES'
+        current_item = None
+        current_chapter = None
+        current_section = None
+        current_subsection = None
+        regulation_title = None
+        current_book_part = None # Track "Part" (Category)
         mode = 'PREAMBLE' 
 
-        def flush_regulation(next_preamble_lines: List[str] = None):
-            nonlocal current_article, current_paragraph, mode, current_data
-            
-            # Close last article
+        def flush_regulation(next_preamble_lines=None):
+            nonlocal current_article, current_paragraph, current_item, mode, current_data, current_chapter, current_section, current_subsection, regulation_title
             if current_article:
                 current_data["articles"].append(current_article)
                 current_article = None
                 current_paragraph = None
-            
-            # Construct Doc
+                current_item = None
             if current_data["articles"] or current_data["preamble"] or current_data["appendices"]:
-                reg = {
-                    "preamble": "\n".join(current_data["preamble"]).strip(),
-                    "articles": current_data["articles"],
-                    "appendices": "\n".join(current_data["appendices"]).strip()
-                }
-                regulations.append(reg)
+                 reg = {
+                     "part": current_book_part, # Add Part info
+                     "title": regulation_title,
+                     "preamble": current_data["preamble"],
+                     "articles": current_data["articles"],
+                     "appendices": current_data["appendices"]
+                 }
+                 regulations.append(reg)
             
-            # Reset
             current_data = {
                 "preamble": next_preamble_lines if next_preamble_lines else [],
                 "articles": [],
                 "appendices": []
             }
-            mode = 'PREAMBLE' if next_preamble_lines else 'PREAMBLE' # Reset to preamble for new doc
-            
-            # If we shifted lines, it means we already have content for the new doc, 
-            # effectively we are in PREAMBLE mode waiting for Article 1.
+            mode = 'PREAMBLE'
+            current_chapter = None
+            current_section = None
+            current_subsection = None
+            regulation_title = None
 
         for line in lines:
             line = line.strip()
-            if not line:
+            if not line: continue
+
+            # Part (Groups Regulations)
+            part_match = re.match(r'^\|?\s*(제\s*\d+\s*편)\s*(.*)\|?$', line)
+            # The markdown often has tables | 제1편 | or just text.
+            # Clean md view: "제2편 학칙"
+            if not part_match:
+                 # Try cleaning pipe characters if they act as borders
+                 clean_line = line.replace('|', '').strip()
+                 part_match = re.match(r'^(제\s*\d+\s*편)\s*(.*)', clean_line)
+            
+            if part_match:
+                # Part found (e.g. 제1편 학교법인)
+                # It separates the book. Flush current regulation.
+                flush_regulation()
+                
+                # Extract clean name from groups
+                p_num = part_match.group(1).strip()
+                p_name = part_match.group(2).replace('|', '').strip()
+                current_book_part = f"{p_num} {p_name}".strip()
                 continue
 
-            # 1. Detect Article 1 (Potential Split)
-            # Regex for "제1조" or "제 1 조"
-            article_1_match = re.match(r'^(제\s*1\s*조)\s*(?:\(([^)]+)\))?\s*(.*)', line)
+            # Chapter
+            chapter_match = re.match(r'^(제\s*\d+\s*[장편])\s*(.*)', line)
+            if chapter_match:
+                current_chapter = line 
+                current_section = None
+                current_subsection = None
+                continue
             
-            if article_1_match:
-                # This is Article 1.
-                # If we have existing content, this is likely a Split Point.
-                if current_data["articles"] or current_article:
-                     # Heuristic: Find Regulation Title in the *tail* of the previous section.
-                     # The previous section is either 'appendices' (if we were in APPENDICES mode) 
-                     # or 'preamble' (unlikely if we had articles) or just 'articles' (if no appendices).
-                     
-                     # Usually, 'appendices' comes before the next 'Article 1'.
-                     # Search target: current_data["appendices"]
-                     
-                     split_idx = -1
-                     target_list = current_data["appendices"] if mode == 'APPENDICES' else current_data["preamble"] 
-                     # Note: If mode was ARTICLES, we haven't started appendices/new preamble essentially? 
-                     # Actually, often there is a Title line between last article and next Article 1.
-                     # If mode is ARTICLES, the Title line would have been captured as... raw text in the last article? 
-                     # OR we need to verify where non-matching lines go.
-                     
-                     # Let's look at where "Title" lines end up.
-                     # If mode == APPENDICES: Title lines go to appendices.
-                     # If mode == ARTICLES: Title lines go to last article content? (This is bad)
-                     
-                     # Refinement: We need a buffer for "Potential New Header" if we are in ARTICLES mode?
-                     pass
+            # Section (절)
+            section_match = re.match(r'^(제\s*\d+\s*절)\s*(.*)', line)
+            if section_match:
+                current_section = line
+                current_subsection = None
+                continue
 
-                     # SEARCH BACKWARDS for a Title Line
-                     # Title Pattern: Ends with "규정", "세칙", "지침", "요령" etc.
-                     # Expanded list based on typical university regulations
-                     title_candidates = ["규정", "세칙", "지침", "요령", "강령", "내규", "학칙", "헌장", "기준", "수칙", "준칙", "요강", "운영"]
-                     
-                     # We only search in 'appendices' since that's where "inter-regulation" text falls 
-                     # if it didn't match an article.
+            # Subsection (관)
+            subsection_match = re.match(r'^(제\s*\d+\s*관)\s*(.*)', line)
+            if subsection_match:
+                current_subsection = line
+                continue
+
+            # Article 1 Split
+            article_1_match = re.match(r'^(제\s*1\s*조)\s*(?:\(([^)]+)\))?\s*(.*)', line)
+            if article_1_match:
+                if current_data["articles"] or current_article:
+                     split_idx = -1
                      start_next_lines = []
-                     
                      if mode == 'APPENDICES':
-                         # Search backwards
                          for i in range(len(current_data["appendices"]) - 1, -1, -1):
                              txt = current_data["appendices"][i].strip()
-                             # Check if looks like a title
-                             # 1. Ends with candidate
-                             # 2. Not too long (Relaxed to 100)
-                             # 3. Not a file path/url (defensive)
-                             # 4. Or if it contains '규정' inside and is very short?
-                             
+                             title_candidates = ["규정", "세칙", "지침", "요령", "강령", "내규", "학칙", "헌장", "기준", "수칙", "준칙", "요강", "운영", "정관"]
                              if (any(txt.endswith(c) for c in title_candidates) or "규정" in txt) and len(txt) < 100:
-                                 # Found split point!
-                                 # i is the Title.
-                                 # Everything from i onwards is NEXT doc.
                                  split_idx = i
                                  break
-                         
                          if split_idx != -1:
                              start_next_lines = current_data["appendices"][split_idx:]
                              current_data["appendices"] = current_data["appendices"][:split_idx]
-                     
                      flush_regulation(next_preamble_lines=start_next_lines)
             
-            # 2. Detect Article (Generic)
+            # Article
             article_match = re.match(r'^(제\s*(\d+)\s*조)\s*(?:\(([^)]+)\))?\s*(.*)', line)
             if article_match:
-                mode = 'ARTICLES' # Enter Article Mode
-                
-                # Close previous article
-                if current_article:
-                    current_data["articles"].append(current_article)
-                
+                mode = 'ARTICLES'
+                if current_article: current_data["articles"].append(current_article)
                 article_no = article_match.group(2)
                 article_title = article_match.group(3) or ""
                 content = article_match.group(4)
-                
                 current_article = {
                     "article_no": article_no,
                     "title": article_title,
+                    "chapter": current_chapter,
+                    "section": current_section,
+                    "subsection": current_subsection,
                     "content": [], 
                     "paragraphs": []
                 }
                 current_paragraph = None
-                
+                current_item = None
                 if content:
-                    # Inline content handling
                     para_match = re.match(r'^([①-⑮])\s*(.*)', content)
                     if para_match:
                         current_paragraph = {
@@ -164,26 +416,24 @@ class RegulationFormatter:
                         current_article["paragraphs"].append(current_paragraph)
                     else:
                         current_article["content"].append(content)
-                        
                 continue
 
-            # 3. Detect Appendices (부칙)
+            # Appendices
             if re.match(r'^부\s*칙', line):
                 mode = 'APPENDICES'
-                # Close Article
+                current_chapter = None
+                current_section = None
+                current_subsection = None
                 if current_article:
                     current_data["articles"].append(current_article)
                     current_article = None
                     current_paragraph = None
-                
+                    current_item = None
                 current_data["appendices"].append(line)
                 continue
                 
-            # 4. Handle Content based on Mode
+            # Content
             if mode == 'ARTICLES':
-                # We are inside an article. Check for Structure (Paragraph, Item) 
-                
-                # Paragraph (①)
                 para_match = re.match(r'^([①-⑮])\s*(.*)', line)
                 if para_match and current_article:
                     current_paragraph = {
@@ -192,35 +442,51 @@ class RegulationFormatter:
                         "items": []
                     }
                     current_article["paragraphs"].append(current_paragraph)
+                    current_item = None
                     continue
 
-                # Item (1. or 가.)
-                item_match = re.match(r'^(\d+\.|[가-하]\.)\s*(.*)', line)
+                # Item (1., 2., 3.)
+                item_match = re.match(r'^(\d+\.)\s*(.*)', line)
                 if item_match and current_article:
-                    new_item = {"item_no": item_match.group(1), "content": item_match.group(2)}
+                    new_item = {
+                        "item_no": item_match.group(1), 
+                        "content": item_match.group(2),
+                        "subitems": []
+                    }
                     if current_paragraph:
                         current_paragraph["items"].append(new_item)
+                        current_item = new_item
                     else:
-                        # Fallback: Treat as generic content of article
+                         # Fallback: Items directly under Article (no paragraph)
                          current_article["content"].append(line)
                     continue
+
+                # Subitem (가., 나., 다.)
+                subitem_match = re.match(r'^([가-하]\.)\s*(.*)', line)
+                if subitem_match and current_article:
+                    if current_item:
+                        current_item["subitems"].append({
+                            "subitem_no": subitem_match.group(1),
+                            "content": subitem_match.group(2)
+                        })
+                    else:
+                        if current_paragraph:
+                             current_paragraph["content"] += " " + line
+                        else:
+                             current_article["content"].append(line)
+                    continue
                 
-                # Plain Text in ARTICLE mode
                 if current_paragraph:
                     current_paragraph["content"] += " " + line
                 elif current_article:
                     current_article["content"].append(line)
                 else:
-                    # Should not happen if logic is correct, but safe fallback
                     current_data["preamble"].append(line)
 
             elif mode == 'APPENDICES':
-                # In Appendices, EVERYTHING is appendix content including bullets
                 current_data["appendices"].append(line)
-                
             elif mode == 'PREAMBLE':
                 current_data["preamble"].append(line)
 
-        # Final Flush
         flush_regulation()
         return regulations
