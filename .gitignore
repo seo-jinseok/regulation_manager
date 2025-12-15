@@ -61,3 +61,5 @@ output/*
 debug_output/
 debug_output_test/
 hwp.log
+
+todo.md

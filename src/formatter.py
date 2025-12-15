@@ -1,6 +1,7 @@
 import re
 import json
 from typing import List, Dict, Any, Optional
+from bs4 import BeautifulSoup
 
 class RegulationFormatter:
     """
@@ -27,6 +28,23 @@ class RegulationFormatter:
                 "scan_date": "unknown", # To be populated by main/file stats if needed
                 "file_name": "",       # To be populated
             }
+
+            # Extract header metadata if HTML is available
+            if html_content:
+                header_entries = self._extract_header_metadata(html_content)
+                # Filter headers matching this doc's title
+                relevant = [h for h in header_entries if self._titles_match(title, h['prefix'])]
+                if relevant:
+                    # Assume rule code is consistent across matched headers
+                    rule_code = relevant[0]["rule_code"]
+                    metadata["rule_code"] = rule_code
+                    
+                    # Calculate page range using ALL headers with this rule code
+                    # (including section headers like "제3편 ...")
+                    same_code_headers = [h for h in header_entries if h["rule_code"] == rule_code]
+                    pages = [int(h["page"]) for h in same_code_headers if h["page"]]
+                    if pages:
+                        metadata["page_range"] = f"{min(pages)}~{max(pages)}"
             
             # Build Content Hierarchy (Chapter -> Article -> ...)
             content_nodes = self._build_hierarchy(doc_data["articles"])
@@ -274,6 +292,59 @@ class RegulationFormatter:
             full_html = f"<html><head>{style_block}</head><body>{segment}</body></html>"
             
             attached_files[af_index]["html"] = full_html
+
+    def _extract_header_metadata(self, html_content: str) -> List[Dict]:
+        """
+        Extracts header metadata (Rule Code, Page Number, Title Prefix) from HTML.
+        Returns a list of dictionaries.
+        """
+        metadata_list = []
+        if not html_content:
+            return metadata_list
+
+        soup = BeautifulSoup(html_content, 'html.parser')
+        header_areas = soup.find_all('div', class_='HeaderArea')
+
+        for div in header_areas:
+            original_text = div.get_text(strip=True)
+            # Normalize dashes and tildes
+            normalized_text = re.sub(r'[\u2010-\u2015\u2212\uFF0D]', '-', original_text)
+            normalized_text = re.sub(r'[~\uFF5E\u301C]', '~', normalized_text)
+
+            # Regex for Rule Code (e.g. 3-1-97) and optional Page Number (~1)
+            match = re.search(r'(\d+-\d+-\d+)(~\d+)?', normalized_text)
+            if match:
+                rule_code = match.group(1)
+                page_part = match.group(2)
+                page_number = page_part.replace('~', '') if page_part else None
+                
+                # Extract prefix
+                prefix = normalized_text.split(rule_code)[0].strip()
+                prefix = re.sub(r'[~\u301c\u2053]+$', '', prefix).strip()
+                
+                # Filter out section headers (e.g. "제3편 행정") which are not titles
+                # Heuristic: if it contains "제" and "편", likely a section header
+                # We still include them because they contain page numbers
+                
+                metadata_list.append({
+                    "rule_code": rule_code,
+                    "page": page_number,
+                    "prefix": prefix
+                })
+        return metadata_list
+
+    def _titles_match(self, doc_title: str, header_prefix: str) -> bool:
+        """
+        Checks if the document title matches the header prefix.
+        Simple normalization and substring match.
+        """
+        if not doc_title or not header_prefix:
+            return False
+        
+        norm_doc = re.sub(r'\s+', '', doc_title).lower()
+        norm_header = re.sub(r'\s+', '', header_prefix).lower()
+        
+        return norm_doc == norm_header or norm_doc in norm_header or norm_header in norm_doc
 
     def _parse_addenda_text(self, text: str) -> List[Dict]:
         nodes = []
