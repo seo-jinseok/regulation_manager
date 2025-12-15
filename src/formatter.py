@@ -32,8 +32,13 @@ class RegulationFormatter:
             # Extract header metadata if HTML is available
             if html_content:
                 header_entries = self._extract_header_metadata(html_content)
+                print(f"DEBUG: Found {len(header_entries)} headers. First: {header_entries[0] if header_entries else 'None'}")
+                
                 # Filter headers matching this doc's title
                 relevant = [h for h in header_entries if self._titles_match(title, h['prefix'])]
+                
+                print(f"DEBUG: Matching '{title}' against headers -> Found {len(relevant)} matches.")
+
                 if relevant:
                     # Assume rule code is consistent across matched headers
                     rule_code = relevant[0]["rule_code"]
@@ -67,7 +72,61 @@ class RegulationFormatter:
             }
             final_docs.append(final_doc)
             
+        # 3. Second Pass: Backfill Rule Codes from TOC
+        # Scan all documents for TOC-like entries to build a global map
+        # This handles cases where TOC is split into multiple docs due to "Part" headers
+        toc_map = {}
+        for doc in final_docs:
+             # Only scan preamble (TOC entries are usually here)
+             toc_map.update(self._parse_toc_rule_codes(doc["preamble"]))
+             
+        # print(f"DEBUG: TOC Map extracted: {len(toc_map)} entries.")
+        if toc_map:
+            for doc in final_docs:
+                if not doc["metadata"].get("rule_code"):
+                    match_code = None
+                    doc_title = doc["title"]
+                    if not doc_title: continue
+                    
+                    # 1. Direct match
+                    if doc_title in toc_map:
+                        match_code = toc_map[doc_title]
+                    else:
+                        # 2. Fuzzy/Normalized match
+                        for toc_title, code in toc_map.items():
+                            if self._titles_match(doc_title, toc_title):
+                                match_code = code
+                                break
+                    
+                    if match_code:
+                        # print(f"DEBUG: Backfilling rule_code for '{doc_title}' -> {match_code}")
+                        doc["metadata"]["rule_code"] = match_code
+
         return final_docs
+
+    def _parse_toc_rule_codes(self, preamble: str) -> Dict[str, str]:
+        """
+        Parses the preamble of the Table of Contents to extract Title -> RuleCode mapping.
+        Example line: "직제규정 3-1-1"
+        """
+        mapping = {}
+        if not preamble: return mapping
+        
+        lines = preamble.split('\n')
+        for line in lines:
+            line = line.strip()
+            if not line: continue
+            
+            # Regex: Title followed by Rule Code (d-d-d)
+            # e.g. "교원인사규정 3-1-5"
+            # Some titles have spaces. Rule code is at the end.
+            match = re.match(r'^(.*)\s+(\d+-\d+-\d+)$', line)
+            if match:
+                title = match.group(1).strip()
+                code = match.group(2).strip()
+                mapping[title] = code
+        
+        return mapping
 
     def _create_node(self, level: str, number: str, title: Optional[str], text: Optional[str], children: List[Dict] = None) -> Dict[str, Any]:
         return {
@@ -331,6 +390,7 @@ class RegulationFormatter:
                     "page": page_number,
                     "prefix": prefix
                 })
+        
         return metadata_list
 
     def _titles_match(self, doc_title: str, header_prefix: str) -> bool:
@@ -434,7 +494,8 @@ class RegulationFormatter:
             if not cleaned: continue
             
             # Verify if it looks like a title
-            suffixes = ("규정", "세칙", "지침", "요령", "강령", "내규", "학칙", "헌장", "기준", "수칙", "준칙", "요강", "운영", "정관")
+            # Verify if it looks like a title
+            suffixes = ("규정", "규칙", "세칙", "지침", "요령", "강령", "내규", "학칙", "헌장", "기준", "수칙", "준칙", "요강", "운영", "정관")
             if cleaned.endswith(suffixes) or "규정" in cleaned:
                 best_title = cleaned
                 break
@@ -532,6 +593,27 @@ class RegulationFormatter:
             if subsection_match:
                 current_subsection = line
                 continue
+
+            # Special Titles: Table of Contents (차례) and Index (찾아보기)
+            
+            # 1. TOC
+            # Pattern: "차 례" or "차  례" alone on a line, or "목 차"
+            if re.match(r'^차\s*례\s*$', line) or re.match(r'^목\s*차\s*$', line):
+                 # Flush previous
+                 flush_regulation()
+                 regulation_title = "차례"
+                 # Add the title line to preamble to ensure doc is not empty
+                 current_data["preamble"].append(line)
+                 continue
+
+            # 2. Index
+            # Pattern: "찾아보기" alone or with brackets
+            if re.match(r'^찾아보기.*', line) and len(line) < 20: 
+                 # Flush previous
+                 flush_regulation()
+                 regulation_title = "찾아보기"
+                 current_data["preamble"].append(line)
+                 continue
 
             # Article 1 Split
             article_1_match = re.match(r'^(제\s*1\s*조)\s*(?:\(([^)]+)\))?\s*(.*)', line)

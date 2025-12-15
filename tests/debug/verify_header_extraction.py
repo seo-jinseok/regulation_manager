@@ -2,77 +2,52 @@
 import re
 from bs4 import BeautifulSoup
 
-# This is a snippet from tmp_html_debug/index.xhtml
-RAW_HTML_SNIPPET = """
-<div class="HeaderArea"><p class="Normal parashape-36"><span class="lang-ko charshape-29">제3편  행정  </span><span class="lang-other charshape-30">3—1—97</span><span class="lang-other charshape-29">～</span><span class="autonumbering autonumbering-page">2</span>&#13;</p><p class=""><span class="lang-other">󰠏󰠏󰠏󰠏󰠏󰠏󰠏󰠏󰠏󰠏󰠏󰠏󰠏󰠏󰠏󰠏󰠏󰠏󰠏󰠏󰠏󰠏󰠏󰠏󰠏󰠏󰠏󰠏󰠏󰠏󰠏󰠏󰠏󰠏</span>&#13;</p></div>
-<div class="HeaderArea"><p class="Normal parashape-38"><span class="lang-ko charshape-29">교원강의평가운영규정  </span><span class="lang-other charshape-30">3—1—97</span><span class="lang-other charshape-29">～</span><span class="autonumbering autonumbering-page">1</span>&#13;</p><p class=""><span class="lang-other">󰠏󰠏󰠏󰠏󰠏󰠏󰠏󰠏󰠏󰠏󰠏󰠏󰠏󰠏󰠏󰠏󰠏󰠏󰠏󰠏󰠏󰠏󰠏󰠏󰠏󰠏󰠏󰠏󰠏󰠏󰠏󰠏󰠏󰠏</span>&#13;</p></div>
-<div class="HeaderArea"><p class="Normal parashape-38"><span class="lang-en charshape-29">LINC+</span><span class="lang-ko charshape-29">사업단운영규정  </span><span class="lang-other charshape-30">3—1—98</span><span class="lang-other charshape-29">～</span><span class="autonumbering autonumbering-page">1</span>&#13;</p></div>
-"""
-
-def extract_header_metadata(html_content):
-    """
-    Extracts header metadata including rule codes (e.g., 3-1-97) and page numbers.
-    Returns a dictionary of found metadata.
-    """
-    metadata = {
-        "rule_codes": set(),
-        "headers": []
-    }
+def test_extraction():
+    # Strings from the user's raw file
+    # Note: using the exact unicode chars seen in previous file view
+    # '—' (U+2014) and '～' (U+FF5E)
+    raw_texts = [
+        "제2편 학칙 2—1—1～2",
+        "동의대학교학칙 2—1—1～5",
+        "학교법인동의학원정관 1—0—1",
+        "차 례 0—0—0 ~ 1",
+        "찾아보기 0—0—0 ~ 5"
+    ]
     
-    if not html_content:
-        return metadata
-
+    html_content = "<html><body>"
+    for text in raw_texts:
+        html_content += f'<div class="HeaderArea">{text}</div>'
+    html_content += "</body></html>"
+    
+    print("Testing extraction with raw strings...")
+    
     soup = BeautifulSoup(html_content, 'html.parser')
     header_areas = soup.find_all('div', class_='HeaderArea')
-    
-    print(f"Found {len(header_areas)} HeaderArea entries")
-    
+
     for div in header_areas:
         original_text = div.get_text(strip=True)
-        # Normalize various dash/tilde characters
+        print(f"Original: '{original_text}'")
+        
+        # Normalize dashes and tildes
         normalized_text = re.sub(r'[\u2010-\u2015\u2212\uFF0D]', '-', original_text)
         normalized_text = re.sub(r'[~\uFF5E\u301C]', '~', normalized_text)
-        
-        # Regex to find rule code like 3-1-97 (~ page part optional)
-        # matches: 3-1-97, 3-1-97~1, etc.
+        print(f"Normalized: '{normalized_text}'")
+
+        # Regex for Rule Code (e.g. 3-1-97) and optional Page Number (~1)
         match = re.search(r'(\d+-\d+-\d+)(~\d+)?', normalized_text)
         if match:
             rule_code = match.group(1)
-            page_part = match.group(2) # e.g. "~1"
-            
+            page_part = match.group(2)
             page_number = page_part.replace('~', '') if page_part else None
             
-            metadata["rule_codes"].add(rule_code)
-            
-            # Extract prefix (Regulation Title or Section Name)
+            # Extract prefix
             prefix = normalized_text.split(rule_code)[0].strip()
-            # Clean up trailing tildes or special chars
             prefix = re.sub(r'[~\u301c\u2053]+$', '', prefix).strip()
             
-            # Ignore common garbage line endings or separators
-            if "행정" in prefix and "제" in prefix and "편" in prefix:
-                 # Likely "제3편 행정" - this is section info, not title
-                 section_name = prefix
-                 title_candidate = None
-            else:
-                 section_name = None
-                 title_candidate = prefix
-            
-            metadata["headers"].append({
-                "rule_code": rule_code,
-                "page": page_number,
-                "prefix": prefix,
-                "is_likely_title": title_candidate is not None
-            })
-
-    return metadata
-
-def test():
-    results = extract_header_metadata(RAW_HTML_SNIPPET)
-    print("\nExtraction Results:")
-    print(f"Unique Rule Codes: {results['rule_codes']}")
-    for h in results['headers']:
-        print(f" - Code: {h['rule_code']}, Prefix: '{h['prefix']}'")
+            print(f"MATCH: RuleCode='{rule_code}', Page='{page_number}', Prefix='{prefix}'")
+        else:
+            print("NO MATCH")
+        print("-" * 20)
 
 if __name__ == "__main__":
-    test()
+    test_extraction()
