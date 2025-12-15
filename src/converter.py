@@ -40,7 +40,8 @@ class HwpToMarkdownReader(BaseReader):
                 # Try using the 'hwp5html' executable directly, which is more reliable in uv/venv.
                 # If that fails, fallback to python module? No, just stick to executable if in venv.
                 cmd = ["hwp5html", "--output", tmp_dir, str(file)]
-                print(f"DEBUG: Executing command: {cmd}")
+                if verbose:
+                    print(f"DEBUG: Executing command: {cmd}")
                 
                 # Stream output for user feedback (Suppressed for clean CLI)
                 # print(f"    [hwp5html] Starting conversion for {file.name}...")

@@ -29,33 +29,42 @@ class Preprocessor:
     def _remove_artifacts(self, text: str) -> str:
         """Remove headers, footers, page numbers, and hwp artifacts using Regex."""
         
-        # 1. Remove XML declaration (xml version=...)
+        # 5. Remove XML declaration (xml version=...)
         text = re.sub(r'xml version=[^\n]+\n', '', text, flags=re.IGNORECASE)
         
-        # 2. Remove long separators (underscores, dashes, special chars)
-        # Matches lines that are mostly special characters (e.g. ----------------)
+        # 6. Remove long separators (underscores, dashes, special chars)
         text = re.sub(r'^[_\W\s]{5,}$', '', text, flags=re.MULTILINE)
 
-        # 3. Remove "동의대학교 규정집" repetitive header
+        # 7. Remove "동의대학교 규정집" repetitive header
         text = re.sub(r'^동의대학교\s*규정집.*$', '', text, flags=re.MULTILINE)
         
-        # 4. Remove page numbers/locations and TOC lines
-        # Format: "- 3 -"
+        # 8. Remove page numbers/locations and TOC lines
         text = re.sub(r'^\s*-\s*\d+\s*-\s*$', '', text, flags=re.MULTILINE)
-        # Format: "2-1-1~2" (Chapter-Section-Page) or "3-1-37~2"
-        # Matches lines ending with these patterns, often TOC entries
         text = re.sub(r'.*\d+[-—]\d+[-—]\d+.*$', '', text, flags=re.MULTILINE)
         
-        # 5. Remove specific HWP separator characters (Private Use Area)
-        # The character detected is likely in the PUA range. 
-        # We'll remove non-standard whitespace/separator glyphs.
-        text = re.sub(r'[󰠏]+', '', text)
+        # 9. Handle Private Use Area (PUA) characters
+        text = self.clean_pua(text)
 
-        # 6. Collapse multiple empty lines
-        # Reduce 3+ newlines to 2 (paragraph break).
+        # 10. Collapse multiple empty lines
         text = re.sub(r'\n{3,}', '\n\n', text)
         
         return text.strip()
+
+    def clean_pua(self, text: str) -> str:
+        """Replace or remove Private Use Area characters."""
+        # Replace known PUA characters with standard Unicode equivalents
+        text = text.replace('\uf85e', '·')   #  -> Middle Dot
+        text = text.replace('\uf09e', '·')   #  -> Middle Dot
+        text = text.replace('\uf0fc', '✓')   #  -> Check Mark
+        
+        # Remove remaining BMP Private Use Area characters (E000-F8FF)
+        text = re.sub(r'[\ue000-\uf8ff]+', '', text)
+        
+        # Remove Supplementary Private Use Area (Plane 15/16) if present
+        text = re.sub(r'[\U000F0000-\U000FFFFD]+', '', text)
+        text = re.sub(r'[\U00100000-\U0010FFFD]+', '', text)
+        
+        return text
 
     def _join_broken_lines_regex(self, text: str) -> str:
         """

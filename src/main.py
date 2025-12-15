@@ -197,6 +197,13 @@ def main():
                         raw_md = docs[0].text
                         with open(raw_md_path, "w", encoding="utf-8") as f:
                             f.write(raw_md)
+                        
+                        # Save HTML for debugging/reference
+                        html_content = docs[0].metadata.get("html_content")
+                        if html_content:
+                            html_path = output_dir / f"{file.stem}.html"
+                            with open(html_path, "w", encoding="utf-8") as f:
+                                f.write(html_content)
                              
                         # Early Cache Save: To prevent re-conversion if user cancels here
                         cache_manager.update_file_state(str(file), hwp_hash=current_hwp_hash)
@@ -229,6 +236,10 @@ def main():
                     
                     # Extract HTML content if available (for Attached Files high-fidelity rendering)
                     html_content = docs[0].metadata.get("html_content")
+                    if html_content:
+                        # Clean PUA characters from HTML content too
+                        html_content = preprocessor.clean_pua(html_content)
+                        
                     regulations_list = formatter.parse(clean_md, html_content=html_content)
                     
                     # Refinement (Decommissioned - Formatter handles hierarchy)
@@ -250,9 +261,15 @@ def main():
                             doc['metadata']['scan_date'] = scan_date
                             doc['metadata']['file_name'] = file.name
 
+                    # Extract TOC and Indices from Raw MD (before cleaning)
+                    from .metadata_extractor import MetadataExtractor
+                    metadata_extractor = MetadataExtractor()
+                    indices_data = metadata_extractor.extract(raw_md)
+
                     final_json = {
                         "file_name": file.name,
                         "scan_date": scan_date,
+                        "indices": indices_data,
                         "docs": refined_list
                     }
 
