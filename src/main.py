@@ -91,7 +91,8 @@ def main():
     # Rich Check
     try:
         from rich.console import Console
-        from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn, TimeElapsedColumn, ProgressColumn
+        from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeElapsedColumn
+        from rich.panel import Panel, TimeElapsedColumn, ProgressColumn
         from rich.text import Text
         from rich.table import Table
     except ImportError:
@@ -236,14 +237,23 @@ def main():
                     progress.update(total_task, completed=current_file_base_step + 2)
 
                     # 3. Preprocessing (Step 3)
-                    progress.console.print(f"  [blue]• AI 전처리 실행 중...[/blue]")
-                    clean_md = preprocessor.clean(raw_md)
+                    if getattr(args, 'verbose', False):
+                         progress.console.print(Panel("[bold]Step 3: AI Preprocessing & Cleaning[/bold]", style="blue", expand=False))
+                         # Pass the callback to show detailed steps
+                         clean_md = preprocessor.clean(raw_md, verbose_callback=hwp_status_callback)
+                    else:
+                         progress.console.print(f"  [blue]• AI 전처리 실행 중...[/blue]")
+                         clean_md = preprocessor.clean(raw_md)
+                         
                     with open(output_dir / f"{file.stem}_clean.md", "w", encoding="utf-8") as f:
                         f.write(clean_md)
                     progress.update(total_task, completed=current_file_base_step + 3)
                     
-                    # 4. Formatting (Step 4)
-                    progress.console.print(f"  [magenta]• JSON 구조화 중...[/magenta]")
+                    # 4. JSON Formatting (Step 4)
+                    if getattr(args, 'verbose', False):
+                        progress.console.print(Panel("[bold]Step 4: Structure Parsing & JSON Extraction[/bold]", style="blue", expand=False))
+                    else:
+                        progress.console.print(f"  [blue]• JSON 구조화 및 추출 중...[/blue]")
                     
                     # Extract HTML content if available (for Attached Files high-fidelity rendering)
                     html_content = docs[0].metadata.get("html_content")
@@ -251,11 +261,14 @@ def main():
                         # Clean PUA characters from HTML content too
                         html_content = preprocessor.clean_pua(html_content)
                         
-                    regulations_list = formatter.parse(clean_md, html_content=html_content)
+                    if getattr(args, 'verbose', False):
+                        final_docs = formatter.parse(clean_md, html_content=html_content, verbose_callback=hwp_status_callback)
+                    else:
+                        final_docs = formatter.parse(clean_md, html_content=html_content)
                     
                     # Refinement (Decommissioned - Formatter handles hierarchy)
                     # refined_list = [refine_doc(doc, i) for i, doc in enumerate(regulations_list)]
-                    refined_list = regulations_list
+                    refined_list = final_docs
                     progress.update(total_task, completed=current_file_base_step + 4)
                     
                     # 5. Save & Metadata (Step 5)

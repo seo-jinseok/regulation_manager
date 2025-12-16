@@ -9,8 +9,10 @@ class RegulationFormatter:
     Regulation -> Chapter -> Article -> Paragraph -> Item
     """
 
-    def parse(self, text: str, html_content: Optional[str] = None) -> List[Dict[str, Any]]:
+    def parse(self, text: str, html_content: Optional[str] = None, verbose_callback=None) -> List[Dict[str, Any]]:
         # 1. First Pass: Flat Parsing (Existing Logic)
+        if verbose_callback:
+            verbose_callback("[dim]• Parsing document structure (Claims, Articles)...[/dim]")
         flat_doc_data = self._parse_flat(text)
         
         final_docs = []
@@ -32,12 +34,14 @@ class RegulationFormatter:
             # Extract header metadata if HTML is available
             if html_content:
                 header_entries = self._extract_header_metadata(html_content)
-                print(f"DEBUG: Found {len(header_entries)} headers. First: {header_entries[0] if header_entries else 'None'}")
+                if verbose_callback and header_entries:
+                    verbose_callback(f"[dim]  - Found {len(header_entries)} header metadata entries[/dim]")
+                # print(f"DEBUG: Found {len(header_entries)} headers. First: {header_entries[0] if header_entries else 'None'}")
                 
                 # Filter headers matching this doc's title
                 relevant = [h for h in header_entries if self._titles_match(title, h['prefix'])]
                 
-                print(f"DEBUG: Matching '{title}' against headers -> Found {len(relevant)} matches.")
+                # print(f"DEBUG: Matching '{title}' against headers -> Found {len(relevant)} matches.")
 
                 if relevant:
                     # Assume rule code is consistent across matched headers
@@ -71,6 +75,12 @@ class RegulationFormatter:
                 "attached_files": attached_files
             }
             final_docs.append(final_doc)
+            
+            if verbose_callback:
+                art_count = len(doc_data.get("articles", []))
+                add_count = len(addenda)
+                att_count = len(attached_files)
+                verbose_callback(f"[dim]  - Parsed: {art_count} Articles, {add_count} Addenda, {att_count} Attached Files[/dim]")
             
         # 3. Second Pass: Backfill Rule Codes from TOC
         # Scan all documents for TOC-like entries to build a global map

@@ -14,19 +14,28 @@ class Preprocessor:
         self.llm_client = llm_client
         self.cache_manager = cache_manager
 
-    def clean(self, text: str) -> str:
+    def clean(self, text: str, verbose_callback=None) -> str:
         """
         Main cleaning pipeline.
         """
-        text = self._remove_artifacts(text)
+        if verbose_callback:
+            verbose_callback("[dim]• Removing HWP artifacts (headers, footers, PUA)...[/dim]")
+            
+        text = self._remove_artifacts(text, verbose_callback)
+        
+        if verbose_callback:
+            verbose_callback("[dim]• Joining broken lines (Regex)...[/dim]")
+            
         text = self._join_broken_lines_regex(text)
         
         if self.llm_client:
+            if verbose_callback:
+                verbose_callback("[dim]• Processing paragraphs with LLM...[/dim]")
             text = self._join_paragraphs_llm(text)
             
         return text
 
-    def _remove_artifacts(self, text: str) -> str:
+    def _remove_artifacts(self, text: str, verbose_callback=None) -> str:
         """Remove headers, footers, page numbers, and hwp artifacts using Regex."""
         
         # 5. Remove XML declaration (xml version=...)
@@ -43,14 +52,16 @@ class Preprocessor:
         text = re.sub(r'.*\d+[-—]\d+[-—]\d+.*$', '', text, flags=re.MULTILINE)
         
         # 9. Handle Private Use Area (PUA) characters
-        text = self.clean_pua(text)
+        text, removed_count = self.clean_pua(text)
+        if verbose_callback and removed_count > 0:
+            verbose_callback(f"[dim]  - Removed {removed_count} PUA/hidden sequences[/dim]")
 
         # 10. Collapse multiple empty lines
         text = re.sub(r'\n{3,}', '\n\n', text)
         
         return text.strip()
 
-    def clean_pua(self, text: str) -> str:
+    def clean_pua(self, text: str) -> tuple[str, int]:
         """Replace or remove Private Use Area characters."""
         # Replace known PUA characters with standard Unicode equivalents
         text = text.replace('\uf85e', '·')   #  -> Middle Dot
@@ -58,13 +69,13 @@ class Preprocessor:
         text = text.replace('\uf0fc', '✓')   #  -> Check Mark
         
         # Remove remaining BMP Private Use Area characters (E000-F8FF)
-        text = re.sub(r'[\ue000-\uf8ff]+', '', text)
+        text, n1 = re.subn(r'[\ue000-\uf8ff]+', '', text)
         
         # Remove Supplementary Private Use Area (Plane 15/16) if present
-        text = re.sub(r'[\U000F0000-\U000FFFFD]+', '', text)
-        text = re.sub(r'[\U00100000-\U0010FFFD]+', '', text)
+        text, n2 = re.subn(r'[\U000F0000-\U000FFFFD]+', '', text)
+        text, n3 = re.subn(r'[\U00100000-\U0010FFFD]+', '', text)
         
-        return text
+        return text, n1 + n2 + n3
 
     def _join_broken_lines_regex(self, text: str) -> str:
         """
