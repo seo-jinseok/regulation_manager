@@ -140,6 +140,36 @@ def main():
                 base_desc = f"[bold cyan]처리 중:[/bold cyan] {file.name}"
                 progress.update(total_task, description=base_desc)
                 current_file_base_step = file_idx * STEPS_PER_FILE
+
+                # Define callback helper (Moved for scope access)
+                def hwp_status_callback(msg):
+                    # Handle Rich Renderables (e.g. Panel)
+                    if not isinstance(msg, str):
+                        if getattr(args, 'verbose', False):
+                            progress.console.print(msg)
+                        return
+
+                    # Filter noisy logs
+                    ignored_keywords = [
+                        "pkg_resources", "UserWarning", "import", 
+                        "defined name/values", "UnderlineStyle", "Unknown"
+                    ]
+                    if any(k in msg for k in ignored_keywords):
+                        return
+                    
+                    # Clean up message for display
+                    clean_msg = msg.strip()
+                    if len(clean_msg) > 30:
+                        clean_msg = clean_msg[:27] + "..."
+                        
+                    # Append log message to description for live feedback
+                    if clean_msg:
+                        if getattr(args, 'verbose', False):
+                            # In verbose mode, print as scrolling log
+                            progress.console.print(f"    [dim]{clean_msg}[/dim]")
+                        else:
+                            # In standard mode, just update the description line
+                            progress.update(total_task, description=f"{base_desc} [dim]({clean_msg})[/dim]")
                 
                 try:
                     file_start_time = time.time()
@@ -168,34 +198,7 @@ def main():
                         progress.update(total_task, total=None, indeterminate=True)
                         
                         # Define callback helper
-                        def hwp_status_callback(msg):
-                            # Handle Rich Renderables (e.g. Panel)
-                            if not isinstance(msg, str):
-                                if getattr(args, 'verbose', False):
-                                    progress.console.print(msg)
-                                return
-
-                            # Filter noisy logs
-                            ignored_keywords = [
-                                "pkg_resources", "UserWarning", "import", 
-                                "defined name/values", "UnderlineStyle", "Unknown"
-                            ]
-                            if any(k in msg for k in ignored_keywords):
-                                return
-                            
-                            # Clean up message for display
-                            clean_msg = msg.strip()
-                            if len(clean_msg) > 30:
-                                clean_msg = clean_msg[:27] + "..."
-                                
-                            # Append log message to description for live feedback
-                            if clean_msg:
-                                if getattr(args, 'verbose', False):
-                                    # In verbose mode, print as scrolling log
-                                    progress.console.print(f"    [dim]{clean_msg}[/dim]")
-                                else:
-                                    # In standard mode, just update the description line
-                                    progress.update(total_task, description=f"{base_desc} [dim]({clean_msg})[/dim]")
+                        # (Moved to top of loop)
 
                         if reader is None:
                              progress.console.print(f"[bold red]❌ HWP 변환 모듈(llama_index) 로드 실패. 캐시가 없어 작업을 수행할 수 없습니다: {file.name}[/bold red]")
@@ -258,7 +261,17 @@ def main():
                         progress.console.print(f"  [blue]• JSON 구조화 및 추출 중...[/blue]")
                     
                     # Extract HTML content if available (for Attached Files high-fidelity rendering)
-                    html_content = docs[0].metadata.get("html_content")
+                    html_content = None
+                    if 'docs' in locals() and docs:
+                         html_content = docs[0].metadata.get("html_content")
+                    elif (output_dir / f"{file.stem}.html").exists():
+                        # Try to load from cached HTML if exists
+                        try:
+                            with open(output_dir / f"{file.stem}.html", "r", encoding="utf-8") as f:
+                                html_content = f.read()
+                        except Exception:
+                            pass
+
                     if html_content:
                         # Clean PUA characters from HTML content too
                         html_content = preprocessor.clean_pua(html_content)
