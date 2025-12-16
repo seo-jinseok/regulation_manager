@@ -133,11 +133,12 @@ class InteractiveWizard:
             
             # Format: "1. filename.hwp (✓)"
             title = f"{idx}. {f.name} ({status_icon})"
-            choices.append(Choice(title=title, value=f))
+            choice_obj = Choice(title=title, value=f)
+            choices.append(choice_obj)
             
             # Set default pointer to first unconverted file
             if default_choice is None and not is_converted:
-                default_choice = Choice(title=title, value=f)
+                default_choice = choice_obj
             
             idx += 1
 
