@@ -13,7 +13,7 @@ class RegulationFormatter:
     def parse(self, text: str, html_content: Optional[str] = None, verbose_callback=None) -> List[Dict[str, Any]]:
         # 1. First Pass: Flat Parsing (Existing Logic)
         if verbose_callback:
-            verbose_callback("[dim]• Parsing document structure (Claims, Articles)...[/dim]")
+            verbose_callback("[dim]• 문서 구조 분석 중 (조항, 본문)...[/dim]")
         flat_doc_data = self._parse_flat(text)
         
         # Extract header metadata globally if HTML is available
@@ -21,7 +21,7 @@ class RegulationFormatter:
         if html_content:
             header_entries = self._extract_header_metadata(html_content)
             if verbose_callback and header_entries:
-                verbose_callback(f"[dim]  - Found {len(header_entries)} header metadata entries (Global)[/dim]")
+                verbose_callback(f"[dim]  - 헤더 메타데이터 {len(header_entries)}개 발견[/dim]")
 
         final_docs = []
         for doc_data in flat_doc_data:
@@ -69,6 +69,14 @@ class RegulationFormatter:
                 "attached_files": attached_files
             }
             final_docs.append(final_doc)
+
+            if verbose_callback:
+                art_count = len(doc_data.get("articles", []))
+                add_count = len(addenda)
+                att_count = len(attached_files)
+                # Use the local 'title' variable which we extracted earlier
+                title_display = title if title else "제목 없음"
+                verbose_callback(f"[dim]  - 분석 완료: '{title_display}' ({art_count}개 조항, {add_count}개 부칙, {att_count}개 별표/서식)[/dim]")
             
         # 3. Second Pass: Backfill Rule Codes from TOC
         # Scan all documents for TOC-like entries to build a global map

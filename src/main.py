@@ -323,8 +323,7 @@ def main():
                     cache_manager.update_file_state(str(file), raw_md_hash=current_raw_hash)
                     cache_manager.save_all()
                     
-                    duration = time.time() - file_start_time
-                    progress.console.print(f"  [bold green]✓ 완료 ({duration:.2f}s)[/bold green]")
+                    progress.console.print(f"  [bold green]✓ 완료[/bold green]")
                     progress.update(total_task, completed=current_file_base_step + 5)
                     
                 except Exception as e:
@@ -336,8 +335,6 @@ def main():
 
             console.rule("[bold blue]모든 작업 완료[/bold blue]")
             
-            total_elapsed = time.time() - overall_start_time
-            progress.console.print(f"\n[bold green]✨ 전체 소요 시간: {total_elapsed:.2f}초 ({total_elapsed/60:.2f}분)[/bold green]")
             progress.update(total_task, description="[bold green]모든 작업이 완료되었습니다.[/bold green]")
 
     except KeyboardInterrupt:
