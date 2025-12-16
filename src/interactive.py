@@ -48,7 +48,8 @@ class InteractiveWizard:
             console.print(f"[bold red](!) 필수 폴더 없음:[/bold red] {target_dir}")
             console.print(f"    [yellow]'규정'[/yellow] 폴더를 생성하고 .hwp 파일을 넣어주세요.")
             
-            if Confirm.ask(f"    지금 '{target_dir.name}' 폴더를 생성하시겠습니까?"):
+            import questionary
+            if questionary.confirm(f"    지금 '{target_dir.name}' 폴더를 생성하시겠습니까?").ask():
                 target_dir.mkdir(exist_ok=True)
                 console.print(f"    [green]>> 생성 완료.[/green] 파일을 이동시킨 후 다시 실행해주세요.")
             sys.exit(0)
@@ -110,21 +111,68 @@ class InteractiveWizard:
             selection_map[idx] = f
             idx += 1
 
+        # Rich table is nice for info, but for selection we want questionary
+        # Let's show the table first as information
         print(table)
+        print("")
+
+        import questionary
+        from questionary import Choice
+
+        choices = []
+        choices.append(Choice(title="0. 전체 일괄 처리 (All)", value=self.root_dir)) # Return root path for all
+
+        idx = 1
+        default_choice = None
         
-        while True:
-            choice = IntPrompt.ask("\n파일 번호를 선택하세요", default=default_choice)
-            if choice == 0:
-                console.print("[blue]>> 전체 처리를 시작합니다.[/blue]")
-                return self.root_dir # Or base_dir? Logic in main expects input_path. If dir, it globs.
-            elif choice in selection_map:
-                selected = selection_map[choice]
+        for f in files:
+            rel_path = f.relative_to(base_dir)
+            json_path = default_output_dir / f"{f.stem}.json"
+            is_converted = json_path.exists()
+            status_icon = "✓" if is_converted else "-"
+            
+            # Format: "1. filename.hwp (✓)"
+            title = f"{idx}. {f.name} ({status_icon})"
+            choices.append(Choice(title=title, value=f))
+            
+            # Set default pointer to first unconverted file
+            if default_choice is None and not is_converted:
+                default_choice = Choice(title=title, value=f)
+            
+            idx += 1
+
+        selected = questionary.select(
+            "처리할 파일을 선택하세요 (화살표 키로 이동, 엔터로 선택):",
+            choices=choices,
+            default=default_choice,
+            style=questionary.Style([
+                ('qmark', 'fg:cyan bold'),
+                ('question', 'bold'),
+                ('answer', 'fg:green bold'),
+                ('pointer', 'fg:cyan bold'),
+                ('highlighted', 'fg:cyan bold'),
+                ('selected', 'fg:green'),
+                ('separator', 'fg:grey'),
+                ('instruction', 'fg:grey'),
+                ('text', ''),
+                ('disabled', 'fg:grey italic')
+            ])
+        ).ask()
+
+        if selected == self.root_dir:
+            console.print("[blue]>> 전체 처리를 시작합니다.[/blue]")
+            return self.root_dir
+        else:
+            if selected:
                 console.print(f"[blue]>> 선택됨:[/blue] {selected.name}")
                 return selected
             else:
-                console.print("[red]유효하지 않은 번호입니다.[/red]")
+                 # Cancelled (Ctrl+C)
+                 sys.exit(0)
 
     def _configure_options(self) -> Any:
+        import questionary
+        
         class Config:
             pass
         config = Config()
@@ -135,41 +183,40 @@ class InteractiveWizard:
         config.output_dir = "output"
         
         # LLM Settings
-        config.use_llm = Confirm.ask("LLM(AI)을 사용하여 텍스트 품질을 보정하시겠습니까?", default=False)
+        config.use_llm = questionary.confirm("LLM(AI)을 사용하여 텍스트 품질을 보정하시겠습니까?").ask()
         
         config.provider = "openai"
         config.model = None
         config.base_url = None
         
         # Debug Options
-        config.verbose = Confirm.ask("상세 로그를 보시겠습니까? (디버깅용)", default=False)
+        config.verbose = questionary.confirm("상세 로그를 보시겠습니까? (디버깅용)").ask()
         
         if config.use_llm:
             providers = ["openai", "gemini", "openrouter", "ollama", "local", "lmstudio"]
-            msg = "[bold]LLM 제공자[/bold]\n" + "\n".join([f"[{i+1}] {p}" for i, p in enumerate(providers)])
-            console.print("\n" + msg)
-            
-            while True:
-                p_choice = IntPrompt.ask("제공자 번호", default=1)
-                if 1 <= p_choice <= len(providers):
-                    config.provider = providers[p_choice-1]
-                    break
-                console.print("[red]잘못된 선택입니다.[/red]")
+            config.provider = questionary.select(
+                "LLM 제공자를 선택하세요:",
+                choices=providers,
+                default="openai"
+            ).ask()
             
             if config.provider in ["local", "ollama", "lmstudio"]:
                 default_url = "http://localhost:11434" if config.provider == "ollama" else "http://localhost:1234"
-                config.base_url = Prompt.ask("Base URL", default=default_url)
+                config.base_url = questionary.text("Base URL:", default=default_url).ask()
             
-            config.model = Prompt.ask("모델 이름 (선택사항)", default="")
+            config.model = questionary.text("모델 이름 (선택사항, 엔터로 건너뛰기):").ask()
             if not config.model:
                  config.model = None
 
         # Force Re-conversion
-        config.force = Confirm.ask("기존 캐시 무시 (강제 변환)?", default=False)
+        config.force = questionary.confirm("기존 캐시 무시 (강제 변환)?", default=False).ask()
         config.cache_dir = ".cache"
         
         return config
 
 def run_interactive() -> Any:
-    wizard = InteractiveWizard()
-    return wizard.run()
+    try:
+        wizard = InteractiveWizard()
+        return wizard.run()
+    except KeyboardInterrupt:
+        sys.exit(0)

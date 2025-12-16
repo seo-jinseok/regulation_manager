@@ -10,5 +10,6 @@ dependencies = [
     "markdownify>=1.2.2",
     "pyhwp>=0.1b15",
     "python-dotenv>=1.2.1",
+    "questionary>=2.1.1",
     "rich>=14.2.0",
 ]
