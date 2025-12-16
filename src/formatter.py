@@ -1,6 +1,5 @@
 import re
 import json
-import traceback
 from typing import List, Dict, Any, Optional
 from bs4 import BeautifulSoup
 import uuid
@@ -12,113 +11,100 @@ class RegulationFormatter:
     """
 
     def parse(self, text: str, html_content: Optional[str] = None, verbose_callback=None) -> List[Dict[str, Any]]:
-        try:
-            # 1. First Pass: Flat Parsing (Existing Logic)
-            if verbose_callback:
-                verbose_callback("[dim]• Parsing document structure (Claims, Articles)...[/dim]")
-            flat_doc_data = self._parse_flat(text)
+        # 1. First Pass: Flat Parsing (Existing Logic)
+        if verbose_callback:
+            verbose_callback("[dim]• Parsing document structure (Claims, Articles)...[/dim]")
+        flat_doc_data = self._parse_flat(text)
+        
+        # Extract header metadata globally if HTML is available
+        header_entries = []
+        if html_content:
+            header_entries = self._extract_header_metadata(html_content)
+            if verbose_callback and header_entries:
+                verbose_callback(f"[dim]  - Found {len(header_entries)} header metadata entries (Global)[/dim]")
+
+        final_docs = []
+        for doc_data in flat_doc_data:
+            # 2. Refinement & Hierarchy Building
             
-            final_docs = []
-            for doc_data in flat_doc_data:
-                # 2. Refinement & Hierarchy Building
-                
-                # Title Extraction
-                title, preamble = self._extract_clean_title(doc_data)
-                
-                # Appendices Parsing
-                addenda, attached_files = self._parse_appendices(doc_data.get("appendices", []), html_content=html_content)
-                
-                # Build Metadata
-                metadata = {
-                    "scan_date": "unknown", # To be populated by main/file stats if needed
-                    "file_name": "",       # To be populated
-                }
+            # Title Extraction
+            title, preamble = self._extract_clean_title(doc_data)
+            
+            # Appendices Parsing
+            addenda, attached_files = self._parse_appendices(doc_data.get("appendices", []), html_content=html_content)
+            
+            # Build Metadata
+            metadata = {
+                "scan_date": "unknown", # To be populated by main/file stats if needed
+                "file_name": "",       # To be populated
+            }
 
-                # Extract header metadata if HTML is available
-                if html_content:
-                    header_entries = self._extract_header_metadata(html_content)
-                    if verbose_callback and header_entries:
-                        verbose_callback(f"[dim]  - Found {len(header_entries)} header metadata entries[/dim]")
-                    # print(f"DEBUG: Found {len(header_entries)} headers. First: {header_entries[0] if header_entries else 'None'}")
+            # Map header metadata
+            if header_entries:
+                # Filter headers matching this doc's title
+                relevant = [h for h in header_entries if self._titles_match(title, h['prefix'])]
+                
+                if relevant:
+                    # Assume rule code is consistent across matched headers
+                    rule_code = relevant[0]["rule_code"]
+                    metadata["rule_code"] = rule_code
                     
-                    # Filter headers matching this doc's title
-                    relevant = [h for h in header_entries if self._titles_match(title, h['prefix'])]
-                    
-                    # print(f"DEBUG: Matching '{title}' against headers -> Found {len(relevant)} matches.")
-
-                    if relevant:
-                        # Assume rule code is consistent across matched headers
-                        rule_code = relevant[0]["rule_code"]
-                        metadata["rule_code"] = rule_code
-                        
-                        # Calculate page range using ALL headers with this rule code
-                        # (including section headers like "제3편 ...")
-                        same_code_headers = [h for h in header_entries if h["rule_code"] == rule_code]
-                        pages = [int(h["page"]) for h in same_code_headers if h["page"]]
-                        if pages:
-                            metadata["page_range"] = f"{min(pages)}~{max(pages)}"
-                
-                # Build Content Hierarchy (Chapter -> Article -> ...)
-                content_nodes = self._build_hierarchy(doc_data["articles"])
-                
-                # Add Appendices to content as specific nodes or separate fields?
-                # Schema "Special Cases" says: "Separate specific array"
-                # However, looking at the schema:
-                # { "content": [...], "metadata": { "amendments": ... } }
-                # But the user schema says "appendix array" in special cases.
-                # Let's keep them as root fields for now, or put them in 'appendices' lists.
-                
-                final_doc = {
-                    "part": doc_data.get("part"),
-                    "title": title,
-                    "metadata": metadata, # Placeholder
-                    "preamble": preamble, # Optional, maybe part of metadata or text?
-                    "content": content_nodes,
-                    "addenda": addenda,
-                    "attached_files": attached_files
-                }
-                final_docs.append(final_doc)
-                
-                if verbose_callback:
-                    art_count = len(doc_data.get("articles", []))
-                    add_count = len(addenda)
-                    att_count = len(attached_files)
-                    verbose_callback(f"[dim]  - Parsed: {art_count} Articles, {add_count} Addenda, {att_count} Attached Files[/dim]")
-                
-            # 3. Second Pass: Backfill Rule Codes from TOC
-            # Scan all documents for TOC-like entries to build a global map
-            # This handles cases where TOC is split into multiple docs due to "Part" headers
-            toc_map = {}
+                    # Calculate page range using ALL headers with this rule code
+                    # (including section headers like "제3편 ...")
+                    same_code_headers = [h for h in header_entries if h["rule_code"] == rule_code]
+                    pages = [int(h["page"]) for h in same_code_headers if h["page"]]
+                    if pages:
+                        metadata["page_range"] = f"{min(pages)}~{max(pages)}"
+            
+            # Build Content Hierarchy (Chapter -> Article -> ...)
+            content_nodes = self._build_hierarchy(doc_data["articles"])
+            
+            final_doc = {
+                "part": doc_data.get("part"),
+                "title": title,
+                "metadata": metadata, # Placeholder
+                "preamble": preamble, # Optional, maybe part of metadata or text?
+                "content": content_nodes,
+                "addenda": addenda,
+                "attached_files": attached_files
+            }
+            final_docs.append(final_doc)
+            
+            if verbose_callback:
+                art_count = len(doc_data.get("articles", []))
+                add_count = len(addenda)
+                att_count = len(attached_files)
+                verbose_callback(f"[dim]  - Parsed: {art_count} Articles, {add_count} Addenda, {att_count} Attached Files[/dim]")
+            
+        # 3. Second Pass: Backfill Rule Codes from TOC
+        # Scan all documents for TOC-like entries to build a global map
+        # This handles cases where TOC is split into multiple docs due to "Part" headers
+        toc_map = {}
+        for doc in final_docs:
+             # Only scan preamble (TOC entries are usually here)
+             toc_map.update(self._parse_toc_rule_codes(doc["preamble"]))
+             
+        if toc_map:
             for doc in final_docs:
-                 # Only scan preamble (TOC entries are usually here)
-                 toc_map.update(self._parse_toc_rule_codes(doc["preamble"]))
-                 
-            # print(f"DEBUG: TOC Map extracted: {len(toc_map)} entries.")
-            if toc_map:
-                for doc in final_docs:
-                    if not doc["metadata"].get("rule_code"):
-                        match_code = None
-                        doc_title = doc["title"]
-                        if not doc_title: continue
+                if not doc["metadata"].get("rule_code"):
+                    match_code = None
+                    doc_title = doc["title"]
+                    if not doc_title: continue
+                    
+                    # 1. Direct match
+                    if doc_title in toc_map:
+                        match_code = toc_map[doc_title]
+                    else:
+                        # 2. Fuzzy/Normalized match
+                        for toc_title, code in toc_map.items():
+                            if self._titles_match(doc_title, toc_title):
+                                match_code = code
+                                break
+                    
+                    if match_code:
+                        doc["metadata"]["rule_code"] = match_code
                         
-                        # 1. Direct match
-                        if doc_title in toc_map:
-                            match_code = toc_map[doc_title]
-                        else:
-                            # 2. Fuzzy/Normalized match
-                            for toc_title, code in toc_map.items():
-                                if self._titles_match(doc_title, toc_title):
-                                    match_code = code
-                                    break
-                        
-                        if match_code:
-                            # print(f"DEBUG: Backfilling rule_code for '{doc_title}' -> {match_code}")
-                            doc["metadata"]["rule_code"] = match_code
-                            
-            return final_docs
-        except Exception:
-            traceback.print_exc()
-            raise
+        return final_docs
 
     def _parse_toc_rule_codes(self, preamble: str) -> Dict[str, str]:
         """

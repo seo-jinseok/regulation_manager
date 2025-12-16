@@ -7,10 +7,17 @@ class MetadataExtractor:
     """
 
     def extract(self, text: str) -> Dict[str, Any]:
+        toc_list = self._extract_toc(text)
+        
+        # Build Source of Truth map from TOC
+        # Normalize titles by removing spaces for better matching?
+        # For now, exact match or simple strip.
+        toc_map = {item["title"]: item["rule_code"] for item in toc_list}
+        
         return {
-            "toc": self._extract_toc(text),
-            "index_by_alpha": self._extract_index_alpha(text),
-            "index_by_dept": self._extract_index_dept(text)
+            "toc": toc_list,
+            "index_by_alpha": self._extract_index_alpha(text, toc_map),
+            "index_by_dept": self._extract_index_dept(text, toc_map)
         }
 
     def _extract_toc(self, text: str) -> List[Dict[str, str]]:
@@ -50,7 +57,7 @@ class MetadataExtractor:
             if m:
                 toc.append({
                     "title": m.group("title"),
-                    "code": m.group("code")
+                    "rule_code": m.group("code")
                 })
             
             # If we see "제1편" etc alone, it's a section header in TOC
@@ -59,7 +66,7 @@ class MetadataExtractor:
             
         return toc
 
-    def _extract_index_alpha(self, text: str) -> List[Dict[str, str]]:
+    def _extract_index_alpha(self, text: str, toc_map: Dict[str, str] = None) -> List[Dict[str, str]]:
         # Look for "찾아보기" -> "<가나다순>"
         pattern = r'찾아보기\s*\n\s*<가나다순>(.*?)(?:찾아보기|This is the end|$)'
         match = re.search(pattern, text, re.DOTALL)
@@ -67,9 +74,9 @@ class MetadataExtractor:
             return []
             
         content = match.group(1)
-        return self._parse_entries(content)
+        return self._parse_entries(content, toc_map)
 
-    def _extract_index_dept(self, text: str) -> Dict[str, List[Dict[str, str]]]:
+    def _extract_index_dept(self, text: str, toc_map: Dict[str, str] = None) -> Dict[str, List[Dict[str, str]]]:
         # Look for "찾아보기" -> "<소관부서별>"
         pattern = r'찾아보기\s*\n\s*<소관부서별>(.*?)(?:$)' 
         # Note: Dept index is usually at the end.
@@ -93,9 +100,13 @@ class MetadataExtractor:
                 
             m = entry_pattern.match(line)
             if m:
+                title = m.group("title")
+                raw_code = m.group("code")
+                code = toc_map.get(title, raw_code) if toc_map else raw_code
+                
                 dept_index[current_dept].append({
-                    "title": m.group("title"),
-                    "code": m.group("code")
+                    "title": title,
+                    "rule_code": code
                 })
             else:
                 # Likely a department name
@@ -110,7 +121,7 @@ class MetadataExtractor:
             
         return dept_index
 
-    def _parse_entries(self, text: str) -> List[Dict[str, str]]:
+    def _parse_entries(self, text: str, toc_map: Dict[str, str] = None) -> List[Dict[str, str]]:
         entries = []
         lines = text.splitlines()
         # Relaxed pattern for Rule Code which might contain special dashes or range
@@ -121,8 +132,13 @@ class MetadataExtractor:
                 continue
             m = entry_pattern.match(line)
             if m:
+                title = m.group("title")
+                raw_code = m.group("code")
+                # Auto-correction
+                code = toc_map.get(title, raw_code) if toc_map else raw_code
+
                 entries.append({
-                    "title": m.group("title"),
-                    "code": m.group("code")
+                    "title": title,
+                    "rule_code": code
                 })
         return entries

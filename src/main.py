@@ -159,8 +159,8 @@ def main():
                     
                     # Clean up message for display
                     clean_msg = msg.strip()
-                    if len(clean_msg) > 30:
-                        clean_msg = clean_msg[:27] + "..."
+                    if len(clean_msg) > 60:
+                        clean_msg = clean_msg[:57] + "..."
                         
                     # Append log message to description for live feedback
                     if clean_msg:
@@ -274,7 +274,7 @@ def main():
 
                     if html_content:
                         # Clean PUA characters from HTML content too
-                        html_content = preprocessor.clean_pua(html_content)
+                        html_content, _ = preprocessor.clean_pua(html_content)
                         
                     if getattr(args, 'verbose', False):
                         final_docs = formatter.parse(clean_md, html_content=html_content, verbose_callback=hwp_status_callback)

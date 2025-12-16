@@ -184,14 +184,14 @@ class InteractiveWizard:
         config.output_dir = "output"
         
         # LLM Settings
-        config.use_llm = questionary.confirm("LLM(AI)을 사용하여 텍스트 품질을 보정하시겠습니까?").ask()
+        config.use_llm = questionary.confirm("LLM(AI)을 사용하여 텍스트 품질을 보정하시겠습니까?", default=False).ask()
         
         config.provider = "openai"
         config.model = None
         config.base_url = None
         
         # Debug Options
-        config.verbose = questionary.confirm("상세 로그를 보시겠습니까? (디버깅용)").ask()
+        config.verbose = questionary.confirm("상세 로그를 보시겠습니까? (디버깅용)", default=False).ask()
         
         if config.use_llm:
             providers = ["openai", "gemini", "openrouter", "ollama", "local", "lmstudio"]
