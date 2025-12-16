@@ -40,8 +40,20 @@ class HwpToMarkdownReader(BaseReader):
                 # Try using the 'hwp5html' executable directly, which is more reliable in uv/venv.
                 # If that fails, fallback to python module? No, just stick to executable if in venv.
                 cmd = ["hwp5html", "--output", tmp_dir, str(file)]
+                
                 if verbose:
-                    print(f"DEBUG: Executing command: {cmd}")
+                    try:
+                        from rich import print
+                        from rich.panel import Panel
+                        
+                        debug_info = (
+                            f"[bold]Command:[/bold] {' '.join(cmd)}\n"
+                            f"[bold]Input:[/bold] {file}\n"
+                            f"[bold]Temp Output:[/bold] {tmp_dir}"
+                        )
+                        print(Panel(debug_info, title="[yellow]HWP Conversion Debug Info[/yellow]", border_style="yellow"))
+                    except ImportError:
+                        print(f"DEBUG: Executing command: {cmd}")
                 
                 # Stream output for user feedback (Suppressed for clean CLI)
                 # print(f"    [hwp5html] Starting conversion for {file.name}...")

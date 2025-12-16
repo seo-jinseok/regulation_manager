@@ -181,7 +181,12 @@ def main():
                                 
                             # Append log message to description for live feedback
                             if clean_msg:
-                                progress.update(total_task, description=f"{base_desc} [dim]({clean_msg})[/dim]")
+                                if getattr(args, 'verbose', False):
+                                    # In verbose mode, print as scrolling log
+                                    progress.console.print(f"    [dim]{clean_msg}[/dim]")
+                                else:
+                                    # In standard mode, just update the description line
+                                    progress.update(total_task, description=f"{base_desc} [dim]({clean_msg})[/dim]")
 
                         if reader is None:
                              progress.console.print(f"[bold red]❌ HWP 변환 모듈(llama_index) 로드 실패. 캐시가 없어 작업을 수행할 수 없습니다: {file.name}[/bold red]")
