@@ -47,11 +47,11 @@ class HwpToMarkdownReader(BaseReader):
                         from rich.panel import Panel
                         
                         debug_info = (
-                            f"[bold]Command:[/bold] {' '.join(cmd)}\n"
-                            f"[bold]Input:[/bold] {file}\n"
-                            f"[bold]Temp Output:[/bold] {tmp_dir}"
+                            f"[bold]명령어:[/bold] {' '.join(cmd)}\n"
+                            f"[bold]입력:[/bold] {file}\n"
+                            f"[bold]임시 출력:[/bold] {tmp_dir}"
                         )
-                        panel = Panel(debug_info, title="[yellow]HWP Conversion Debug Info[/yellow]", border_style="yellow")
+                        panel = Panel(debug_info, title="[yellow]HWP 변환 디버그 정보[/yellow]", border_style="yellow")
                         
                         if status_callback:
                             status_callback(panel)
@@ -79,13 +79,15 @@ class HwpToMarkdownReader(BaseReader):
                 stop_monitor = threading.Event()
                 
                 def monitor_output_size():
+                    last_reported_size = -1
                     while not stop_monitor.is_set():
                         try:
                             # Calculate total size of tmp_dir
                             total_size = sum(f.stat().st_size for f in Path(tmp_dir).rglob('*') if f.is_file())
                             size_mb = total_size / (1024 * 1024)
-                            if size_mb > 0 and status_callback:
+                            if size_mb > 0 and size_mb != last_reported_size and status_callback:
                                 status_callback(f"[dim]변환 데이터 생성 중... ({size_mb:.1f}MB)[/dim]")
+                                last_reported_size = size_mb
                         except Exception:
                             pass
                         time.sleep(2)

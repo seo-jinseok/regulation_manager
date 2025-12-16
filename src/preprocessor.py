@@ -19,18 +19,18 @@ class Preprocessor:
         Main cleaning pipeline.
         """
         if verbose_callback:
-            verbose_callback("[dim]• Removing HWP artifacts (headers, footers, PUA)...[/dim]")
+            verbose_callback("[dim]• HWP 불필요 요소 제거 중 (헤더, 푸터, PUA)...[/dim]")
             
         text = self._remove_artifacts(text, verbose_callback)
         
         if verbose_callback:
-            verbose_callback("[dim]• Joining broken lines (Regex)...[/dim]")
+            verbose_callback("[dim]• 끊어진 줄 연결 중 (Regex)...[/dim]")
             
         text = self._join_broken_lines_regex(text)
         
         if self.llm_client:
             if verbose_callback:
-                verbose_callback("[dim]• Processing paragraphs with LLM...[/dim]")
+                verbose_callback("[dim]• LLM으로 문단 처리 중...[/dim]")
             text = self._join_paragraphs_llm(text)
             
         return text
@@ -54,7 +54,7 @@ class Preprocessor:
         # 9. Handle Private Use Area (PUA) characters
         text, removed_count = self.clean_pua(text)
         if verbose_callback and removed_count > 0:
-            verbose_callback(f"[dim]  - Removed {removed_count} PUA/hidden sequences[/dim]")
+            verbose_callback(f"[dim]  - PUA/숨겨진 문자 {removed_count}개 제거됨[/dim]")
 
         # 10. Collapse multiple empty lines
         text = re.sub(r'\n{3,}', '\n\n', text)
@@ -150,7 +150,7 @@ class Preprocessor:
         units = self._split_into_logical_units(text)
         
         processed_units = []
-        print(f"    [LLM] Split into {len(units)} logical units for processing...")
+        print(f"    [LLM] 처리할 논리 단위: {len(units)}개 분할됨...")
         
         for i, unit in enumerate(units):
             # Skip empty units
@@ -188,7 +188,7 @@ class Preprocessor:
 [텍스트 끝]
 """
             try:
-                print(f"    [LLM] Processing unit {i+1}/{len(units)}...", end="\r", flush=True)
+                print(f"    [LLM] 단위 처리 중 {i+1}/{len(units)}...", end="\r", flush=True)
                 response = self.llm_client.complete(prompt)
                 
                 # Simple cleanup
@@ -208,10 +208,10 @@ class Preprocessor:
                 processed_units.append(cleaned_response)
                 
             except Exception as e:
-                print(f"\n    [LLM] Warning: Unit {i+1} failed ({e}). Using raw text.")
+                print(f"\n    [LLM] 경고: 단위 {i+1} 처리 실패 ({e}). 원본 사용.")
                 processed_units.append(unit)
         
-        print(f"\n    [LLM] Processing complete.")
+        print(f"\n    [LLM] 처리 완료.")
         return "\n".join(processed_units)
 
     def _split_into_logical_units(self, text: str) -> List[str]:

@@ -1,4 +1,6 @@
 import os
+# Suppress Transformers/PyTorch warnings
+os.environ["TRANSFORMERS_NO_ADVISORY_WARNINGS"] = "true"
 import argparse
 import sys
 import json
@@ -122,6 +124,8 @@ def main():
 
         console.rule("[bold blue]처리 시작[/bold blue]")
         
+        overall_start_time = time.time()
+        
         with Progress(
             SpinnerColumn(),
             TimeElapsedColumn(),
@@ -159,8 +163,8 @@ def main():
                     
                     # Clean up message for display
                     clean_msg = msg.strip()
-                    if len(clean_msg) > 60:
-                        clean_msg = clean_msg[:57] + "..."
+                    if len(clean_msg) > 150:
+                        clean_msg = clean_msg[:147] + "..."
                         
                     # Append log message to description for live feedback
                     if clean_msg:
@@ -243,7 +247,7 @@ def main():
 
                     # 3. Preprocessing (Step 3)
                     if getattr(args, 'verbose', False):
-                         progress.console.print(Panel("[bold]Step 3: AI Preprocessing & Cleaning[/bold]", style="blue", expand=False))
+                         progress.console.print(Panel("[bold]3단계: AI 전처리 및 데이터 정제[/bold]", style="blue", expand=False))
                          # Pass the callback to show detailed steps
                          clean_md = preprocessor.clean(raw_md, verbose_callback=hwp_status_callback)
                     else:
@@ -256,7 +260,7 @@ def main():
                     
                     # 4. JSON Formatting (Step 4)
                     if getattr(args, 'verbose', False):
-                        progress.console.print(Panel("[bold]Step 4: Structure Parsing & JSON Extraction[/bold]", style="blue", expand=False))
+                        progress.console.print(Panel("[bold]4단계: 문서 구조 분석 및 JSON 추출[/bold]", style="blue", expand=False))
                     else:
                         progress.console.print(f"  [blue]• JSON 구조화 및 추출 중...[/blue]")
                     
@@ -331,8 +335,10 @@ def main():
                 file_idx += 1
 
             console.rule("[bold blue]모든 작업 완료[/bold blue]")
-
-            console.rule("[bold blue]모든 작업 완료[/bold blue]")
+            
+            total_elapsed = time.time() - overall_start_time
+            progress.console.print(f"\n[bold green]✨ 전체 소요 시간: {total_elapsed:.2f}초 ({total_elapsed/60:.2f}분)[/bold green]")
+            progress.update(total_task, description="[bold green]모든 작업이 완료되었습니다.[/bold green]")
 
     except KeyboardInterrupt:
         console.print("\n[bold red]⛔ 사용자에 의해 중단되었습니다.[/bold red]")

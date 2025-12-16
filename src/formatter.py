@@ -70,12 +70,6 @@ class RegulationFormatter:
             }
             final_docs.append(final_doc)
             
-            if verbose_callback:
-                art_count = len(doc_data.get("articles", []))
-                add_count = len(addenda)
-                att_count = len(attached_files)
-                verbose_callback(f"[dim]  - Parsed: {art_count} Articles, {add_count} Addenda, {att_count} Attached Files[/dim]")
-            
         # 3. Second Pass: Backfill Rule Codes from TOC
         # Scan all documents for TOC-like entries to build a global map
         # This handles cases where TOC is split into multiple docs due to "Part" headers

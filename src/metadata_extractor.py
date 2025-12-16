@@ -10,15 +10,27 @@ class MetadataExtractor:
         toc_list = self._extract_toc(text)
         
         # Build Source of Truth map from TOC
-        # Normalize titles by removing spaces for better matching?
-        # For now, exact match or simple strip.
-        toc_map = {item["title"]: item["rule_code"] for item in toc_list}
+        # Normalize titles by removing spaces for better matching
+        # Key: Normalized Title, Value: Clean Rule Code
+        toc_map = {self._normalize_title(item["title"]): item["rule_code"] for item in toc_list}
         
         return {
             "toc": toc_list,
             "index_by_alpha": self._extract_index_alpha(text, toc_map),
             "index_by_dept": self._extract_index_dept(text, toc_map)
         }
+
+    def _normalize_title(self, title: str) -> str:
+        """Strip spaces and special chars for fuzzy matching."""
+        return re.sub(r'\s+', '', title)
+
+    def _normalize_code(self, code: str) -> str:
+        """Standardize dashes and remove page ranges."""
+        # Replace Em Dash, En Dash, etc with Hyphen
+        code = re.sub(r'[—–]', '-', code)
+        # Remove trailing page range starting with ~ or ～
+        code = re.sub(r'[~～].*$', '', code)
+        return code.strip()
 
     def _extract_toc(self, text: str) -> List[Dict[str, str]]:
         # Find explicit TOC section if possible
@@ -28,17 +40,13 @@ class MetadataExtractor:
             return []
         
         start_idx = match.end()
-        # End TOC when we see "찾아보기" or the first actual regulation body like "제1편" used as a header *with content*?
-        # Actually in this file, TOC corresponds to the structure.
-        # Let's limit the scope. Usually TOC is at the start.
-        # We can scan lines after "차례" until we see something that doesn't look like a TOC entry.
-        
         lines = text[start_idx:].splitlines()
         toc = []
         
-        # Heuristic: TOC entries usually end with rule code "1-0-1" or "3-2-55"
-        # Regex: (Title) (Code)
-        entry_pattern = re.compile(r'^\s*(?P<title>.*?)\s+(?P<code>\d+[-—]\d+[-—]\d+(?:～\d+)?)\s*$')
+        # Regex: (Title) .... (Code)
+        # Capture code digits and dashes, ignore trailing page range like ~3
+        # Strict pattern for TOC to ensure high quality
+        entry_pattern = re.compile(r'^\s*(?P<title>.*?)\s+(?P<code>\d+[-—]\d+[-—]\d+)(?:[~～]\d+)?\s*$')
         
         for line in lines:
             line = line.strip()
@@ -49,20 +57,13 @@ class MetadataExtractor:
             if "찾아보기" in line:
                 break
                 
-            # Stop if we hit what looks like a preamble or main body text that isn't a TOC entry
-            # (This is tricky because TOC entries look like headers)
-            # But usually TOC is contiguous. 
-            
             m = entry_pattern.match(line)
             if m:
+                raw_code = m.group("code")
                 toc.append({
-                    "title": m.group("title"),
-                    "rule_code": m.group("code")
+                    "title": m.group("title").strip(),
+                    "rule_code": self._normalize_code(raw_code)
                 })
-            
-            # If we see "제1편" etc alone, it's a section header in TOC
-            # We could capture that too, but user asked for "indices" mostly.
-            # Let's stick to capturing regulation links for now.
             
         return toc
 
@@ -79,7 +80,6 @@ class MetadataExtractor:
     def _extract_index_dept(self, text: str, toc_map: Dict[str, str] = None) -> Dict[str, List[Dict[str, str]]]:
         # Look for "찾아보기" -> "<소관부서별>"
         pattern = r'찾아보기\s*\n\s*<소관부서별>(.*?)(?:$)' 
-        # Note: Dept index is usually at the end.
         match = re.search(pattern, text, re.DOTALL)
         if not match:
             return {}
@@ -91,7 +91,8 @@ class MetadataExtractor:
         current_dept = "Unknown"
         dept_index[current_dept] = []
         
-        entry_pattern = re.compile(r'^\s*(?P<title>.*?)\s+(?P<code>\d+[-—]\d+[-—]\d+.*)\s*$')
+        # Regex for index entries (might be messy)
+        entry_pattern = re.compile(r'^\s*(?P<title>.*?)\s+(?P<code>\d+[-—]\d+[-—]\d+)')
         
         for line in lines:
             line = line.strip()
@@ -100,22 +101,24 @@ class MetadataExtractor:
                 
             m = entry_pattern.match(line)
             if m:
-                title = m.group("title")
+                title = m.group("title").strip()
                 raw_code = m.group("code")
-                code = toc_map.get(title, raw_code) if toc_map else raw_code
+                
+                # Try to find clean code in TOC map using normalized title
+                lookup_key = self._normalize_title(title)
+                code = toc_map.get(lookup_key, self._normalize_code(raw_code)) if toc_map else self._normalize_code(raw_code)
                 
                 dept_index[current_dept].append({
                     "title": title,
                     "rule_code": code
                 })
             else:
-                # Likely a department name
-                # Avoid capturing headers like "제1편" if they appear (unlikely here)
+                # Likely a department name or header
+                # Titles don't start with digits usually
                 current_dept = line
                 if current_dept not in dept_index:
                     dept_index[current_dept] = []
         
-        # Cleanup
         if not dept_index["Unknown"]:
             del dept_index["Unknown"]
             
@@ -124,18 +127,20 @@ class MetadataExtractor:
     def _parse_entries(self, text: str, toc_map: Dict[str, str] = None) -> List[Dict[str, str]]:
         entries = []
         lines = text.splitlines()
-        # Relaxed pattern for Rule Code which might contain special dashes or range
-        entry_pattern = re.compile(r'^\s*(?P<title>.*?)\s+(?P<code>\d+[-—]\d+[-—]\d+.*)\s*$')
+        # Regex to capture just the code part, ignoring trailing ~stuff
+        entry_pattern = re.compile(r'^\s*(?P<title>.*?)\s+(?P<code>\d+[-—]\d+[-—]\d+)')
         
         for line in lines:
             if not line.strip(): 
                 continue
             m = entry_pattern.match(line)
             if m:
-                title = m.group("title")
+                title = m.group("title").strip()
                 raw_code = m.group("code")
-                # Auto-correction
-                code = toc_map.get(title, raw_code) if toc_map else raw_code
+                
+                # Auto-correction using normalized TOC map
+                lookup_key = self._normalize_title(title)
+                code = toc_map.get(lookup_key, self._normalize_code(raw_code)) if toc_map else self._normalize_code(raw_code)
 
                 entries.append({
                     "title": title,
