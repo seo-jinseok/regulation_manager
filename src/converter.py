@@ -51,7 +51,13 @@ class HwpToMarkdownReader(BaseReader):
                             f"[bold]Input:[/bold] {file}\n"
                             f"[bold]Temp Output:[/bold] {tmp_dir}"
                         )
-                        print(Panel(debug_info, title="[yellow]HWP Conversion Debug Info[/yellow]", border_style="yellow"))
+                        panel = Panel(debug_info, title="[yellow]HWP Conversion Debug Info[/yellow]", border_style="yellow")
+                        
+                        if status_callback:
+                            status_callback(panel)
+                        else:
+                            print(panel)
+                            
                     except ImportError:
                         print(f"DEBUG: Executing command: {cmd}")
                 

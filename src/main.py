@@ -166,6 +166,12 @@ def main():
                         
                         # Define callback helper
                         def hwp_status_callback(msg):
+                            # Handle Rich Renderables (e.g. Panel)
+                            if not isinstance(msg, str):
+                                if getattr(args, 'verbose', False):
+                                    progress.console.print(msg)
+                                return
+
                             # Filter noisy logs
                             ignored_keywords = [
                                 "pkg_resources", "UserWarning", "import", 
