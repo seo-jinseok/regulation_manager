@@ -2,6 +2,7 @@ import re
 import json
 from typing import List, Dict, Any, Optional
 from bs4 import BeautifulSoup
+import uuid
 
 class RegulationFormatter:
     """
@@ -138,14 +139,75 @@ class RegulationFormatter:
         
         return mapping
 
-    def _create_node(self, level: str, number: str, title: Optional[str], text: Optional[str], children: List[Dict] = None) -> Dict[str, Any]:
+    def _create_node(self, node_type: str, display_no: str, title: Optional[str], text: Optional[str], sort_no: Dict[str, int] = None, children: List[Dict] = None) -> Dict[str, Any]:
+        if sort_no is None:
+            sort_no = {"main": 0, "sub": 0}
+            
         return {
-            "level": level,
-            "number": number,
-            "title": title,
-            "text": text,
+            "id": str(uuid.uuid4()),
+            "type": node_type,
+            "display_no": display_no,
+            "sort_no": sort_no,
+            "title": title or "",
+            "text": text or "",
             "children": children if children is not None else []
         }
+
+    def _resolve_sort_no(self, display_no: str, node_type: str) -> Dict[str, int]:
+        """
+        Resolves a display string into a sorting key {main, sub}.
+        e.g. "제29조의2" -> {main: 29, sub: 2}
+             "①" -> {main: 1, sub: 0}
+             "가." -> {main: 1, sub: 0}
+        """
+        main = 0
+        sub = 0
+        
+        if node_type == "article":
+            # Match "제29조" or "제29조의2"
+            match = re.search(r'제\s*(\d+)\s*조(?:의\s*(\d+))?', display_no)
+            if match:
+                main = int(match.group(1))
+                if match.group(2):
+                    sub = int(match.group(2))
+                    
+        elif node_type in ["chapter", "section", "subsection", "part"]:
+             # Match "제1장", "제1편" -> extract number
+             match = re.search(r'(\d+)', display_no)
+             if match:
+                 main = int(match.group(1))
+
+        elif node_type == "paragraph":
+            # Match circled numbers ①..⑮
+            # Unicode range for ① is \u2460 (1) to \u246e (15)
+            # Simplified map for common ones
+            clean = display_no.strip()
+            if clean and len(clean) == 1:
+                code = ord(clean)
+                if 0x2460 <= code <= 0x2473: # ① ~ ⑳
+                    main = code - 0x2460 + 1
+                    
+        elif node_type == "item":
+            # Match "1."
+            match = re.match(r'^(\d+)', display_no)
+            if match:
+                main = int(match.group(1))
+                
+        elif node_type == "subitem":
+            # Match "가." -> Map hangul jamo to int
+            # 가=1, 나=2, ...
+            match = re.match(r'^([가-하])', display_no)
+            if match:
+                char = match.group(1)
+                # '가' is 0xAC00. But subitem sequence is usually standard Jamo logic?
+                # Actually regulations use: 가, 나, 다, 라, 마, 바, 사, 아, 자, 차, 카, 타, 파, 하
+                # These are consecutive in Hangul Syllables but with a step.
+                # Let's use a simpler lookup string for safety.
+                order = "가나다라마바사아자차카타파하"
+                if char in order:
+                    main = order.index(char) + 1
+                    
+        return {"main": main, "sub": sub}
 
     def _build_hierarchy(self, articles: List[Dict]) -> List[Dict]:
         roots = []
@@ -190,15 +252,18 @@ class RegulationFormatter:
                         current_nodes["subsection"] = {"name": None, "node": None}
                     elif lvl == "section":
                         current_nodes["subsection"] = {"name": None, "node": None}
-
+                    
                     if raw_val:
                         match = re.match(regex, raw_val.strip())
                         if match:
-                            num = match.group(2)
+                            display_no = match.group(1) # "제1장"
+                            # num = match.group(2) # "1" (Unused now, we resolve sort_no)
                             title = match.group(3)
-                            node = self._create_node(lvl, num, title, None)
+                            sort_no = self._resolve_sort_no(display_no, lvl)
+                            node = self._create_node(lvl, display_no, title, None, sort_no)
                         else:
-                            node = self._create_node(lvl, "", raw_val, None)
+                            # Fallback if regex fails but value exists
+                            node = self._create_node(lvl, raw_val, raw_val, None)
                         
                         current_nodes[lvl]["node"] = node
                         get_parent_list(lvl).append(node)
@@ -207,21 +272,27 @@ class RegulationFormatter:
             
             # 2. Create Article Node
             art_text = "\n".join(art.get('content', []))
-            art_node = self._create_node("article", art.get('article_no'), art.get('title'), art_text)
+            art_display_no = art.get('article_no', '')
+            art_sort_no = self._resolve_sort_no(art_display_no, "article")
+            art_node = self._create_node("article", art_display_no, art.get('title'), art_text, art_sort_no)
             
             # Paragraphs & Items
             for para in art.get('paragraphs', []):
-                para_num = para.get('paragraph_no')
+                para_num = para.get('paragraph_no', '')
                 para_text = para.get('content')
-                para_node = self._create_node("paragraph", para_num, None, para_text)
+                para_sort = self._resolve_sort_no(para_num, "paragraph")
+                para_node = self._create_node("paragraph", para_num, None, para_text, para_sort)
                 
                 for item in para.get('items', []):
-                    item_num = item.get('item_no')
+                    item_num = item.get('item_no', '')
                     item_content = item.get('content')
-                    item_node = self._create_node("item", item_num, None, item_content)
+                    item_sort = self._resolve_sort_no(item_num, "item")
+                    item_node = self._create_node("item", item_num, None, item_content, item_sort)
                     
                     for sub in item.get('subitems', []):
-                        sub_node = self._create_node("subitem", sub.get('subitem_no'), None, sub.get('content'))
+                        sub_num = sub.get('subitem_no', '')
+                        sub_sort = self._resolve_sort_no(sub_num, "subitem")
+                        sub_node = self._create_node("subitem", sub_num, None, sub.get('content'), sub_sort)
                         item_node["children"].append(sub_node)
 
                     para_node["children"].append(item_node)
@@ -425,34 +496,42 @@ class RegulationFormatter:
             line = line.strip()
             if not line: continue
             
-            # 1. Article Style (제1조) - In addenda, sometimes used, but usually it's items.
-            # However, to distinguish from main articles, currently mapped to addendum_item?
-            # User requested: "일반 규정의 조(article)과 다른 항목(노드?)로 처리"
-            art_match = re.match(r'^(제\s*\d+\s*조)\s*(?:\(([^)]+)\))?\s*(.*)', line)
+            # 1. Article Style (제1조)
+            art_match = re.match(r'^(제\s*\d+\s*조(?:의\s*\d+)?)\s*(?:\(([^)]+)\))?\s*(.*)', line)
             if art_match:
-                # Explicit Articles in Addenda might be treated as 'article' or 'addendum_item'?
-                # Let's use 'addendum_item' for consistency within Addenda as requested.
-                nodes.append(self._create_node("addendum_item", art_match.group(1), art_match.group(2), art_match.group(3)))
+                # Use 'article' type even in Addenda for better structure
+                display_no = art_match.group(1)
+                title = art_match.group(2)
+                content = art_match.group(3)
+                sort_no = self._resolve_sort_no(display_no, "article")
+                nodes.append(self._create_node("addendum_item", display_no, title, content, sort_no))
                 current_node = nodes[-1]
                 continue
                 
             # 2. Numbered Item Style acting as Article (1. (시행일)...)
             num_match = re.match(r'^(\d+\.)\s*(?:\(([^)]+)\))?\s*(.*)', line)
             if num_match:
-                # Treat as Item-level article -> addendum_item
-                nodes.append(self._create_node("addendum_item", num_match.group(1), num_match.group(2), num_match.group(3)))
+                display_no = num_match.group(1)
+                title = num_match.group(2)
+                content = num_match.group(3)
+                sort_no = self._resolve_sort_no(display_no, "item") # mimic item sort
+                nodes.append(self._create_node("addendum_item", display_no, title, content, sort_no))
                 current_node = nodes[-1]
                 continue
             
             # 3. Paragraph Style (①)
             para_match = re.match(r'^([①-⑮])\s*(.*)', line)
             if para_match:
+                display_no = para_match.group(1)
+                content = para_match.group(2)
+                sort_no = self._resolve_sort_no(display_no, "paragraph")
+                
                 # If inside an article/item, add as child
                 if current_node:
-                    current_node["children"].append(self._create_node("paragraph", para_match.group(1), None, para_match.group(2)))
+                    current_node["children"].append(self._create_node("paragraph", display_no, None, content, sort_no))
                 else:
                     # Orphan paragraph -> treat as Addenda Item
-                    nodes.append(self._create_node("addendum_item", para_match.group(1), None, para_match.group(2)))
+                    nodes.append(self._create_node("addendum_item", display_no, None, content, sort_no))
                     current_node = nodes[-1]
                 continue
             
@@ -463,11 +542,6 @@ class RegulationFormatter:
                 else:
                     current_node["text"] = line
             else:
-                # Top level text (Prologue of Addenda?)
-                # Create a generic node or ignore?
-                # Usually dates: "1988. 3. 1. 제정"
-                # Let's treat as a 'text' node or preamble Article?
-                # Create dummy node
                 nodes.append(self._create_node("text", "", None, line))
                 current_node = nodes[-1]
                 
@@ -644,13 +718,23 @@ class RegulationFormatter:
                      flush_regulation(next_preamble_lines=start_next_lines)
             
             # Article
-            article_match = re.match(r'^(제\s*(\d+)\s*조)\s*(?:\(([^)]+)\))?\s*(.*)', line)
+            # Update Regex to capture "의2" optional group for display purposes, but main parse logic here separates components
+            # Group 1: Full Article No (제29조의2)
+            # Group 2: Main No (29)
+            # Group 3: Sub No (2) - Optional
+            # Group 4: Title - Optional
+            # Group 5: Content
+            article_match = re.match(r'^(제\s*(\d+)\s*조(?:의\s*(\d+))?)\s*(?:\(([^)]+)\))?\s*(.*)', line)
             if article_match:
                 mode = 'ARTICLES'
                 if current_article: current_data["articles"].append(current_article)
-                article_no = article_match.group(2)
-                article_title = article_match.group(3) or ""
-                content = article_match.group(4)
+                
+                # We store the full display string as 'article_no' for the intermediate dict
+                # The components (main/sub) will be resolved in _build_hierarchy via _resolve_sort_no
+                article_no = article_match.group(1) 
+                article_title = article_match.group(4) or ""
+                content = article_match.group(5)
+                
                 current_article = {
                     "article_no": article_no,
                     "title": article_title,
@@ -710,12 +794,23 @@ class RegulationFormatter:
                         "content": item_match.group(2),
                         "subitems": []
                     }
-                    if current_paragraph:
-                        current_paragraph["items"].append(new_item)
-                        current_item = new_item
-                    else:
-                         # Fallback: Items directly under Article (no paragraph)
-                         current_article["content"].append(line)
+                if item_match and current_article:
+                    new_item = {
+                        "item_no": item_match.group(1), 
+                        "content": item_match.group(2),
+                        "subitems": []
+                    }
+                    if not current_paragraph:
+                        # Create implicit paragraph for items directly under article
+                        current_paragraph = {
+                            "paragraph_no": "", 
+                            "content": "",
+                            "items": []
+                        }
+                        current_article["paragraphs"].append(current_paragraph)
+                        
+                    current_paragraph["items"].append(new_item)
+                    current_item = new_item
                     continue
 
                 # Subitem (가., 나., 다.)

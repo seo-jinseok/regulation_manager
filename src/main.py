@@ -73,11 +73,13 @@ def main():
 
     
     llm_client = None
+    llm_client = None
     if args.use_llm:
+        provider_name = args.provider if args.provider else "openai" # Default to openai if None
         try:
-           print(f"Initializing LLM: {args.provider} ({args.model or 'default'})...")
+           print(f"Initializing LLM: {provider_name} ({args.model or 'default'})...")
            llm_client = LLMClient(
-               provider=args.provider, 
+               provider=provider_name, 
                model=args.model, 
                base_url=args.base_url
             )
@@ -91,8 +93,8 @@ def main():
     # Rich Check
     try:
         from rich.console import Console
-        from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeElapsedColumn
-        from rich.panel import Panel, TimeElapsedColumn, ProgressColumn
+        from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeElapsedColumn, ProgressColumn
+        from rich.panel import Panel
         from rich.text import Text
         from rich.table import Table
     except ImportError:
