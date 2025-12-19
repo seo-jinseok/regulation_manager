@@ -7,6 +7,9 @@ requires-python = ">=3.11"
 dependencies = [
     "llama-index>=0.14.10",
     "llama-index-llms-openai-like>=0.5.3",
+    "llama-index-llms-gemini",
+    "llama-index-llms-openrouter",
+    "llama-index-llms-ollama",
     "markdownify>=1.2.2",
     "pyhwp>=0.1b15",
     "python-dotenv>=1.2.1",
