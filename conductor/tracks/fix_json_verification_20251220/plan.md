@@ -12,18 +12,18 @@
     -   **Context**: The source of truth for the JSON structure.
 
 ## Phase 2: Implementation
-- [~] Task: Fix the JSON generation or verification logic.
+- [x] Task: Fix the JSON generation or verification logic. 5868ffa
     -   **Description**: Based on the analysis, apply fixes.
         -   **Sub-task**: Create a reproduction test case if necessary.
         -   **Sub-task**: Modify `src/verify_json.py` if the validator is flawed.
         -   **Sub-task**: Modify `src/main.py` (or relevant converter modules) if the JSON output is flawed.
     -   **Context**: This is the core fix.
-- [ ] Task: Run project-specific linting and type checking.
+- [x] Task: Run project-specific linting and type checking.
     -   **Description**: Execute `ruff check .` (or equivalent) to ensure code quality.
     -   **Context**: Adhere to project guidelines.
 
 ## Phase 3: Verification
-- [ ] Task: Verify the fix with the reproduction case.
+- [x] Task: Verify the fix with the reproduction case.
     -   **Description**: Run `src/verify_json.py` again to ensure it passes.
     -   **Context**: Confirm the primary goal is met.
 - [ ] Task: Conductor - User Manual Verification 'Verification' (Protocol in workflow.md)
