@@ -3,7 +3,7 @@
 ## Phase 1: Enhanced Core Extraction Logic
 - [x] Task: Refine Title Detection Heuristics a5d7968
     -   **Description**: Improve the regex and logic in `src/preprocessor.py` (or equivalent) to strictly distinguish between actual regulation titles and noise (e.g., addenda start lines). Implement a validation step that checks for standard regulation title patterns.
-- [ ] Task: Implement HTML Table Extraction for Appendices
+- [x] Task: Implement HTML Table Extraction for Appendices e8c063b
     -   **Description**: Update the parser to identify `<table>` tags in the HWP-converted HTML. Extract these tables as raw HTML strings and store them in the `attached_files` or a new `appendices` field in the JSON structure.
 - [ ] Task: Deep Hierarchy Parsing
     -   **Description**: Verify and fix the recursive parsing logic to ensure it captures all levels (Article down to Sub-item) without flattening or losing data. Add specific tests for deeply nested structures.
