@@ -44,7 +44,7 @@ def verify_json_files(output_dir="output"):
                         
                         # Check for Chapter/Section headers leaking into text
                         # e.g. "제1장 총칙" appearing in text
-                        if re.search(r'(^|\s)제\s*\d+\s*장($|\s)', text):
+                        if re.search(r'(^|\n)제\s*\d+\s*장($|\s)', text):
                             leaks += 1
                             print(f"      [Leak Alert] '{text[:60]}...'")
                         
