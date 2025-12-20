@@ -781,7 +781,8 @@ class RegulationFormatter:
                 continue
 
             # Appendices
-            if re.match(r'^부\s*칙', line):
+            # Check for "부칙" OR "Attached Files" headers ([별표...], <별표...>)
+            if re.match(r'^부\s*칙', line) or re.match(r'^(?:\[\s*별\s*[표지].*?\]|<\s*별\s*[표지].*?>)', line):
                 mode = 'APPENDICES'
                 current_chapter = None
                 current_section = None
