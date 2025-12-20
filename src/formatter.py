@@ -578,7 +578,16 @@ class RegulationFormatter:
             # Verify if it looks like a title
             # Verify if it looks like a title
             suffixes = ("규정", "규칙", "세칙", "지침", "요령", "강령", "내규", "학칙", "헌장", "기준", "수칙", "준칙", "요강", "운영", "정관")
-            if cleaned.endswith(suffixes) or "규정" in cleaned:
+            
+            is_valid_title = False
+            if cleaned.endswith(suffixes):
+                is_valid_title = True
+            elif "규정" in cleaned:
+                 # Filter out sentences
+                 if "시행한다" not in cleaned and not re.match(r'^\d+\.', cleaned):
+                     is_valid_title = True
+            
+            if is_valid_title:
                 best_title = cleaned
                 break
         
@@ -707,7 +716,21 @@ class RegulationFormatter:
                          for i in range(len(current_data["appendices"]) - 1, -1, -1):
                              txt = current_data["appendices"][i].strip()
                              title_candidates = ["규정", "세칙", "지침", "요령", "강령", "내규", "학칙", "헌장", "기준", "수칙", "준칙", "요강", "운영", "정관"]
-                             if (any(txt.endswith(c) for c in title_candidates) or "규정" in txt) and len(txt) < 100:
+                             
+                             is_candidate = False
+                             # 1. Standard Suffixes (Strong signal)
+                             if any(txt.endswith(c) for c in title_candidates):
+                                 is_candidate = True
+                             # 2. Contains "규정" but is not a sentence/clause (Weak signal)
+                             elif "규정" in txt:
+                                 # Exclude common false positives:
+                                 # - Starts with digit+dot (e.g. "1. (시행일)")
+                                 # - Contains "시행한다" (Effective date clause)
+                                 # - Starts with "부" (e.g. "부칙")
+                                 if "시행한다" not in txt and not re.match(r'^\d+\.', txt) and not txt.startswith("부"):
+                                     is_candidate = True
+                                     
+                             if is_candidate and len(txt) < 100:
                                  split_idx = i
                                  break
                          if split_idx != -1:
