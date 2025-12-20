@@ -26,5 +26,5 @@
 - [x] Task: Verify the fix with the reproduction case.
     -   **Description**: Run `src/verify_json.py` again to ensure it passes.
     -   **Context**: Confirm the primary goal is met.
-- [ ] Task: Conductor - User Manual Verification 'Verification' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Verification' (Protocol in workflow.md) [checkpoint: 6b80170]
 
