@@ -107,10 +107,23 @@ def run_pipeline(args, console=None):
                 
                 # Backfill metadata
                 scan_date = time.strftime("%Y-%m-%d")
+                missing_rule_code = 0
+                missing_page_range = 0
                 for doc in final_docs:
                     metadata = doc.setdefault("metadata", {})
                     metadata.setdefault("scan_date", scan_date)
                     metadata.setdefault("file_name", file.name)
+                    metadata.setdefault("rule_code", None)
+                    metadata.setdefault("page_range", None)
+                    if not metadata.get("rule_code"):
+                        missing_rule_code += 1
+                    if not metadata.get("page_range"):
+                        missing_page_range += 1
+                if args.verbose:
+                    console.print(
+                        f"[dim]메타데이터 누락: rule_code {missing_rule_code}/{len(final_docs)}, "
+                        f"page_range {missing_page_range}/{len(final_docs)}[/dim]"
+                    )
                 
                 # Save
                 final_json = {"file_name": file.name, "docs": final_docs}

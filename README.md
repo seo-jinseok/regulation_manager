@@ -37,6 +37,10 @@ uv pip install -r requirements.txt
 
 `cp .env.example .env` 명령어로 설정 파일을 생성하세요.
 
+캐시 동작을 조정하려면 아래 옵션을 추가할 수 있습니다:
+* `LLM_CACHE_TTL_DAYS`: 캐시 만료 일수
+* `LLM_CACHE_MAX_ENTRIES`: 캐시 최대 항목 수
+
 ---
 
 ## 사용법 (Usage)
@@ -50,6 +54,9 @@ python -m src.main "data/input/규정집.hwp"
 
 # 또는 `uv run` 사용 (활성화 불필요):
 uv run python -m src.main "data/input/규정집.hwp"
+
+# 설치 후 CLI 엔트리포인트 사용:
+regulation-manager "data/input/규정집.hwp"
 ```
 
 ### 2. 고급 사용법 - LLM 사용 (화질이 나쁜 문서용)

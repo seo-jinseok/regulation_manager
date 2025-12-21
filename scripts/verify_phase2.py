@@ -1,10 +1,11 @@
-import json
+import argparse
 import glob
+import json
 
-def verify_phase2():
-    files = glob.glob("output_verify/*.json")
+def verify_phase2(input_dir: str):
+    files = glob.glob(f"{input_dir}/*.json")
     if not files:
-        print("FAIL: No JSON found")
+        print(f"FAIL: No JSON found in {input_dir}")
         exit(1)
     path = files[0]
     with open(path, 'r', encoding='utf-8') as f:
@@ -52,4 +53,7 @@ def verify_phase2():
     exit(0)
 
 if __name__ == "__main__":
-    verify_phase2()
+    parser = argparse.ArgumentParser(description="Verify Phase 2 output.")
+    parser.add_argument("--input_dir", default="data/output", help="Directory containing JSON outputs.")
+    args = parser.parse_args()
+    verify_phase2(args.input_dir)

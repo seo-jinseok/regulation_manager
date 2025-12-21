@@ -92,3 +92,11 @@ class LLMClient:
     def complete(self, prompt: str) -> str:
         response = self.llm.complete(prompt)
         return response.text
+
+    def cache_namespace(self) -> str:
+        parts = [
+            self.provider or "",
+            self.model or "",
+            self.base_url or ""
+        ]
+        return "|".join(parts)

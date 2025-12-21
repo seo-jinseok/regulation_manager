@@ -1,8 +1,9 @@
-import json
+import argparse
 import glob
+import json
 
-def inspect_hierarchy():
-    files = glob.glob("output_verify/*.json")
+def inspect_hierarchy(input_dir: str):
+    files = glob.glob(f"{input_dir}/*.json")
     if not files: return
     path = files[0]
     with open(path, 'r', encoding='utf-8') as f:
@@ -36,4 +37,7 @@ def inspect_hierarchy():
         print(f"{indent}- {node['type']} {node.get('display_no', '')} {node.get('title') or ''} | {node.get('text', '')[:50]}")
 
 if __name__ == "__main__":
-    inspect_hierarchy()
+    parser = argparse.ArgumentParser(description="Inspect hierarchy depth for a sample doc.")
+    parser.add_argument("--input_dir", default="data/output", help="Directory containing JSON outputs.")
+    args = parser.parse_args()
+    inspect_hierarchy(args.input_dir)

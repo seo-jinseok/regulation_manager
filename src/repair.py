@@ -2,8 +2,9 @@ import re
 from .llm_client import LLMClient
 
 class RegulationRepair:
-    def __init__(self, provider="openai", client=None, cache_manager=None):
+    def __init__(self, provider="openai", client=None, cache_manager=None, cache_namespace=None):
         self.cache_manager = cache_manager
+        self.cache_namespace = cache_namespace
         if client:
             self.client = client
         else:
@@ -12,6 +13,8 @@ class RegulationRepair:
             except Exception as e:
                 print(f"Warning: Failed to initialize LLMClient: {e}")
                 self.client = None
+        if not self.cache_namespace and self.client and hasattr(self.client, "cache_namespace"):
+            self.cache_namespace = self.client.cache_namespace()
 
     def repair_broken_lines(self, text: str) -> str:
         """
@@ -35,7 +38,7 @@ class RegulationRepair:
                 continue
 
             if self.cache_manager:
-                cached = self.cache_manager.get_cached_llm_response(unit)
+                cached = self.cache_manager.get_cached_llm_response(unit, namespace=self.cache_namespace)
                 if cached: 
                     processed_units.append(cached)
                     continue
@@ -65,7 +68,7 @@ class RegulationRepair:
                     cleaned = "\n".join(lines)
                 
                 if self.cache_manager:
-                    self.cache_manager.cache_llm_response(unit, cleaned)
+                    self.cache_manager.cache_llm_response(unit, cleaned, namespace=self.cache_namespace)
                 processed_units.append(cleaned)
             except Exception as e:
                 print(f"Warning: Repair failed for unit {i}: {e}")

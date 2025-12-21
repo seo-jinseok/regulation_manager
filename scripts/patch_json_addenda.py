@@ -1,7 +1,8 @@
 
+import argparse
 import json
-import sys
 import os
+import sys
 
 # Add src to path
 sys.path.append(os.path.join(os.getcwd(), 'src'))
@@ -80,5 +81,7 @@ def patch_json(file_path):
         print(f"No changes needed for {file_path}")
 
 if __name__ == "__main__":
-    target_file = "output/규정집9-343-test1.json"
-    patch_json(target_file)
+    parser = argparse.ArgumentParser(description="Patch addenda and attached files in a JSON output.")
+    parser.add_argument("input_path", nargs="?", default="data/output/규정집9-343-test1.json")
+    args = parser.parse_args()
+    patch_json(args.input_path)

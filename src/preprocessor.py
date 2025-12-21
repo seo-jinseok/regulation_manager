@@ -14,9 +14,16 @@ class Preprocessor:
     def __init__(self, llm_client: LLMClient = None, cache_manager: Optional[CacheManager] = None):
         self.llm_client = llm_client
         self.cache_manager = cache_manager
+        self.cache_namespace = None
+        if self.llm_client and hasattr(self.llm_client, "cache_namespace"):
+            self.cache_namespace = self.llm_client.cache_namespace()
         self.repair_agent = None
         if self.llm_client:
-            self.repair_agent = RegulationRepair(client=self.llm_client, cache_manager=self.cache_manager)
+            self.repair_agent = RegulationRepair(
+                client=self.llm_client,
+                cache_manager=self.cache_manager,
+                cache_namespace=self.cache_namespace
+            )
 
     def clean(self, text: str, verbose_callback=None) -> str:
         """
@@ -171,7 +178,7 @@ class Preprocessor:
             # --- Cache Check ---
             # We use the hash of the raw unit text as the key.
             if self.cache_manager:
-                cached_resp = self.cache_manager.get_cached_llm_response(unit)
+                cached_resp = self.cache_manager.get_cached_llm_response(unit, namespace=self.cache_namespace)
                 if cached_resp is not None:
                      # cache hit
                      processed_units.append(cached_resp)
@@ -207,7 +214,7 @@ class Preprocessor:
                 
                 # --- Cache Save ---
                 if self.cache_manager:
-                    self.cache_manager.cache_llm_response(unit, cleaned_response)
+                    self.cache_manager.cache_llm_response(unit, cleaned_response, namespace=self.cache_namespace)
                 
                 processed_units.append(cleaned_response)
                 
