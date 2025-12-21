@@ -9,11 +9,11 @@
     -   **Description**: Verify and fix the recursive parsing logic to ensure it captures all levels (Article down to Sub-item) without flattening or losing data. Add specific tests for deeply nested structures.
 
 ## Phase 2: Intelligent Error Handling & Metadata
-- [ ] Task: Integrate LLM Auto-Repair
+- [x] Task: Integrate LLM Auto-Repair 62d9ce5
     -   **Description**: Create a new module `src/repair.py` that interacts with the configured LLM. When the regex parser fails or produces low-confidence results, send the snippet to the LLM to identify the structure.
-- [ ] Task: Implement Confidence Scoring
+- [x] Task: Implement Confidence Scoring 62d9ce5
     -   **Description**: Add a `confidence_score` field to each node in the JSON. Heuristic-based parsing gets high scores; ambiguous chunks get low scores.
-- [ ] Task: Extract Cross-References
+- [x] Task: Extract Cross-References 62d9ce5
     -   **Description**: Implement a regex-based extractor to find patterns like "제X조" or "제X항" within the text. Store these as a `references` list within each node, pointing to the target (if resolvable).
 
 ## Phase 3: Validation and Verification
