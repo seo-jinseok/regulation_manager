@@ -42,7 +42,7 @@ uv pip install -r requirements.txt
 ## 사용법 (Usage)
 
 ### 1. 기본 사용법
-입력 데이터는 `data/input` 폴더에 넣고 실행하는 것을 권장합니다.
+입력 데이터는 `data/input` 폴더에 넣고 실행하는 것을 권장합니다. (대화형 모드에서는 `data/input`을 우선 탐색하고, 없을 경우 `규정` 폴더를 확인합니다.)
 
 ```bash
 # 가상환경 활성화 상태에서:

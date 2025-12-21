@@ -1,5 +1,5 @@
 import re
-from src.llm_client import LLMClient
+from .llm_client import LLMClient
 
 class RegulationRepair:
     def __init__(self, provider="openai", client=None, cache_manager=None):

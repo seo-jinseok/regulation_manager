@@ -6,10 +6,28 @@ from typing import Dict, Any, List
 
 def check_structure(data: Dict[str, Any]) -> List[str]:
     errors = []
-    required_keys = ['file_name', 'scan_date', 'docs']
-    for key in required_keys:
-        if key not in data:
-            errors.append(f"Missing root key: {key}")
+    if 'docs' not in data:
+        errors.append("Missing root key: docs")
+    if 'file_name' not in data:
+        errors.append("Missing root key: file_name")
+    return errors
+
+def _validate_nodes(nodes: List[Any], label: str) -> List[str]:
+    errors = []
+    for i, node in enumerate(nodes):
+        if not isinstance(node, dict):
+            errors.append(f"{label} #{i}: invalid node (not a dict)")
+            continue
+        if not node.get('type'):
+            errors.append(f"{label} #{i}: missing 'type'")
+        children = node.get('children', [])
+        if not isinstance(children, list):
+            errors.append(f"{label} #{i}: 'children' is not a list")
+        else:
+            errors.extend(_validate_nodes(children, f"{label} #{i} children"))
+        sort_no = node.get('sort_no')
+        if sort_no is not None and not isinstance(sort_no, dict):
+            errors.append(f"{label} #{i}: 'sort_no' is not a dict")
     return errors
 
 def check_doc(doc: Dict[str, Any], index: int) -> List[str]:
@@ -19,48 +37,32 @@ def check_doc(doc: Dict[str, Any], index: int) -> List[str]:
     title = doc.get('title')
     if title is None:
         errors.append(f"Doc #{index}: Missing 'title' field")
-        print(f"DEBUG: Doc #{index} Preamble:\n{doc.get('preamble', '')[:200]}...")
     elif str(title).strip() == "":
         errors.append(f"Doc #{index}: Empty 'title' value")
-        print(f"DEBUG: Doc #{index} Preamble:\n{doc.get('preamble', '')[:200]}...")
-
-
-    # 2. Articles Validation
-    articles = doc.get('articles', [])
-    if not isinstance(articles, list):
-         errors.append(f"Doc #{index}: 'articles' is not a list")
+    
+    # 2. Content Validation
+    content = doc.get('content', [])
+    if not isinstance(content, list):
+        errors.append(f"Doc #{index}: 'content' is not a list")
     else:
-        for i, article in enumerate(articles):
-            if not isinstance(article, dict):
-                # errors.append(f"Doc #{index}, Article #{i}: invalid format (not a dict)")
-                pass 
-            else:
-                if 'article_no' not in article:
-                    errors.append(f"Doc #{index}, Article #{i}: Missing 'article_no'")
-                if 'content' not in article:
-                    errors.append(f"Doc #{index}, Article #{i}: Missing 'content'")
+        errors.extend(_validate_nodes(content, f"Doc #{index} content"))
 
-    # 3. Addenda & Appendices & Attached Files (Structure Check)
-    # We want to catch if they are just strings (unparsed) or empty dicts where content should be
-    for key in ['addenda', 'appendices', 'attached_files']:
-        items = doc.get(key, [])
-        if not isinstance(items, list):
-             errors.append(f"Doc #{index}: '{key}' is not a list")
-             continue
-             
-        for j, item in enumerate(items):
-            if isinstance(item, str):
-                # This explicitly fails if we expect ONLY structured data. 
-                # For now, we flag it as a warning or error depending on strictness. 
-                # Given user goal "100% accuracy", unstructured might be considered a 'fail' to be fixed.
-                errors.append(f"Doc #{index}: {key} item #{j} is unstructured string (needs parsing)")
-            elif isinstance(item, dict):
-                 # Check for minimal structure if it's a dict
-                 # usually expected: "no", "title", "content" or similar
-                 if not item:
-                     errors.append(f"Doc #{index}: {key} item #{j} is empty dict")
-            else:
-                 errors.append(f"Doc #{index}: {key} item #{j} has invalid type {type(item)}")
+    # 3. Addenda & Attached Files (Structure Check)
+    addenda = doc.get('addenda', [])
+    if not isinstance(addenda, list):
+        errors.append(f"Doc #{index}: 'addenda' is not a list")
+    else:
+        errors.extend(_validate_nodes(addenda, f"Doc #{index} addenda"))
+
+    attached = doc.get('attached_files', [])
+    if not isinstance(attached, list):
+        errors.append(f"Doc #{index}: 'attached_files' is not a list")
+    else:
+        for j, item in enumerate(attached):
+            if not isinstance(item, dict):
+                errors.append(f"Doc #{index}: attached_files item #{j} has invalid type {type(item)}")
+            elif not item.get("title"):
+                errors.append(f"Doc #{index}: attached_files item #{j} missing title")
 
     return errors
 
@@ -78,7 +80,8 @@ def analyze_json(file_path: str):
         return
 
     print(f"Analyzing: {path.name}")
-    print(f"Scan Date: {data.get('scan_date', 'Unknown')}")
+    if data.get("file_name"):
+        print(f"Source File: {data.get('file_name')}")
     
     # Root Structure
     root_errors = check_structure(data)

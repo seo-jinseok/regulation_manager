@@ -853,12 +853,6 @@ class RegulationFormatter:
                         "content": item_match.group(2),
                         "subitems": []
                     }
-                if item_match and current_article:
-                    new_item = {
-                        "item_no": item_match.group(1), 
-                        "content": item_match.group(2),
-                        "subitems": []
-                    }
                     if not current_paragraph:
                         # Create implicit paragraph for items directly under article
                         current_paragraph = {

@@ -1,6 +1,6 @@
 import sys
 from pathlib import Path
-from typing import List, Any
+from typing import List, Any, Optional
 from rich import print
 from rich.console import Console
 from rich.panel import Panel
@@ -13,6 +13,36 @@ console = Console()
 class InteractiveWizard:
     def __init__(self, root_dir: str = "."):
         self.root_dir = Path(root_dir).resolve()
+
+    def _get_default_input_dir(self) -> Optional[Path]:
+        base = self.root_dir
+        data_input_dir = base / "data" / "input"
+        legacy_dir = None
+        
+        # Try exact match first
+        if (base / "규정").exists():
+            legacy_dir = base / "규정"
+        else:
+            # Try glob for unicode safety (Mac NFD)
+            for path in base.iterdir():
+                if path.is_dir() and (path.name == "규정" or path.name == "규정"):
+                    legacy_dir = path
+                    break
+        
+        candidates = []
+        if data_input_dir.exists():
+            candidates.append(data_input_dir)
+        if legacy_dir:
+            candidates.append(legacy_dir)
+        
+        for cand in candidates:
+            if any(cand.rglob("*.hwp")):
+                return cand
+        
+        if candidates:
+            return candidates[0]
+        
+        return None
 
     def run(self) -> Any:
         console.clear()
@@ -27,34 +57,22 @@ class InteractiveWizard:
         print(welcome_panel)
         print("")
 
-        # 1. Scan for Files in '규정' subfolder
-        # Check current dir (handling NFD/NFC)
-        target_dir = None
-        base = self.root_dir
+        # 1. Scan for Files in input folder (prefer data/input, fallback to 규정)
+        target_dir = self._get_default_input_dir()
         
-        # Try exact match first
-        if (base / "규정").exists():
-            target_dir = base / "규정"
-        else:
-            # Try glob for unicode safety (Mac NFD)
-            for path in base.iterdir():
-                if path.is_dir() and (path.name == "규정" or path.name == "규정"):
-                    target_dir = path
-                    break
-        
-        if not target_dir:
-            # Default to current dir/규정 for creation prompt
-            target_dir = self.root_dir / "규정"
+        if not target_dir or not target_dir.exists():
+            # Default to data/input for creation prompt
+            target_dir = self.root_dir / "data" / "input"
             console.print(f"[bold red](!) 필수 폴더 없음:[/bold red] {target_dir}")
-            console.print(f"    [yellow]'규정'[/yellow] 폴더를 생성하고 .hwp 파일을 넣어주세요.")
+            console.print("    [yellow]'data/input'[/yellow] 또는 [yellow]'규정'[/yellow] 폴더를 생성하고 .hwp 파일을 넣어주세요.")
             
             import questionary
-            if questionary.confirm(f"    지금 '{target_dir.name}' 폴더를 생성하시겠습니까?").ask():
-                target_dir.mkdir(exist_ok=True)
+            if questionary.confirm(f"    지금 '{target_dir}' 폴더를 생성하시겠습니까?").ask():
+                target_dir.mkdir(parents=True, exist_ok=True)
                 console.print(f"    [green]>> 생성 완료.[/green] 파일을 이동시킨 후 다시 실행해주세요.")
             sys.exit(0)
             
-        console.print(f"[blue]>> 규정 폴더 감지됨:[/blue] {target_dir}")
+        console.print(f"[blue]>> 입력 폴더 감지됨:[/blue] {target_dir}")
             
         with console.status("[bold green]파일 검색 중...[/bold green]", spinner="dots"):
             hwp_files = sorted(list(target_dir.rglob("*.hwp")))
@@ -75,7 +93,7 @@ class InteractiveWizard:
     def _select_file_or_folder(self, files: List[Path], base_dir: Path) -> Path:
         """Rich Table Selection"""
         # Default output dir assumption for status check
-        default_output_dir = self.root_dir / "output"
+        default_output_dir = self.root_dir / "data" / "output"
         
         table = Table(title="[bold]처리할 대상 선택[/bold]", show_header=True, header_style="bold magenta")
         table.add_column("No.", style="cyan", justify="right")
@@ -120,7 +138,7 @@ class InteractiveWizard:
         from questionary import Choice
 
         choices = []
-        choices.append(Choice(title="0. 전체 일괄 처리 (All)", value=self.root_dir)) # Return root path for all
+        choices.append(Choice(title="0. 전체 일괄 처리 (All)", value=base_dir)) # Return base dir for all
 
         idx = 1
         default_choice = None
@@ -160,9 +178,9 @@ class InteractiveWizard:
             ])
         ).ask()
 
-        if selected == self.root_dir:
+        if selected == base_dir:
             console.print("[blue]>> 전체 처리를 시작합니다.[/blue]")
-            return self.root_dir
+            return base_dir
         else:
             if selected:
                 console.print(f"[blue]>> 선택됨:[/blue] {selected.name}")
@@ -180,8 +198,8 @@ class InteractiveWizard:
         
         print("\n[bold]설정 옵션[/bold]")
 
-        # Output Directory (Fixed to 'output')
-        config.output_dir = "output"
+        # Output Directory (Fixed to 'data/output')
+        config.output_dir = "data/output"
         
         # LLM Settings
         config.use_llm = questionary.confirm("LLM(AI)을 사용하여 텍스트 품질을 보정하시겠습니까?", default=False).ask()

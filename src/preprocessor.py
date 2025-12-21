@@ -46,7 +46,7 @@ class Preprocessor:
         text = re.sub(r'xml version=[^\n]+\n', '', text, flags=re.IGNORECASE)
         
         # 6. Remove long separators (underscores, dashes, special chars)
-        text = re.sub(r'^[_\]W\s]{5,}$', '', text, flags=re.MULTILINE)
+        text = re.sub(r'^[_\-=~\s]{5,}$', '', text, flags=re.MULTILINE)
 
         # 7. Remove "동의대학교 규정집" repetitive header
         text = re.sub(r'^동의대학교\s*규정집.*$', '', text, flags=re.MULTILINE)
