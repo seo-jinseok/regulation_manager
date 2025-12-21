@@ -17,9 +17,9 @@
     -   **Description**: Implement a regex-based extractor to find patterns like "제X조" or "제X항" within the text. Store these as a `references` list within each node, pointing to the target (if resolvable).
 
 ## Phase 3: Validation and Verification
-- [ ] Task: Update Schema Definition
+- [x] Task: Update Schema Definition c1cacb7
     -   **Description**: Update `SCHEMA_REFERENCE.md` and any schema validation scripts to include the new fields (`html_content` for tables, `confidence_score`, `references`).
-- [ ] Task: Run Full Regression Test
+- [x] Task: Run Full Regression Test c1cacb7
     -   **Description**: Process the reference HWP files and verify that the output JSON matches the "perfect" expectation (no garbage titles, all tables present).
 - [ ] Task: Conductor - User Manual Verification 'Perfect Extraction' (Protocol in workflow.md)
 
