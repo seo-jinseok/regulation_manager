@@ -368,11 +368,17 @@ class RegulationFormatter:
                  # duplicating the content.
                  final_text = content if not children_nodes else None
                  
-                 addenda.append({
-                     "title": header,
-                     "text": final_text,
-                     "children": children_nodes 
-                 })
+                 # Extract references for the addenda header text if any
+                 add_refs = self._extract_references(content) if not children_nodes else []
+                 
+                 addenda.append(self._create_node(
+                     "addendum", 
+                     "", 
+                     header, 
+                     final_text, 
+                     children=children_nodes,
+                     references=add_refs
+                 ))
     
             elif "별표" in header_norm or "별지" in header_norm:
                 attached_files.append({
@@ -530,7 +536,8 @@ class RegulationFormatter:
                 title = art_match.group(2)
                 content = art_match.group(3)
                 sort_no = self._resolve_sort_no(display_no, "article")
-                nodes.append(self._create_node("addendum_item", display_no, title, content, sort_no))
+                refs = self._extract_references(content)
+                nodes.append(self._create_node("addendum_item", display_no, title, content, sort_no, references=refs))
                 current_node = nodes[-1]
                 continue
                 
@@ -541,7 +548,8 @@ class RegulationFormatter:
                 title = num_match.group(2)
                 content = num_match.group(3)
                 sort_no = self._resolve_sort_no(display_no, "item") # mimic item sort
-                nodes.append(self._create_node("addendum_item", display_no, title, content, sort_no))
+                refs = self._extract_references(content)
+                nodes.append(self._create_node("addendum_item", display_no, title, content, sort_no, references=refs))
                 current_node = nodes[-1]
                 continue
             
@@ -551,13 +559,14 @@ class RegulationFormatter:
                 display_no = para_match.group(1)
                 content = para_match.group(2)
                 sort_no = self._resolve_sort_no(display_no, "paragraph")
+                refs = self._extract_references(content)
                 
                 # If inside an article/item, add as child
                 if current_node:
-                    current_node["children"].append(self._create_node("paragraph", display_no, None, content, sort_no))
+                    current_node["children"].append(self._create_node("paragraph", display_no, None, content, sort_no, references=refs))
                 else:
                     # Orphan paragraph -> treat as Addenda Item
-                    nodes.append(self._create_node("addendum_item", display_no, None, content, sort_no))
+                    nodes.append(self._create_node("addendum_item", display_no, None, content, sort_no, references=refs))
                     current_node = nodes[-1]
                 continue
             

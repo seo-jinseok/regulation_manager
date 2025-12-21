@@ -23,7 +23,7 @@ JSON 파일의 최상위 루트는 단일 소스 파일에서 파싱된 문서(�
 | `preamble` | `string` | 제1조 또는 제1장 이전에 나오는 서문 텍스트입니다. |
 | `content` | `Array<Node>` | 규정 본문의 계층적 구조 리스트입니다 (장, 조 등). |
 | `addenda` | `Array<Node>` | 부칙(Addenda)을 나타내는 구조화된 노드 리스트입니다. |
-| `attached_files` | `Array<Object>` | 별표, 별지 서식과 같은 부속 파일 리스트입니다. |
+| `attached_files` | `Array<Object>` | 별표, 별지 서식과 같은 부속 파일 리스트입니다. 각 객체는 `title`, `text`, 그리고 시각적 레이아웃 보존을 위한 `html` 필드를 가질 수 있습니다. |
 
 ## 노드 객체 (Node Object - Recursive)
 
@@ -35,6 +35,8 @@ JSON 파일의 최상위 루트는 단일 소스 파일에서 파싱된 문서(�
 | `number` | `string` | 식별 번호 문자열입니다 (예: "1", "제5조", "①", "1.", "가."). 없을 수 있습니다(null). |
 | `title` | `string` | 노드의 제목입니다 (예: "총칙", "목적"). 없을 수 있습니다(null). |
 | `text` | `string` | 해당 노드의 본문 텍스트입니다 (자식 노드의 텍스트는 포함하지 않음). |
+| `confidence_score` | `float` | 해당 노드 추출의 신뢰도 점수 (0.0 ~ 1.0) 입니다. |
+| `references` | `Array<Object>` | 본문 내에서 발견된 다른 조항/항목에 대한 상호 참조 리스트입니다. |
 | `children` | `Array<Node>` | 중첩된 하위(자식) 노드들의 리스트입니다. |
 
 ### 노드 레벨 및 계층 구조 (Hierarchy)
