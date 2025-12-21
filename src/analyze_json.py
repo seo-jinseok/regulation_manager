@@ -121,7 +121,10 @@ def main():
     if input_path.is_file():
         analyze_json(str(input_path))
     elif input_path.is_dir():
-        json_files = sorted(list(input_path.glob("*.json")))
+        json_files = [
+            p for p in sorted(list(input_path.glob("*.json")))
+            if not str(p).endswith("_metadata.json")
+        ]
         if not json_files:
             print("No JSON files found in directory.")
         for f in json_files:

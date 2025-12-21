@@ -40,7 +40,10 @@ class TestMainFlow(unittest.TestCase):
                 pass
         
         # Verify JSON was created
-        json_files = list(self.output_dir.glob("*.json"))
+        json_files = [
+            p for p in self.output_dir.glob("*.json")
+            if not p.name.endswith("_metadata.json")
+        ]
         self.assertGreater(len(json_files), 0)
 
     @patch('sys.argv', ['main.py', 'non_existent_path_xyz.hwp'])

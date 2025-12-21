@@ -133,7 +133,7 @@ class RegulationFormatter:
         
         return mapping
 
-    def _create_node(self, node_type: str, display_no: str, title: Optional[str], text: Optional[str], sort_no: Dict[str, int] = None, children: List[Dict] = None, confidence_score: float = 1.0, references: List[Dict] = None) -> Dict[str, Any]:
+    def _create_node(self, node_type: str, display_no: str, title: Optional[str], text: Optional[str], sort_no: Dict[str, int] = None, children: List[Dict] = None, confidence_score: float = 1.0, references: List[Dict] = None, metadata: Dict[str, Any] = None) -> Dict[str, Any]:
         if sort_no is None:
             sort_no = {"main": 0, "sub": 0}
             
@@ -146,6 +146,7 @@ class RegulationFormatter:
             "text": text or "",
             "confidence_score": confidence_score,
             "references": references if references is not None else [],
+            "metadata": metadata if metadata is not None else {},
             "children": children if children is not None else []
         }
 
@@ -378,7 +379,8 @@ class RegulationFormatter:
                      header, 
                      final_text, 
                      children=children_nodes,
-                     references=add_refs
+                     references=add_refs,
+                     metadata={"has_text": bool(final_text)}
                  ))
     
             elif "별표" in header_norm or "별지" in header_norm:

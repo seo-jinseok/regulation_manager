@@ -40,6 +40,7 @@ JSON 파일의 최상위 루트는 단일 소스 파일에서 파싱된 문서(�
 | `confidence_score` | `float` | 해당 노드 추출의 신뢰도 점수 (0.0 ~ 1.0) 입니다. |
 | `references` | `Array<Object>` | 본문 내에서 발견된 다른 조항/항목에 대한 상호 참조 리스트입니다. |
 | `children` | `Array<Node>` | 중첩된 하위(자식) 노드들의 리스트입니다. |
+| `metadata` | `Object` | *(선택)* 노드별 부가 정보입니다. 예: 부칙 헤더의 `has_text`. |
 
 ### 노드 레벨 및 계층 구조 (Hierarchy)
 
@@ -105,7 +106,8 @@ JSON 파일의 최상위 루트는 단일 소스 파일에서 파싱된 문서(�
   {
     "type": "addendum",
     "title": "부 칙",
-    "text": "", 
+    "text": "",
+    "metadata": { "has_text": false },
     "children": [
       {
         "type": "addendum_item",

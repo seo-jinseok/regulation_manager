@@ -12,6 +12,7 @@ from .converter import HwpToMarkdownReader
 from .preprocessor import Preprocessor
 from .formatter import RegulationFormatter
 from .llm_client import LLMClient
+from .metadata_extractor import MetadataExtractor
 from .refine_json import refine_doc
 from .cache_manager import CacheManager
 
@@ -23,6 +24,10 @@ def run_pipeline(args, console=None):
     input_path = Path(args.input_path)
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
+
+    legacy_output = (Path.cwd() / "output").resolve()
+    if output_dir.resolve() == legacy_output:
+        console.print("[yellow]경고: 'output/'은 레거시 경로입니다. 'data/output' 사용을 권장합니다.[/yellow]")
     
     if not input_path.exists():
         console.print(f"[red]입력 경로가 존재하지 않습니다: {input_path}[/red]")
@@ -55,6 +60,7 @@ def run_pipeline(args, console=None):
             
     preprocessor = Preprocessor(llm_client=llm_client, cache_manager=cache_manager)
     formatter = RegulationFormatter()
+    metadata_extractor = MetadataExtractor()
 
     from rich.progress import Progress, SpinnerColumn, TimeElapsedColumn, BarColumn, TextColumn
     
@@ -89,23 +95,38 @@ def run_pipeline(args, console=None):
 
                 file_state = cache_manager.get_file_state(str(file)) if cache_manager else None
                 cached_hwp_hash = file_state.get("hwp_hash") if file_state else None
+                cached_raw_md_hash = file_state.get("raw_md_hash") if file_state else None
                 hwp_hash = None
+                raw_md_hash = None
                 cache_hit = False
+                raw_md_cache_hit = True
                 if cache_manager:
                     try:
                         hwp_hash = cache_manager.compute_file_hash(file)
-                        cache_hit = cached_hwp_hash == hwp_hash
+                        if cached_hwp_hash:
+                            cache_hit = cached_hwp_hash == hwp_hash
                     except Exception as e:
                         if args.verbose:
                             console.print(f"[yellow]HWP 해시 계산 실패: {e}[/yellow]")
+                    if raw_md_path.exists():
+                        try:
+                            raw_md_hash = cache_manager.compute_file_hash(raw_md_path)
+                            if cached_raw_md_hash:
+                                raw_md_cache_hit = cached_raw_md_hash == raw_md_hash
+                        except Exception as e:
+                            raw_md_cache_hit = False
+                            if args.verbose:
+                                console.print(f"[yellow]RAW MD 해시 계산 실패: {e}[/yellow]")
                 
                 # 1. HWP -> MD
-                if not args.force and raw_md_path.exists() and cache_hit:
+                if not args.force and raw_md_path.exists() and cache_hit and raw_md_cache_hit:
                     with open(raw_md_path, "r", encoding="utf-8") as f:
                         raw_md = f.read()
                     if raw_html_path.exists():
                         with open(raw_html_path, "r", encoding="utf-8") as f:
                             html_content = f.read()
+                    if cache_manager and hwp_hash:
+                        cache_manager.update_file_state(str(file), hwp_hash=hwp_hash, raw_md_hash=raw_md_hash)
                 else:
                     reader = HwpToMarkdownReader(keep_html=False)
                     docs = reader.load_data(file, status_callback=status_callback, verbose=args.verbose)
@@ -117,11 +138,25 @@ def run_pipeline(args, console=None):
                         with open(raw_html_path, "w", encoding="utf-8") as f:
                             f.write(html_content)
                     if cache_manager and hwp_hash:
-                        cache_manager.update_file_state(str(file), hwp_hash=hwp_hash)
+                        cache_manager.update_file_state(
+                            str(file),
+                            hwp_hash=hwp_hash,
+                            raw_md_hash=cache_manager.compute_text_hash(raw_md),
+                        )
                 
                 # ... (rest of simple logic) ...
                 # Preprocess
                 clean_md = preprocessor.clean(raw_md, verbose_callback=status_callback)
+
+                extracted_metadata = metadata_extractor.extract(clean_md)
+                metadata_path = file_output_dir / f"{file.stem}_metadata.json"
+                with open(metadata_path, "w", encoding="utf-8") as f:
+                    json.dump(
+                        {"file_name": file.name, **extracted_metadata},
+                        f,
+                        ensure_ascii=False,
+                        indent=2,
+                    )
                 
                 # Format
                 final_docs = formatter.parse(clean_md, html_content=html_content, verbose_callback=status_callback)

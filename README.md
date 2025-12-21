@@ -93,6 +93,18 @@ python -m src.main "/path/to/규정.hwp" --use_llm --provider openai --model gpt
 | `--provider` | `ollama`, `lmstudio`, `local`, `openai`, `gemini` | `openai` | `--provider ollama` |
 | `--model` | 사용할 모델 이름 (LM Studio는 필수) | (Provider별 기본값) | `--model gemma2` |
 | `--base_url` | 로컬 서버 API 주소 (필요 시 변경) | (Provider별 기본값) | `--base_url http://localhost:11434` |
+
+> 기본 출력 경로는 `data/output`이며, 기존 `output/` 디렉토리는 레거시 경로로 취급됩니다.
+
+### 출력 파일
+* `<파일명>.json`: 최종 규정 JSON
+* `<파일명>_raw.md`: 변환된 원본 마크다운
+* `<파일명>_raw.xhtml`: 변환된 원본 HTML (가능한 경우)
+* `<파일명>_metadata.json`: 차례/찾아보기 색인 추출 결과
+
+### 전처리 규칙 커스터마이즈
+`data/config/preprocessor_rules.json`을 수정하거나, 환경 변수 `PREPROCESSOR_RULES_PATH`로 규칙 파일 경로를 지정할 수 있습니다.
+
 ## 데이터 구조 (JSON Schema)
 
 본 시스템은 규정집을 데이터베이스화하기 용이하도록 엄격한 계층 구조를 가진 JSON으로 변환합니다. 상세한 스펙은 [SCHEMA_REFERENCE.md](./SCHEMA_REFERENCE.md) 문서를 참고하세요.

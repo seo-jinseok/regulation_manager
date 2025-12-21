@@ -57,7 +57,10 @@ def analyze_json(path):
 def _resolve_input_path(input_path: str) -> str:
     if input_path:
         return input_path
-    candidates = glob.glob("data/output/*.json")
+    candidates = [
+        p for p in glob.glob("data/output/*.json")
+        if not p.endswith("_metadata.json")
+    ]
     if not candidates:
         raise FileNotFoundError("No JSON files found in data/output.")
     return candidates[0]

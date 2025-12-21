@@ -4,7 +4,10 @@ import os
 import re
 
 def verify_json_files(output_dir="data/output"):
-    json_files = glob.glob(os.path.join(output_dir, "*.json"))
+    json_files = [
+        p for p in glob.glob(os.path.join(output_dir, "*.json"))
+        if not p.endswith("_metadata.json")
+    ]
     if not json_files:
         print(f"No JSON files found in {output_dir}")
         return

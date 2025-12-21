@@ -1,4 +1,7 @@
+import json
+import os
 import re
+from pathlib import Path
 from typing import List, Optional
 from .llm_client import LLMClient
 from .cache_manager import CacheManager
@@ -15,6 +18,7 @@ class Preprocessor:
         self.llm_client = llm_client
         self.cache_manager = cache_manager
         self.cache_namespace = None
+        self._load_rules()
         if self.llm_client and hasattr(self.llm_client, "cache_namespace"):
             self.cache_namespace = self.llm_client.cache_namespace()
         self.repair_agent = None
@@ -24,6 +28,47 @@ class Preprocessor:
                 cache_manager=self.cache_manager,
                 cache_namespace=self.cache_namespace
             )
+
+    def _default_rules(self) -> dict:
+        return {
+            "inline_remove_patterns": [
+                r'xml version=[^\n]+\n',
+            ],
+            "separator_line_pattern": r'^[_\-=~\s]{5,}$',
+            "line_remove_patterns": [
+                r'^동의대학교\s*규정집.*$',
+                r'^\s*-\s*\d+\s*-\s*$',
+                r'^\s*\|?\s*제\s*\d+\s*[편장절관].*?\b\d+[-—–]\d+[-—–]\d+\s*[~～]\s*\d+\s*\|?\s*$',
+                r'^\s*\|?\s*\d+[-—–]\d+[-—–]\d+\s*\|?\s*$',
+            ],
+        }
+
+    def _load_rules(self) -> None:
+        rules = self._default_rules()
+        rules_path = os.getenv("PREPROCESSOR_RULES_PATH")
+        if rules_path:
+            path = Path(rules_path)
+        else:
+            path = Path("data/config/preprocessor_rules.json")
+        if path.exists():
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                if isinstance(data, dict):
+                    rules["inline_remove_patterns"] = data.get(
+                        "inline_remove_patterns", rules["inline_remove_patterns"]
+                    )
+                    rules["separator_line_pattern"] = data.get(
+                        "separator_line_pattern", rules["separator_line_pattern"]
+                    )
+                    rules["line_remove_patterns"] = data.get(
+                        "line_remove_patterns", rules["line_remove_patterns"]
+                    )
+            except Exception:
+                pass
+        self.inline_remove_patterns = rules["inline_remove_patterns"]
+        self.separator_line_pattern = rules["separator_line_pattern"]
+        self.line_remove_patterns = rules["line_remove_patterns"]
 
     def clean(self, text: str, verbose_callback=None) -> str:
         """
@@ -49,27 +94,16 @@ class Preprocessor:
     def _remove_artifacts(self, text: str, verbose_callback=None) -> str:
         """Remove headers, footers, page numbers, and hwp artifacts using Regex."""
         
-        # 5. Remove XML declaration (xml version=...)
-        text = re.sub(r'xml version=[^\n]+\n', '', text, flags=re.IGNORECASE)
-        
-        # 6. Remove long separators (underscores, dashes, special chars)
-        text = re.sub(r'^[_\-=~\s]{5,}$', '', text, flags=re.MULTILINE)
+        # 5. Remove inline artifacts
+        for pattern in self.inline_remove_patterns:
+            text = re.sub(pattern, '', text, flags=re.IGNORECASE)
 
-        # 7. Remove "동의대학교 규정집" repetitive header
-        text = re.sub(r'^동의대학교\s*규정집.*$', '', text, flags=re.MULTILINE)
-        
-        # 8. Remove page numbers/locations and header/footer artifacts
-        text = re.sub(r'^\s*-\s*\d+\s*-\s*$', '', text, flags=re.MULTILINE)
-        # Header/footer lines often include a chapter/part label plus rule code with a page number.
-        # Keep TOC entries like "학칙 1-1-1~1" for rule_code backfill.
-        text = re.sub(
-            r'^\s*\|?\s*제\s*\d+\s*[편장절관].*?\b\d+[-—–]\d+[-—–]\d+\s*[~～]\s*\d+\s*\|?\s*$',
-            '',
-            text,
-            flags=re.MULTILINE,
-        )
-        # Remove standalone rule codes, but keep TOC lines with titles (e.g. "학칙 1-1-1").
-        text = re.sub(r'^\s*\|?\s*\d+[-—–]\d+[-—–]\d+\s*\|?\s*$', '', text, flags=re.MULTILINE)
+        # 6. Remove long separators (underscores, dashes, special chars)
+        text = re.sub(self.separator_line_pattern, '', text, flags=re.MULTILINE)
+
+        # 7. Remove header/footer artifacts by line patterns
+        for pattern in self.line_remove_patterns:
+            text = re.sub(pattern, '', text, flags=re.MULTILINE)
         
         # 9. Handle Private Use Area (PUA) characters
         text, removed_count = self.clean_pua(text)
