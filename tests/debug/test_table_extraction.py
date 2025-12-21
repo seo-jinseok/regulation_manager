@@ -26,14 +26,14 @@ def test_html_table_extraction():
     
     if not docs:
         print("FAIL: No docs parsed")
-        exit(1)
+        assert False
         
     doc = docs[0]
     attached = doc.get("attached_files", [])
     
     if not attached:
         print("FAIL: No attached files found")
-        exit(1)
+        assert False
         
     af = attached[0]
     print(f"Title: {af.get('title')}")
@@ -42,14 +42,14 @@ def test_html_table_extraction():
     if "<table>" not in html:
         print("FAIL: Table tag not found in extracted HTML")
         print(f"Extracted: {html}")
-        exit(1)
+        assert False
         
     if "Row 1 Col 1" not in html:
         print("FAIL: Table content not found")
-        exit(1)
+        assert False
         
     print("PASS: Table extracted successfully.")
-    exit(0)
+    
 
 if __name__ == "__main__":
     test_html_table_extraction()

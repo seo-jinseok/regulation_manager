@@ -14,25 +14,25 @@ def test_hierarchy_skip_para():
     
     if not art['children']:
         print("FAIL: No children in Article")
-        exit(1)
+        assert False
 
     para = art['children'][0]
     # Implicit paragraph should have empty display_no
     if para['display_no'] != "":
         print(f"FAIL: Implicit paragraph has display_no '{para['display_no']}'")
-        exit(1)
+        assert False
         
     if not para['children']:
         print("FAIL: No children in Paragraph")
-        exit(1)
+        assert False
 
     item = para['children'][0]
     if item['display_no'] != '1.':
         print(f"FAIL: Item not found, got {item['display_no']}")
-        exit(1)
+        assert False
         
     print("PASS: Hierarchy skip para handled.")
-    exit(0)
+    
 
 if __name__ == "__main__":
     test_hierarchy_skip_para()

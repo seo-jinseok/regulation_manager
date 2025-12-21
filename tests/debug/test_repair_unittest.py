@@ -15,7 +15,7 @@ class TestRepair(unittest.TestCase):
             mock_instance.complete.return_value = "Repaired Text"
             
             repair = RegulationRepair()
-            result = repair.repair_text("Broken Text")
+            result = repair.repair_broken_lines("Broken Text\nMore Text")
             
             self.assertEqual(result, "Repaired Text")
             mock_instance.complete.assert_called_once()

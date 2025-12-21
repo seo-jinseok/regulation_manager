@@ -17,14 +17,14 @@ def test_deep_hierarchy():
     
     if not docs:
         print("FAIL: No docs parsed")
-        exit(1)
+        assert False
         
     doc = docs[0]
     content = doc.get('content', [])
     
     if not content:
         print("FAIL: No content")
-        exit(1)
+        assert False
         
     # Check Article
     # The first node might be Chapter/Section if inferred, but here just Article
@@ -34,48 +34,48 @@ def test_deep_hierarchy():
     if art['type'] != 'article':
         # Might be wrapped in default chapter? No, current logic doesn't create default chapter.
         print(f"FAIL: First node is {art['type']}")
-        exit(1)
+        assert False
         
     if art['display_no'] != '제1조':
         print(f"FAIL: Article no mismatch: {art['display_no']}")
-        exit(1)
+        assert False
     
     # Check Paragraph 1
     if not art['children']:
         print("FAIL: No paragraphs")
-        exit(1)
+        assert False
         
     para1 = art['children'][0]
     if para1['display_no'] != '①':
         print(f"FAIL: Para 1 no mismatch: {para1['display_no']}")
-        exit(1)
+        assert False
     
     # Check Item 1
     if not para1['children']:
         print("FAIL: No items in Para 1")
-        exit(1)
+        assert False
         
     item1 = para1['children'][0]
     if item1['display_no'] != '1.':
         print(f"FAIL: Item 1 no mismatch: {item1['display_no']}")
-        exit(1)
+        assert False
     
     # Check Subitem 가
     if not item1['children']:
         print("FAIL: No subitems in Item 1")
-        exit(1)
+        assert False
         
     sub1 = item1['children'][0]
     if sub1['display_no'] != '가.':
         print(f"FAIL: Subitem 1 no mismatch: {sub1['display_no']}")
-        exit(1)
+        assert False
         
     if sub1['text'].strip() != '제1목입니다.':
         print(f"FAIL: Subitem text mismatch: {sub1['text']}")
-        exit(1)
+        assert False
     
     print("PASS: Hierarchy parsed correctly.")
-    exit(0)
+    
 
 if __name__ == "__main__":
     test_deep_hierarchy()

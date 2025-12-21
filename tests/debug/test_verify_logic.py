@@ -31,7 +31,7 @@ if __name__ == "__main__":
     if failures:
         for f in failures:
             print(f)
-        exit(1)
+        assert False
     else:
         print("PASS: All cases handled correctly.")
-        exit(0)
+        

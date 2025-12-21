@@ -29,10 +29,10 @@ def test_split_false_positive():
     for doc in docs:
         if "이 규정은" in str(doc['title']):
             print("FAIL: '이 규정은...' was incorrectly identified as a title.")
-            exit(1)
+            assert False
             
     print("PASS: No false positive titles found.")
-    exit(0)
+    
 
 if __name__ == "__main__":
     test_split_false_positive()

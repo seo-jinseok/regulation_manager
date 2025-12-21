@@ -7,34 +7,34 @@ def test_cross_references_extracted():
     
     if not docs or not docs[0]['content']:
         print("FAIL: No content parsed")
-        exit(1)
+        assert False
         
     art = docs[0]['content'][0]
     if 'references' not in art:
         print("FAIL: references field missing in node")
-        exit(1)
+        assert False
         
     refs = art['references']
     if not isinstance(refs, list):
         print(f"FAIL: references is not a list: {type(refs)}")
-        exit(1)
+        assert False
         
     found_texts = [r['text'] for r in refs]
     print(f"Found references: {found_texts}")
     
     if "제5조" not in found_texts:
         print("FAIL: '제5조' not extracted")
-        exit(1)
+        assert False
         
     if "제10조제1항" not in found_texts:
         # Depending on regex, it might be separate or combined
         # But we target the combined form if possible
         if not any("제10조" in t for t in found_texts):
             print("FAIL: '제10조' not extracted")
-            exit(1)
+            assert False
     
     print("PASS: Cross-references extracted.")
-    exit(0)
+    
 
 if __name__ == "__main__":
     test_cross_references_extracted()
