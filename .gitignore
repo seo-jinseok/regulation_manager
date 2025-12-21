@@ -56,6 +56,8 @@ output/*
 !output/.gitkeep
 규정/*
 !규정/.gitkeep
+규정/*
+!규정/.gitkeep
 
 # Debug & Logs
 debug_output/

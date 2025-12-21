@@ -6,8 +6,6 @@
 
 ## 주요 기능
 
-## 주요 기능
-
 1.  **HWP → Markdown 변환**: `hwp5html`과 `markdownify`를 사용하여 표(Table)와 이미지, 문서 구조를 최대한 유지하며 변환합니다.
 2.  **지능형 전처리 (Preprocessing)**:
     *   **Regex 기반 (기본값)**: 대부분의 깔끔한 규정 파일은 이 모드만으로도 완벽하게 처리됩니다. 페이지 번호, 아티팩트 제거, 단순한 문장 연결 등을 수행하며 속도가 매우 빠릅니다.
@@ -112,21 +110,25 @@ python -m src.main "/path/to/규정.hwp" --use_llm --provider openai --model gpt
 ### 구조 개요
 *   **Root**: 파일명과 `docs` 리스트를 포함합니다.
 *   **Document**: 개별 규정 단위(예: 학칙, 장학규정). `title`, `part`(편), `metadata`, `content` 등을 포함합니다.
-*   **Node (Content)**: `content` 내부는 `level` 필드를 통해 계층적으로 구조화됩니다.
-    *   **Level Hierarchy**: `chapter` (장) > `section` (절) > `subsection` (관) > `article` (조) > `paragraph` (항) > `item` (호) > `subitem` (목)
+*   **Node (Content)**: `content` 내부는 `type` 필드를 통해 계층적으로 구조화됩니다.
+    *   **Type Hierarchy**: `chapter` (장) > `section` (절) > `subsection` (관) > `article` (조) > `paragraph` (항) > `item` (호) > `subitem` (목)
     *   **Addenda**: 부칙 또한 `article`과 `item` 노드로 구조화되어 파싱됩니다.
 
 ### 예시
 ```json
 {
-  "level": "article",
-  "number": "6",
+  "type": "article",
+  "display_no": "제6조",
+  "sort_no": { "main": 6, "sub": 0 },
   "title": "자산의 구분",
+  "text": "",
   "children": [
     {
-      "level": "paragraph",
-      "number": "①",
-      "text": "이 법인의 자산은 기본재산과 보통재산으로 구분한다."
+      "type": "paragraph",
+      "display_no": "①",
+      "sort_no": { "main": 1, "sub": 0 },
+      "text": "이 법인의 자산은 기본재산과 보통재산으로 구분한다.",
+      "children": []
     }
   ]
 }
