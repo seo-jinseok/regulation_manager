@@ -17,6 +17,8 @@ A CLI tool to convert university regulation HWP files into structured JSON, supp
 *   **CLI Interface**: A robust command-line tool for efficient batch processing of regulation files.
 *   **Hybrid Preprocessing**: A flexible engine that utilizes Regex for speed and LLMs (Local/Cloud) for handling complex cases.
 *   **Hierarchical JSON Output**: Generates structured data broken down by Article, Paragraph, and Item, ensuring logical consistency.
+*   **High-Fidelity Tables**: Preserves complex table structures in appendices as raw HTML for perfect visual representation.
+*   **Cross-Reference Extraction**: Automatically identifies and links internal regulation references (e.g., "See Article 5").
 
 ## Non-Functional Requirements
 *   **Privacy & Local Execution**: Capable of running entirely locally using models like Ollama or LM Studio to ensure sensitive data does not leave the network.
