@@ -75,13 +75,32 @@ def run_pipeline(args, console=None):
         for file in files:
             try:
                 status_callback = console.print if args.verbose else None
-                raw_md_path = output_dir / f"{file.stem}_raw.md"
-                raw_html_path = output_dir / f"{file.stem}_raw.xhtml"
-                json_path = output_dir / f"{file.stem}.json"
+                if input_path.is_dir():
+                    rel_path = file.relative_to(input_path)
+                    file_output_dir = output_dir / rel_path.parent
+                else:
+                    file_output_dir = output_dir
+                file_output_dir.mkdir(parents=True, exist_ok=True)
+
+                raw_md_path = file_output_dir / f"{file.stem}_raw.md"
+                raw_html_path = file_output_dir / f"{file.stem}_raw.xhtml"
+                json_path = file_output_dir / f"{file.stem}.json"
                 html_content = None
+
+                file_state = cache_manager.get_file_state(str(file)) if cache_manager else None
+                cached_hwp_hash = file_state.get("hwp_hash") if file_state else None
+                hwp_hash = None
+                cache_hit = False
+                if cache_manager:
+                    try:
+                        hwp_hash = cache_manager.compute_file_hash(file)
+                        cache_hit = cached_hwp_hash == hwp_hash
+                    except Exception as e:
+                        if args.verbose:
+                            console.print(f"[yellow]HWP 해시 계산 실패: {e}[/yellow]")
                 
                 # 1. HWP -> MD
-                if not args.force and raw_md_path.exists(): 
+                if not args.force and raw_md_path.exists() and cache_hit:
                     with open(raw_md_path, "r", encoding="utf-8") as f:
                         raw_md = f.read()
                     if raw_html_path.exists():
@@ -97,6 +116,8 @@ def run_pipeline(args, console=None):
                     if html_content:
                         with open(raw_html_path, "w", encoding="utf-8") as f:
                             f.write(html_content)
+                    if cache_manager and hwp_hash:
+                        cache_manager.update_file_state(str(file), hwp_hash=hwp_hash)
                 
                 # ... (rest of simple logic) ...
                 # Preprocess

@@ -36,5 +36,25 @@ class TestFormatterDeep(unittest.TestCase):
         sub = item['children'][0]
         self.assertEqual(sub['type'], 'subitem')
 
+    def test_toc_backfill_with_page_range(self):
+        text = """
+차 례
+학칙 1-1-1~1
+
+제1편 학칙
+학칙
+제1조(목적) 내용
+        """.strip()
+        formatter = RegulationFormatter()
+        docs = formatter.parse(text)
+
+        rule_code = None
+        for doc in docs:
+            if doc.get("title") == "학칙":
+                rule_code = doc.get("metadata", {}).get("rule_code")
+                break
+
+        self.assertEqual(rule_code, "1-1-1")
+
 if __name__ == "__main__":
     unittest.main()

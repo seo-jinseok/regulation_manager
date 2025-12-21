@@ -29,6 +29,18 @@ class TestPreprocessorComprehensive(unittest.TestCase):
         cleaned = pre.clean(text)
         self.assertNotIn("동의대학교 규정집", cleaned)
 
+    def test_preserve_toc_lines_with_rule_codes(self):
+        pre = Preprocessor()
+        text = "\n".join([
+            "차 례",
+            "학칙 1-1-1~1",
+            "제3편 행정 3-1-54～1",
+            "3. 이 규정집은 번호(예 : 1-1-1～1)를 부여한다.",
+        ])
+        cleaned = pre.clean(text)
+        self.assertIn("학칙 1-1-1~1", cleaned)
+        self.assertNotIn("제3편 행정 3-1-54", cleaned)
+        self.assertIn("1-1-1～1", cleaned)
+
 if __name__ == "__main__":
     unittest.main()
-

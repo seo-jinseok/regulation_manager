@@ -58,9 +58,18 @@ class Preprocessor:
         # 7. Remove "동의대학교 규정집" repetitive header
         text = re.sub(r'^동의대학교\s*규정집.*$', '', text, flags=re.MULTILINE)
         
-        # 8. Remove page numbers/locations and TOC lines
+        # 8. Remove page numbers/locations and header/footer artifacts
         text = re.sub(r'^\s*-\s*\d+\s*-\s*$', '', text, flags=re.MULTILINE)
-        text = re.sub(r'.*\d+[-—]\d+[-—]\d+.*$', '', text, flags=re.MULTILINE)
+        # Header/footer lines often include a chapter/part label plus rule code with a page number.
+        # Keep TOC entries like "학칙 1-1-1~1" for rule_code backfill.
+        text = re.sub(
+            r'^\s*\|?\s*제\s*\d+\s*[편장절관].*?\b\d+[-—–]\d+[-—–]\d+\s*[~～]\s*\d+\s*\|?\s*$',
+            '',
+            text,
+            flags=re.MULTILINE,
+        )
+        # Remove standalone rule codes, but keep TOC lines with titles (e.g. "학칙 1-1-1").
+        text = re.sub(r'^\s*\|?\s*\d+[-—–]\d+[-—–]\d+\s*\|?\s*$', '', text, flags=re.MULTILINE)
         
         # 9. Handle Private Use Area (PUA) characters
         text, removed_count = self.clean_pua(text)

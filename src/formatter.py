@@ -118,16 +118,17 @@ class RegulationFormatter:
         
         lines = preamble.split('\n')
         for line in lines:
-            line = line.strip()
+            line = line.strip().strip('|').strip()
             if not line: continue
             
             # Regex: Title followed by Rule Code (d-d-d)
             # e.g. "교원인사규정 3-1-5"
             # Some titles have spaces. Rule code is at the end.
-            match = re.match(r'^(.*)\s+(\d+-\d+-\d+)$', line)
+            match = re.match(r'^(.*)\s+(\d+[-—–]\d+[-—–]\d+)(?:\s*[~～]\s*\d+)?$', line)
             if match:
                 title = match.group(1).strip()
                 code = match.group(2).strip()
+                code = re.sub(r'[—–]', '-', code)
                 mapping[title] = code
         
         return mapping
