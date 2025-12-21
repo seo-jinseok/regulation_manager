@@ -132,7 +132,7 @@ class RegulationFormatter:
         
         return mapping
 
-    def _create_node(self, node_type: str, display_no: str, title: Optional[str], text: Optional[str], sort_no: Dict[str, int] = None, children: List[Dict] = None) -> Dict[str, Any]:
+    def _create_node(self, node_type: str, display_no: str, title: Optional[str], text: Optional[str], sort_no: Dict[str, int] = None, children: List[Dict] = None, confidence_score: float = 1.0, references: List[Dict] = None) -> Dict[str, Any]:
         if sort_no is None:
             sort_no = {"main": 0, "sub": 0}
             
@@ -143,8 +143,31 @@ class RegulationFormatter:
             "sort_no": sort_no,
             "title": title or "",
             "text": text or "",
+            "confidence_score": confidence_score,
+            "references": references if references is not None else [],
             "children": children if children is not None else []
         }
+
+    def _extract_references(self, text: str) -> List[Dict[str, str]]:
+        """
+        Extracts cross-references (e.g., "제5조", "제10조제1항") from text.
+        """
+        if not text:
+            return []
+            
+        # Pattern to match "제N조", "제N조의M", followed by optional "제K항", "제L호", etc.
+        # OR just standalone "제K항", etc.
+        pattern = r'제\s*\d+\s*조(?:의\s*\d+)?(?:제\s*\d+\s*[항호목])*|제\s*\d+\s*[항호목]'
+        
+        matches = re.finditer(pattern, text)
+        refs = []
+        for m in matches:
+            t = m.group(0).strip()
+            refs.append({
+                "text": t,
+                "target": t # Placeholder for resolution
+            })
+        return refs
 
     def _resolve_sort_no(self, display_no: str, node_type: str) -> Dict[str, int]:
         """
@@ -258,10 +281,10 @@ class RegulationFormatter:
                             # num = match.group(2) # "1" (Unused now, we resolve sort_no)
                             title = match.group(3)
                             sort_no = self._resolve_sort_no(display_no, lvl)
-                            node = self._create_node(lvl, display_no, title, None, sort_no)
+                            node = self._create_node(lvl, display_no, title, None, sort_no, confidence_score=1.0)
                         else:
                             # Fallback if regex fails but value exists
-                            node = self._create_node(lvl, raw_val, raw_val, None)
+                            node = self._create_node(lvl, raw_val, raw_val, None, confidence_score=0.5)
                         
                         current_nodes[lvl]["node"] = node
                         get_parent_list(lvl).append(node)
@@ -272,25 +295,30 @@ class RegulationFormatter:
             art_text = "\n".join(art.get('content', []))
             art_display_no = art.get('article_no', '')
             art_sort_no = self._resolve_sort_no(art_display_no, "article")
-            art_node = self._create_node("article", art_display_no, art.get('title'), art_text, art_sort_no)
+            art_refs = self._extract_references(art_text)
+            art_node = self._create_node("article", art_display_no, art.get('title'), art_text, art_sort_no, references=art_refs)
             
             # Paragraphs & Items
             for para in art.get('paragraphs', []):
                 para_num = para.get('paragraph_no', '')
                 para_text = para.get('content')
                 para_sort = self._resolve_sort_no(para_num, "paragraph")
-                para_node = self._create_node("paragraph", para_num, None, para_text, para_sort)
+                para_refs = self._extract_references(para_text)
+                para_node = self._create_node("paragraph", para_num, None, para_text, para_sort, references=para_refs)
                 
                 for item in para.get('items', []):
                     item_num = item.get('item_no', '')
                     item_content = item.get('content')
                     item_sort = self._resolve_sort_no(item_num, "item")
-                    item_node = self._create_node("item", item_num, None, item_content, item_sort)
+                    item_refs = self._extract_references(item_content)
+                    item_node = self._create_node("item", item_num, None, item_content, item_sort, references=item_refs)
                     
                     for sub in item.get('subitems', []):
                         sub_num = sub.get('subitem_no', '')
                         sub_sort = self._resolve_sort_no(sub_num, "subitem")
-                        sub_node = self._create_node("subitem", sub_num, None, sub.get('content'), sub_sort)
+                        sub_content = sub.get('content', '')
+                        sub_refs = self._extract_references(sub_content)
+                        sub_node = self._create_node("subitem", sub_num, None, sub_content, sub_sort, references=sub_refs)
                         item_node["children"].append(sub_node)
 
                     para_node["children"].append(item_node)
@@ -540,7 +568,7 @@ class RegulationFormatter:
                 else:
                     current_node["text"] = line
             else:
-                nodes.append(self._create_node("text", "", None, line))
+                nodes.append(self._create_node("text", "", None, line, confidence_score=0.5))
                 current_node = nodes[-1]
                 
         return nodes

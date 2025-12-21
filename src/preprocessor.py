@@ -2,6 +2,7 @@ import re
 from typing import List, Optional
 from .llm_client import LLMClient
 from .cache_manager import CacheManager
+from .repair import RegulationRepair
 
 class Preprocessor:
     """
@@ -13,6 +14,9 @@ class Preprocessor:
     def __init__(self, llm_client: LLMClient = None, cache_manager: Optional[CacheManager] = None):
         self.llm_client = llm_client
         self.cache_manager = cache_manager
+        self.repair_agent = None
+        if self.llm_client:
+            self.repair_agent = RegulationRepair(client=self.llm_client, cache_manager=self.cache_manager)
 
     def clean(self, text: str, verbose_callback=None) -> str:
         """
@@ -28,10 +32,10 @@ class Preprocessor:
             
         text = self._join_broken_lines_regex(text)
         
-        if self.llm_client:
+        if self.llm_client and self.repair_agent:
             if verbose_callback:
                 verbose_callback("[dim]• LLM으로 문단 처리 중...[/dim]")
-            text = self._join_paragraphs_llm(text)
+            text = self.repair_agent.repair_broken_lines(text)
             
         return text
 
@@ -42,7 +46,7 @@ class Preprocessor:
         text = re.sub(r'xml version=[^\n]+\n', '', text, flags=re.IGNORECASE)
         
         # 6. Remove long separators (underscores, dashes, special chars)
-        text = re.sub(r'^[_\W\s]{5,}$', '', text, flags=re.MULTILINE)
+        text = re.sub(r'^[_\]W\s]{5,}$', '', text, flags=re.MULTILINE)
 
         # 7. Remove "동의대학교 규정집" repetitive header
         text = re.sub(r'^동의대학교\s*규정집.*$', '', text, flags=re.MULTILINE)
