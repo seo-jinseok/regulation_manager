@@ -25,5 +25,15 @@ class TestMainFailureModes(unittest.TestCase):
                                     with self.assertRaises(SystemExit):
                                         main()
 
+    @patch('src.main.LLMClient', side_effect=Exception("LLM init failed"))
+    @patch('src.main.Path.mkdir')
+    @patch('src.main.Path.is_file', return_value=True)
+    @patch('src.main.Path.exists', return_value=True)
+    def test_main_llm_required_init_failure(self, mock_exists, mock_is_file, mock_mkdir, mock_llm):
+        with patch('sys.argv', ['main.py', 'test.hwp', '--use_llm']):
+            with patch('sys.exit') as mock_exit:
+                main()
+                mock_exit.assert_called_with(1)
+
 if __name__ == "__main__":
     unittest.main()

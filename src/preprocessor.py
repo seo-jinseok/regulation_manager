@@ -2,7 +2,7 @@ import json
 import os
 import re
 from pathlib import Path
-from typing import List, Optional
+from typing import Optional
 from .llm_client import LLMClient
 from .cache_manager import CacheManager
 from .repair import RegulationRepair
@@ -194,101 +194,3 @@ class Preprocessor:
             new_lines.append(buffer)
 
         return '\n'.join(new_lines)
-
-    def _join_paragraphs_llm(self, text: str) -> str:
-        """
-        Use LLM to fix semantic issues in checking if paragraphs are split.
-        Now uses logical units (Articles) to maximize cache reuse.
-        """
-        # 1. Split into logical units (Articles, Preamble, Appendices)
-        units = self._split_into_logical_units(text)
-        
-        processed_units = []
-        print(f"    [LLM] 처리할 논리 단위: {len(units)}개 분할됨...")
-        
-        for i, unit in enumerate(units):
-            # Skip empty units
-            if not unit.strip():
-                processed_units.append(unit)
-                continue
-
-            # Skip very short units (unlikely to need advanced merge logic, save tokens)
-            # e.g., just a title "제1조(목적)"
-            if len(unit.strip().splitlines()) <= 1:
-                processed_units.append(unit)
-                continue
-
-            # --- Cache Check ---
-            # We use the hash of the raw unit text as the key.
-            if self.cache_manager:
-                cached_resp = self.cache_manager.get_cached_llm_response(unit, namespace=self.cache_namespace)
-                if cached_resp is not None:
-                     # cache hit
-                     processed_units.append(cached_resp)
-                     continue
-
-            prompt = f"""
-다음은 대학 규정 문서의 일부(조항 등)입니다. HWP에서 변환되어 줄바꿈이 불완전하거나 문맥이 끊겨 있을 수 있습니다.
-다음 규칙에 따라 텍스트를 정리해주세요:
-
-1. 문맥상 끊어진 문장은 한 줄로 이으세요.
-2. '제1조(목적)'과 같은 조항 제목은 반드시 줄바꿈으로 구분하세요.
-3. '①', '1.', '가.' 등의 항목 번호는 새로운 줄에서 시작하게 하세요.
-4. 원문의 내용을 왜곡하거나 삭제하지 마세요. 오직 줄바꿈과 띄어쓰기만 수정하세요.
-5. 결과는 오직 수정된 텍스트만 출력하세요 (부연 설명 금지).
-
-[텍스트 시작]
-{unit}
-[텍스트 끝]
-"""
-            try:
-                print(f"    [LLM] 단위 처리 중 {i+1}/{len(units)}...", end="\r", flush=True)
-                response = self.llm_client.complete(prompt)
-                
-                # Simple cleanup
-                cleaned_response = response.strip()
-                if cleaned_response.startswith("```"):
-                    lines = cleaned_response.splitlines()
-                    if lines[0].startswith("```"):
-                        lines = lines[1:]
-                    if lines[-1].startswith("```"):
-                        lines = lines[:-1]
-                    cleaned_response = "\n".join(lines)
-                
-                # --- Cache Save ---
-                if self.cache_manager:
-                    self.cache_manager.cache_llm_response(unit, cleaned_response, namespace=self.cache_namespace)
-                
-                processed_units.append(cleaned_response)
-                
-            except Exception as e:
-                print(f"\n    [LLM] 경고: 단위 {i+1} 처리 실패 ({e}). 원본 사용.")
-                processed_units.append(unit)
-        
-        print(f"\n    [LLM] 처리 완료.")
-        return "\n".join(processed_units)
-
-    def _split_into_logical_units(self, text: str) -> List[str]:
-        """
-        Split text into Preamble, Articles, and Appendices based on headers.
-        This ensures that edits in one article don't shift the chunks for others, preserving cache.
-        """
-        lines = text.splitlines()
-        units = []
-        current_unit = []
-
-        for line in lines:
-            # Check for Article Header (e.g., "제1조", "제 2 조")
-            # We want to start a new unit *before* the header, unless it's the very first line.
-            is_header = re.match(r'^제\s*\d+\s*조', line.strip()) or re.match(r'^부\s*칙', line.strip())
-            
-            if is_header and current_unit:
-                units.append("\n".join(current_unit))
-                current_unit = []
-            
-            current_unit.append(line)
-        
-        if current_unit:
-            units.append("\n".join(current_unit))
-            
-        return units

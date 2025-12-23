@@ -207,6 +207,7 @@ class InteractiveWizard:
         config.provider = "openai"
         config.model = None
         config.base_url = None
+        config.allow_llm_fallback = False
         
         # Debug Options
         config.verbose = questionary.confirm("상세 로그를 보시겠습니까? (디버깅용)", default=False).ask()

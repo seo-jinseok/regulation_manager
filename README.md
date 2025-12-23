@@ -91,6 +91,7 @@ python -m src.main "/path/to/규정.hwp" --use_llm --provider openai --model gpt
 | `--provider` | `ollama`, `lmstudio`, `local`, `openai`, `gemini` | `openai` | `--provider ollama` |
 | `--model` | 사용할 모델 이름 (LM Studio는 필수) | (Provider별 기본값) | `--model gemma2` |
 | `--base_url` | 로컬 서버 API 주소 (필요 시 변경) | (Provider별 기본값) | `--base_url http://localhost:11434` |
+| `--allow_llm_fallback` | LLM 초기화 실패 시 정규식 모드로 계속 진행 | False | `--allow_llm_fallback` |
 
 > 기본 출력 경로는 `data/output`이며, 기존 `output/` 디렉토리는 레거시 경로로 취급됩니다.
 

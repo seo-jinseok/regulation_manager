@@ -13,8 +13,28 @@ from .preprocessor import Preprocessor
 from .formatter import RegulationFormatter
 from .llm_client import LLMClient
 from .metadata_extractor import MetadataExtractor
-from .refine_json import refine_doc
 from .cache_manager import CacheManager
+
+PIPELINE_SIGNATURE_VERSION = "v1"
+
+def _resolve_preprocessor_rules_path() -> Path:
+    rules_path = os.getenv("PREPROCESSOR_RULES_PATH")
+    if rules_path:
+        return Path(rules_path)
+    return Path("data/config/preprocessor_rules.json")
+
+def _compute_rules_hash(path: Path, cache_manager: CacheManager, console=None, verbose: bool = False) -> str:
+    if not path.exists():
+        return "missing"
+    try:
+        return cache_manager.compute_file_hash(path)
+    except Exception as e:
+        if verbose and console:
+            console.print(f"[yellow]규칙 파일 해시 계산 실패: {e}[/yellow]")
+        return "error"
+
+def _build_pipeline_signature(rules_hash: str, llm_signature: str) -> str:
+    return f"{PIPELINE_SIGNATURE_VERSION}|rules:{rules_hash}|llm:{llm_signature}"
 
 def run_pipeline(args, console=None):
     if not console:
@@ -45,19 +65,31 @@ def run_pipeline(args, console=None):
 
     # Initialize components
     cache_manager = CacheManager(cache_dir=args.cache_dir)
-    
+    rules_path = _resolve_preprocessor_rules_path()
+    rules_hash = _compute_rules_hash(rules_path, cache_manager, console=console, verbose=args.verbose)
+
     llm_client = None
+    llm_signature = "disabled"
     if args.use_llm:
         provider_name = args.provider if args.provider else "openai"
         try:
-           llm_client = LLMClient(
-               provider=provider_name, 
-               model=args.model, 
-               base_url=args.base_url
+            llm_client = LLMClient(
+                provider=provider_name,
+                model=args.model,
+                base_url=args.base_url,
             )
+            llm_signature = llm_client.cache_namespace()
         except Exception as e:
-            console.print(f"Warning: {e}")
-            
+            if args.allow_llm_fallback:
+                console.print(f"[yellow]LLM 초기화 실패: {e} - LLM 비활성화하고 계속 진행합니다.[/yellow]")
+                llm_client = None
+                llm_signature = "disabled"
+            else:
+                console.print(f"[red]LLM 초기화 실패: {e}[/red]")
+                return 1
+
+    pipeline_signature = _build_pipeline_signature(rules_hash, llm_signature)
+
     preprocessor = Preprocessor(llm_client=llm_client, cache_manager=cache_manager)
     formatter = RegulationFormatter()
     metadata_extractor = MetadataExtractor()
@@ -91,11 +123,15 @@ def run_pipeline(args, console=None):
                 raw_md_path = file_output_dir / f"{file.stem}_raw.md"
                 raw_html_path = file_output_dir / f"{file.stem}_raw.xhtml"
                 json_path = file_output_dir / f"{file.stem}.json"
+                metadata_path = file_output_dir / f"{file.stem}_metadata.json"
                 html_content = None
 
                 file_state = cache_manager.get_file_state(str(file)) if cache_manager else None
                 cached_hwp_hash = file_state.get("hwp_hash") if file_state else None
                 cached_raw_md_hash = file_state.get("raw_md_hash") if file_state else None
+                cached_pipeline_signature = file_state.get("pipeline_signature") if file_state else None
+                cached_final_json_hash = file_state.get("final_json_hash") if file_state else None
+                cached_metadata_hash = file_state.get("metadata_hash") if file_state else None
                 hwp_hash = None
                 raw_md_hash = None
                 cache_hit = False
@@ -117,6 +153,38 @@ def run_pipeline(args, console=None):
                             raw_md_cache_hit = False
                             if args.verbose:
                                 console.print(f"[yellow]RAW MD 해시 계산 실패: {e}[/yellow]")
+
+                def output_hash_matches(path: Path, cached_hash: str) -> bool:
+                    if not cache_manager or not cached_hash or not path.exists():
+                        return False
+                    try:
+                        return cache_manager.compute_file_hash(path) == cached_hash
+                    except Exception:
+                        return False
+
+                full_cache_hit = (
+                    not args.force
+                    and raw_md_path.exists()
+                    and json_path.exists()
+                    and metadata_path.exists()
+                    and cache_hit
+                    and raw_md_cache_hit
+                    and cached_pipeline_signature == pipeline_signature
+                    and output_hash_matches(json_path, cached_final_json_hash)
+                    and output_hash_matches(metadata_path, cached_metadata_hash)
+                )
+                if full_cache_hit:
+                    if args.verbose:
+                        console.print(f"[dim]캐시 적중: {file.name} (변환/전처리/포맷팅 생략)[/dim]")
+                    progress.advance(total_task, STEPS_PER_FILE)
+                    if cache_manager and hwp_hash:
+                        cache_manager.update_file_state(
+                            str(file),
+                            hwp_hash=hwp_hash,
+                            raw_md_hash=raw_md_hash,
+                            pipeline_signature=pipeline_signature,
+                        )
+                    continue
                 
                 # 1. HWP -> MD
                 if not args.force and raw_md_path.exists() and cache_hit and raw_md_cache_hit:
@@ -138,10 +206,11 @@ def run_pipeline(args, console=None):
                         with open(raw_html_path, "w", encoding="utf-8") as f:
                             f.write(html_content)
                     if cache_manager and hwp_hash:
+                        raw_md_hash = cache_manager.compute_text_hash(raw_md)
                         cache_manager.update_file_state(
                             str(file),
                             hwp_hash=hwp_hash,
-                            raw_md_hash=cache_manager.compute_text_hash(raw_md),
+                            raw_md_hash=raw_md_hash,
                         )
                 
                 # ... (rest of simple logic) ...
@@ -149,14 +218,10 @@ def run_pipeline(args, console=None):
                 clean_md = preprocessor.clean(raw_md, verbose_callback=status_callback)
 
                 extracted_metadata = metadata_extractor.extract(clean_md)
-                metadata_path = file_output_dir / f"{file.stem}_metadata.json"
+                metadata_payload = {"file_name": file.name, **extracted_metadata}
+                metadata_text = json.dumps(metadata_payload, ensure_ascii=False, indent=2)
                 with open(metadata_path, "w", encoding="utf-8") as f:
-                    json.dump(
-                        {"file_name": file.name, **extracted_metadata},
-                        f,
-                        ensure_ascii=False,
-                        indent=2,
-                    )
+                    f.write(metadata_text)
                 
                 # Format
                 final_docs = formatter.parse(clean_md, html_content=html_content, verbose_callback=status_callback)
@@ -183,8 +248,21 @@ def run_pipeline(args, console=None):
                 
                 # Save
                 final_json = {"file_name": file.name, "docs": final_docs}
+                final_json_text = json.dumps(final_json, ensure_ascii=False, indent=2)
                 with open(json_path, "w", encoding="utf-8") as f:
-                    json.dump(final_json, f, ensure_ascii=False, indent=2)
+                    f.write(final_json_text)
+
+                if cache_manager:
+                    if raw_md_hash is None:
+                        raw_md_hash = cache_manager.compute_text_hash(raw_md)
+                    cache_manager.update_file_state(
+                        str(file),
+                        hwp_hash=hwp_hash,
+                        raw_md_hash=raw_md_hash,
+                        pipeline_signature=pipeline_signature,
+                        final_json_hash=cache_manager.compute_text_hash(final_json_text),
+                        metadata_hash=cache_manager.compute_text_hash(metadata_text),
+                    )
                 
                 progress.advance(total_task, STEPS_PER_FILE)
                 
@@ -207,6 +285,11 @@ def main():
     parser.add_argument("--provider", type=str, default="openai")
     parser.add_argument("--model", type=str, default=None)
     parser.add_argument("--base_url", type=str, default=None)
+    parser.add_argument(
+        "--allow_llm_fallback",
+        action="store_true",
+        help="Allow regex-only fallback when LLM initialization fails",
+    )
     parser.add_argument("--force", action="store_true")
     parser.add_argument("--cache_dir", type=str, default=".cache")
     parser.add_argument("--verbose", action="store_true")

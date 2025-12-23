@@ -1,3 +1,5 @@
+"""Legacy refinement helpers for offline analysis; not used in main pipeline."""
+
 import json
 import re
 import os

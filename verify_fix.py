@@ -7,10 +7,14 @@ from src.preprocessor import Preprocessor
 preprocessor = Preprocessor()
 
 # Load raw file
-raw_path = Path('output/규정집9-343(20250909)_raw.md')
+raw_path = Path("data/output/규정집9-343(20250909)_raw.md")
 if not raw_path.exists():
-    print(f"File not found: {raw_path}")
-    sys.exit(1)
+    legacy_path = Path("output/규정집9-343(20250909)_raw.md")
+    if legacy_path.exists():
+        raw_path = legacy_path
+    else:
+        print(f"File not found: {raw_path}")
+        sys.exit(1)
 
 text = raw_path.read_text(encoding='utf-8')
 print(f"Original length: {len(text)}")

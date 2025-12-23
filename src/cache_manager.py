@@ -110,7 +110,15 @@ class CacheManager:
     def get_file_state(self, file_path: str) -> Optional[Dict[str, str]]:
         return self.file_states.get(str(file_path))
 
-    def update_file_state(self, file_path: str, hwp_hash: str = None, raw_md_hash: str = None):
+    def update_file_state(
+        self,
+        file_path: str,
+        hwp_hash: str = None,
+        raw_md_hash: str = None,
+        pipeline_signature: str = None,
+        final_json_hash: str = None,
+        metadata_hash: str = None,
+    ):
         key = str(file_path)
         if key not in self.file_states:
             self.file_states[key] = {}
@@ -119,6 +127,12 @@ class CacheManager:
             self.file_states[key]["hwp_hash"] = hwp_hash
         if raw_md_hash:
             self.file_states[key]["raw_md_hash"] = raw_md_hash
+        if pipeline_signature:
+            self.file_states[key]["pipeline_signature"] = pipeline_signature
+        if final_json_hash:
+            self.file_states[key]["final_json_hash"] = final_json_hash
+        if metadata_hash:
+            self.file_states[key]["metadata_hash"] = metadata_hash
 
     # --- LLM Cache Methods ---
 
