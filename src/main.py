@@ -15,7 +15,7 @@ from .llm_client import LLMClient
 from .metadata_extractor import MetadataExtractor
 from .cache_manager import CacheManager
 
-PIPELINE_SIGNATURE_VERSION = "v1"
+PIPELINE_SIGNATURE_VERSION = "v2"
 
 def _resolve_preprocessor_rules_path() -> Path:
     rules_path = os.getenv("PREPROCESSOR_RULES_PATH")

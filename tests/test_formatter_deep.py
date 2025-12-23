@@ -56,5 +56,32 @@ class TestFormatterDeep(unittest.TestCase):
 
         self.assertEqual(rule_code, "1-1-1")
 
+    def test_front_matter_trim_and_index_order(self):
+        text = """
+별표 양식 1
+제3편 행정
+차 례
+학칙 1-1-1~1
+찾아보기
+<가나다순>
+학칙 1-1-1
+찾아보기
+<소관부서별>
+기획처
+학칙 1-1-1
+제1편 학칙
+학칙
+제1조(목적) 내용
+        """.strip()
+        formatter = RegulationFormatter()
+        docs = formatter.parse(text)
+
+        titles = [doc.get("title") for doc in docs[:4]]
+        self.assertEqual(titles[0], "차례")
+        self.assertEqual(titles[1], "찾아보기")
+        self.assertEqual(titles[2], "찾아보기")
+        self.assertEqual(titles[3], "학칙")
+        self.assertIsNone(docs[0].get("part"))
+
 if __name__ == "__main__":
     unittest.main()

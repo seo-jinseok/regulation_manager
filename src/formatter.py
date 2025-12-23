@@ -106,7 +106,54 @@ class RegulationFormatter:
                     if match_code:
                         doc["metadata"]["rule_code"] = match_code
                         
-        return final_docs
+        return self._reorder_and_trim_docs(final_docs)
+
+    def _doc_has_content(self, doc: Dict[str, Any]) -> bool:
+        return bool(doc.get("content")) or bool(doc.get("addenda")) or bool(doc.get("attached_files"))
+
+    def _index_kind(self, doc: Dict[str, Any]) -> Optional[str]:
+        title = (doc.get("title") or "").strip()
+        if not title:
+            return None
+        if title in ("차례", "목차"):
+            return "toc"
+        if title == "찾아보기":
+            preamble = doc.get("preamble") or ""
+            if "<가나다순>" in preamble or "가나다순" in preamble:
+                return "index_alpha"
+            if "<소관부서별>" in preamble or "소관부서별" in preamble:
+                return "index_dept"
+            return "index"
+        return None
+
+    def _reorder_and_trim_docs(self, docs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        if not docs:
+            return docs
+
+        first_content_idx = None
+        for i, doc in enumerate(docs):
+            if self._doc_has_content(doc):
+                first_content_idx = i
+                break
+
+        if first_content_idx is None:
+            return docs
+
+        index_docs = []
+        for i, doc in enumerate(docs[:first_content_idx]):
+            kind = self._index_kind(doc)
+            if kind:
+                doc["part"] = None
+                index_docs.append((kind, i, doc))
+
+        if not index_docs:
+            return docs
+
+        order = {"toc": 0, "index_alpha": 1, "index_dept": 2, "index": 3}
+        index_docs.sort(key=lambda item: (order.get(item[0], 99), item[1]))
+        ordered_index_docs = [doc for _, _, doc in index_docs]
+
+        return ordered_index_docs + docs[first_content_idx:]
 
     def _parse_toc_rule_codes(self, preamble: str) -> Dict[str, str]:
         """

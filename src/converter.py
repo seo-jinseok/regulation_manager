@@ -101,6 +101,9 @@ class HwpToMarkdownReader(BaseReader):
                     for line in process.stdout:
                         line = line.strip()
                         if line:
+                            always_ignored = ["undefined UnderlineStyle value", "defined name/values"]
+                            if any(k in line for k in always_ignored):
+                                continue
                             # Capture but don't print unless error
                             captured_output.append(line)
                             
