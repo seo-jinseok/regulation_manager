@@ -15,7 +15,7 @@ from .llm_client import LLMClient
 from .metadata_extractor import MetadataExtractor
 from .cache_manager import CacheManager
 
-PIPELINE_SIGNATURE_VERSION = "v2"
+PIPELINE_SIGNATURE_VERSION = "v3"
 
 def _resolve_preprocessor_rules_path() -> Path:
     rules_path = os.getenv("PREPROCESSOR_RULES_PATH")
@@ -224,7 +224,12 @@ def run_pipeline(args, console=None):
                     f.write(metadata_text)
                 
                 # Format
-                final_docs = formatter.parse(clean_md, html_content=html_content, verbose_callback=status_callback)
+                final_docs = formatter.parse(
+                    clean_md,
+                    html_content=html_content,
+                    verbose_callback=status_callback,
+                    extracted_metadata=extracted_metadata,
+                )
                 
                 # Backfill metadata
                 scan_date = time.strftime("%Y-%m-%d")

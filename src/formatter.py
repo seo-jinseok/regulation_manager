@@ -10,7 +10,13 @@ class RegulationFormatter:
     Regulation -> Chapter -> Article -> Paragraph -> Item
     """
 
-    def parse(self, text: str, html_content: Optional[str] = None, verbose_callback=None) -> List[Dict[str, Any]]:
+    def parse(
+        self,
+        text: str,
+        html_content: Optional[str] = None,
+        verbose_callback=None,
+        extracted_metadata: Optional[Dict[str, Any]] = None,
+    ) -> List[Dict[str, Any]]:
         # 1. First Pass: Flat Parsing (Existing Logic)
         if verbose_callback:
             verbose_callback("[dim]• 문서 구조 분석 중 (조항, 본문)...[/dim]")
@@ -105,6 +111,16 @@ class RegulationFormatter:
                     
                     if match_code:
                         doc["metadata"]["rule_code"] = match_code
+
+        if extracted_metadata is None:
+            try:
+                from .metadata_extractor import MetadataExtractor
+                extracted_metadata = MetadataExtractor().extract(text)
+            except Exception:
+                extracted_metadata = None
+
+        if extracted_metadata:
+            self._populate_index_docs(final_docs, extracted_metadata)
                         
         return self._reorder_and_trim_docs(final_docs)
 
@@ -179,6 +195,51 @@ class RegulationFormatter:
                 mapping[title] = code
         
         return mapping
+
+    def _build_index_nodes(self, entries: List[Dict[str, str]]) -> List[Dict[str, Any]]:
+        nodes = []
+        for idx, entry in enumerate(entries, 1):
+            title = entry.get("title", "")
+            rule_code = entry.get("rule_code")
+            metadata = {"rule_code": rule_code} if rule_code else {}
+            nodes.append(
+                self._create_node(
+                    "text",
+                    "",
+                    title,
+                    rule_code or "",
+                    sort_no={"main": idx, "sub": 0},
+                    metadata=metadata,
+                )
+            )
+        return nodes
+
+    def _populate_index_docs(self, docs: List[Dict[str, Any]], extracted_metadata: Dict[str, Any]) -> None:
+        toc_entries = extracted_metadata.get("toc") or []
+        index_alpha_entries = extracted_metadata.get("index_by_alpha") or []
+        index_dept_entries = extracted_metadata.get("index_by_dept") or {}
+
+        for doc in docs:
+            if doc.get("content"):
+                continue
+            kind = self._index_kind(doc)
+            if kind == "toc" and toc_entries:
+                doc["content"] = self._build_index_nodes(toc_entries)
+            elif kind == "index_alpha" and index_alpha_entries:
+                doc["content"] = self._build_index_nodes(index_alpha_entries)
+            elif kind in ("index_dept", "index") and index_dept_entries:
+                dept_nodes = []
+                for dept_idx, (dept, entries) in enumerate(index_dept_entries.items(), 1):
+                    dept_node = self._create_node(
+                        "text",
+                        "",
+                        dept,
+                        "",
+                        sort_no={"main": dept_idx, "sub": 0},
+                    )
+                    dept_node["children"] = self._build_index_nodes(entries)
+                    dept_nodes.append(dept_node)
+                doc["content"] = dept_nodes
 
     def _create_node(self, node_type: str, display_no: str, title: Optional[str], text: Optional[str], sort_no: Dict[str, int] = None, children: List[Dict] = None, confidence_score: float = 1.0, references: List[Dict] = None, metadata: Dict[str, Any] = None) -> Dict[str, Any]:
         if sort_no is None:

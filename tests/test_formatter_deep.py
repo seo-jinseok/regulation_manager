@@ -82,6 +82,12 @@ class TestFormatterDeep(unittest.TestCase):
         self.assertEqual(titles[2], "찾아보기")
         self.assertEqual(titles[3], "학칙")
         self.assertIsNone(docs[0].get("part"))
+        self.assertGreater(len(docs[0].get("content", [])), 0)
+        self.assertEqual(docs[0]["content"][0]["title"], "학칙")
+        self.assertEqual(docs[0]["content"][0]["text"], "1-1-1")
+        self.assertEqual(docs[0]["content"][0]["metadata"].get("rule_code"), "1-1-1")
+        self.assertGreater(len(docs[1].get("content", [])), 0)
+        self.assertGreater(len(docs[2].get("content", [])), 0)
 
 if __name__ == "__main__":
     unittest.main()
