@@ -101,7 +101,13 @@ class HwpToMarkdownReader(BaseReader):
                     for line in process.stdout:
                         line = line.strip()
                         if line:
-                            always_ignored = ["undefined UnderlineStyle value", "defined name/values"]
+                            always_ignored = [
+                                "undefined UnderlineStyle value",
+                                "defined name/values",
+                                "pkg_resources is deprecated as an API",
+                                "The pkg_resources package is slated for removal",
+                                "import pkg_resources",
+                            ]
                             if any(k in line for k in always_ignored):
                                 continue
                             # Capture but don't print unless error
