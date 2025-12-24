@@ -97,6 +97,8 @@ class MetadataExtractor:
             re.compile(r'^[\|\-\s]+$'),  # divider lines
             re.compile(r'^제\s*\d+\s*편'),  # part header
             re.compile(r'^제\s*\d+\s*장'),  # chapter header
+            re.compile(r'.*규정집.*'),
+            re.compile(r'.*학교법인.*'),
         ]
         
         for line in lines:
@@ -104,11 +106,13 @@ class MetadataExtractor:
             if not line:
                 continue
 
-            if any(p.match(line) for p in stop_patterns):
-                # Treat as end of dept index if we encounter structural headers/tables
-                if p := stop_patterns[2].match(line) or stop_patterns[3].match(line):
-                    break
-                continue
+            for pat in stop_patterns:
+                if pat.match(line):
+                    # End of department index section detected; stop parsing further lines
+                    if pat in (stop_patterns[2], stop_patterns[3], stop_patterns[4], stop_patterns[5]):
+                        return {k: v for k, v in dept_index.items() if v}
+                    # Skip structural table noise
+                    continue
                 
             m = entry_pattern.match(line)
             if m:
