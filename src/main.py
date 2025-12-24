@@ -165,17 +165,45 @@ def run_pipeline(args, console=None):
                     except Exception:
                         return False
 
-                full_cache_hit = (
-                    not args.force
-                    and raw_md_path.exists()
+                # Check all required output files exist
+                required_files_exist = (
+                    raw_md_path.exists()
                     and json_path.exists()
                     and metadata_path.exists()
+                )
+                
+                full_cache_hit = (
+                    not args.force
+                    and required_files_exist
                     and cache_hit
                     and raw_md_cache_hit
                     and cached_pipeline_signature == pipeline_signature
                     and output_hash_matches(json_path, cached_final_json_hash)
                     and output_hash_matches(metadata_path, cached_metadata_hash)
                 )
+                
+                # Verbose logging for cache miss reasons
+                if args.verbose and not full_cache_hit and not args.force:
+                    reasons = []
+                    if not raw_md_path.exists():
+                        reasons.append("raw_md 없음")
+                    if not json_path.exists():
+                        reasons.append("json 없음")
+                    if not metadata_path.exists():
+                        reasons.append("metadata 없음")
+                    if not cache_hit:
+                        reasons.append("HWP 해시 불일치")
+                    if not raw_md_cache_hit:
+                        reasons.append("raw_md 해시 불일치")
+                    if cached_pipeline_signature != pipeline_signature:
+                        reasons.append("파이프라인 시그니처 변경")
+                    if required_files_exist and not output_hash_matches(json_path, cached_final_json_hash):
+                        reasons.append("json 해시 불일치")
+                    if required_files_exist and not output_hash_matches(metadata_path, cached_metadata_hash):
+                        reasons.append("metadata 해시 불일치")
+                    if reasons:
+                        console.print(f"[dim]캐시 미스: {', '.join(reasons)}[/dim]")
+                
                 if full_cache_hit:
                     if args.verbose:
                         console.print(f"[dim]캐시 적중: {file.name} (변환/전처리/포맷팅 생략)[/dim]")
