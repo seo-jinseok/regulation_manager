@@ -67,6 +67,28 @@ class TestUtils(unittest.TestCase):
         # Stop before part header
         self.assertNotIn("학교법인동의학원정관", dept)
 
+    def test_metadata_extractor_dept_handles_school_foundation_code(self):
+        extractor = MetadataExtractor()
+        text = """
+찾아보기
+<소관부서별>
+예산팀
+예산결산자문위원회규정【폐지】 4-0-11
+학교법인동의학원정관 1-0-1
+
+구매팀
+구매업무규정 3-1-125
+학교법인동의학원정관
+        """
+        result = extractor.extract(text)
+        dept = result["index_by_dept"]
+        self.assertIn("예산팀", dept)
+        self.assertIn("구매팀", dept)
+        self.assertEqual(dept["예산팀"][-1]["title"], "학교법인동의학원정관")
+        self.assertEqual(dept["예산팀"][-1]["rule_code"], "1-0-1")
+        self.assertEqual(len(dept["구매팀"]), 1)
+        self.assertNotIn("학교법인동의학원정관", dept)
+
 from unittest.mock import patch
 if __name__ == "__main__":
     unittest.main()

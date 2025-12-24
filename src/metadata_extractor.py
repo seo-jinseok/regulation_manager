@@ -92,28 +92,27 @@ class MetadataExtractor:
         dept_index[current_dept] = []
         
         entry_pattern = re.compile(r'^\s*(?P<title>.*?)\s+(?P<code>\d+[-—]\d+[-—]\d+)')
-        stop_patterns = [
+        skip_patterns = [
             re.compile(r'^\s*\|\s*'),  # table rows like | --- |
             re.compile(r'^[\|\-\s]+$'),  # divider lines
+        ]
+        end_patterns = [
             re.compile(r'^제\s*\d+\s*편'),  # part header
             re.compile(r'^제\s*\d+\s*장'),  # chapter header
             re.compile(r'.*규정집.*'),
-            re.compile(r'.*학교법인.*'),
         ]
         
         for line in lines:
             line = line.strip()
             if not line:
                 continue
-
-            for pat in stop_patterns:
-                if pat.match(line):
-                    # End of department index section detected; stop parsing further lines
-                    if pat in (stop_patterns[2], stop_patterns[3], stop_patterns[4], stop_patterns[5]):
-                        return {k: v for k, v in dept_index.items() if v}
-                    # Skip structural table noise
-                    continue
                 
+            if any(pat.match(line) for pat in skip_patterns):
+                continue
+
+            if any(pat.match(line) for pat in end_patterns):
+                break
+
             m = entry_pattern.match(line)
             if m:
                 title = m.group("title").strip()
@@ -127,6 +126,8 @@ class MetadataExtractor:
                     "rule_code": code
                 })
             else:
+                if "학교법인" in line and not re.search(r'\d+\s*[-—–]\s*\d+\s*[-—–]\s*\d+', line):
+                    break
                 # Department name or header
                 current_dept = line
                 if current_dept not in dept_index:
