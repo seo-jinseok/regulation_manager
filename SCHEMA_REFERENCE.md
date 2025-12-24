@@ -8,7 +8,13 @@ JSON 파일의 최상위 루트는 단일 소스 파일에서 파싱된 문서(�
 
 | 필드명 | 타입 | 설명 |
 | :--- | :--- | :--- |
+| `schema_version` | `string` | JSON 출력 스키마 버전입니다. |
+| `generated_at` | `string` | 생성 시각(UTC, ISO 8601)입니다. |
+| `pipeline_signature` | `string` | 캐시 및 재현성을 위한 파이프라인 시그니처입니다. |
 | `file_name` | `string` | 원본 HWP 파일의 이름입니다. |
+| `toc` | `Array<Object>` | 규정집 목차 엔트리 리스트입니다. 각 엔트리는 `title`, `rule_code`를 가집니다. |
+| `index_by_alpha` | `Array<Object>` | 찾아보기(가나다순) 엔트리 리스트입니다. 각 엔트리는 `title`, `rule_code`를 가집니다. |
+| `index_by_dept` | `Object<string, Array<Object>>` | 찾아보기(소관부서별) 엔트리 맵입니다. 키는 부서명이며 값은 `{title, rule_code}` 리스트입니다. |
 | `docs` | `Array<Document>` | 파싱된 규정 문서(`Document`)들의 리스트입니다. |
 
 ## 문서 객체 (Document Object)
@@ -17,6 +23,7 @@ JSON 파일의 최상위 루트는 단일 소스 파일에서 파싱된 문서(�
 
 | 필드명 | 타입 | 설명 |
 | :--- | :--- | :--- |
+| `doc_type` | `string` | 문서 타입입니다. Enum: `regulation`, `toc`, `index_alpha`, `index_dept`, `index`, `note`, `unknown`. |
 | `title` | `string` | 규정의 공식 명칭입니다 (예: "동의대학교학칙"). |
 | `part` | `string` | *(선택)* 해당 규정이 속한 편(Part) 또는 범주입니다 (예: "제2편 학칙"). |
 | `metadata` | `Object` | 처리 메타데이터입니다 (스캔 일시, 소스 파일명, 규정 코드 등). |
@@ -31,16 +38,16 @@ JSON 파일의 최상위 루트는 단일 소스 파일에서 파싱된 문서(�
 
 | 필드명 | 타입 | 설명 |
 | :--- | :--- | :--- |
-| `id` | `string` | UUID v4 문자열입니다. |
+| `id` | `string` | 결정적 UUID(uuid5) 문자열입니다. 동일 입력/구조에 대해 재생성 시에도 안정적으로 유지됩니다. |
 | `type` | `string` | 구조적 레벨 타입입니다. Enum: `chapter`(장), `section`(절), `subsection`(관), `article`(조), `paragraph`(항), `item`(호), `subitem`(목), `addendum`(부칙헤더), `addendum_item`(부칙항목), `text`. |
 | `display_no` | `string` | 원문 표시 번호입니다 (예: "제5조", "①", "1.", "가."). 없을 수 있습니다. |
 | `sort_no` | `Object` | 정렬용 숫자 키입니다. `{ "main": int, "sub": int }` |
 | `title` | `string` | 노드의 제목입니다 (예: "총칙", "목적"). 없을 수 있습니다(null). |
 | `text` | `string` | 해당 노드의 본문 텍스트입니다 (자식 노드의 텍스트는 포함하지 않음). |
 | `confidence_score` | `float` | 해당 노드 추출의 신뢰도 점수 (0.0 ~ 1.0) 입니다. |
-| `references` | `Array<Object>` | 본문 내에서 발견된 다른 조항/항목에 대한 상호 참조 리스트입니다. |
+| `references` | `Array<Object>` | 본문 내에서 발견된 다른 조항/항목에 대한 상호 참조 리스트입니다. 해소된 경우 `target_doc_rule_code`, `target_node_id`가 추가될 수 있습니다. |
 | `children` | `Array<Node>` | 중첩된 하위(자식) 노드들의 리스트입니다. |
-| `metadata` | `Object` | *(선택)* 노드별 부가 정보입니다. 예: 부칙 헤더의 `has_text`. |
+| `metadata` | `Object` | *(선택)* 노드별 부가 정보입니다. 예: 부칙 헤더의 `has_text`, 표(테이블) 추출 결과 `tables`. |
 
 ### 노드 레벨 및 계층 구조 (Hierarchy)
 

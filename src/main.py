@@ -7,6 +7,7 @@ import json
 import time
 from pathlib import Path
 from dotenv import load_dotenv
+import shutil
 
 from .converter import HwpToMarkdownReader
 from .preprocessor import Preprocessor
@@ -15,7 +16,8 @@ from .llm_client import LLMClient
 from .metadata_extractor import MetadataExtractor
 from .cache_manager import CacheManager
 
-PIPELINE_SIGNATURE_VERSION = "v3"
+PIPELINE_SIGNATURE_VERSION = "v4"
+OUTPUT_SCHEMA_VERSION = "v4"
 
 def _resolve_preprocessor_rules_path() -> Path:
     rules_path = os.getenv("PREPROCESSOR_RULES_PATH")
@@ -187,7 +189,8 @@ def run_pipeline(args, console=None):
                     continue
                 
                 # 1. HWP -> MD
-                if not args.force and raw_md_path.exists() and cache_hit and raw_md_cache_hit:
+                hwp5html_available = shutil.which("hwp5html") is not None
+                if raw_md_path.exists() and ((not args.force and cache_hit and raw_md_cache_hit) or not hwp5html_available):
                     with open(raw_md_path, "r", encoding="utf-8") as f:
                         raw_md = f.read()
                     if raw_html_path.exists():
@@ -229,6 +232,7 @@ def run_pipeline(args, console=None):
                     html_content=html_content,
                     verbose_callback=status_callback,
                     extracted_metadata=extracted_metadata,
+                    source_file_name=file.name,
                 )
                 
                 # Backfill metadata
@@ -253,10 +257,13 @@ def run_pipeline(args, console=None):
                 
                 # Save
                 final_json = {
+                    "schema_version": OUTPUT_SCHEMA_VERSION,
+                    "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                    "pipeline_signature": pipeline_signature,
                     "file_name": file.name,
-                    "toc": extracted_metadata.get("toc") if extracted_metadata else None,
-                    "index_by_alpha": extracted_metadata.get("index_by_alpha") if extracted_metadata else None,
-                    "index_by_dept": extracted_metadata.get("index_by_dept") if extracted_metadata else None,
+                    "toc": (extracted_metadata.get("toc") if extracted_metadata else None) or [],
+                    "index_by_alpha": (extracted_metadata.get("index_by_alpha") if extracted_metadata else None) or [],
+                    "index_by_dept": (extracted_metadata.get("index_by_dept") if extracted_metadata else None) or {},
                     "docs": final_docs,
                 }
                 final_json_text = json.dumps(final_json, ensure_ascii=False, indent=2)

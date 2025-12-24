@@ -69,13 +69,9 @@ class TestSchemaV2(unittest.TestCase):
 """
         result = self.formatter.parse(doc_text)
         article = result[0]['content'][0]
-        # Hierarchy: Article -> Paragraph (Implicit) -> Item
+        # Hierarchy: Article -> Item
         self.assertTrue(len(article['children']) > 0)
-        implicit_paragraph = article['children'][0]
-        self.assertEqual(implicit_paragraph['type'], 'paragraph')
-        
-        self.assertTrue(len(implicit_paragraph['children']) > 0)
-        item = implicit_paragraph['children'][0]
+        item = article['children'][0]
         
         self.assertEqual(item['type'], 'item') # Or whatever type we define
         self.assertEqual(item['display_no'], '1.')
@@ -90,9 +86,8 @@ class TestSchemaV2(unittest.TestCase):
 """
         result = self.formatter.parse(doc_text)
         article = result[0]['content'][0]
-        # Article -> Paragraph (Implicit) -> Item -> SubItem
-        implicit_para = article['children'][0]
-        item = implicit_para['children'][0]
+        # Article -> Item -> SubItem
+        item = article['children'][0]
         subitem = item['children'][0]
         
         self.assertEqual(subitem['type'], 'subitem')

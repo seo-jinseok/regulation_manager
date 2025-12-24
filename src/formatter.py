@@ -1,8 +1,11 @@
 import re
 import json
+import hashlib
 from typing import List, Dict, Any, Optional
 from bs4 import BeautifulSoup
 import uuid
+
+STABLE_ID_NAMESPACE = uuid.UUID("f24a86f2-2c2d-4a08-9cc4-6b51b0b4043a")
 
 class RegulationFormatter:
     """
@@ -16,6 +19,7 @@ class RegulationFormatter:
         html_content: Optional[str] = None,
         verbose_callback=None,
         extracted_metadata: Optional[Dict[str, Any]] = None,
+        source_file_name: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         # 1. First Pass: Flat Parsing (Existing Logic)
         if verbose_callback:
@@ -124,6 +128,10 @@ class RegulationFormatter:
                         
         cleaned_docs = self._reorder_and_trim_docs(final_docs)
         merged_docs = self._merge_adjacent_docs(cleaned_docs)
+        self._assign_doc_types(merged_docs)
+        self._extract_tables(merged_docs)
+        self._assign_stable_node_ids(merged_docs, source_file_name=source_file_name)
+        self._resolve_references(merged_docs)
         return merged_docs
 
     def _doc_has_content(self, doc: Dict[str, Any]) -> bool:
@@ -198,6 +206,375 @@ class RegulationFormatter:
 
         return merged
 
+    def _assign_doc_types(self, docs: List[Dict[str, Any]]) -> None:
+        for doc in docs:
+            if doc.get("doc_type"):
+                continue
+            kind = self._index_kind(doc)
+            if kind:
+                doc["doc_type"] = kind
+                continue
+
+            rule_code = (doc.get("metadata") or {}).get("rule_code")
+            if rule_code:
+                doc["doc_type"] = "regulation"
+                continue
+
+            if self._doc_has_content(doc):
+                doc["doc_type"] = "note"
+            else:
+                doc["doc_type"] = "unknown"
+
+    def _assign_stable_node_ids(self, docs: List[Dict[str, Any]], source_file_name: Optional[str] = None) -> None:
+        for doc in docs:
+            doc_key = self._stable_doc_key(doc, source_file_name=source_file_name)
+            for section in ("content", "addenda"):
+                nodes = doc.get(section) or []
+                self._assign_stable_node_ids_recursive(nodes, parent_path=section, doc_key=doc_key)
+
+    def _stable_doc_key(self, doc: Dict[str, Any], source_file_name: Optional[str] = None) -> str:
+        parts = []
+        if source_file_name:
+            parts.append(f"file:{source_file_name}")
+        doc_type = (doc.get("doc_type") or "").strip()
+        if doc_type:
+            parts.append(f"type:{doc_type}")
+
+        metadata = doc.get("metadata") or {}
+        rule_code = (metadata.get("rule_code") or "").strip()
+        if rule_code:
+            parts.append(f"rule:{self._normalize_token(rule_code)}")
+            return "|".join(parts)
+
+        title = (doc.get("title") or "").strip()
+        part = (doc.get("part") or "").strip()
+        if part:
+            parts.append(f"part:{self._normalize_token(part)}")
+        if title:
+            parts.append(f"title:{self._normalize_token(title)}")
+        return "|".join(parts) or "doc:unknown"
+
+    def _assign_stable_node_ids_recursive(self, nodes: List[Dict[str, Any]], parent_path: str, doc_key: str) -> None:
+        if not nodes:
+            return
+
+        base_keys: List[str] = []
+        refined_keys: List[str] = []
+
+        for node in nodes:
+            base = self._stable_node_base_key(node)
+            base_keys.append(base)
+
+        # First pass: add a content hash only when necessary
+        base_counts = {}
+        for base in base_keys:
+            base_counts[base] = base_counts.get(base, 0) + 1
+
+        for node, base in zip(nodes, base_keys):
+            if base_counts.get(base, 0) <= 1:
+                refined_keys.append(base)
+                continue
+            refined_keys.append(f"{base}|h:{self._stable_node_content_hash(node)}")
+
+        # Second pass: disambiguate exact duplicates after hashing
+        refined_counts = {}
+        for key in refined_keys:
+            refined_counts[key] = refined_counts.get(key, 0) + 1
+
+        refined_seen = {}
+        for node, key in zip(nodes, refined_keys):
+            if refined_counts.get(key, 0) > 1:
+                refined_seen[key] = refined_seen.get(key, 0) + 1
+                key = f"{key}|i:{refined_seen[key]}"
+
+            path = f"{parent_path}/{key}" if parent_path else key
+            node["id"] = str(uuid.uuid5(STABLE_ID_NAMESPACE, f"{doc_key}::{path}"))
+            self._assign_stable_node_ids_recursive(node.get("children") or [], parent_path=path, doc_key=doc_key)
+
+    def _stable_node_base_key(self, node: Dict[str, Any]) -> str:
+        node_type = (node.get("type") or "").strip()
+        display_no = self._normalize_token(node.get("display_no") or "")
+        sort_no = node.get("sort_no") or {}
+        main = sort_no.get("main", 0)
+        sub = sort_no.get("sub", 0)
+        return f"{node_type}|{display_no}|{main}|{sub}"
+
+    def _stable_node_content_hash(self, node: Dict[str, Any]) -> str:
+        title = self._normalize_ws(node.get("title") or "")
+        text = self._normalize_ws(node.get("text") or "")
+        digest = hashlib.sha1(f"{title}|{text}".encode("utf-8")).hexdigest()
+        return digest[:12]
+
+    def _normalize_ws(self, value: str) -> str:
+        return re.sub(r"\s+", " ", str(value)).strip()
+
+    def _normalize_token(self, value: str) -> str:
+        return re.sub(r"\s+", "", str(value)).strip()
+
+    def _resolve_references(self, docs: List[Dict[str, Any]]) -> None:
+        for doc in docs:
+            rule_code = (doc.get("metadata") or {}).get("rule_code")
+            if not rule_code:
+                continue
+
+            doc_index = self._build_reference_index(doc)
+            for section in ("content", "addenda"):
+                nodes = doc.get(section) or []
+                self._resolve_references_in_nodes(
+                    nodes,
+                    doc_rule_code=rule_code,
+                    doc_index=doc_index,
+                    current_article=None,
+                    current_paragraph=None,
+                    current_item=None,
+                )
+
+    def _build_reference_index(self, doc: Dict[str, Any]) -> Dict[str, Any]:
+        articles: Dict[str, Dict[str, Any]] = {}
+
+        def walk(nodes: List[Dict[str, Any]]) -> None:
+            for node in nodes or []:
+                if node.get("type") == "article":
+                    key = self._normalize_token(node.get("display_no") or "")
+                    if key:
+                        articles[key] = self._build_article_reference_index(node)
+                walk(node.get("children") or [])
+
+        walk(doc.get("content") or [])
+        return {"articles": articles}
+
+    def _build_article_reference_index(self, article_node: Dict[str, Any]) -> Dict[str, Any]:
+        paragraphs: Dict[int, str] = {}
+        items_by_paragraph: Dict[int, Dict[int, str]] = {}
+        items_direct: Dict[int, str] = {}
+
+        for child in article_node.get("children") or []:
+            if child.get("type") == "paragraph":
+                para_no = int((child.get("sort_no") or {}).get("main", 0) or 0)
+                if para_no > 0:
+                    paragraphs[para_no] = child.get("id")
+                items_by_paragraph[para_no] = {}
+                for item in child.get("children") or []:
+                    if item.get("type") != "item":
+                        continue
+                    item_no = int((item.get("sort_no") or {}).get("main", 0) or 0)
+                    if item_no > 0:
+                        items_by_paragraph[para_no][item_no] = item.get("id")
+            elif child.get("type") == "item":
+                item_no = int((child.get("sort_no") or {}).get("main", 0) or 0)
+                if item_no > 0:
+                    items_direct[item_no] = child.get("id")
+
+        return {
+            "id": article_node.get("id"),
+            "paragraphs": paragraphs,
+            "items_by_paragraph": items_by_paragraph,
+            "items_direct": items_direct,
+        }
+
+    def _resolve_references_in_nodes(
+        self,
+        nodes: List[Dict[str, Any]],
+        *,
+        doc_rule_code: str,
+        doc_index: Dict[str, Any],
+        current_article: Optional[Dict[str, Any]],
+        current_paragraph: Optional[Dict[str, Any]],
+        current_item: Optional[Dict[str, Any]],
+    ) -> None:
+        for node in nodes or []:
+            node_type = node.get("type")
+            if node_type == "article":
+                current_article = node
+                current_paragraph = None
+                current_item = None
+            elif node_type == "paragraph":
+                current_paragraph = node
+                current_item = None
+            elif node_type == "item":
+                current_item = node
+
+            for ref in node.get("references") or []:
+                target_text = (ref.get("target") or ref.get("text") or "").strip()
+                if not target_text:
+                    continue
+                target_id = self._resolve_reference_target(
+                    target_text,
+                    doc_index=doc_index,
+                    current_article=current_article,
+                    current_paragraph=current_paragraph,
+                    current_item=current_item,
+                )
+                if target_id:
+                    ref["target_node_id"] = target_id
+                    ref["target_doc_rule_code"] = doc_rule_code
+
+            self._resolve_references_in_nodes(
+                node.get("children") or [],
+                doc_rule_code=doc_rule_code,
+                doc_index=doc_index,
+                current_article=current_article,
+                current_paragraph=current_paragraph,
+                current_item=current_item,
+            )
+
+    def _resolve_reference_target(
+        self,
+        target_text: str,
+        *,
+        doc_index: Dict[str, Any],
+        current_article: Optional[Dict[str, Any]],
+        current_paragraph: Optional[Dict[str, Any]],
+        current_item: Optional[Dict[str, Any]],
+    ) -> Optional[str]:
+        parsed = self._parse_reference_token(target_text)
+
+        article_key = None
+        if parsed.get("article_main") is not None:
+            article_key = self._format_article_key(parsed["article_main"], parsed.get("article_sub") or 0)
+        elif current_article:
+            article_key = self._normalize_token(current_article.get("display_no") or "")
+
+        if not article_key:
+            return None
+
+        article_entry = (doc_index.get("articles") or {}).get(article_key)
+        if not article_entry:
+            return None
+
+        para_no = parsed.get("paragraph_no")
+        item_no = parsed.get("item_no")
+
+        if para_no is None and item_no is None:
+            return article_entry.get("id")
+
+        resolved_para_no = None
+        if para_no is not None:
+            resolved_para_no = int(para_no)
+        elif item_no is not None and current_paragraph and current_article:
+            current_article_key = self._normalize_token(current_article.get("display_no") or "")
+            if current_article_key == article_key:
+                resolved_para_no = int((current_paragraph.get("sort_no") or {}).get("main", 0) or 0) or None
+
+        if item_no is None:
+            if resolved_para_no is None or resolved_para_no <= 0:
+                return None
+            return article_entry.get("paragraphs", {}).get(resolved_para_no)
+
+        item_no_int = int(item_no)
+        if item_no_int <= 0:
+            return None
+
+        if resolved_para_no is not None and resolved_para_no >= 0:
+            return article_entry.get("items_by_paragraph", {}).get(resolved_para_no, {}).get(item_no_int)
+
+        return article_entry.get("items_direct", {}).get(item_no_int)
+
+    def _parse_reference_token(self, token: str) -> Dict[str, Optional[int]]:
+        """
+        Parses a reference token like:
+        - 제6조
+        - 제6조의2
+        - 제6조제2항
+        - 제6조제2항제3호
+        - 제2항 (relative)
+        - 제3호 (relative)
+        """
+        value = self._normalize_token(token)
+        result: Dict[str, Optional[int]] = {
+            "article_main": None,
+            "article_sub": None,
+            "paragraph_no": None,
+            "item_no": None,
+        }
+
+        m = re.match(r"^제(\d+)조(?:의(\d+))?", value)
+        if m:
+            result["article_main"] = int(m.group(1))
+            result["article_sub"] = int(m.group(2)) if m.group(2) else 0
+            value = value[m.end() :]
+
+        while value:
+            m = re.match(r"^제(\d+)([항호])", value)
+            if not m:
+                break
+            num = int(m.group(1))
+            kind = m.group(2)
+            if kind == "항" and result["paragraph_no"] is None:
+                result["paragraph_no"] = num
+            elif kind == "호" and result["item_no"] is None:
+                result["item_no"] = num
+            value = value[m.end() :]
+
+        return result
+
+    def _format_article_key(self, main_no: int, sub_no: int) -> str:
+        if sub_no and int(sub_no) > 0:
+            return f"제{int(main_no)}조의{int(sub_no)}"
+        return f"제{int(main_no)}조"
+
+    def _extract_tables(self, docs: List[Dict[str, Any]]) -> None:
+        for doc in docs:
+            for section in ("content", "addenda"):
+                self._extract_tables_in_nodes(doc.get(section) or [])
+
+    def _extract_tables_in_nodes(self, nodes: List[Dict[str, Any]]) -> None:
+        for node in nodes or []:
+            text = node.get("text") or ""
+            updated_text, tables = self._split_markdown_tables(text)
+            if tables:
+                metadata = node.setdefault("metadata", {})
+                metadata["tables"] = [{"format": "markdown", "markdown": t} for t in tables]
+                node["text"] = updated_text
+            self._extract_tables_in_nodes(node.get("children") or [])
+
+    def _split_markdown_tables(self, text: str) -> tuple[str, List[str]]:
+        if not text or "|" not in text:
+            return text, []
+
+        lines = text.splitlines()
+        out_lines: List[str] = []
+        tables: List[str] = []
+
+        i = 0
+        while i < len(lines):
+            line = lines[i]
+            if not self._is_table_row(line):
+                out_lines.append(line)
+                i += 1
+                continue
+
+            block: List[str] = []
+            while i < len(lines) and self._is_table_row(lines[i]):
+                block.append(lines[i])
+                i += 1
+
+            if len(block) >= 2 and any(self._is_table_separator_row(row) for row in block):
+                tables.append("\n".join(block).strip())
+                out_lines.append(f"[TABLE:{len(tables)}]")
+                continue
+
+            out_lines.extend(block)
+
+        return "\n".join(out_lines).strip(), tables
+
+    def _is_table_row(self, line: str) -> bool:
+        stripped = (line or "").strip()
+        return stripped.startswith("|") and stripped.count("|") >= 2
+
+    def _is_table_separator_row(self, line: str) -> bool:
+        stripped = (line or "").strip()
+        if not stripped.startswith("|") or "---" not in stripped:
+            return False
+        # Loose check: a markdown separator row is typically pipes with hyphens/colons.
+        core = stripped.strip("|").strip()
+        if not core:
+            return False
+        cells = [c.strip() for c in core.split("|") if c.strip()]
+        if not cells:
+            return False
+        return all(re.fullmatch(r":?-{3,}:?", cell) for cell in cells)
+
     def _parse_toc_rule_codes(self, preamble: str) -> Dict[str, str]:
         """
         Parses the preamble of the Table of Contents to extract Title -> RuleCode mapping.
@@ -254,10 +631,12 @@ class RegulationFormatter:
                 doc["part"] = None
                 doc["content"] = self._build_index_nodes(toc_entries)
                 doc["preamble"] = ""
+                doc["doc_type"] = "toc"
             elif kind == "index_alpha" and index_alpha_entries:
                 doc["part"] = None
                 doc["content"] = self._build_index_nodes(index_alpha_entries)
                 doc["preamble"] = ""
+                doc["doc_type"] = "index_alpha"
             elif kind in ("index_dept", "index") and index_dept_entries:
                 doc["part"] = None
                 dept_nodes = []
@@ -273,6 +652,7 @@ class RegulationFormatter:
                     dept_nodes.append(dept_node)
                 doc["content"] = dept_nodes
                 doc["preamble"] = ""
+                doc["doc_type"] = "index_dept"
 
     def _create_node(self, node_type: str, display_no: str, title: Optional[str], text: Optional[str], sort_no: Dict[str, int] = None, children: List[Dict] = None, confidence_score: float = 1.0, references: List[Dict] = None, metadata: Dict[str, Any] = None) -> Dict[str, Any]:
         if sort_no is None:
@@ -443,13 +823,36 @@ class RegulationFormatter:
             
             # Paragraphs & Items
             for para in art.get('paragraphs', []):
-                para_num = para.get('paragraph_no', '')
-                para_text = para.get('content')
+                para_num = (para.get('paragraph_no', '') or '').strip()
+                para_text = (para.get('content') or '').strip()
+                items = para.get('items', []) or []
+
+                # Items can appear directly under an article without an explicit paragraph marker.
+                # Avoid emitting empty paragraph container nodes; attach items directly under the article.
+                if not para_num and not para_text:
+                    for item in items:
+                        item_num = item.get('item_no', '')
+                        item_content = item.get('content')
+                        item_sort = self._resolve_sort_no(item_num, "item")
+                        item_refs = self._extract_references(item_content)
+                        item_node = self._create_node("item", item_num, None, item_content, item_sort, references=item_refs)
+
+                        for sub in item.get('subitems', []):
+                            sub_num = sub.get('subitem_no', '')
+                            sub_sort = self._resolve_sort_no(sub_num, "subitem")
+                            sub_content = sub.get('content', '')
+                            sub_refs = self._extract_references(sub_content)
+                            sub_node = self._create_node("subitem", sub_num, None, sub_content, sub_sort, references=sub_refs)
+                            item_node["children"].append(sub_node)
+
+                        art_node["children"].append(item_node)
+                    continue
+
                 para_sort = self._resolve_sort_no(para_num, "paragraph")
                 para_refs = self._extract_references(para_text)
                 para_node = self._create_node("paragraph", para_num, None, para_text, para_sort, references=para_refs)
                 
-                for item in para.get('items', []):
+                for item in items:
                     item_num = item.get('item_no', '')
                     item_content = item.get('content')
                     item_sort = self._resolve_sort_no(item_num, "item")
@@ -717,7 +1120,10 @@ class RegulationFormatter:
             # 4. Text Content (append to current node)
             if current_node:
                 if current_node["text"]:
-                    current_node["text"] += " " + line
+                    if line.startswith("|"):
+                        current_node["text"] += "\n" + line
+                    else:
+                        current_node["text"] += " " + line
                 else:
                     current_node["text"] = line
             else:
@@ -888,7 +1294,8 @@ class RegulationFormatter:
                  continue
 
             # Article 1 Split
-            article_1_match = re.match(r'^(제\s*1\s*조)\s*(?:\(([^)]+)\))?\s*(.*)', line)
+            # NOTE: Avoid splitting on "제1조의2" etc (it must be the exact first article).
+            article_1_match = re.match(r'^(제\s*1\s*조)(?!\s*의)\s*(?:\(([^)]+)\))?\s*(.*)', line)
             if article_1_match:
                 if current_data["articles"] or current_article:
                      split_idx = -1
@@ -935,7 +1342,7 @@ class RegulationFormatter:
                 # The components (main/sub) will be resolved in _build_hierarchy via _resolve_sort_no
                 article_no = article_match.group(1) 
                 article_title = article_match.group(4) or ""
-                content = article_match.group(5)
+                content = (article_match.group(5) or "").lstrip()
                 
                 current_article = {
                     "article_no": article_no,
@@ -1026,7 +1433,10 @@ class RegulationFormatter:
                     continue
                 
                 if current_paragraph:
-                    current_paragraph["content"] += " " + line
+                    if line.startswith("|"):
+                        current_paragraph["content"] += "\n" + line
+                    else:
+                        current_paragraph["content"] += " " + line
                 elif current_article:
                     current_article["content"].append(line)
                 else:
