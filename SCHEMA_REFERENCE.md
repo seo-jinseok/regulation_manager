@@ -127,3 +127,52 @@ JSON 파일의 최상위 루트는 단일 소스 파일에서 파싱된 문서(�
   }
 ]
 ```
+
+## RAG 최적화 필드 (RAG Enhancement Fields)
+
+`enhance_for_rag.py` 스크립트로 후처리 시 추가되는 필드들입니다. Hybrid RAG(키워드 + 벡터 검색) 데이터베이스 구축에 최적화되어 있습니다.
+
+### 루트 레벨 추가 필드
+
+| 필드명 | 타입 | 설명 |
+| :--- | :--- | :--- |
+| `rag_enhanced` | `boolean` | RAG 후처리 완료 여부입니다 (`true`). |
+| `rag_schema_version` | `string` | RAG 스키마 버전입니다 (예: `"1.0"`). |
+
+### 문서(Document) 레벨 추가 필드
+
+| 필드명 | 타입 | 설명 |
+| :--- | :--- | :--- |
+| `status` | `string` | 규정 상태입니다. Enum: `active`, `abolished`. 제목에 "【폐지】" 포함 여부로 판별합니다. |
+| `abolished_date` | `string` | *(선택)* 폐지 일자 (ISO 8601). 현재는 항상 `null`입니다. |
+| `is_index_duplicate` | `boolean` | *(선택)* 색인 문서(`toc`, `index_alpha` 등)와 중복되는 문서임을 표시합니다. |
+
+### 노드(Node) 레벨 추가 필드
+
+| 필드명 | 타입 | 설명 |
+| :--- | :--- | :--- |
+| `parent_path` | `Array<string>` | 루트부터 현재 노드까지의 계층 경로(breadcrumb)입니다. 벡터 검색 시 컨텍스트를 제공합니다. |
+| `full_text` | `string` | *(텍스트가 있는 경우만)* 벡터 임베딩용 self-contained 텍스트입니다. `[경로] 본문` 형식입니다. |
+| `keywords` | `Array<string>` | *(추출된 경우만)* 본문에서 추출된 핵심 키워드 리스트입니다. 키워드 검색 인덱스에 사용됩니다. |
+| `amendment_history` | `Array<Object>` | *(추출된 경우만)* 개정/신설/삭제 이력입니다. 각 객체는 `date` (YYYY-MM-DD)와 `type` (개정/신설/삭제)을 포함합니다. |
+
+### 예시 (RAG Enhanced Node)
+
+```json
+{
+  "type": "paragraph",
+  "display_no": "①",
+  "sort_no": { "main": 1, "sub": 0 },
+  "title": "",
+  "text": "이사와 감사는 이사회에서 선임하여 관할청의 승인을 받아 취임한다. (개정 2006.11.06., 2022.04.21.)",
+  "parent_path": ["학교법인동의학원정관", "제4장 임원", "제24조 임원의 선임방법"],
+  "full_text": "[학교법인동의학원정관 > 제4장 임원 > 제24조 임원의 선임방법 > ①] 이사와 감사는 이사회에서 선임하여...",
+  "keywords": ["이사", "감사", "선임", "승인"],
+  "amendment_history": [
+    { "date": "2006-11-06", "type": "개정" },
+    { "date": "2022-04-21", "type": "개정" }
+  ],
+  "children": []
+}
+```
+

@@ -15,6 +15,7 @@ from .formatter import RegulationFormatter
 from .llm_client import LLMClient
 from .metadata_extractor import MetadataExtractor
 from .cache_manager import CacheManager
+from .enhance_for_rag import enhance_json
 
 PIPELINE_SIGNATURE_VERSION = "v4"
 OUTPUT_SCHEMA_VERSION = "v4"
@@ -266,6 +267,12 @@ def run_pipeline(args, console=None):
                     "index_by_dept": (extracted_metadata.get("index_by_dept") if extracted_metadata else None) or {},
                     "docs": final_docs,
                 }
+                # RAG enhancement if requested
+                if args.enhance_rag:
+                    final_json = enhance_json(final_json)
+                    if args.verbose:
+                        console.print(f"[dim]RAG 최적화 적용 완료[/dim]")
+                
                 final_json_text = json.dumps(final_json, ensure_ascii=False, indent=2)
                 with open(json_path, "w", encoding="utf-8") as f:
                     f.write(final_json_text)
@@ -311,6 +318,13 @@ def main():
     parser.add_argument("--force", action="store_true")
     parser.add_argument("--cache_dir", type=str, default=".cache")
     parser.add_argument("--verbose", action="store_true")
+    parser.add_argument(
+        "--no-enhance-rag",
+        action="store_false",
+        dest="enhance_rag",
+        help="Disable RAG optimization (parent_path, full_text, keywords, etc.)",
+    )
+    parser.set_defaults(enhance_rag=True)
     
     if len(sys.argv) == 1:
         from .interactive import run_interactive
