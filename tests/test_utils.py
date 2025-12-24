@@ -47,6 +47,26 @@ class TestUtils(unittest.TestCase):
         self.assertIn("기획처", result['index_by_dept'])
         self.assertEqual(len(result['index_by_dept']['기획처']), 1)
 
+    def test_metadata_extractor_dept_filters_noise(self):
+        extractor = MetadataExtractor()
+        text = """
+찾아보기
+<소관부서별>
+학생군사교육단
+학생군사교육단운영규정 5-1-24
+| --- | --- | --- |
+| 제1편 | | |
+학교법인동의학원정관
+제1편 학칙
+        """
+        result = extractor.extract(text)
+        dept = result["index_by_dept"]
+        self.assertIn("학생군사교육단", dept)
+        self.assertNotIn("| --- | --- | --- |", dept)
+        self.assertNotIn("| 제1편 | | |", dept)
+        # Stop before part header
+        self.assertNotIn("학교법인동의학원정관", dept)
+
 from unittest.mock import patch
 if __name__ == "__main__":
     unittest.main()

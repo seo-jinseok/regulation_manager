@@ -87,16 +87,27 @@ class MetadataExtractor:
         content = match.group(1)
         lines = content.splitlines()
         
-        dept_index = {}
+        dept_index: Dict[str, List[Dict[str, str]]] = {}
         current_dept = "Unknown"
         dept_index[current_dept] = []
         
-        # Regex for index entries (might be messy)
         entry_pattern = re.compile(r'^\s*(?P<title>.*?)\s+(?P<code>\d+[-—]\d+[-—]\d+)')
+        stop_patterns = [
+            re.compile(r'^\s*\|\s*'),  # table rows like | --- |
+            re.compile(r'^[\|\-\s]+$'),  # divider lines
+            re.compile(r'^제\s*\d+\s*편'),  # part header
+            re.compile(r'^제\s*\d+\s*장'),  # chapter header
+        ]
         
         for line in lines:
             line = line.strip()
             if not line:
+                continue
+
+            if any(p.match(line) for p in stop_patterns):
+                # Treat as end of dept index if we encounter structural headers/tables
+                if p := stop_patterns[2].match(line) or stop_patterns[3].match(line):
+                    break
                 continue
                 
             m = entry_pattern.match(line)
@@ -104,7 +115,6 @@ class MetadataExtractor:
                 title = m.group("title").strip()
                 raw_code = m.group("code")
                 
-                # Try to find clean code in TOC map using normalized title
                 lookup_key = self._normalize_title(title)
                 code = toc_map.get(lookup_key, self._normalize_code(raw_code)) if toc_map else self._normalize_code(raw_code)
                 
@@ -113,14 +123,13 @@ class MetadataExtractor:
                     "rule_code": code
                 })
             else:
-                # Likely a department name or header
-                # Titles don't start with digits usually
+                # Department name or header
                 current_dept = line
                 if current_dept not in dept_index:
                     dept_index[current_dept] = []
         
-        if not dept_index["Unknown"]:
-            del dept_index["Unknown"]
+        # Drop empty buckets
+        dept_index = {k: v for k, v in dept_index.items() if v}
             
         return dept_index
 
