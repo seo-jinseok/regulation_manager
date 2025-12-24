@@ -252,7 +252,13 @@ def run_pipeline(args, console=None):
                     )
                 
                 # Save
-                final_json = {"file_name": file.name, "docs": final_docs}
+                final_json = {
+                    "file_name": file.name,
+                    "toc": extracted_metadata.get("toc") if extracted_metadata else None,
+                    "index_by_alpha": extracted_metadata.get("index_by_alpha") if extracted_metadata else None,
+                    "index_by_dept": extracted_metadata.get("index_by_dept") if extracted_metadata else None,
+                    "docs": final_docs,
+                }
                 final_json_text = json.dumps(final_json, ensure_ascii=False, indent=2)
                 with open(json_path, "w", encoding="utf-8") as f:
                     f.write(final_json_text)

@@ -122,7 +122,9 @@ class RegulationFormatter:
         if extracted_metadata:
             self._populate_index_docs(final_docs, extracted_metadata)
                         
-        return self._reorder_and_trim_docs(final_docs)
+        cleaned_docs = self._reorder_and_trim_docs(final_docs)
+        merged_docs = self._merge_adjacent_docs(cleaned_docs)
+        return merged_docs
 
     def _doc_has_content(self, doc: Dict[str, Any]) -> bool:
         return bool(doc.get("content")) or bool(doc.get("addenda")) or bool(doc.get("attached_files"))
@@ -146,30 +148,55 @@ class RegulationFormatter:
         if not docs:
             return docs
 
-        first_content_idx = None
-        for i, doc in enumerate(docs):
-            if self._doc_has_content(doc):
-                first_content_idx = i
-                break
-
-        if first_content_idx is None:
-            return docs
+        order_rank = {"toc": 0, "index_alpha": 1, "index_dept": 2, "index": 3}
 
         index_docs = []
-        for i, doc in enumerate(docs[:first_content_idx]):
+        content_docs = []
+
+        for i, doc in enumerate(docs):
+            if self._doc_has_content(doc):
+                content_docs.append(doc)
+                continue
+
             kind = self._index_kind(doc)
             if kind:
                 doc["part"] = None
-                index_docs.append((kind, i, doc))
+                index_docs.append((order_rank.get(kind, 99), i, doc))
+                continue
 
-        if not index_docs:
-            return docs
+            # Drop non-index, empty docs (e.g., 관리 현황표 등)
+            continue
 
-        order = {"toc": 0, "index_alpha": 1, "index_dept": 2, "index": 3}
-        index_docs.sort(key=lambda item: (order.get(item[0], 99), item[1]))
+        index_docs.sort(key=lambda item: (item[0], item[1]))
         ordered_index_docs = [doc for _, _, doc in index_docs]
 
-        return ordered_index_docs + docs[first_content_idx:]
+        return ordered_index_docs + content_docs
+
+    def _merge_adjacent_docs(self, docs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        if not docs:
+            return docs
+
+        merged = [docs[0]]
+
+        for doc in docs[1:]:
+            current = merged[-1]
+
+            # Drop explicit noise docs
+            if doc.get("title") and "규정집 관리 현황표" in doc.get("title"):
+                continue
+
+            # Merge doc with missing title into previous if same part
+            if not doc.get("title") and doc.get("content") and current.get("part") == doc.get("part"):
+                current["content"].extend(doc.get("content") or [])
+                current["addenda"].extend(doc.get("addenda") or [])
+                current["attached_files"].extend(doc.get("attached_files") or [])
+                if doc.get("metadata"):
+                    current["metadata"].update({k: v for k, v in doc["metadata"].items() if v is not None})
+                continue
+
+            merged.append(doc)
+
+        return merged
 
     def _parse_toc_rule_codes(self, preamble: str) -> Dict[str, str]:
         """
@@ -224,12 +251,17 @@ class RegulationFormatter:
                 continue
             kind = self._index_kind(doc)
             if kind == "toc" and toc_entries:
+                doc["part"] = None
                 doc["content"] = self._build_index_nodes(toc_entries)
+                doc["preamble"] = ""
             elif kind == "index_alpha" and index_alpha_entries:
+                doc["part"] = None
                 doc["content"] = self._build_index_nodes(index_alpha_entries)
+                doc["preamble"] = ""
             elif kind in ("index_dept", "index") and index_dept_entries:
+                doc["part"] = None
                 dept_nodes = []
-                for dept_idx, (dept, entries) in enumerate(index_dept_entries.items(), 1):
+                for dept_idx, (dept, entries) in enumerate(sorted(index_dept_entries.items()), 1):
                     dept_node = self._create_node(
                         "text",
                         "",
@@ -240,6 +272,7 @@ class RegulationFormatter:
                     dept_node["children"] = self._build_index_nodes(entries)
                     dept_nodes.append(dept_node)
                 doc["content"] = dept_nodes
+                doc["preamble"] = ""
 
     def _create_node(self, node_type: str, display_no: str, title: Optional[str], text: Optional[str], sort_no: Dict[str, int] = None, children: List[Dict] = None, confidence_score: float = 1.0, references: List[Dict] = None, metadata: Dict[str, Any] = None) -> Dict[str, Any]:
         if sort_no is None:

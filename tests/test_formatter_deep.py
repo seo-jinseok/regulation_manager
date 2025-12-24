@@ -88,6 +88,8 @@ class TestFormatterDeep(unittest.TestCase):
         self.assertEqual(docs[0]["content"][0]["metadata"].get("rule_code"), "1-1-1")
         self.assertGreater(len(docs[1].get("content", [])), 0)
         self.assertGreater(len(docs[2].get("content", [])), 0)
+        # Noise docs without content should be dropped
+        self.assertNotIn("제3편 행정", [doc.get("part") for doc in docs[:3]])
 
 if __name__ == "__main__":
     unittest.main()
