@@ -66,3 +66,8 @@ hwp.log
 
 todo.md
 output_verify/
+
+# Test temporary outputs (should auto-clean, but just in case)
+data/test_output*/
+.cache_test*/
+

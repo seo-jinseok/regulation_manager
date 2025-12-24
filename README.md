@@ -12,6 +12,12 @@
     *   **LLM 기반 (옵션)**: 파일 상태가 좋지 않아 문장이 심하게 끊기거나 의미론적 복구가 필요한 경우에만 사용을 권장합니다. (Ollama, LM Studio 등 지원)
 3.  **JSON 구조화**: 변환된 텍스트를 `조(Article)`, `항(Paragraph)`, `호(Item)` 단위의 계층적 JSON 데이터로 파싱합니다.
 4.  **자동 정제 (Refinement)**: 변환된 JSON에서 조항 내 챕터 정보를 분리하고, 부칙과 별지/서식을 별도 필드로 구조화합니다.
+5.  **RAG 최적화 (기본 활성화)**: Hybrid RAG 데이터베이스 구축을 위한 필드 자동 추가:
+    *   `parent_path`: 노드의 계층 경로 (breadcrumb)
+    *   `full_text`: 벡터 임베딩용 self-contained 텍스트
+    *   `keywords`: 핵심 키워드 자동 추출
+    *   `status`: 규정 상태 (active/abolished)
+    *   `amendment_history`: 개정/신설/삭제 이력 추출
 
 ## 설치 방법 (Installation)
 
@@ -92,6 +98,7 @@ python -m src.main "/path/to/규정.hwp" --use_llm --provider openai --model gpt
 | `--model` | 사용할 모델 이름 (LM Studio는 필수) | (Provider별 기본값) | `--model gemma2` |
 | `--base_url` | 로컬 서버 API 주소 (필요 시 변경) | (Provider별 기본값) | `--base_url http://localhost:11434` |
 | `--allow_llm_fallback` | LLM 초기화 실패 시 정규식 모드로 계속 진행 | False | `--allow_llm_fallback` |
+| `--no-enhance-rag` | RAG 최적화 비활성화 (기본값: 활성화) | False | `--no-enhance-rag` |
 
 > 기본 출력 경로는 `data/output`이며, 기존 `output/` 디렉토리는 레거시 경로로 취급됩니다.
 
@@ -134,5 +141,19 @@ python -m src.main "/path/to/규정.hwp" --use_llm --provider openai --model gpt
   ]
 }
 ```
+
+### RAG 최적화 필드
+
+JSON 출력에는 Hybrid RAG 데이터베이스 구축을 위한 추가 필드가 자동으로 포함됩니다:
+
+| 필드 | 설명 |
+|------|------|
+| `parent_path` | 계층 경로 배열 (breadcrumb) |
+| `full_text` | `[경로] 본문` 형식의 벡터 임베딩용 텍스트 |
+| `keywords` | 본문에서 추출된 핵심 키워드 |
+| `status` | `active` 또는 `abolished` |
+| `amendment_history` | `[{"date": "YYYY-MM-DD", "type": "개정/신설/삭제"}]` 형식의 이력 |
+
+자세한 스키마는 [SCHEMA_REFERENCE.md](./SCHEMA_REFERENCE.md)의 **RAG 최적화 필드** 섹션을 참고하세요.
 
 ---

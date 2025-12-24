@@ -9,7 +9,8 @@
 
 ## Build, Test, and Development Commands
 - `uv venv` / `uv pip install -r requirements.txt`: create env and install deps.
-- `uv run python -m src.main "data/input/규정집.hwp"`: run pipeline on a file.
+- `uv run python -m src.main "data/input/규정집.hwp"`: run pipeline on a file (RAG optimization enabled by default).
+- `uv run python -m src.main "data/input/규정집.hwp" --no-enhance-rag`: disable RAG optimization.
 - `regulation-manager "data/input/규정집.hwp"`: installed CLI entry point.
 - `uv run pytest`: run all tests (including `tests/debug`).
 - `uv lock`: refresh `uv.lock` after dependency changes.
@@ -18,6 +19,7 @@
 - Python 3.11+, 4-space indentation, `snake_case` for functions/vars, `CamelCase` for classes.
 - Prefer `pathlib.Path` and relative imports inside `src/`.
 - Keep output schema stable: use node fields `type`, `display_no`, `sort_no`, `children`, and `metadata` keys.
+- RAG fields (`parent_path`, `full_text`, `keywords`, `status`, `amendment_history`) are auto-added by default.
 - Avoid non-ASCII in code/comments unless required by domain data (Korean regulation text).
 
 ## Testing Guidelines
