@@ -97,8 +97,8 @@ class MetadataExtractor:
             re.compile(r'^[\|\-\s]+$'),  # divider lines
         ]
         end_patterns = [
-            re.compile(r'^제\s*\d+\s*편'),  # part header
-            re.compile(r'^제\s*\d+\s*장'),  # chapter header
+            re.compile(r'^[\|\s]*제\s*\d+\s*편'),  # part header with optional table chars
+            re.compile(r'^[\|\s]*제\s*\d+\s*장'),  # chapter header
             re.compile(r'.*규정집.*'),
         ]
         
@@ -107,11 +107,12 @@ class MetadataExtractor:
             if not line:
                 continue
                 
-            if any(pat.match(line) for pat in skip_patterns):
-                continue
-
+            # Check for end patterns FIRST, before skipping table artifacts
             if any(pat.match(line) for pat in end_patterns):
                 break
+
+            if any(pat.match(line) for pat in skip_patterns):
+                continue
 
             m = entry_pattern.match(line)
             if m:
