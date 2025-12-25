@@ -19,6 +19,8 @@ source .venv/bin/activate  # Windows: .venv\Scripts\activate
 uv sync
 ```
 
+> `regulation-*` 명령이 없으면 `uv run python -m src.main ...` / `uv run python -m src.rag.interface.cli ...`를 사용하세요.
+
 ---
 
 ## 2️⃣ 규정 변환 (1분)
@@ -27,7 +29,7 @@ HWP 파일을 `data/input/` 폴더에 넣고 변환합니다.
 
 ```bash
 # 변환 실행
-uv run python -m src.main "data/input/규정집.hwp"
+uv run regulation-manager "data/input/규정집.hwp"
 ```
 
 **결과물** (`data/output/`):
@@ -42,7 +44,7 @@ uv run python -m src.main "data/input/규정집.hwp"
 변환된 JSON을 ChromaDB에 적재합니다.
 
 ```bash
-uv run python -m src.rag.interface.cli sync data/output/규정집.json
+uv run regulation-rag sync data/output/규정집.json
 ```
 
 **성공 시 출력:**
@@ -57,10 +59,10 @@ uv run python -m src.rag.interface.cli sync data/output/규정집.json
 
 ```bash
 # 자연어로 검색
-uv run python -m src.rag.interface.cli search "교원 연구년 신청 자격"
+uv run regulation-rag search "교원 연구년 신청 자격"
 
 # 더 많은 결과
-uv run python -m src.rag.interface.cli search "장학금" -n 10
+uv run regulation-rag search "장학금" -n 10
 ```
 
 ---
@@ -69,10 +71,10 @@ uv run python -m src.rag.interface.cli search "장학금" -n 10
 
 ```bash
 # 로컬 LLM (기본: Ollama)
-uv run python -m src.rag.interface.cli ask "교원 연구년 신청 자격은?"
+uv run regulation-rag ask "교원 연구년 신청 자격은?"
 
 # 다른 프로바이더
-uv run python -m src.rag.interface.cli ask "휴학 절차" --provider lmstudio --base-url http://localhost:1234
+uv run regulation-rag ask "휴학 절차" --provider lmstudio --base-url http://localhost:1234
 ```
 
 ---
@@ -80,11 +82,12 @@ uv run python -m src.rag.interface.cli ask "휴학 절차" --provider lmstudio -
 ## 6️⃣ 웹 UI (선택)
 
 ```bash
-uv run python -m src.rag.interface.gradio_app
+uv run regulation-web
 ```
 
 브라우저에서 “올인원” 탭을 열고 파일 업로드 → 변환 → DB 동기화 → 질문까지 한 번에 진행하세요.
 올인원 탭의 LLM 설정은 전처리와 질문에 함께 적용됩니다.
+“데이터 현황” 탭에서 HWP/JSON 목록과 동기화 상태를 확인할 수 있습니다.
 
 ---
 
@@ -92,13 +95,13 @@ uv run python -m src.rag.interface.gradio_app
 
 | 작업 | 명령어 |
 |------|--------|
-| 변환 | `uv run python -m src.main "data/input/규정집.hwp"` |
-| 동기화 | `uv run python -m src.rag.interface.cli sync <json-path>` |
-| 검색 | `uv run python -m src.rag.interface.cli search "<쿼리>"` |
-| **LLM 질문** | `uv run python -m src.rag.interface.cli ask "<질문>"` |
-| 웹 UI | `uv run python -m src.rag.interface.gradio_app` |
-| 상태 확인 | `uv run python -m src.rag.interface.cli status` |
-| DB 초기화 | `uv run python -m src.rag.interface.cli reset --confirm` |
+| 변환 | `uv run regulation-manager "data/input/규정집.hwp"` |
+| 동기화 | `uv run regulation-rag sync <json-path>` |
+| 검색 | `uv run regulation-rag search "<쿼리>"` |
+| **LLM 질문** | `uv run regulation-rag ask "<질문>"` |
+| 웹 UI | `uv run regulation-web` |
+| 상태 확인 | `uv run regulation-rag status` |
+| DB 초기화 | `uv run regulation-rag reset --confirm` |
 
 ---
 
@@ -113,7 +116,7 @@ uv run python -m src.rag.interface.gradio_app
 ### 변환 품질이 좋지 않음
 → `--use_llm` 옵션으로 LLM 보정을 활성화하세요:
 ```bash
-uv run python -m src.main "규정.hwp" --use_llm --provider ollama --model gemma2
+uv run regulation-manager "규정.hwp" --use_llm --provider ollama --model gemma2
 ```
 → 로컬/상용 LLM 설정은 [docs/LLM_GUIDE.md](./docs/LLM_GUIDE.md)를 참고하세요.
 

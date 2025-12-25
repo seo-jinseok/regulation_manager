@@ -15,14 +15,16 @@ uv venv && source .venv/bin/activate
 uv sync
 
 # 2. HWP → JSON 변환 (data/input/에 HWP 파일 배치 후)
-uv run python -m src.main "data/input/규정집.hwp"
+uv run regulation-manager "data/input/규정집.hwp"
 
 # 3. 벡터 DB 동기화
-uv run python -m src.rag.interface.cli sync data/output/규정집.json
+uv run regulation-rag sync data/output/규정집.json
 
 # 4. 검색!
-uv run python -m src.rag.interface.cli search "교원 연구년 신청 자격"
+uv run regulation-rag search "교원 연구년 신청 자격"
 ```
+
+> `uv run python -m src.main ...` / `uv run python -m src.rag.interface.cli ...` 도 동일하게 동작합니다.
 
 > 💡 **더 자세한 단계별 가이드**: [QUICKSTART.md](./QUICKSTART.md)
 
@@ -32,10 +34,10 @@ uv run python -m src.rag.interface.cli search "교원 연구년 신청 자격"
 
 | 하고 싶은 것 | 명령어 |
 |-------------|--------|
-| HWP → JSON만 | `uv run python -m src.main "data/input/규정집.hwp"` |
-| 검색까지 | `uv run python -m src.rag.interface.cli sync data/output/규정집.json` → `uv run python -m src.rag.interface.cli search "검색어"` |
-| LLM 질문 | `uv run python -m src.rag.interface.cli ask "질문"` |
-| 웹 UI (올인원) | `uv run python -m src.rag.interface.gradio_app` |
+| HWP → JSON만 | `uv run regulation-manager "data/input/규정집.hwp"` |
+| 검색까지 | `uv run regulation-rag sync data/output/규정집.json` → `uv run regulation-rag search "검색어"` |
+| LLM 질문 | `uv run regulation-rag ask "질문"` |
+| 웹 UI (올인원) | `uv run regulation-web` |
 
 ---
 
@@ -51,18 +53,18 @@ uv run python -m src.rag.interface.cli search "교원 연구년 신청 자격"
   │  파일   │     │   (중간형식)   │     │ (RAG Enhanced)│     │ (벡터 DB) │
   └─────────┘     └──────────────┘     └──────────────┘     └───────────┘
                                              │                     │
-       python -m src.main ─────────────────▶│                     │
+       regulation-manager ───────────────▶│                     │
                                              │                     │
-       python -m src.rag.interface.cli sync ───────────────────▶│
+       regulation-rag sync ─────────────▶│
                                                                    │
-       python -m src.rag.interface.cli search ◀─────────────────┘
+       regulation-rag search ◀──────────┘
 ```
 
 | 단계 | 입력 | 출력 | 명령어 |
 |------|------|------|--------|
-| **1. 변환** | `규정집.hwp` | `규정집.json`, `규정집_raw.md` | `python -m src.main` |
-| **2. 동기화** | `규정집.json` | ChromaDB (`data/chroma_db/`) | `cli sync` |
-| **3. 검색** | 자연어 쿼리 | 관련 규정 조항 | `cli search` |
+| **1. 변환** | `규정집.hwp` | `규정집.json`, `규정집_raw.md` | `regulation-manager` |
+| **2. 동기화** | `규정집.json` | ChromaDB (`data/chroma_db/`) | `regulation-rag sync` |
+| **3. 검색** | 자연어 쿼리 | 관련 규정 조항 | `regulation-rag search` |
 
 ---
 
@@ -84,13 +86,13 @@ uv run python -m src.rag.interface.cli search "교원 연구년 신청 자격"
 
 ```bash
 # 기본 실행 (RAG 최적화 자동 적용)
-uv run python -m src.main "data/input/규정집.hwp"
+uv run regulation-manager "data/input/규정집.hwp"
 
 # 출력 디렉토리 지정
-uv run python -m src.main "data/input/규정집.hwp" --output_dir ./result
+uv run regulation-manager "data/input/규정집.hwp" --output_dir ./result
 
 # RAG 최적화 비활성화
-uv run python -m src.main "data/input/규정집.hwp" --no-enhance-rag
+uv run regulation-manager "data/input/규정집.hwp" --no-enhance-rag
 ```
 
 **출력 파일:**
@@ -106,13 +108,13 @@ JSON 파일을 벡터 DB에 적재합니다.
 
 ```bash
 # 증분 동기화 (기본값 - 변경분만)
-uv run python -m src.rag.interface.cli sync data/output/규정집.json
+uv run regulation-rag sync data/output/규정집.json
 
 # 전체 재동기화
-uv run python -m src.rag.interface.cli sync data/output/규정집.json --full
+uv run regulation-rag sync data/output/규정집.json --full
 
 # DB 경로 지정
-uv run python -m src.rag.interface.cli sync data/output/규정집.json --db-path ./my_db
+uv run regulation-rag sync data/output/규정집.json --db-path ./my_db
 ```
 
 **출력 예시:**
@@ -129,13 +131,13 @@ uv run python -m src.rag.interface.cli sync data/output/규정집.json --db-path
 
 ```bash
 # 기본 검색 (상위 5개)
-uv run python -m src.rag.interface.cli search "교원 연구년 신청 자격"
+uv run regulation-rag search "교원 연구년 신청 자격"
 
 # 결과 개수 지정
-uv run python -m src.rag.interface.cli search "장학금 지급 기준" -n 10
+uv run regulation-rag search "장학금 지급 기준" -n 10
 
 # 폐지 규정 포함
-uv run python -m src.rag.interface.cli search "학칙" --include-abolished
+uv run regulation-rag search "학칙" --include-abolished
 ```
 
 **출력 예시:**
@@ -155,19 +157,19 @@ LLM이 규정을 해석하여 자연어로 답변합니다.
 
 ```bash
 # 기본 사용 (Ollama)
-uv run python -m src.rag.interface.cli ask "교원 연구년 신청 자격은?"
+uv run regulation-rag ask "교원 연구년 신청 자격은?"
 
 # 다른 모델 사용
-uv run python -m src.rag.interface.cli ask "장학금 수혜 조건" --model gemma2:7b
+uv run regulation-rag ask "장학금 수혜 조건" --model gemma2:7b
 
 # LM Studio 사용
-uv run python -m src.rag.interface.cli ask "휴학 절차" --provider lmstudio --base-url http://localhost:1234
+uv run regulation-rag ask "휴학 절차" --provider lmstudio --base-url http://localhost:1234
 
 # OpenAI 사용 (API 키 필요)
-uv run python -m src.rag.interface.cli ask "졸업 요건" --provider openai
+uv run regulation-rag ask "졸업 요건" --provider openai
 
 # 규정 전문 출력
-uv run python -m src.rag.interface.cli ask "교원 연구년" --show-sources
+uv run regulation-rag ask "교원 연구년" --show-sources
 ```
 
 **출력 예시:**
@@ -209,17 +211,18 @@ uv run python -m src.rag.interface.cli ask "교원 연구년" --show-sources
 비개발자라면 웹 UI를 추천합니다. 파일 업로드부터 변환, DB 동기화, 질문까지 한 화면에서 진행할 수 있습니다.
 
 ```bash
-uv run python -m src.rag.interface.gradio_app
+uv run regulation-web
 ```
 
 브라우저에서 “올인원” 탭을 열고 순서대로 진행하세요.
 올인원 탭의 LLM 설정은 전처리와 질문에 함께 적용됩니다.
+“데이터 현황” 탭에서 HWP/JSON 목록과 동기화 상태를 확인할 수 있습니다.
 
 #### 상태 확인 (status)
 동기화 상태를 확인합니다.
 
 ```bash
-uv run python -m src.rag.interface.cli status
+uv run regulation-rag status
 ```
 
 **출력 예시:**
@@ -241,7 +244,7 @@ uv run python -m src.rag.interface.cli status
 
 ```bash
 # DB 초기화 (--confirm 필수)
-uv run python -m src.rag.interface.cli reset --confirm
+uv run regulation-rag reset --confirm
 ```
 
 **출력 예시:**
@@ -263,19 +266,19 @@ uv run python -m src.rag.interface.cli reset --confirm
 
 ```bash
 # Ollama (로컬)
-uv run python -m src.main "규정.hwp" --use_llm --provider ollama --model gemma2
+uv run regulation-manager "규정.hwp" --use_llm --provider ollama --model gemma2
 
 # LM Studio (로컬)
-uv run python -m src.main "규정.hwp" --use_llm --provider lmstudio --base_url http://127.0.0.1:1234
+uv run regulation-manager "규정.hwp" --use_llm --provider lmstudio --base_url http://127.0.0.1:1234
 
 # MLX (macOS, OpenAI 호환 서버)
-uv run python -m src.main "규정.hwp" --use_llm --provider mlx --base_url http://127.0.0.1:8080
+uv run regulation-manager "규정.hwp" --use_llm --provider mlx --base_url http://127.0.0.1:8080
 
 # OpenRouter (클라우드)
-uv run python -m src.main "규정.hwp" --use_llm --provider openrouter --model google/gemini-pro-1.5
+uv run regulation-manager "규정.hwp" --use_llm --provider openrouter --model google/gemini-pro-1.5
 
 # OpenAI (클라우드)
-uv run python -m src.main "규정.hwp" --use_llm --provider openai --model gpt-4o
+uv run regulation-manager "규정.hwp" --use_llm --provider openai --model gpt-4o
 ```
 
 ### 전체 명령어 옵션

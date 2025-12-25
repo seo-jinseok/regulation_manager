@@ -24,6 +24,9 @@ This project uses LLMs in two places:
 
 API keys live in `.env` (copy from `.env.example`).
 
+> `regulation-manager` / `regulation-rag` / `regulation-web`이 없으면
+> `uv run python -m src.main ...` / `uv run python -m src.rag.interface.cli ...` 를 사용하세요.
+
 ### Environment Defaults
 
 If CLI flags are omitted, these environment variables are used:
@@ -36,19 +39,19 @@ If CLI flags are omitted, these environment variables are used:
 ### Ollama
 ```bash
 # Preprocess
-uv run python -m src.main "data/input/규정집.hwp" --use_llm --provider ollama --model gemma2
+uv run regulation-manager "data/input/규정집.hwp" --use_llm --provider ollama --model gemma2
 
 # RAG ask
-uv run python -m src.rag.interface.cli ask "교원 연구년 신청 자격은?" --provider ollama
+uv run regulation-rag ask "교원 연구년 신청 자격은?" --provider ollama
 ```
 
 ### LM Studio (OpenAI-compatible server)
 ```bash
 # Preprocess
-uv run python -m src.main "data/input/규정집.hwp" --use_llm --provider lmstudio --base_url http://127.0.0.1:1234
+uv run regulation-manager "data/input/규정집.hwp" --use_llm --provider lmstudio --base_url http://127.0.0.1:1234
 
 # RAG ask
-uv run python -m src.rag.interface.cli ask "장학금 조건" --provider lmstudio --base-url http://127.0.0.1:1234
+uv run regulation-rag ask "장학금 조건" --provider lmstudio --base-url http://127.0.0.1:1234
 ```
 
 ### MLX (macOS)
@@ -57,39 +60,39 @@ use the `mlx` provider.
 
 ```bash
 # Preprocess
-uv run python -m src.main "data/input/규정집.hwp" --use_llm --provider mlx --base_url http://127.0.0.1:8080
+uv run regulation-manager "data/input/규정집.hwp" --use_llm --provider mlx --base_url http://127.0.0.1:8080
 
 # RAG ask
-uv run python -m src.rag.interface.cli ask "휴학 절차" --provider mlx --base-url http://127.0.0.1:8080
+uv run regulation-rag ask "휴학 절차" --provider mlx --base-url http://127.0.0.1:8080
 ```
 
 ### Generic OpenAI-compatible server
 ```bash
 # Preprocess
-uv run python -m src.main "data/input/규정집.hwp" --use_llm --provider local --base_url http://127.0.0.1:8000
+uv run regulation-manager "data/input/규정집.hwp" --use_llm --provider local --base_url http://127.0.0.1:8000
 
 # RAG ask
-uv run python -m src.rag.interface.cli ask "등록금 감면" --provider local --base-url http://127.0.0.1:8000
+uv run regulation-rag ask "등록금 감면" --provider local --base-url http://127.0.0.1:8000
 ```
 
 ## Cloud LLMs
 
 ### OpenAI
 ```bash
-uv run python -m src.main "data/input/규정집.hwp" --use_llm --provider openai --model gpt-4o
-uv run python -m src.rag.interface.cli ask "졸업 요건" --provider openai --model gpt-4o
+uv run regulation-manager "data/input/규정집.hwp" --use_llm --provider openai --model gpt-4o
+uv run regulation-rag ask "졸업 요건" --provider openai --model gpt-4o
 ```
 
 ### Gemini
 ```bash
-uv run python -m src.main "data/input/규정집.hwp" --use_llm --provider gemini --model models/gemini-1.5-pro
-uv run python -m src.rag.interface.cli ask "장학금 조건" --provider gemini --model models/gemini-1.5-pro
+uv run regulation-manager "data/input/규정집.hwp" --use_llm --provider gemini --model models/gemini-1.5-pro
+uv run regulation-rag ask "장학금 조건" --provider gemini --model models/gemini-1.5-pro
 ```
 
 ### OpenRouter
 ```bash
-uv run python -m src.main "data/input/규정집.hwp" --use_llm --provider openrouter --model google/gemini-pro-1.5
-uv run python -m src.rag.interface.cli ask "연구년 요건" --provider openrouter --model google/gemini-pro-1.5
+uv run regulation-manager "data/input/규정집.hwp" --use_llm --provider openrouter --model google/gemini-pro-1.5
+uv run regulation-rag ask "연구년 요건" --provider openrouter --model google/gemini-pro-1.5
 ```
 
 ## Gradio UI
@@ -97,12 +100,15 @@ uv run python -m src.rag.interface.cli ask "연구년 요건" --provider openrou
 The web UI lets you choose provider/model/base URL per question:
 
 ```bash
-uv run python -m src.rag.interface.gradio_app
+uv run regulation-web
 ```
 
 Open the "올인원" tab for upload → convert → sync → ask flow. The "LLM 설정"
 there is used for both preprocessing and Q&A. You can also use the "질문하기"
 tab and expand "LLM 설정" to configure providers per question.
+
+If you want to check which files are ready:
+- Use the "데이터 현황" tab to see HWP/JSON files and sync status.
 
 ## Troubleshooting
 

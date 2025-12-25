@@ -48,37 +48,38 @@ LLM 기본값은 `.env`의 `LLM_PROVIDER`, `LLM_MODEL`, `LLM_BASE_URL`로 지정
 ### 변환 파이프라인
 ```bash
 # 기본 실행 (RAG 최적화 포함)
-uv run python -m src.main "data/input/규정집.hwp"
+uv run regulation-manager "data/input/규정집.hwp"
 
 # RAG 최적화 비활성화
-uv run python -m src.main "data/input/규정집.hwp" --no-enhance-rag
+uv run regulation-manager "data/input/규정집.hwp" --no-enhance-rag
 
 # LLM 전처리 활성화 (문서 품질 낮은 경우)
-uv run python -m src.main "data/input/규정집.hwp" --use_llm --provider ollama
+uv run regulation-manager "data/input/규정집.hwp" --use_llm --provider ollama
 
 # CLI 엔트리포인트
 regulation-manager "data/input/규정집.hwp"
 ```
+`regulation-*` 명령이 없으면 `uv run python -m src.main ...` / `uv run python -m src.rag.interface.cli ...`를 사용하세요.
 
 ### RAG CLI
 ```bash
 # 동기화 (JSON → ChromaDB)
-uv run python -m src.rag.interface.cli sync data/output/규정집.json
-uv run python -m src.rag.interface.cli sync data/output/규정집.json --full  # 전체 재동기화
+uv run regulation-rag sync data/output/규정집.json
+uv run regulation-rag sync data/output/규정집.json --full  # 전체 재동기화
 
 # 검색
-uv run python -m src.rag.interface.cli search "교원 연구년" -n 5
-uv run python -m src.rag.interface.cli search "학칙" --include-abolished
+uv run regulation-rag search "교원 연구년" -n 5
+uv run regulation-rag search "학칙" --include-abolished
 
 # LLM 질문 (자연어 답변)
-uv run python -m src.rag.interface.cli ask "교원 연구년 신청 자격은?" --provider ollama
-uv run python -m src.rag.interface.cli ask "장학금 조건" --provider openai --show-sources
+uv run regulation-rag ask "교원 연구년 신청 자격은?" --provider ollama
+uv run regulation-rag ask "장학금 조건" --provider openai --show-sources
 
 # 상태 확인
-uv run python -m src.rag.interface.cli status
+uv run regulation-rag status
 
 # DB 초기화 (모든 데이터 삭제)
-uv run python -m src.rag.interface.cli reset --confirm
+uv run regulation-rag reset --confirm
 ```
 
 ### 테스트

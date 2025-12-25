@@ -26,6 +26,8 @@ dependencies = [
 
 [project.scripts]
 regulation-manager = "src.main:main"
+regulation-rag = "src.rag.interface.cli:main"
+regulation-web = "src.rag.interface.gradio_app:main"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
