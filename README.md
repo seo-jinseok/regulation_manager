@@ -12,7 +12,7 @@
 # 1. 설치
 git clone <repository-url> && cd regulation_manager
 uv venv && source .venv/bin/activate
-uv pip install -r requirements.txt
+uv sync
 
 # 2. HWP → JSON 변환 (data/input/에 HWP 파일 배치 후)
 uv run python -m src.main "data/input/규정집.hwp"
@@ -265,11 +265,17 @@ regulation_manager/
 │   ├── converter.py         # HWP → Markdown/HTML
 │   ├── formatter.py         # Markdown → JSON
 │   ├── enhance_for_rag.py   # RAG 최적화 필드 추가
+│   ├── exceptions.py        # 도메인 예외 클래스
+│   ├── parsing/             # 파싱 모듈 패키지
+│   │   ├── regulation_parser.py
+│   │   ├── reference_resolver.py
+│   │   ├── table_extractor.py
+│   │   └── id_assigner.py
 │   └── rag/                  # RAG 시스템
 │       ├── interface/cli.py  # CLI (sync, search, status)
 │       ├── application/      # Use Cases
 │       ├── domain/           # 도메인 모델
-│       └── infrastructure/   # ChromaDB, JSON 로더
+│       └── infrastructure/   # ChromaDB, Hybrid Search, LLM Cache
 ├── data/
 │   ├── input/               # HWP 파일 입력
 │   ├── output/              # JSON 출력
@@ -304,7 +310,7 @@ regulation_manager/
 cd regulation_manager
 uv venv
 source .venv/bin/activate
-uv pip install -r requirements.txt
+uv sync
 ```
 
 ### 환경 변수 설정

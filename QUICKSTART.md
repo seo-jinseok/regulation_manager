@@ -16,7 +16,7 @@ uv venv
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
 
 # 의존성 설치
-uv pip install -r requirements.txt
+uv sync
 ```
 
 ---

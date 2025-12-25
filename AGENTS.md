@@ -9,19 +9,26 @@ regulation_manager/
 │   ├── converter.py        # HWP → Markdown/HTML
 │   ├── formatter.py        # Markdown → JSON
 │   ├── enhance_for_rag.py  # RAG 최적화 필드 추가
+│   ├── exceptions.py       # 도메인 예외 클래스
 │   ├── llm_client.py       # LLM 전처리
 │   ├── cache_manager.py    # 캐시 관리
+│   ├── parsing/            # 파싱 모듈 패키지
+│   │   ├── regulation_parser.py
+│   │   ├── reference_resolver.py
+│   │   ├── table_extractor.py
+│   │   └── id_assigner.py
 │   └── rag/                # RAG 시스템 (Clean Architecture)
 │       ├── interface/      # CLI
 │       ├── application/    # Use Cases
 │       ├── domain/         # 도메인 모델
-│       └── infrastructure/ # ChromaDB, JSON 로더
+│       └── infrastructure/ # ChromaDB, Hybrid Search, LLM Cache
 ├── scripts/                # 유틸리티 스크립트
 ├── tests/                  # pytest 테스트
 ├── data/
 │   ├── input/              # HWP 입력 파일
 │   ├── output/             # JSON/MD/HTML 출력
 │   ├── chroma_db/          # ChromaDB 벡터 DB
+│   ├── llm_cache/          # LLM 응답 캐시
 │   ├── sync_state.json     # 동기화 상태 파일
 │   └── config/             # 전처리 규칙 설정
 └── docs/                   # 추가 문서
@@ -32,7 +39,7 @@ regulation_manager/
 ### 환경 설정
 ```bash
 uv venv                              # 가상환경 생성
-uv pip install -r requirements.txt   # 의존성 설치
+uv sync                              # 의존성 설치
 cp .env.example .env                 # 환경변수 설정
 ```
 
