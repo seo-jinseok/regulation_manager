@@ -245,15 +245,18 @@ def run_pipeline(args, console=None):
                             raw_md_hash=raw_md_hash,
                         )
                 
-                # ... (rest of simple logic) ...
+                progress.advance(total_task, 1)  # Step 1: HWP → MD
+                
                 # Preprocess
                 clean_md = preprocessor.clean(raw_md, verbose_callback=status_callback)
+                progress.advance(total_task, 1)  # Step 2: Preprocess
 
                 extracted_metadata = metadata_extractor.extract(clean_md)
                 metadata_payload = {"file_name": file.name, **extracted_metadata}
                 metadata_text = json.dumps(metadata_payload, ensure_ascii=False, indent=2)
                 with open(metadata_path, "w", encoding="utf-8") as f:
                     f.write(metadata_text)
+                progress.advance(total_task, 1)  # Step 3: Metadata extraction
                 
                 # Format
                 final_docs = formatter.parse(
@@ -283,6 +286,7 @@ def run_pipeline(args, console=None):
                         f"[dim]메타데이터 누락: rule_code {missing_rule_code}/{len(final_docs)}, "
                         f"page_range {missing_page_range}/{len(final_docs)}[/dim]"
                     )
+                progress.advance(total_task, 1)  # Step 4: Formatting
                 
                 # Save
                 final_json = {
@@ -317,11 +321,16 @@ def run_pipeline(args, console=None):
                         metadata_hash=cache_manager.compute_text_hash(metadata_text),
                     )
                 
-                progress.advance(total_task, STEPS_PER_FILE)
+                progress.advance(total_task, 1)  # Step 5: Save JSON
                 
             except Exception as e:
                 console.print(f"[red]Error processing {file.name}: {e}[/red]")
-                progress.advance(total_task, STEPS_PER_FILE)
+                # Advance remaining steps to keep progress consistent
+                current = progress.tasks[total_task].completed
+                expected = (files.index(file) + 1) * STEPS_PER_FILE
+                remaining = expected - current
+                if remaining > 0:
+                    progress.advance(total_task, remaining)
                 had_errors = True
             finally:
                 if cache_manager:
