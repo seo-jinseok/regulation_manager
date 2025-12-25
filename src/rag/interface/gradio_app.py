@@ -10,8 +10,11 @@ Usage:
     uv run python -m src.rag.interface.gradio_app
 """
 
+import argparse
 import os
-from typing import List, Optional, Tuple
+import shutil
+from pathlib import Path
+from typing import Tuple
 
 try:
     import gradio as gr
@@ -21,6 +24,7 @@ except ImportError:
 
 from ..infrastructure.chroma_store import ChromaVectorStore
 from ..infrastructure.json_loader import JSONDocumentLoader
+from ..main import run_pipeline
 from ..infrastructure.llm_adapter import LLMClientAdapter
 from ..infrastructure.llm_client import MockLLMClient
 from ..application.sync_usecase import SyncUseCase
@@ -79,6 +83,15 @@ def create_app(
 - LLM: {llm_status}
 """
 
+    def _persist_upload(file_path: str) -> Path:
+        input_path = Path(file_path)
+        data_input_dir = Path("data/input")
+        data_input_dir.mkdir(parents=True, exist_ok=True)
+        target_path = data_input_dir / input_path.name
+        if input_path.resolve() != target_path.resolve():
+            shutil.copy2(input_path, target_path)
+        return target_path
+
     # Search function
     def search_regulations(
         query: str,
@@ -102,10 +115,11 @@ def create_app(
             return "검색 결과가 없습니다.", ""
 
         # Format results as markdown table
-        table_rows = ["| # | 규정 | 조항 | 점수 |", "|---|------|------|------|"]
+        table_rows = ["| # | 규정명 | 조항 | 점수 |", "|---|------|------|------|"]
         for i, r in enumerate(results, 1):
             path = " > ".join(r.chunk.parent_path[-2:]) if r.chunk.parent_path else r.chunk.title
-            table_rows.append(f"| {i} | {r.chunk.rule_code} | {path[:30]} | {r.score:.2f} |")
+            reg_title = r.chunk.parent_path[0] if r.chunk.parent_path else r.chunk.rule_code
+            table_rows.append(f"| {i} | {reg_title} | {path[:30]} | {r.score:.2f} |")
 
         table = "\n".join(table_rows)
 
@@ -127,10 +141,14 @@ def create_app(
         llm_provider: str,
         llm_model: str,
         llm_base_url: str,
+        target_db_path: str,
     ) -> Tuple[str, str]:
         """Ask question and get LLM answer."""
         if not question.strip():
             return "질문을 입력해주세요.", ""
+
+        db_path_value = target_db_path or db_path
+        store_for_ask = ChromaVectorStore(persist_directory=db_path_value)
 
         if use_mock_llm:
             llm_client = MockLLMClient()
@@ -144,10 +162,10 @@ def create_app(
             except Exception as e:
                 return f"LLM 초기화 실패: {e}", ""
 
-        if store.count() == 0:
+        if store_for_ask.count() == 0:
             return "데이터베이스가 비어 있습니다.", ""
 
-        search_with_llm = SearchUseCase(store, llm_client)
+        search_with_llm = SearchUseCase(store_for_ask, llm_client)
 
         filter = None
         if not include_abolished:
@@ -195,6 +213,71 @@ def create_app(
         except Exception as e:
             return f"❌ 오류: {str(e)}"
 
+    def run_conversion_and_sync(
+        hwp_file: str,
+        use_llm: bool,
+        llm_provider: str,
+        llm_model: str,
+        llm_base_url: str,
+        output_dir: str,
+        target_db_path: str,
+        full_sync: bool,
+    ) -> Tuple[str, str, str]:
+        if not hwp_file:
+            return "HWP 파일을 업로드하세요.", "", ""
+
+        output_dir_value = output_dir or "data/output"
+        db_path_value = target_db_path or db_path
+
+        try:
+            from dotenv import load_dotenv
+            load_dotenv()
+        except Exception:
+            pass
+
+        input_path = _persist_upload(hwp_file)
+
+        args = argparse.Namespace(
+            input_path=str(input_path),
+            output_dir=output_dir_value,
+            use_llm=use_llm,
+            provider=llm_provider,
+            model=llm_model or None,
+            base_url=llm_base_url or None,
+            allow_llm_fallback=True,
+            force=False,
+            cache_dir=".cache",
+            verbose=True,
+            enhance_rag=True,
+        )
+
+        from rich.console import Console
+        console = Console(record=True)
+        status = run_pipeline(args, console=console)
+        log_text = console.export_text() or ""
+
+        if status != 0:
+            return log_text or "변환 실패", "", ""
+
+        json_path = Path(output_dir_value) / f"{input_path.stem}.json"
+        if not json_path.exists():
+            return f"{log_text}\nJSON 파일을 찾을 수 없습니다: {json_path}", "", ""
+
+        store_local = ChromaVectorStore(persist_directory=db_path_value)
+        loader_local = JSONDocumentLoader()
+        sync_local = SyncUseCase(loader_local, store_local)
+        if full_sync:
+            sync_result = sync_local.full_sync(str(json_path))
+        else:
+            sync_result = sync_local.incremental_sync(str(json_path))
+
+        sync_lines = [str(sync_result), f"총 청크 수: {store_local.count()}"]
+        if sync_result.has_errors:
+            sync_lines.extend(sync_result.errors)
+
+        status_text = "\n".join([log_text, "[SYNC]", *sync_lines]).strip()
+        return status_text, str(json_path), db_path_value
+
     # Build UI
     with gr.Blocks(
         title="📚 대학 규정집 Q&A",
@@ -203,6 +286,102 @@ def create_app(
         gr.Markdown("# 📚 대학 규정집 Q&A 시스템")
 
         with gr.Tabs():
+            # Tab 0: All-in-one
+            with gr.TabItem("🧩 올인원"):
+                gr.Markdown("HWP 업로드 → JSON 변환 → DB 동기화 → 질문까지 한 번에 진행합니다.")
+
+                hwp_file = gr.File(
+                    label="HWP 파일 업로드",
+                    file_types=[".hwp"],
+                    type="filepath",
+                )
+                use_llm_preprocess = gr.Checkbox(
+                    label="LLM 전처리 사용 (문서 품질 낮은 경우 추천)",
+                    value=False,
+                )
+
+                with gr.Accordion("LLM 설정", open=False):
+                    llm_provider_easy = gr.Dropdown(
+                        choices=LLM_PROVIDERS,
+                        value=DEFAULT_LLM_PROVIDER,
+                        label="프로바이더",
+                    )
+                    llm_model_easy = gr.Textbox(
+                        value=DEFAULT_LLM_MODEL,
+                        label="모델 (선택)",
+                    )
+                    llm_base_url_easy = gr.Textbox(
+                        value=DEFAULT_LLM_BASE_URL,
+                        label="Base URL (로컬용)",
+                        placeholder="예: http://127.0.0.1:11434",
+                    )
+
+                with gr.Accordion("고급 설정", open=False):
+                    output_dir = gr.Textbox(
+                        value="data/output",
+                        label="출력 폴더",
+                    )
+                    db_path_input = gr.Textbox(
+                        value=db_path,
+                        label="DB 경로",
+                    )
+                    full_sync_input = gr.Checkbox(
+                        label="전체 동기화",
+                        value=False,
+                    )
+
+                convert_btn = gr.Button("변환 + DB 동기화", variant="primary")
+                pipeline_status = gr.Textbox(label="진행 로그", lines=12)
+                output_json_path = gr.Textbox(label="생성된 JSON 경로")
+                output_db_path = gr.Textbox(label="DB 경로")
+
+                convert_btn.click(
+                    fn=run_conversion_and_sync,
+                    inputs=[
+                        hwp_file,
+                        use_llm_preprocess,
+                        llm_provider_easy,
+                        llm_model_easy,
+                        llm_base_url_easy,
+                        output_dir,
+                        db_path_input,
+                        full_sync_input,
+                    ],
+                    outputs=[pipeline_status, output_json_path, output_db_path],
+                )
+
+                gr.Markdown("---")
+                ask_question_input_easy = gr.Textbox(
+                    label="질문",
+                    placeholder="예: 교원 연구년 신청 자격은 무엇인가요?",
+                    lines=2,
+                )
+                ask_top_k_easy = gr.Slider(
+                    minimum=1, maximum=10, value=5, step=1,
+                    label="참고 규정 수",
+                )
+                ask_abolished_easy = gr.Checkbox(
+                    label="폐지 규정 포함",
+                    value=False,
+                )
+                ask_btn_easy = gr.Button("질문하기", variant="secondary")
+                ask_answer_easy = gr.Markdown(label="답변")
+                ask_sources_easy = gr.Markdown(label="참고 규정")
+
+                ask_btn_easy.click(
+                    fn=ask_question,
+                    inputs=[
+                        ask_question_input_easy,
+                        ask_top_k_easy,
+                        ask_abolished_easy,
+                        llm_provider_easy,
+                        llm_model_easy,
+                        llm_base_url_easy,
+                        db_path_input,
+                    ],
+                    outputs=[ask_answer_easy, ask_sources_easy],
+                )
+
             # Tab 1: Search
             with gr.TabItem("🔍 검색"):
                 with gr.Row():
@@ -276,7 +455,7 @@ def create_app(
 
                 ask_btn.click(
                     fn=ask_question,
-                    inputs=[ask_question_input, ask_top_k, ask_abolished, llm_provider, llm_model, llm_base_url],
+                    inputs=[ask_question_input, ask_top_k, ask_abolished, llm_provider, llm_model, llm_base_url, gr.State(db_path)],
                     outputs=[ask_answer, ask_sources],
                 )
 

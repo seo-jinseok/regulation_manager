@@ -83,7 +83,8 @@ uv run python -m src.rag.interface.cli ask "휴학 절차" --provider lmstudio -
 uv run python -m src.rag.interface.gradio_app
 ```
 
-브라우저에서 열고 “질문하기 → LLM 설정”에서 로컬/상용 LLM을 선택하세요.
+브라우저에서 “올인원” 탭을 열고 파일 업로드 → 변환 → DB 동기화 → 질문까지 한 번에 진행하세요.
+올인원 탭의 LLM 설정은 전처리와 질문에 함께 적용됩니다.
 
 ---
 

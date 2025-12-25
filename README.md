@@ -35,7 +35,7 @@ uv run python -m src.rag.interface.cli search "교원 연구년 신청 자격"
 | HWP → JSON만 | `uv run python -m src.main "data/input/규정집.hwp"` |
 | 검색까지 | `uv run python -m src.rag.interface.cli sync data/output/규정집.json` → `uv run python -m src.rag.interface.cli search "검색어"` |
 | LLM 질문 | `uv run python -m src.rag.interface.cli ask "질문"` |
-| 웹 UI | `uv run python -m src.rag.interface.gradio_app` |
+| 웹 UI (올인원) | `uv run python -m src.rag.interface.gradio_app` |
 
 ---
 
@@ -203,6 +203,17 @@ uv run python -m src.rag.interface.cli ask "교원 연구년" --show-sources
 > LLM 설정 상세는 [docs/LLM_GUIDE.md](./docs/LLM_GUIDE.md) 참고
 > 환경 변수 기본값: `LLM_PROVIDER`, `LLM_MODEL`, `LLM_BASE_URL`
 > RAG CLI는 `--base-url`, 변환 파이프라인은 `--base_url` 옵션을 사용합니다.
+
+### 웹 UI (올인원)
+
+비개발자라면 웹 UI를 추천합니다. 파일 업로드부터 변환, DB 동기화, 질문까지 한 화면에서 진행할 수 있습니다.
+
+```bash
+uv run python -m src.rag.interface.gradio_app
+```
+
+브라우저에서 “올인원” 탭을 열고 순서대로 진행하세요.
+올인원 탭의 LLM 설정은 전처리와 질문에 함께 적용됩니다.
 
 #### 상태 확인 (status)
 동기화 상태를 확인합니다.

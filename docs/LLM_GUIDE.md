@@ -100,7 +100,9 @@ The web UI lets you choose provider/model/base URL per question:
 uv run python -m src.rag.interface.gradio_app
 ```
 
-Open the "질문하기" tab and expand "LLM 설정" to configure local or cloud providers.
+Open the "올인원" tab for upload → convert → sync → ask flow. The "LLM 설정"
+there is used for both preprocessing and Q&A. You can also use the "질문하기"
+tab and expand "LLM 설정" to configure providers per question.
 
 ## Troubleshooting
 
