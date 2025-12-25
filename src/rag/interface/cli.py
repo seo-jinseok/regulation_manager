@@ -134,6 +134,27 @@ def create_parser() -> argparse.ArgumentParser:
         default="data/chroma_db",
         help="ChromaDB 저장 경로",
     )
+    ask_parser.add_argument(
+        "--provider",
+        type=str,
+        default="ollama",
+        help="LLM 프로바이더 (ollama, lmstudio, openai, gemini)",
+    )
+    ask_parser.add_argument(
+        "--model",
+        type=str,
+        help="모델 이름 (기본: 프로바이더별 기본값)",
+    )
+    ask_parser.add_argument(
+        "--base-url",
+        type=str,
+        help="로컬 서버 URL (ollama, lmstudio용)",
+    )
+    ask_parser.add_argument(
+        "--show-sources",
+        action="store_true",
+        help="관련 규정 전문 출력",
+    )
 
     # status command
     status_parser = subparsers.add_parser(
@@ -265,10 +286,101 @@ def cmd_search(args) -> int:
 
 
 def cmd_ask(args) -> int:
-    """Execute ask command (requires LLM)."""
-    print_error("LLM 연동은 아직 구현되지 않았습니다.")
-    print_info("search 명령어를 사용하여 관련 규정을 검색할 수 있습니다.")
-    return 1
+    """Execute ask command with LLM."""
+    from ..infrastructure.chroma_store import ChromaVectorStore
+    from ..infrastructure.llm_adapter import LLMClientAdapter
+    from ..application.search_usecase import SearchUseCase
+
+    # Check if DB has data
+    store = ChromaVectorStore(persist_directory=args.db_path)
+    if store.count() == 0:
+        print_error("데이터베이스가 비어 있습니다. 먼저 sync를 실행하세요.")
+        return 1
+
+    # Initialize LLM client
+    print_info(f"LLM 프로바이더: {args.provider}")
+    if args.model:
+        print_info(f"모델: {args.model}")
+    
+    try:
+        llm = LLMClientAdapter(
+            provider=args.provider,
+            model=args.model,
+            base_url=args.base_url,
+        )
+    except Exception as e:
+        print_error(f"LLM 초기화 실패: {e}")
+        print_info("Ollama가 실행 중인지 확인하세요: ollama serve")
+        return 1
+
+    # Create search use case with LLM
+    search = SearchUseCase(store, llm_client=llm)
+
+    print_info(f"질문: {args.question}")
+    print_info("답변 생성 중...")
+
+    try:
+        answer = search.ask(
+            question=args.question,
+            top_k=args.top_k,
+        )
+    except Exception as e:
+        print_error(f"답변 생성 실패: {e}")
+        return 1
+
+    # Print answer
+    if RICH_AVAILABLE:
+        console.print()
+        console.print(Panel(
+            Markdown(answer.text),
+            title="🤖 LLM 답변",
+            border_style="green",
+        ))
+
+        # Print sources
+        if answer.sources:
+            console.print()
+            console.print("[bold cyan]📚 참고 규정:[/bold cyan]")
+            for i, result in enumerate(answer.sources, 1):
+                chunk = result.chunk
+                path = " > ".join(chunk.parent_path[-3:]) if chunk.parent_path else chunk.title
+                text_preview = chunk.text[:150] + "..." if len(chunk.text) > 150 else chunk.text
+                
+                console.print(Panel(
+                    f"{text_preview}\n\n[dim](출처: {chunk.rule_code}, 점수: {result.score:.2f})[/dim]",
+                    title=f"[{i}] {path}",
+                    border_style="blue",
+                ))
+
+        # Show full sources if requested
+        if args.show_sources and answer.sources:
+            console.print()
+            console.print("[bold yellow]━━ 관련 규정 전문 ━━[/bold yellow]")
+            for result in answer.sources:
+                chunk = result.chunk
+                console.print(Panel(
+                    chunk.text,
+                    title=f"{chunk.rule_code} - {' > '.join(chunk.parent_path[-2:]) if chunk.parent_path else ''}",
+                    border_style="yellow",
+                ))
+
+        # Print confidence
+        console.print()
+        confidence_color = "green" if answer.confidence > 0.7 else "yellow" if answer.confidence > 0.4 else "red"
+        console.print(f"[dim]신뢰도: [{confidence_color}]{answer.confidence:.0%}[/{confidence_color}][/dim]")
+    else:
+        print(f"\n=== LLM 답변 ===")
+        print(answer.text)
+        print(f"\n=== 참고 규정 ===")
+        for i, result in enumerate(answer.sources, 1):
+            print(f"[{i}] {result.chunk.rule_code}: {result.chunk.text[:100]}...")
+        if args.show_sources:
+            print(f"\n=== 규정 전문 ===")
+            for result in answer.sources:
+                print(f"\n--- {result.chunk.rule_code} ---")
+                print(result.chunk.text)
+
+    return 0
 
 
 def cmd_status(args) -> int:

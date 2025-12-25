@@ -139,6 +139,53 @@ uv run python -m src.rag.interface.cli search "학칙" --include-abolished
 └───┴─────────────────────────┴─────────────────────┴──────┘
 ```
 
+#### 질문 (ask) - LLM 자연어 답변
+LLM이 규정을 해석하여 자연어로 답변합니다.
+
+```bash
+# 기본 사용 (Ollama)
+uv run python -m src.rag.interface.cli ask "교원 연구년 신청 자격은?"
+
+# 다른 모델 사용
+uv run python -m src.rag.interface.cli ask "장학금 수혜 조건" --model gemma2:7b
+
+# LM Studio 사용
+uv run python -m src.rag.interface.cli ask "휴학 절차" --provider lmstudio --base-url http://localhost:1234
+
+# OpenAI 사용 (API 키 필요)
+uv run python -m src.rag.interface.cli ask "졸업 요건" --provider openai
+
+# 규정 전문 출력
+uv run python -m src.rag.interface.cli ask "교원 연구년" --show-sources
+```
+
+**출력 예시:**
+```
+╭─────────────────── 🤖 LLM 답변 ───────────────────╮
+│ 교원 연구년 신청 자격은 다음과 같습니다:           │
+│                                                   │
+│ 1. 본교에 6년 이상 재직한 전임교원                │
+│ 2. 최근 3년간 강의평가 평균 3.5 이상              │
+│ 3. 연구실적이 소정 기준을 충족하는 자              │
+│                                                   │
+│ (동의대학교교원연구년규정 제3조 참조)              │
+╰───────────────────────────────────────────────────╯
+
+📚 참고 규정:
+╭ [1] 교원연구년규정 > 제3조 신청자격 ────────────────╮
+│ 연구년을 신청할 수 있는 자는 본교에 6년 이상...     │
+│ (출처: 동의대학교교원연구년규정, 점수: 0.89)        │
+╰─────────────────────────────────────────────────────╯
+```
+
+**지원 LLM 프로바이더:**
+| 프로바이더 | 옵션 | 비고 |
+|-----------|------|------|
+| Ollama (기본) | `--provider ollama` | 로컬, 무료 |
+| LM Studio | `--provider lmstudio --base-url URL` | 로컬 |
+| OpenAI | `--provider openai` | API 키 필요 |
+| Gemini | `--provider gemini` | API 키 필요 |
+
 #### 상태 확인 (status)
 동기화 상태를 확인합니다.
 

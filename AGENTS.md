@@ -61,6 +61,10 @@ uv run python -m src.rag.interface.cli sync data/output/규정집.json --full  #
 uv run python -m src.rag.interface.cli search "교원 연구년" -n 5
 uv run python -m src.rag.interface.cli search "학칙" --include-abolished
 
+# LLM 질문 (자연어 답변)
+uv run python -m src.rag.interface.cli ask "교원 연구년 신청 자격은?" --provider ollama
+uv run python -m src.rag.interface.cli ask "장학금 조건" --provider openai --show-sources
+
 # 상태 확인
 uv run python -m src.rag.interface.cli status
 
