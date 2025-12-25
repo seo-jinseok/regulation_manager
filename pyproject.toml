@@ -20,6 +20,8 @@ dependencies = [
     "questionary>=2.1.1",
     "rich>=14.2.0",
     "chromadb>=1.4.0",
+    "openai>=2.11.0",
+    "gradio>=6.2.0",
 ]
 
 [project.scripts]
