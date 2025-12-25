@@ -1,3 +1,4 @@
+import os
 import sys
 from pathlib import Path
 from typing import List, Any, Optional
@@ -213,18 +214,31 @@ class InteractiveWizard:
         config.verbose = questionary.confirm("상세 로그를 보시겠습니까? (디버깅용)", default=False).ask()
         
         if config.use_llm:
-            providers = ["openai", "gemini", "openrouter", "ollama", "local", "lmstudio"]
+            default_provider = os.getenv("LLM_PROVIDER") or "openai"
+            default_model = os.getenv("LLM_MODEL") or ""
+            default_base_url_env = os.getenv("LLM_BASE_URL") or ""
+            providers = ["openai", "gemini", "openrouter", "ollama", "local", "lmstudio", "mlx"]
             config.provider = questionary.select(
                 "LLM 제공자를 선택하세요:",
                 choices=providers,
-                default="openai"
+                default=default_provider
             ).ask()
             
-            if config.provider in ["local", "ollama", "lmstudio"]:
-                default_url = "http://localhost:11434" if config.provider == "ollama" else "http://localhost:1234"
+            if config.provider in ["local", "ollama", "lmstudio", "mlx"]:
+                if default_base_url_env:
+                    default_url = default_base_url_env
+                elif config.provider == "ollama":
+                    default_url = "http://localhost:11434"
+                elif config.provider == "mlx":
+                    default_url = "http://localhost:8080"
+                else:
+                    default_url = "http://localhost:1234"
                 config.base_url = questionary.text("Base URL:", default=default_url).ask()
             
-            config.model = questionary.text("모델 이름 (선택사항, 엔터로 건너뛰기):").ask()
+            config.model = questionary.text(
+                "모델 이름 (선택사항, 엔터로 건너뛰기):",
+                default=default_model,
+            ).ask()
             if not config.model:
                  config.model = None
 

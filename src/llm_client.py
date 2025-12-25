@@ -20,7 +20,7 @@ except ImportError:
 
 class LLMClient:
     """
-    Wrapper for various LLM providers including Local LLMs (Ollama, LM Studio).
+    Wrapper for various LLM providers including local and cloud options.
     """
     def __init__(self, provider: str = "openai", model: Optional[str] = None, api_key: Optional[str] = None, base_url: Optional[str] = None):
         self.provider = provider.lower()
@@ -35,7 +35,7 @@ class LLMClient:
 
     def _get_api_key(self, provider: str) -> str:
         # Local providers usually don't need a key, or allow any string
-        if provider in ["ollama", "local", "lmstudio"]:
+        if provider in ["ollama", "local", "lmstudio", "mlx"]:
             return "lm-studio" # Dummy key for local
             
         key_name = f"{provider.upper()}_API_KEY"
@@ -68,13 +68,14 @@ class LLMClient:
                 request_timeout=300.0
             )
             
-        elif self.provider in ["local", "lmstudio"]:
+        elif self.provider in ["local", "lmstudio", "mlx"]:
             # Use OpenAILike if available to bypass strict model validation
+            default_base_url = "http://localhost:8080" if self.provider == "mlx" else "http://localhost:1234"
             if OpenAILike:
                 return OpenAILike(
                     model=self.model or "local-model",
                     api_key=self._get_api_key("local"),
-                    api_base=self._ensure_v1_suffix(self.base_url or "http://localhost:1234/v1"),
+                    api_base=self._ensure_v1_suffix(self.base_url or default_base_url),
                     is_chat_model=True
                 )
             else:
@@ -83,7 +84,7 @@ class LLMClient:
                 return OpenAI(
                     model="gpt-3.5-turbo", # Hack to pass validation
                     api_key=self._get_api_key("local"),
-                    api_base=self._ensure_v1_suffix(self.base_url or "http://localhost:1234/v1")
+                    api_base=self._ensure_v1_suffix(self.base_url or default_base_url)
                 )
             
         else:

@@ -340,13 +340,25 @@ def run_pipeline(args, console=None):
     return 1 if had_errors else 0
 
 def main():
+    providers = ["openai", "gemini", "openrouter", "ollama", "lmstudio", "local", "mlx"]
+    default_provider = os.getenv("LLM_PROVIDER") or "openai"
+    if default_provider not in providers:
+        default_provider = "openai"
+    default_model = os.getenv("LLM_MODEL") or None
+    default_base_url = os.getenv("LLM_BASE_URL") or None
+
     parser = argparse.ArgumentParser(description="Regulation Management Pipeline")
     parser.add_argument("input_path", type=str, help="Path to input HWP file or directory")
     parser.add_argument("--output_dir", type=str, default="data/output")
     parser.add_argument("--use_llm", action="store_true")
-    parser.add_argument("--provider", type=str, default="openai")
-    parser.add_argument("--model", type=str, default=None)
-    parser.add_argument("--base_url", type=str, default=None)
+    parser.add_argument(
+        "--provider",
+        type=str,
+        default=default_provider,
+        choices=providers,
+    )
+    parser.add_argument("--model", type=str, default=default_model)
+    parser.add_argument("--base_url", type=str, default=default_base_url)
     parser.add_argument(
         "--allow_llm_fallback",
         action="store_true",

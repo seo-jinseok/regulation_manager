@@ -182,9 +182,15 @@ uv run python -m src.rag.interface.cli ask "교원 연구년" --show-sources
 | 프로바이더 | 옵션 | 비고 |
 |-----------|------|------|
 | Ollama (기본) | `--provider ollama` | 로컬, 무료 |
-| LM Studio | `--provider lmstudio --base-url URL` | 로컬 |
+| LM Studio | `--provider lmstudio --base-url http://localhost:1234` | 로컬 |
+| MLX (macOS) | `--provider mlx --base-url http://localhost:8080` | 로컬 (OpenAI 호환 서버 필요) |
+| Local (OpenAI 호환) | `--provider local --base-url URL` | 로컬 |
 | OpenAI | `--provider openai` | API 키 필요 |
 | Gemini | `--provider gemini` | API 키 필요 |
+| OpenRouter | `--provider openrouter` | API 키 필요 |
+
+> LLM 설정 상세는 [docs/LLM_GUIDE.md](./docs/LLM_GUIDE.md) 참고
+> 환경 변수 기본값: `LLM_PROVIDER`, `LLM_MODEL`, `LLM_BASE_URL`
 
 #### 상태 확인 (status)
 동기화 상태를 확인합니다.
@@ -239,6 +245,12 @@ uv run python -m src.main "규정.hwp" --use_llm --provider ollama --model gemma
 # LM Studio (로컬)
 uv run python -m src.main "규정.hwp" --use_llm --provider lmstudio --base_url http://127.0.0.1:1234
 
+# MLX (macOS, OpenAI 호환 서버)
+uv run python -m src.main "규정.hwp" --use_llm --provider mlx --base_url http://127.0.0.1:8080
+
+# OpenRouter (클라우드)
+uv run python -m src.main "규정.hwp" --use_llm --provider openrouter --model google/gemini-pro-1.5
+
 # OpenAI (클라우드)
 uv run python -m src.main "규정.hwp" --use_llm --provider openai --model gpt-4o
 ```
@@ -250,8 +262,9 @@ uv run python -m src.main "규정.hwp" --use_llm --provider openai --model gpt-4
 | `input_path` | (필수) 입력 HWP 파일 경로 | - |
 | `--output_dir` | 결과 파일 저장 경로 | `data/output` |
 | `--use_llm` | LLM 전처리 활성화 | False |
-| `--provider` | `ollama`, `lmstudio`, `openai`, `gemini` | `openai` |
+| `--provider` | `ollama`, `lmstudio`, `mlx`, `local`, `openai`, `gemini`, `openrouter` | `openai` |
 | `--model` | 사용할 모델 이름 | (Provider별) |
+| `--base_url` | 로컬 서버 URL (ollama/lmstudio/mlx/local) | (선택) |
 | `--no-enhance-rag` | RAG 최적화 비활성화 | False |
 
 ---
@@ -292,6 +305,7 @@ regulation_manager/
 | 문서 | 설명 |
 |------|------|
 | [QUICKSTART.md](./QUICKSTART.md) | 5분 빠른 시작 가이드 |
+| [docs/LLM_GUIDE.md](./docs/LLM_GUIDE.md) | LLM 설정/선택 가이드 |
 | [SCHEMA_REFERENCE.md](./SCHEMA_REFERENCE.md) | JSON 출력 스키마 상세 명세 |
 | [AGENTS.md](./AGENTS.md) | 개발자 가이드 (빌드, 테스트, 코딩 스타일) |
 
@@ -324,6 +338,12 @@ cp .env.example .env
 # 클라우드 LLM API 키 (선택)
 OPENAI_API_KEY=sk-...
 GEMINI_API_KEY=AIza...
+OPENROUTER_API_KEY=sk-or-...
+
+# LLM 기본값 (선택)
+LLM_PROVIDER=ollama
+LLM_MODEL=gemma2
+LLM_BASE_URL=http://localhost:11434
 
 # 캐시 설정 (선택)
 LLM_CACHE_TTL_DAYS=30

@@ -91,7 +91,8 @@ uv run python -m src.rag.interface.cli search "장학금" -n 10
 ```bash
 uv run python -m src.main "규정.hwp" --use_llm --provider ollama --model gemma2
 ```
+→ 로컬/상용 LLM 설정은 [docs/LLM_GUIDE.md](./docs/LLM_GUIDE.md)를 참고하세요.
 
 ---
 
-**더 자세한 정보**: [README.md](./README.md) | [SCHEMA_REFERENCE.md](./SCHEMA_REFERENCE.md)
+**더 자세한 정보**: [README.md](./README.md) | [docs/LLM_GUIDE.md](./docs/LLM_GUIDE.md) | [SCHEMA_REFERENCE.md](./SCHEMA_REFERENCE.md)

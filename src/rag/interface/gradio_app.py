@@ -21,7 +21,8 @@ except ImportError:
 
 from ..infrastructure.chroma_store import ChromaVectorStore
 from ..infrastructure.json_loader import JSONDocumentLoader
-from ..infrastructure.llm_client import OpenAIClient, MockLLMClient
+from ..infrastructure.llm_adapter import LLMClientAdapter
+from ..infrastructure.llm_client import MockLLMClient
 from ..application.sync_usecase import SyncUseCase
 from ..application.search_usecase import SearchUseCase
 from ..domain.value_objects import SearchFilter
@@ -31,6 +32,12 @@ from ..domain.entities import RegulationStatus
 # Default paths
 DEFAULT_DB_PATH = "data/chroma_db"
 DEFAULT_JSON_PATH = "data/output/규정집-test01.json"
+LLM_PROVIDERS = ["ollama", "lmstudio", "mlx", "local", "openai", "gemini", "openrouter"]
+DEFAULT_LLM_PROVIDER = os.getenv("LLM_PROVIDER") or "ollama"
+if DEFAULT_LLM_PROVIDER not in LLM_PROVIDERS:
+    DEFAULT_LLM_PROVIDER = "ollama"
+DEFAULT_LLM_MODEL = os.getenv("LLM_MODEL") or ""
+DEFAULT_LLM_BASE_URL = os.getenv("LLM_BASE_URL") or ""
 
 
 def create_app(
@@ -54,21 +61,11 @@ def create_app(
     store = ChromaVectorStore(persist_directory=db_path)
     loader = JSONDocumentLoader()
 
-    # LLM client (use mock if no API key)
-    llm_client = None
-    llm_status = "❌ LLM 비활성 (OPENAI_API_KEY 미설정)"
-
-    if not use_mock_llm and os.getenv("OPENAI_API_KEY"):
-        try:
-            llm_client = OpenAIClient()
-            llm_status = "✅ OpenAI GPT-4o-mini 연결됨"
-        except Exception as e:
-            llm_status = f"❌ OpenAI 연결 실패: {e}"
-    elif use_mock_llm:
-        llm_client = MockLLMClient()
+    llm_status = "ℹ️ 질문 탭에서 LLM 설정을 선택하세요."
+    if use_mock_llm:
         llm_status = "⚠️ Mock LLM (테스트 모드)"
 
-    search_usecase = SearchUseCase(store, llm_client)
+    search_usecase = SearchUseCase(store)
     sync_usecase = SyncUseCase(loader, store)
 
     # Get initial status
@@ -127,22 +124,36 @@ def create_app(
         question: str,
         top_k: int,
         include_abolished: bool,
+        llm_provider: str,
+        llm_model: str,
+        llm_base_url: str,
     ) -> Tuple[str, str]:
         """Ask question and get LLM answer."""
         if not question.strip():
             return "질문을 입력해주세요.", ""
 
-        if not llm_client:
-            return "LLM이 설정되지 않았습니다. OPENAI_API_KEY 환경변수를 설정하세요.", ""
+        if use_mock_llm:
+            llm_client = MockLLMClient()
+        else:
+            try:
+                llm_client = LLMClientAdapter(
+                    provider=llm_provider,
+                    model=llm_model or None,
+                    base_url=llm_base_url or None,
+                )
+            except Exception as e:
+                return f"LLM 초기화 실패: {e}", ""
 
         if store.count() == 0:
             return "데이터베이스가 비어 있습니다.", ""
+
+        search_with_llm = SearchUseCase(store, llm_client)
 
         filter = None
         if not include_abolished:
             filter = SearchFilter(status=RegulationStatus.ACTIVE)
 
-        answer = search_usecase.ask(
+        answer = search_with_llm.ask(
             question,
             filter=filter,
             top_k=top_k,
@@ -241,6 +252,23 @@ def create_app(
                             value=False,
                         )
 
+                with gr.Accordion("LLM 설정", open=False):
+                    with gr.Row():
+                        llm_provider = gr.Dropdown(
+                            choices=LLM_PROVIDERS,
+                            value=DEFAULT_LLM_PROVIDER,
+                            label="프로바이더",
+                        )
+                        llm_model = gr.Textbox(
+                            value=DEFAULT_LLM_MODEL,
+                            label="모델 (선택)",
+                        )
+                        llm_base_url = gr.Textbox(
+                            value=DEFAULT_LLM_BASE_URL,
+                            label="Base URL (로컬용)",
+                            placeholder="예: http://127.0.0.1:11434",
+                        )
+
                 ask_btn = gr.Button("질문하기", variant="primary")
 
                 ask_answer = gr.Markdown(label="답변")
@@ -248,7 +276,7 @@ def create_app(
 
                 ask_btn.click(
                     fn=ask_question,
-                    inputs=[ask_question_input, ask_top_k, ask_abolished],
+                    inputs=[ask_question_input, ask_top_k, ask_abolished, llm_provider, llm_model, llm_base_url],
                     outputs=[ask_answer, ask_sources],
                 )
 

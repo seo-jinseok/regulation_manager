@@ -13,6 +13,7 @@ Usage:
 """
 
 import argparse
+import os
 import sys
 from pathlib import Path
 from typing import Optional
@@ -56,6 +57,12 @@ def print_error(msg: str) -> None:
 
 def create_parser() -> argparse.ArgumentParser:
     """Create argument parser."""
+    providers = ["ollama", "lmstudio", "mlx", "local", "openai", "gemini", "openrouter"]
+    default_provider = os.getenv("LLM_PROVIDER") or "ollama"
+    if default_provider not in providers:
+        default_provider = "ollama"
+    default_model = os.getenv("LLM_MODEL") or None
+    default_base_url = os.getenv("LLM_BASE_URL") or None
     parser = argparse.ArgumentParser(
         prog="rag",
         description="규정집 RAG 시스템 CLI",
@@ -137,18 +144,21 @@ def create_parser() -> argparse.ArgumentParser:
     ask_parser.add_argument(
         "--provider",
         type=str,
-        default="ollama",
-        help="LLM 프로바이더 (ollama, lmstudio, openai, gemini)",
+        default=default_provider,
+        choices=providers,
+        help="LLM 프로바이더 (ollama, lmstudio, mlx, local, openai, gemini, openrouter)",
     )
     ask_parser.add_argument(
         "--model",
         type=str,
+        default=default_model,
         help="모델 이름 (기본: 프로바이더별 기본값)",
     )
     ask_parser.add_argument(
         "--base-url",
         type=str,
-        help="로컬 서버 URL (ollama, lmstudio용)",
+        default=default_base_url,
+        help="로컬 서버 URL (ollama, lmstudio, mlx, local용)",
     )
     ask_parser.add_argument(
         "--show-sources",
@@ -314,7 +324,10 @@ def cmd_ask(args) -> int:
         )
     except Exception as e:
         print_error(f"LLM 초기화 실패: {e}")
-        print_info("Ollama가 실행 중인지 확인하세요: ollama serve")
+        if args.provider in ("ollama", "lmstudio", "local", "mlx"):
+            print_info("로컬 LLM 서버가 실행 중인지 확인하세요.")
+        else:
+            print_info("API 키 설정을 확인하세요.")
         return 1
 
     # Create search use case with LLM

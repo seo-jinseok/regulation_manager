@@ -2,7 +2,7 @@
 LLM Client Adapter for Regulation RAG System.
 
 Adapts the existing LLMClient to the ILLMClient interface.
-Supports multiple providers: Ollama, LM Studio, OpenAI, Gemini.
+Supports multiple providers: Ollama, LM Studio, MLX, OpenAI, Gemini, OpenRouter.
 """
 
 from typing import List, Optional
@@ -17,8 +17,10 @@ class LLMClientAdapter(ILLMClient):
     Supports:
     - Ollama (local)
     - LM Studio (local)
+    - MLX (local, OpenAI-compatible server)
     - OpenAI (cloud)
     - Gemini (cloud)
+    - OpenRouter (cloud)
     """
 
     def __init__(
@@ -32,7 +34,7 @@ class LLMClientAdapter(ILLMClient):
         Initialize LLM client adapter.
 
         Args:
-            provider: LLM provider (ollama, lmstudio, openai, gemini)
+            provider: LLM provider (ollama, lmstudio, mlx, local, openai, gemini, openrouter)
             model: Model name (optional, uses provider default)
             base_url: Base URL for local providers
             api_key: API key for cloud providers

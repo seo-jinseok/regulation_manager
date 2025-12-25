@@ -40,6 +40,11 @@ class TestLLMClientExtended(unittest.TestCase):
         client = LLMClient(provider="lmstudio", base_url="http://localhost:1234")
         self.assertEqual(client.provider, "lmstudio")
 
+    @patch('src.llm_client.OpenAILike')
+    def test_provider_mlx(self, mock_oa):
+        client = LLMClient(provider="mlx", base_url="http://localhost:8080")
+        self.assertEqual(client.provider, "mlx")
+
     def test_api_key_missing(self):
         with patch.dict(os.environ, {}, clear=True):
             with self.assertRaises(ValueError):
