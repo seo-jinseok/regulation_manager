@@ -232,6 +232,9 @@ class InteractiveWizard:
         config.force = questionary.confirm("기존 캐시 무시 (강제 변환)?", default=False).ask()
         config.cache_dir = ".cache"
         
+        # RAG enhancement (default enabled)
+        config.enhance_rag = True
+        
         return config
 
 def run_interactive() -> Any:
