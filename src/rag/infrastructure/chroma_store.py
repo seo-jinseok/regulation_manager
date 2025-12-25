@@ -5,6 +5,7 @@ Provides vector storage and hybrid search using ChromaDB.
 Supports dense (embedding) and sparse (keyword) retrieval.
 """
 
+import json
 import os
 from typing import List, Optional, Set
 
@@ -110,7 +111,6 @@ class ChromaVectorStore(IVectorStore):
         # Get IDs of chunks with matching rule_codes
         results = self._collection.get(
             where={"rule_code": {"$in": rule_codes}},
-            include=[],  # Just get IDs
         )
 
         ids_to_delete = results.get("ids", [])
@@ -136,22 +136,7 @@ class ChromaVectorStore(IVectorStore):
         Returns:
             List of SearchResult sorted by relevance.
         """
-        # Build where clause from filter
-        where = None
-        if filter:
-            where_clauses = filter.to_metadata_filter()
-            
-            # Add status filter if not including abolished
-            if not query.include_abolished:
-                where_clauses["status"] = "active"
-            
-            if where_clauses:
-                if len(where_clauses) == 1:
-                    where = where_clauses
-                else:
-                    where = {"$and": [{k: v} for k, v in where_clauses.items()]}
-        elif not query.include_abolished:
-            where = {"status": "active"}
+        where = self._build_where(query, filter)
 
         # Query ChromaDB
         results = self._collection.query(
@@ -182,6 +167,24 @@ class ChromaVectorStore(IVectorStore):
                 search_results.append(result)
 
         return search_results
+
+    @staticmethod
+    def _build_where(query: Query, filter: Optional[SearchFilter]) -> Optional[dict]:
+        where = None
+        if filter:
+            where_clauses = filter.to_metadata_filter()
+
+            if not query.include_abolished and "status" not in where_clauses:
+                where_clauses["status"] = "active"
+
+            if where_clauses:
+                if len(where_clauses) == 1:
+                    where = where_clauses
+                else:
+                    where = {"$and": [{k: v} for k, v in where_clauses.items()]}
+        elif not query.include_abolished:
+            where = {"status": "active"}
+        return where
 
     def get_all_rule_codes(self) -> Set[str]:
         """
@@ -236,6 +239,22 @@ class ChromaVectorStore(IVectorStore):
         parent_path_str = metadata.get("parent_path", "")
         parent_path = parent_path_str.split(" > ") if parent_path_str else []
 
+        keywords = []
+        raw_keywords = metadata.get("keywords")
+        if raw_keywords:
+            try:
+                if isinstance(raw_keywords, str):
+                    parsed = json.loads(raw_keywords)
+                elif isinstance(raw_keywords, list):
+                    parsed = raw_keywords
+                else:
+                    parsed = []
+                for item in parsed:
+                    if isinstance(item, dict) and "term" in item and "weight" in item:
+                        keywords.append(Keyword.from_dict(item))
+            except json.JSONDecodeError:
+                pass
+
         return Chunk(
             id=id_,
             rule_code=metadata.get("rule_code", ""),
@@ -246,7 +265,7 @@ class ChromaVectorStore(IVectorStore):
             full_text="",  # Not stored
             parent_path=parent_path,
             token_count=metadata.get("token_count", 0),
-            keywords=[],  # Not stored in metadata
+            keywords=keywords,
             is_searchable=metadata.get("is_searchable", True),
             effective_date=metadata.get("effective_date") or None,
             status=RegulationStatus(metadata.get("status", "active")),

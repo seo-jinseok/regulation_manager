@@ -8,7 +8,7 @@ JSON 파일의 최상위 루트는 단일 소스 파일에서 파싱된 문서(�
 
 | 필드명 | 타입 | 설명 |
 | :--- | :--- | :--- |
-| `schema_version` | `string` | JSON 출력 스키마 버전입니다. |
+| `schema_version` | `string` | JSON 출력 스키마 버전입니다 (예: `"v4"`). |
 | `generated_at` | `string` | 생성 시각(UTC, ISO 8601)입니다. |
 | `pipeline_signature` | `string` | 캐시 및 재현성을 위한 파이프라인 시그니처입니다. |
 | `file_name` | `string` | 원본 HWP 파일의 이름입니다. |
@@ -137,7 +137,7 @@ JSON 파일의 최상위 루트는 단일 소스 파일에서 파싱된 문서(�
 | 필드명 | 타입 | 설명 |
 | :--- | :--- | :--- |
 | `rag_enhanced` | `boolean` | RAG 후처리 완료 여부입니다 (`true`). |
-| `rag_schema_version` | `string` | RAG 스키마 버전입니다 (예: `"1.0"`). |
+| `rag_schema_version` | `string` | RAG 스키마 버전입니다 (예: `"2.0"`). |
 
 ### 문서(Document) 레벨 추가 필드
 
@@ -153,8 +153,13 @@ JSON 파일의 최상위 루트는 단일 소스 파일에서 파싱된 문서(�
 | :--- | :--- | :--- |
 | `parent_path` | `Array<string>` | 루트부터 현재 노드까지의 계층 경로(breadcrumb)입니다. 벡터 검색 시 컨텍스트를 제공합니다. |
 | `full_text` | `string` | *(텍스트가 있는 경우만)* 벡터 임베딩용 self-contained 텍스트입니다. `[경로] 본문` 형식입니다. |
-| `keywords` | `Array<string>` | *(추출된 경우만)* 본문에서 추출된 핵심 키워드 리스트입니다. 키워드 검색 인덱스에 사용됩니다. |
+| `embedding_text` | `string` | *(텍스트가 있는 경우만)* 임베딩용 순수 본문 텍스트입니다. |
+| `chunk_level` | `string` | 검색 청크 레벨입니다. 노드 `type` 기반으로 계산됩니다. |
+| `is_searchable` | `boolean` | 검색 대상 여부입니다. 텍스트가 있거나 leaf 노드이면 `true` 입니다. |
+| `token_count` | `integer` | *(텍스트가 있는 경우만)* 임베딩 텍스트의 추정 토큰 수입니다. |
+| `keywords` | `Array<Object>` | *(추출된 경우만)* 본문 핵심 키워드 리스트입니다. 각 객체는 `term`, `weight`를 가집니다. |
 | `amendment_history` | `Array<Object>` | *(추출된 경우만)* 개정/신설/삭제 이력입니다. 각 객체는 `date` (YYYY-MM-DD)와 `type` (개정/신설/삭제)을 포함합니다. |
+| `effective_date` | `string` | *(부칙 노드에서만)* 시행일입니다 (YYYY-MM-DD). |
 
 ### 예시 (RAG Enhanced Node)
 
@@ -167,7 +172,16 @@ JSON 파일의 최상위 루트는 단일 소스 파일에서 파싱된 문서(�
   "text": "이사와 감사는 이사회에서 선임하여 관할청의 승인을 받아 취임한다. (개정 2006.11.06., 2022.04.21.)",
   "parent_path": ["학교법인동의학원정관", "제4장 임원", "제24조 임원의 선임방법"],
   "full_text": "[학교법인동의학원정관 > 제4장 임원 > 제24조 임원의 선임방법 > ①] 이사와 감사는 이사회에서 선임하여...",
-  "keywords": ["이사", "감사", "선임", "승인"],
+  "embedding_text": "이사와 감사는 이사회에서 선임하여 관할청의 승인을 받아 취임한다. (개정 2006.11.06., 2022.04.21.)",
+  "chunk_level": "paragraph",
+  "is_searchable": true,
+  "token_count": 38,
+  "keywords": [
+    { "term": "이사", "weight": 1.0 },
+    { "term": "감사", "weight": 1.0 },
+    { "term": "선임", "weight": 0.7 },
+    { "term": "승인", "weight": 0.8 }
+  ],
   "amendment_history": [
     { "date": "2006-11-06", "type": "개정" },
     { "date": "2022-04-21", "type": "개정" }
@@ -175,4 +189,3 @@ JSON 파일의 최상위 루트는 단일 소스 파일에서 파싱된 문서(�
   "children": []
 }
 ```
-

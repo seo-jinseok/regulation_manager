@@ -229,6 +229,32 @@ class TestJSONDocumentLoader:
         # Hash should be different
         assert hash1 != hash2
 
+    def test_compute_state_ignores_metadata_changes(self, sample_regulation_json):
+        """Metadata-only changes should not affect content hash."""
+        loader = JSONDocumentLoader()
+
+        sample_regulation_json["docs"][1]["metadata"]["scan_date"] = "2025-01-01"
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".json", delete=False, encoding="utf-8"
+        ) as f:
+            json.dump(sample_regulation_json, f, ensure_ascii=False)
+            path1 = f.name
+
+        state1 = loader.compute_state(path1)
+        hash1 = state1.regulations["3-1-5"]
+
+        sample_regulation_json["docs"][1]["metadata"]["scan_date"] = "2025-01-02"
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".json", delete=False, encoding="utf-8"
+        ) as f:
+            json.dump(sample_regulation_json, f, ensure_ascii=False)
+            path2 = f.name
+
+        state2 = loader.compute_state(path2)
+        hash2 = state2.regulations["3-1-5"]
+
+        assert hash1 == hash2
+
     def test_get_regulation_titles(self, temp_json_file):
         """Get regulation titles mapping."""
         loader = JSONDocumentLoader()

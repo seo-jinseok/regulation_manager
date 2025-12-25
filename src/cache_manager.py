@@ -1,6 +1,7 @@
 import hashlib
 import json
 import os
+import tempfile
 import time
 from pathlib import Path
 from typing import Dict, Any, Optional
@@ -41,8 +42,23 @@ class CacheManager:
         return {}
 
     def _save_json(self, path: Path, data: Dict[str, Any]):
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        tmp_path = None
+        try:
+            with tempfile.NamedTemporaryFile(
+                mode="w",
+                encoding="utf-8",
+                dir=path.parent,
+                delete=False,
+            ) as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+                f.flush()
+                os.fsync(f.fileno())
+                tmp_path = Path(f.name)
+            os.replace(tmp_path, path)
+        finally:
+            if tmp_path and tmp_path.exists():
+                tmp_path.unlink()
 
     def save_all(self):
         """Persist all caches to disk."""

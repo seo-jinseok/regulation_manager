@@ -6,6 +6,7 @@ and high-level rules. They are the least likely to change when something
 external changes.
 """
 
+import json
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional
@@ -119,7 +120,7 @@ class Chunk:
 
     def to_metadata(self) -> Dict[str, Any]:
         """Convert to metadata dict for vector store."""
-        return {
+        payload = {
             "id": self.id,
             "rule_code": self.rule_code,
             "level": self.level.value,
@@ -130,6 +131,12 @@ class Chunk:
             "effective_date": self.effective_date or "",
             "status": self.status.value,
         }
+        if self.keywords:
+            payload["keywords"] = json.dumps(
+                [{"term": k.term, "weight": k.weight} for k in self.keywords],
+                ensure_ascii=False,
+            )
+        return payload
 
 
 @dataclass

@@ -105,6 +105,10 @@ class SyncUseCase:
             if not old_state.regulations:
                 return self.full_sync(json_path)
 
+            # If store is empty but state exists, rebuild from scratch
+            if self.store.count() == 0:
+                return self.full_sync(json_path)
+
             # Compute diff
             old_codes = set(old_state.regulations.keys())
             new_codes = set(new_state.regulations.keys())
@@ -121,12 +125,20 @@ class SyncUseCase:
 
             unchanged_count = len(common_codes) - len(modified_codes)
 
+            # Reconcile with actual store state
+            store_codes = self.store.get_all_rule_codes()
+            missing_in_store = new_codes - store_codes
+            extra_in_store = store_codes - new_codes
+
+            if extra_in_store:
+                removed_codes |= extra_in_store
+
             # Delete removed regulations
             if removed_codes:
                 self.store.delete_by_rule_codes(list(removed_codes))
 
-            # Update modified and added regulations
-            codes_to_update = added_codes | modified_codes
+            # Update modified, added, and missing regulations
+            codes_to_update = added_codes | modified_codes | missing_in_store
             if codes_to_update:
                 # Delete existing chunks for modified regulations
                 if modified_codes:
@@ -142,7 +154,7 @@ class SyncUseCase:
             self._save_state(new_state)
 
             return SyncResult(
-                added=len(added_codes),
+                added=len(added_codes | missing_in_store),
                 modified=len(modified_codes),
                 removed=len(removed_codes),
                 unchanged=unchanged_count,
@@ -194,4 +206,3 @@ class SyncUseCase:
         """Reset sync state by deleting the state file."""
         if self.state_path.exists():
             self.state_path.unlink()
-

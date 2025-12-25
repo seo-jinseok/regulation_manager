@@ -71,8 +71,9 @@ class SearchUseCase:
         query = Query(text=query_text, include_abolished=include_abolished)
         results = self.store.search(query, filter, top_k * 3)  # Get more for filtering
         
-        # Apply keyword bonus: boost score if query terms appear in text
+        # Apply keyword bonus: boost score if query terms appear in text or keywords
         query_terms = query_text.lower().split()
+        query_text_lower = query_text.lower()
         boosted_results = []
         for r in results:
             text_lower = r.chunk.text.lower()
@@ -80,7 +81,16 @@ class SearchUseCase:
             matches = sum(1 for term in query_terms if term in text_lower)
             # Bonus: 0.1 per matching term
             bonus = matches * 0.1
-            new_score = min(1.0, r.score + bonus)
+
+            keyword_bonus = 0.0
+            if r.chunk.keywords:
+                keyword_hits = sum(
+                    kw.weight for kw in r.chunk.keywords
+                    if kw.term and kw.term.lower() in query_text_lower
+                )
+                keyword_bonus = min(0.3, keyword_hits * 0.05)
+
+            new_score = min(1.0, r.score + bonus + keyword_bonus)
             boosted_results.append(SearchResult(
                 chunk=r.chunk,
                 score=new_score,

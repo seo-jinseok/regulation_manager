@@ -108,8 +108,9 @@ class JSONDocumentLoader(IDocumentLoader):
             if not rule_code:
                 continue
 
-            # Compute hash of document content
-            content_str = json.dumps(doc, ensure_ascii=False, sort_keys=True)
+            # Compute hash of document content (exclude volatile metadata)
+            normalized_doc = self._normalize_doc_for_hash(doc)
+            content_str = json.dumps(normalized_doc, ensure_ascii=False, sort_keys=True)
             content_hash = hashlib.sha256(content_str.encode()).hexdigest()[:16]
             regulations[rule_code] = content_hash
 
@@ -123,6 +124,15 @@ class JSONDocumentLoader(IDocumentLoader):
         """Load JSON file."""
         with open(json_path, "r", encoding="utf-8") as f:
             return json.load(f)
+
+    def _normalize_doc_for_hash(self, doc: Dict[str, Any]) -> Dict[str, Any]:
+        """Remove volatile fields that should not affect incremental sync."""
+        normalized = json.loads(json.dumps(doc, ensure_ascii=False))
+        metadata = normalized.get("metadata")
+        if isinstance(metadata, dict):
+            for key in ("scan_date", "file_name", "page_range"):
+                metadata.pop(key, None)
+        return normalized
 
     def _extract_rule_code(self, doc: Dict[str, Any]) -> str:
         """Extract rule_code from document."""

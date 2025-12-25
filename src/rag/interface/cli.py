@@ -253,14 +253,17 @@ def cmd_search(args) -> int:
     if RICH_AVAILABLE:
         table = Table(title=f"검색 결과: '{args.query}'")
         table.add_column("#", style="dim", width=3)
-        table.add_column("규정", style="cyan")
+        table.add_column("규정명", style="cyan")
+        table.add_column("코드", style="magenta")
         table.add_column("조항", style="green")
         table.add_column("점수", justify="right", style="magenta")
 
         for i, r in enumerate(results, 1):
             path = " > ".join(r.chunk.parent_path[-2:]) if r.chunk.parent_path else ""
+            reg_title = r.chunk.parent_path[0] if r.chunk.parent_path else r.chunk.title
             table.add_row(
                 str(i),
+                reg_title or r.chunk.rule_code,
                 r.chunk.rule_code,
                 path or r.chunk.title,
                 f"{r.score:.2f}",
@@ -279,7 +282,8 @@ def cmd_search(args) -> int:
         print(f"\n검색 결과: '{args.query}'")
         print("-" * 60)
         for i, r in enumerate(results, 1):
-            print(f"{i}. [{r.chunk.rule_code}] {r.chunk.title} (점수: {r.score:.2f})")
+            reg_title = r.chunk.parent_path[0] if r.chunk.parent_path else r.chunk.title
+            print(f"{i}. {reg_title} [{r.chunk.rule_code}] (점수: {r.score:.2f})")
             print(f"   {r.chunk.text[:100]}...")
 
     return 0
