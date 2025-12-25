@@ -1,0 +1,190 @@
+"""
+Repository Interfaces for Regulation RAG System.
+
+These are abstract base classes defining the contracts that infrastructure
+implementations must fulfill. The domain layer depends only on these
+interfaces, not on concrete implementations.
+"""
+
+from abc import ABC, abstractmethod
+from typing import List, Optional, Set
+
+from .entities import Chunk, SearchResult
+from .value_objects import Query, SearchFilter, SyncState
+
+
+class IVectorStore(ABC):
+    """
+    Abstract interface for vector storage and search.
+
+    Implementations may use ChromaDB, Qdrant, Pinecone, etc.
+    """
+
+    @abstractmethod
+    def add_chunks(self, chunks: List[Chunk]) -> int:
+        """
+        Add chunks to the vector store.
+
+        Args:
+            chunks: List of Chunk entities to add.
+
+        Returns:
+            Number of chunks successfully added.
+        """
+        pass
+
+    @abstractmethod
+    def delete_by_rule_codes(self, rule_codes: List[str]) -> int:
+        """
+        Delete all chunks belonging to the given rule codes.
+
+        Args:
+            rule_codes: List of rule codes to delete.
+
+        Returns:
+            Number of chunks deleted.
+        """
+        pass
+
+    @abstractmethod
+    def search(
+        self,
+        query: Query,
+        filter: Optional[SearchFilter] = None,
+        top_k: int = 10,
+    ) -> List[SearchResult]:
+        """
+        Perform hybrid search (dense + sparse).
+
+        Args:
+            query: The search query.
+            filter: Optional metadata filters.
+            top_k: Maximum number of results to return.
+
+        Returns:
+            List of SearchResult sorted by relevance.
+        """
+        pass
+
+    @abstractmethod
+    def get_all_rule_codes(self) -> Set[str]:
+        """
+        Get all unique rule codes in the store.
+
+        Returns:
+            Set of rule codes.
+        """
+        pass
+
+    @abstractmethod
+    def count(self) -> int:
+        """
+        Get total number of chunks in the store.
+
+        Returns:
+            Total chunk count.
+        """
+        pass
+
+    @abstractmethod
+    def clear_all(self) -> int:
+        """
+        Delete all chunks from the store.
+
+        Returns:
+            Number of chunks deleted.
+        """
+        pass
+
+
+class IDocumentLoader(ABC):
+    """
+    Abstract interface for loading documents from JSON.
+
+    Converts regulation JSON to domain entities.
+    """
+
+    @abstractmethod
+    def load_all_chunks(self, json_path: str) -> List[Chunk]:
+        """
+        Load all searchable chunks from a JSON file.
+
+        Args:
+            json_path: Path to the regulation JSON file.
+
+        Returns:
+            List of Chunk entities.
+        """
+        pass
+
+    @abstractmethod
+    def load_chunks_by_rule_codes(
+        self, json_path: str, rule_codes: Set[str]
+    ) -> List[Chunk]:
+        """
+        Load chunks only for specific rule codes.
+
+        Args:
+            json_path: Path to the regulation JSON file.
+            rule_codes: Set of rule codes to load.
+
+        Returns:
+            List of Chunk entities for the specified rules.
+        """
+        pass
+
+    @abstractmethod
+    def compute_state(self, json_path: str) -> SyncState:
+        """
+        Compute sync state (rule_code -> content_hash) for a JSON file.
+
+        Used for incremental sync to detect changes.
+
+        Args:
+            json_path: Path to the regulation JSON file.
+
+        Returns:
+            SyncState with content hashes for each regulation.
+        """
+        pass
+
+
+class ILLMClient(ABC):
+    """
+    Abstract interface for LLM interactions.
+
+    Implementations may use OpenAI, Anthropic, local models, etc.
+    """
+
+    @abstractmethod
+    def generate(
+        self,
+        system_prompt: str,
+        user_message: str,
+        temperature: float = 0.0,
+    ) -> str:
+        """
+        Generate a response from the LLM.
+
+        Args:
+            system_prompt: System instructions.
+            user_message: User's question with context.
+            temperature: Sampling temperature (0.0 = deterministic).
+
+        Returns:
+            Generated response text.
+        """
+        pass
+
+    @abstractmethod
+    def get_embedding(self, text: str) -> List[float]:
+        """
+        Get embedding vector for text.
+
+        Args:
+            text: Text to embed.
+
+        Returns:
+            Embedding vector.
+        """
+        pass
