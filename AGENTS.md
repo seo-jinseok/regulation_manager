@@ -63,6 +63,9 @@ uv run python -m src.rag.interface.cli search "학칙" --include-abolished
 
 # 상태 확인
 uv run python -m src.rag.interface.cli status
+
+# DB 초기화 (모든 데이터 삭제)
+uv run python -m src.rag.interface.cli reset --confirm
 ```
 
 ### 테스트

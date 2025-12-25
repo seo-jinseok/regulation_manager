@@ -73,6 +73,7 @@ uv run python -m src.rag.interface.cli search "장학금" -n 10
 | 동기화 | `uv run python -m src.rag.interface.cli sync <json-path>` |
 | 검색 | `uv run python -m src.rag.interface.cli search "<쿼리>"` |
 | 상태 확인 | `uv run python -m src.rag.interface.cli status` |
+| **DB 초기화** | `uv run python -m src.rag.interface.cli reset --confirm` |
 
 ---
 

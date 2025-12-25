@@ -147,6 +147,24 @@ def create_parser() -> argparse.ArgumentParser:
         help="ChromaDB 저장 경로",
     )
 
+    # reset command
+    reset_parser = subparsers.add_parser(
+        "reset",
+        help="데이터베이스 초기화 (모든 데이터 삭제)",
+    )
+    reset_parser.add_argument(
+        "--confirm",
+        action="store_true",
+        required=True,
+        help="초기화 확인 (필수)",
+    )
+    reset_parser.add_argument(
+        "--db-path",
+        type=str,
+        default="data/chroma_db",
+        help="ChromaDB 저장 경로",
+    )
+
     return parser
 
 
@@ -286,6 +304,40 @@ def cmd_status(args) -> int:
     return 0
 
 
+def cmd_reset(args) -> int:
+    """Execute reset command - delete all data."""
+    from ..infrastructure.chroma_store import ChromaVectorStore
+    from ..application.sync_usecase import SyncUseCase
+    from ..infrastructure.json_loader import JSONDocumentLoader
+
+    if not args.confirm:
+        print_error("초기화를 수행하려면 --confirm 플래그를 사용하세요.")
+        return 1
+
+    store = ChromaVectorStore(persist_directory=args.db_path)
+    loader = JSONDocumentLoader()
+    sync = SyncUseCase(loader, store)
+
+    # Get current count
+    chunk_count = store.count()
+    
+    if chunk_count == 0:
+        print_info("데이터베이스가 이미 비어 있습니다.")
+        return 0
+
+    print_info(f"데이터베이스: {args.db_path}")
+    print_info(f"삭제 예정 청크 수: {chunk_count}")
+
+    # Clear vector store
+    deleted = store.clear_all()
+    
+    # Clear sync state
+    sync.reset_state()
+
+    print_success(f"데이터베이스 초기화 완료! {deleted}개 청크 삭제됨")
+    return 0
+
+
 def main(argv: Optional[list] = None) -> int:
     """Main entry point."""
     parser = create_parser()
@@ -296,6 +348,7 @@ def main(argv: Optional[list] = None) -> int:
         "search": cmd_search,
         "ask": cmd_ask,
         "status": cmd_status,
+        "reset": cmd_reset,
     }
 
     if args.command in commands:

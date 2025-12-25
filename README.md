@@ -160,6 +160,23 @@ uv run python -m src.rag.interface.cli status
 └──────────────────┴────────────────────┘
 ```
 
+#### 초기화 (reset)
+데이터베이스의 모든 데이터를 삭제합니다.
+
+```bash
+# DB 초기화 (--confirm 필수)
+uv run python -m src.rag.interface.cli reset --confirm
+```
+
+**출력 예시:**
+```
+ℹ 데이터베이스: data/chroma_db
+ℹ 삭제 예정 청크 수: 15,678
+✓ 데이터베이스 초기화 완료! 15,678개 청크 삭제됨
+```
+
+> ⚠️ **주의**: 이 명령은 모든 데이터를 삭제합니다. 복구할 수 없습니다.
+
 ---
 
 ## ⚙️ 고급 옵션

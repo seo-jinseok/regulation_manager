@@ -189,3 +189,9 @@ class SyncUseCase:
         self.state_path.parent.mkdir(parents=True, exist_ok=True)
         with open(self.state_path, "w", encoding="utf-8") as f:
             json.dump(state.to_dict(), f, ensure_ascii=False, indent=2)
+
+    def reset_state(self) -> None:
+        """Reset sync state by deleting the state file."""
+        if self.state_path.exists():
+            self.state_path.unlink()
+
