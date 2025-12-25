@@ -24,7 +24,7 @@ except ImportError:
 
 from ..infrastructure.chroma_store import ChromaVectorStore
 from ..infrastructure.json_loader import JSONDocumentLoader
-from ..main import run_pipeline
+from ...main import run_pipeline
 from ..infrastructure.llm_adapter import LLMClientAdapter
 from ..infrastructure.llm_client import MockLLMClient
 from ..application.sync_usecase import SyncUseCase
