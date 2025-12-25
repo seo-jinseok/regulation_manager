@@ -85,7 +85,7 @@ uv lock                          # 의존성 변경 후 lock 갱신
 - `snake_case` for functions/vars, `CamelCase` for classes
 - Prefer `pathlib.Path` and relative imports inside `src/`
 - Output schema fields: `type`, `display_no`, `sort_no`, `children`, `metadata`
-- RAG fields (auto-added): `parent_path`, `full_text`, `keywords`, `status`, `amendment_history`
+- RAG fields (auto-added): `parent_path`, `full_text`, `embedding_text`, `chunk_level`, `is_searchable`, `token_count`, `keywords` (term/weight), `effective_date`, `status`, `amendment_history`
 - Avoid non-ASCII in code/comments unless required by domain data
 
 ## Testing Guidelines

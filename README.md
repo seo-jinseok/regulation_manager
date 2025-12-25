@@ -61,7 +61,7 @@ uv run python -m src.rag.interface.cli search "교원 연구년 신청 자격"
 |------|------|
 | **HWP → JSON 변환** | 표, 이미지, 계층 구조 보존 |
 | **계층적 파싱** | 장 > 절 > 관 > 조 > 항 > 호 > 목 |
-| **RAG 최적화** | `parent_path`, `full_text`, `keywords`, `amendment_history` 필드 자동 생성 |
+| **RAG 최적화** | `parent_path`, `full_text`, `embedding_text`, `chunk_level`, `is_searchable`, `token_count`, `keywords(term/weight)`, `amendment_history`, `effective_date` 필드 자동 생성 |
 | **벡터 검색** | ChromaDB 기반 의미론적 검색 |
 | **증분 동기화** | 월간 업데이트 시 변경분만 동기화 |
 
