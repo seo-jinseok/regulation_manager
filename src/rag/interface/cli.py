@@ -200,7 +200,7 @@ def cmd_search(args) -> int:
         return 1
 
     search = SearchUseCase(store)
-    results = search.search(
+    results = search.search_unique(
         args.query,
         top_k=args.top_k,
         include_abolished=args.include_abolished,

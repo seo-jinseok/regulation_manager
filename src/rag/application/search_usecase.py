@@ -69,7 +69,78 @@ class SearchUseCase:
             List of SearchResult sorted by relevance.
         """
         query = Query(text=query_text, include_abolished=include_abolished)
-        return self.store.search(query, filter, top_k)
+        results = self.store.search(query, filter, top_k * 3)  # Get more for filtering
+        
+        # Apply keyword bonus: boost score if query terms appear in text
+        query_terms = query_text.lower().split()
+        boosted_results = []
+        for r in results:
+            text_lower = r.chunk.text.lower()
+            # Count matching terms
+            matches = sum(1 for term in query_terms if term in text_lower)
+            # Bonus: 0.1 per matching term
+            bonus = matches * 0.1
+            new_score = min(1.0, r.score + bonus)
+            boosted_results.append(SearchResult(
+                chunk=r.chunk,
+                score=new_score,
+                rank=r.rank,
+            ))
+        
+        # Re-sort by boosted score
+        boosted_results.sort(key=lambda x: -x.score)
+        return boosted_results[:top_k]
+
+    def search_unique(
+        self,
+        query_text: str,
+        filter: Optional[SearchFilter] = None,
+        top_k: int = 10,
+        include_abolished: bool = False,
+    ) -> List[SearchResult]:
+        """
+        Search with deduplication by rule_code.
+
+        Returns only the top-scoring chunk from each regulation.
+
+        Args:
+            query_text: The search query.
+            filter: Optional metadata filters.
+            top_k: Maximum number of unique regulations.
+            include_abolished: Whether to include abolished regulations.
+
+        Returns:
+            List of SearchResult with one chunk per regulation.
+        """
+        # Get more results to ensure enough unique regulations
+        results = self.search(
+            query_text,
+            filter=filter,
+            top_k=top_k * 5,
+            include_abolished=include_abolished,
+        )
+
+        # Keep only the best result per rule_code
+        seen_codes = set()
+        unique_results = []
+
+        for result in results:
+            code = result.chunk.rule_code
+            if code not in seen_codes:
+                seen_codes.add(code)
+                unique_results.append(result)
+                if len(unique_results) >= top_k:
+                    break
+
+        # Update ranks
+        for i, r in enumerate(unique_results):
+            unique_results[i] = SearchResult(
+                chunk=r.chunk,
+                score=r.score,
+                rank=i + 1,
+            )
+
+        return unique_results
 
     def ask(
         self,
