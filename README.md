@@ -28,6 +28,17 @@ uv run python -m src.rag.interface.cli search "교원 연구년 신청 자격"
 
 ---
 
+## 🎯 가장 쉬운 시작
+
+| 하고 싶은 것 | 명령어 |
+|-------------|--------|
+| HWP → JSON만 | `uv run python -m src.main "data/input/규정집.hwp"` |
+| 검색까지 | `uv run python -m src.rag.interface.cli sync data/output/규정집.json` → `uv run python -m src.rag.interface.cli search "검색어"` |
+| LLM 질문 | `uv run python -m src.rag.interface.cli ask "질문"` |
+| 웹 UI | `uv run python -m src.rag.interface.gradio_app` |
+
+---
+
 ## 📊 전체 워크플로우
 
 ```
@@ -191,6 +202,7 @@ uv run python -m src.rag.interface.cli ask "교원 연구년" --show-sources
 
 > LLM 설정 상세는 [docs/LLM_GUIDE.md](./docs/LLM_GUIDE.md) 참고
 > 환경 변수 기본값: `LLM_PROVIDER`, `LLM_MODEL`, `LLM_BASE_URL`
+> RAG CLI는 `--base-url`, 변환 파이프라인은 `--base_url` 옵션을 사용합니다.
 
 #### 상태 확인 (status)
 동기화 상태를 확인합니다.

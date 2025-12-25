@@ -42,6 +42,8 @@ uv venv                              # 가상환경 생성
 uv sync                              # 의존성 설치
 cp .env.example .env                 # 환경변수 설정
 ```
+LLM 기본값은 `.env`의 `LLM_PROVIDER`, `LLM_MODEL`, `LLM_BASE_URL`로 지정할 수 있습니다.
+상세 설정은 `docs/LLM_GUIDE.md`를 참고하세요.
 
 ### 변환 파이프라인
 ```bash

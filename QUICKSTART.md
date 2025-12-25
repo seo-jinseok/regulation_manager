@@ -65,6 +65,28 @@ uv run python -m src.rag.interface.cli search "장학금" -n 10
 
 ---
 
+## 5️⃣ LLM 질문 (선택)
+
+```bash
+# 로컬 LLM (기본: Ollama)
+uv run python -m src.rag.interface.cli ask "교원 연구년 신청 자격은?"
+
+# 다른 프로바이더
+uv run python -m src.rag.interface.cli ask "휴학 절차" --provider lmstudio --base-url http://localhost:1234
+```
+
+---
+
+## 6️⃣ 웹 UI (선택)
+
+```bash
+uv run python -m src.rag.interface.gradio_app
+```
+
+브라우저에서 열고 “질문하기 → LLM 설정”에서 로컬/상용 LLM을 선택하세요.
+
+---
+
 ## 📌 자주 쓰는 명령어
 
 | 작업 | 명령어 |
@@ -73,6 +95,7 @@ uv run python -m src.rag.interface.cli search "장학금" -n 10
 | 동기화 | `uv run python -m src.rag.interface.cli sync <json-path>` |
 | 검색 | `uv run python -m src.rag.interface.cli search "<쿼리>"` |
 | **LLM 질문** | `uv run python -m src.rag.interface.cli ask "<질문>"` |
+| 웹 UI | `uv run python -m src.rag.interface.gradio_app` |
 | 상태 확인 | `uv run python -m src.rag.interface.cli status` |
 | DB 초기화 | `uv run python -m src.rag.interface.cli reset --confirm` |
 

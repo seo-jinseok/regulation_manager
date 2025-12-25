@@ -1,5 +1,7 @@
 # Improvement Plan
 
+Status: Completed. This plan is kept for historical context and audit.
+
 This plan addresses the full set of reviewed improvements. Each step includes
 explicit verification before moving on.
 
@@ -57,4 +59,3 @@ explicit verification before moving on.
 - Verification:
   - Unit tests for cache write path.
   - Manual read-through for correctness.
-
