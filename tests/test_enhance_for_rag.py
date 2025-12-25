@@ -6,7 +6,12 @@ import pytest
 from src.enhance_for_rag import (
     extract_amendment_history,
     extract_keywords,
+    extract_keywords_simple,
     determine_status,
+    determine_chunk_level,
+    calculate_token_count,
+    is_node_searchable,
+    extract_effective_date,
     build_path_label,
     build_full_text,
     enhance_node,
@@ -83,19 +88,23 @@ class TestExtractKeywords:
     """Tests for extract_keywords function."""
 
     def test_basic_keywords(self):
-        """Test extraction of basic keywords."""
+        """Test extraction of basic keywords with weights."""
         text = "이사회는 이사와 감사로 구성한다."
         result = extract_keywords(text)
-        assert "이사" in result
-        assert "감사" in result
+        terms = [k["term"] for k in result]
+        assert "이사" in terms
+        assert "감사" in terms
+        # Check weights are present
+        assert all("weight" in k for k in result)
 
     def test_education_keywords(self):
-        """Test extraction of education-related keywords."""
+        """Test extraction of education-related keywords with weights."""
         text = "교원은 학생의 교육을 담당한다."
         result = extract_keywords(text)
-        assert "교원" in result
-        assert "학생" in result
-        assert "교육" in result
+        terms = [k["term"] for k in result]
+        assert "교원" in terms
+        assert "학생" in terms
+        assert "교육" in terms
 
     def test_empty_text(self):
         """Test empty text returns empty list."""
@@ -113,14 +122,25 @@ class TestExtractKeywords:
         result = extract_keywords(text)
         assert result == []
 
-    def test_sorted_and_unique(self):
-        """Test that results are sorted and unique."""
-        text = "교원은 교원이다. 학생은 학생이다."
+    def test_sorted_by_weight(self):
+        """Test that results are sorted by weight descending."""
+        text = "교원은 교원이다. 학생은 학생이다. 위원장이 의결한다."
         result = extract_keywords(text)
-        # Should not have duplicates
-        assert len(result) == len(set(result))
-        # Should be sorted
-        assert result == sorted(result)
+        # Check sorted by weight descending
+        weights = [k["weight"] for k in result]
+        assert weights == sorted(weights, reverse=True)
+        # No duplicates
+        terms = [k["term"] for k in result]
+        assert len(terms) == len(set(terms))
+
+    def test_simple_extraction(self):
+        """Test extract_keywords_simple for backward compatibility."""
+        text = "이사회는 이사와 감사로 구성한다."
+        result = extract_keywords_simple(text)
+        assert "이사" in result
+        assert "감사" in result
+        # Result is a simple list
+        assert all(isinstance(k, str) for k in result)
 
 
 class TestDetermineStatus:
@@ -207,11 +227,20 @@ class TestEnhanceNode:
         assert "parent_path" in node
         assert node["parent_path"] == ["테스트규정"]
         assert "full_text" in node
+        # keywords is now a list of dicts
         assert "keywords" in node
-        assert "교원" in node["keywords"]
-        assert "규정" in node["keywords"]
+        terms = [k["term"] for k in node["keywords"]]
+        assert "교원" in terms
+        assert "규정" in terms
         assert "amendment_history" in node
         assert node["amendment_history"][0]["date"] == "2006-11-06"
+        # New fields
+        assert "chunk_level" in node
+        assert node["chunk_level"] == "article"
+        assert "is_searchable" in node
+        assert node["is_searchable"] is True
+        assert "embedding_text" in node
+        assert "token_count" in node
 
     def test_nested_enhancement(self):
         """Test enhancement of nested nodes."""
@@ -282,7 +311,7 @@ class TestEnhanceJson:
         data = {"docs": []}
         result = enhance_json(data)
         assert result["rag_enhanced"] is True
-        assert result["rag_schema_version"] == "1.0"
+        assert result["rag_schema_version"] == "2.0"
 
     def test_all_docs_enhanced(self):
         """Test that all documents are enhanced."""
@@ -295,3 +324,104 @@ class TestEnhanceJson:
         result = enhance_json(data)
         assert result["docs"][0]["status"] == "active"
         assert result["docs"][1]["status"] == "abolished"
+
+
+class TestNewHelperFunctions:
+    """Tests for new RAG helper functions."""
+
+    def test_determine_chunk_level_article(self):
+        """Test chunk level for article type."""
+        node = {"type": "article"}
+        assert determine_chunk_level(node) == "article"
+
+    def test_determine_chunk_level_paragraph(self):
+        """Test chunk level for paragraph type."""
+        node = {"type": "paragraph"}
+        assert determine_chunk_level(node) == "paragraph"
+
+    def test_determine_chunk_level_unknown(self):
+        """Test chunk level for unknown type defaults to text."""
+        node = {"type": "unknown_type"}
+        assert determine_chunk_level(node) == "text"
+
+    def test_calculate_token_count(self):
+        """Test token count calculation."""
+        # Korean text: approximately 2.5 chars per token
+        text = "이 규정은 교원의 인사에 관한 사항을 규정한다."  # 23 chars
+        count = calculate_token_count(text)
+        assert count > 0
+        assert count == int(len(text) / 2.5)
+
+    def test_calculate_token_count_empty(self):
+        """Test token count for empty text."""
+        assert calculate_token_count("") == 0
+        assert calculate_token_count(None) == 0
+
+    def test_is_node_searchable_with_text(self):
+        """Test searchable for node with text."""
+        node = {"text": "Some content", "children": [{"type": "item"}]}
+        assert is_node_searchable(node) is True
+
+    def test_is_node_searchable_leaf(self):
+        """Test searchable for leaf node without text."""
+        node = {"text": "", "children": []}
+        assert is_node_searchable(node) is True
+
+    def test_is_node_searchable_parent_no_text(self):
+        """Test searchable for parent node without text."""
+        node = {"text": "", "children": [{"type": "item"}]}
+        assert is_node_searchable(node) is False
+
+    def test_extract_effective_date_basic(self):
+        """Test effective date extraction."""
+        text = "이 규정은 2024년 1월 1일부터 시행한다."
+        assert extract_effective_date(text) == "2024-01-01"
+
+    def test_extract_effective_date_dot_format(self):
+        """Test effective date with dot format."""
+        text = "이 변경 정관은 2023. 12. 25.부터 시행한다."
+        result = extract_effective_date(text)
+        assert result == "2023-12-25"
+
+    def test_extract_effective_date_not_found(self):
+        """Test when no effective date is found."""
+        text = "이 규정은 공포한 날부터 시행한다."
+        assert extract_effective_date(text) is None
+
+    def test_extract_effective_date_empty(self):
+        """Test with empty text."""
+        assert extract_effective_date("") is None
+        assert extract_effective_date(None) is None
+
+
+class TestEnhanceNodeNewFields:
+    """Tests for new fields in enhance_node."""
+
+    def test_addendum_effective_date(self):
+        """Test effective_date extraction for addendum nodes."""
+        node = {
+            "type": "addendum_item",
+            "display_no": "1.",
+            "title": "",
+            "text": "이 규정은 2024년 3월 1일부터 시행한다.",
+            "children": [],
+        }
+        enhance_node(node, ["부칙"], "테스트규정")
+        assert "effective_date" in node
+        assert node["effective_date"] == "2024-03-01"
+
+    def test_embedding_text_pure(self):
+        """Test that embedding_text contains pure text without path."""
+        node = {
+            "type": "article",
+            "display_no": "제1조",
+            "title": "목적",
+            "text": "본 규정의 목적",
+            "children": [],
+        }
+        enhance_node(node, [], "학칙")
+        # embedding_text should be pure text only
+        assert node["embedding_text"] == "본 규정의 목적"
+        # full_text should include path
+        assert "[" in node["full_text"] and ">" in node["full_text"]
+

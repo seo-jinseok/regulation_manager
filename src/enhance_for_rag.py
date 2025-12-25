@@ -41,20 +41,37 @@ AMENDMENT_PATTERNS = [
     (r"\[본조신설\s*(\d{4})\s*\.\s*(\d{1,2})\s*\.\s*(\d{1,2})\s*\.?\s*\]", "신설"),
 ]
 
-# Common Korean legal keywords to extract
+# Common Korean legal keywords to extract with weights
 KEYWORD_PATTERNS = [
-    r"(?:이사|감사|위원|위원장|의장)",
-    r"(?:교원|교수|교직원|직원|강사)",
-    r"(?:학생|학과|학부|대학|대학원)",
-    r"(?:규정|규칙|학칙|정관|세칙)",
-    r"(?:심의|의결|승인|결정|허가)",
-    r"(?:임명|선임|해임|임기|보선)",
-    r"(?:장학금|등록금|수업료|입학금)",
-    r"(?:전형|입학|졸업|휴학|복학|제적)",
-    r"(?:시행일|시행|폐지|개정|신설)",
-    r"(?:예산|결산|회계|자산|재산)",
-    r"(?:연구|교육|강의|수업|학점)",
+    (r"(?:이사|감사|위원|위원장|의장)", 1.0),  # 고위직 용어
+    (r"(?:교원|교수|교직원|직원|강사)", 0.9),  # 인사 관련
+    (r"(?:학생|학과|학부|대학|대학원)", 0.9),  # 학사 관련
+    (r"(?:규정|규칙|학칙|정관|세칙)", 0.8),  # 규정 유형
+    (r"(?:심의|의결|승인|결정|허가)", 0.8),  # 의결 관련
+    (r"(?:임명|선임|해임|임기|보선)", 0.7),  # 임명 관련
+    (r"(?:장학금|등록금|수업료|입학금)", 0.7),  # 재정 관련
+    (r"(?:전형|입학|졸업|휴학|복학|제적)", 0.8),  # 학적 관련
+    (r"(?:시행일|시행|폐지|개정|신설)", 0.6),  # 법률 용어
+    (r"(?:예산|결산|회계|자산|재산)", 0.7),  # 재정 관련
+    (r"(?:연구|교육|강의|수업|학점)", 0.8),  # 교육 관련
 ]
+
+# Chunk level mapping from node type
+CHUNK_LEVEL_MAP = {
+    "chapter": "chapter",
+    "section": "section",
+    "article": "article",
+    "paragraph": "paragraph",
+    "item": "item",
+    "subitem": "subitem",
+    "addendum": "addendum",
+    "addendum_item": "addendum_item",
+    "preamble": "preamble",
+    "text": "text",
+}
+
+# Average characters per token (Korean text approximation)
+CHARS_PER_TOKEN = 2.5
 
 
 # ============================================================================
@@ -89,9 +106,36 @@ def extract_amendment_history(text: str) -> List[Dict[str, str]]:
     return history
 
 
-def extract_keywords(text: str) -> List[str]:
+def extract_keywords(text: str) -> List[Dict[str, Any]]:
     """
-    Extract keywords from regulation text using pattern matching.
+    Extract keywords from regulation text using pattern matching with weights.
+    
+    Args:
+        text: The text to extract keywords from.
+        
+    Returns:
+        List of dicts with 'term' and 'weight' keys, sorted by weight descending.
+    """
+    if not text:
+        return []
+    
+    keywords = {}
+    for pattern, weight in KEYWORD_PATTERNS:
+        for match in re.finditer(pattern, text):
+            term = match.group()
+            # Keep highest weight if duplicate
+            if term not in keywords or keywords[term] < weight:
+                keywords[term] = weight
+    
+    # Sort by weight descending, then by term
+    result = [{"term": k, "weight": v} for k, v in keywords.items()]
+    result.sort(key=lambda x: (-x["weight"], x["term"]))
+    return result
+
+
+def extract_keywords_simple(text: str) -> List[str]:
+    """
+    Extract keywords as simple list (for backward compatibility in tests).
     
     Args:
         text: The text to extract keywords from.
@@ -99,15 +143,83 @@ def extract_keywords(text: str) -> List[str]:
     Returns:
         List of unique keywords found in the text.
     """
+    keywords = extract_keywords(text)
+    return [k["term"] for k in keywords]
+
+
+def determine_chunk_level(node: Dict[str, Any]) -> str:
+    """
+    Determine the chunk level of a node based on its type.
+    
+    Args:
+        node: The node dictionary.
+        
+    Returns:
+        A string representing the chunk level.
+    """
+    node_type = node.get("type", "text")
+    return CHUNK_LEVEL_MAP.get(node_type, "text")
+
+
+def calculate_token_count(text: str) -> int:
+    """
+    Calculate approximate token count for text.
+    
+    Args:
+        text: The text to count tokens for.
+        
+    Returns:
+        Approximate token count.
+    """
     if not text:
-        return []
+        return 0
+    return max(1, int(len(text) / CHARS_PER_TOKEN))
+
+
+def is_node_searchable(node: Dict[str, Any]) -> bool:
+    """
+    Determine if a node should be included in search results.
     
-    keywords = set()
-    for pattern in KEYWORD_PATTERNS:
-        for match in re.finditer(pattern, text):
-            keywords.add(match.group())
+    A node is searchable if it has text content or is a leaf node.
     
-    return sorted(keywords)
+    Args:
+        node: The node dictionary.
+        
+    Returns:
+        True if the node should be searchable.
+    """
+    text = node.get("text", "")
+    children = node.get("children", [])
+    # Searchable if has text content or is a leaf
+    return bool(text) or len(children) == 0
+
+
+def extract_effective_date(text: str) -> Optional[str]:
+    """
+    Extract effective date (시행일) from addendum text.
+    
+    Args:
+        text: The addendum text to parse.
+        
+    Returns:
+        Date string in YYYY-MM-DD format, or None if not found.
+    """
+    if not text:
+        return None
+    
+    # Pattern: 이 규정은 YYYY년 MM월 DD일부터 시행한다
+    patterns = [
+        r"(\d{4})\s*[년\.]\s*(\d{1,2})\s*[월\.]\s*(\d{1,2})\s*일?\s*부터\s*시행",
+        r"(\d{4})\s*[년\.]\s*(\d{1,2})\s*[월\.]\s*(\d{1,2})\s*\.?\s*[부로부터]*\s*시행",
+    ]
+    
+    for pattern in patterns:
+        match = re.search(pattern, text)
+        if match:
+            year, month, day = match.groups()
+            return f"{year}-{int(month):02d}-{int(day):02d}"
+    
+    return None
 
 
 def determine_status(title: str) -> Tuple[str, Optional[str]]:
@@ -191,26 +303,47 @@ def enhance_node(
     
     # Add current node's label to path for children
     node_label = build_path_label(node)
+    text = node.get("text", "")
     
     # 1. parent_path
     node["parent_path"] = current_path.copy()
     
-    # 2. full_text
-    text = node.get("text", "")
+    # 2. full_text (for display, includes path)
     if text:
         node["full_text"] = build_full_text(current_path, node)
     
-    # 3. keywords (combine title and text)
+    # 3. embedding_text (for vector embedding, pure text only)
+    if text:
+        node["embedding_text"] = text
+    
+    # 4. chunk_level
+    node["chunk_level"] = determine_chunk_level(node)
+    
+    # 5. is_searchable
+    node["is_searchable"] = is_node_searchable(node)
+    
+    # 6. token_count (based on embedding_text)
+    if text:
+        node["token_count"] = calculate_token_count(text)
+    
+    # 7. keywords (combine title and text)
     combined_text = f"{node.get('title', '')} {text}"
     keywords = extract_keywords(combined_text)
     if keywords:
         node["keywords"] = keywords
     
-    # 4. amendment_history (from text only, not title)
+    # 8. amendment_history (from text only, not title)
     if text:
         history = extract_amendment_history(text)
         if history:
             node["amendment_history"] = history
+    
+    # 9. effective_date (for addendum nodes)
+    node_type = node.get("type", "")
+    if node_type in ("addendum", "addendum_item") and text:
+        effective_date = extract_effective_date(text)
+        if effective_date:
+            node["effective_date"] = effective_date
     
     # Recursively process children
     children = node.get("children", [])
@@ -270,7 +403,7 @@ def enhance_json(data: Dict[str, Any]) -> Dict[str, Any]:
     
     # Add enhancement metadata
     data["rag_enhanced"] = True
-    data["rag_schema_version"] = "1.0"
+    data["rag_schema_version"] = "2.0"
     
     return data
 
