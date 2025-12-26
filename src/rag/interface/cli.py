@@ -416,8 +416,10 @@ def cmd_ask(args) -> int:
             console.print()
             console.print("[bold cyan]📚 참고 규정:[/bold cyan]")
             
-            # Get max score for normalization (top result)
-            max_score = max(r.score for r in answer.sources) if answer.sources else 0.20
+            def normalize_score(score: float) -> float:
+                if score <= 0:
+                    return 0.0
+                return min(1.0, score / 0.20)
             
             for i, result in enumerate(answer.sources, 1):
                 chunk = result.chunk
@@ -425,8 +427,9 @@ def cmd_ask(args) -> int:
                 reg_name = chunk.parent_path[0] if chunk.parent_path else chunk.title
                 path = " > ".join(chunk.parent_path[-3:]) if chunk.parent_path else chunk.title
                 
-                # Normalize score to 0-100% (relative to top result)
-                rel_score = min(100, int((result.score / max_score) * 100)) if max_score > 0 else 0
+                # Normalize score to 0-100% (absolute scale, aligned with confidence)
+                norm_score = normalize_score(result.score)
+                rel_score = int(norm_score * 100)
                 score_bar = "█" * (rel_score // 10) + "░" * (10 - rel_score // 10)
                 
                 # Relevance label for better understanding
@@ -450,7 +453,7 @@ def cmd_ask(args) -> int:
                     "",
                     display_text,
                     "",
-                    f"[dim]📋 규정번호: {chunk.rule_code} | 관련도: {score_bar} {rel_score}% {rel_label}[/dim]",
+                    f"[dim]📋 규정번호: {chunk.rule_code} | 관련도(정규화): {score_bar} {rel_score}% {rel_label} | 점수: {result.score:.3f}[/dim]",
                 ]
                 
                 console.print(Panel(

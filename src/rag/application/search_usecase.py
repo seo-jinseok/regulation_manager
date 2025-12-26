@@ -7,7 +7,7 @@ Provides search functionality with optional LLM-based Q&A.
 import re
 from typing import List, Optional, TYPE_CHECKING
 
-from ..domain.entities import Answer, SearchResult
+from ..domain.entities import Answer, Chunk, SearchResult
 from ..domain.repositories import ILLMClient, IVectorStore
 from ..domain.value_objects import Query, SearchFilter
 
@@ -19,6 +19,7 @@ if TYPE_CHECKING:
 ARTICLE_PATTERN = re.compile(
     r"제\s*\d+\s*조(?:\s*의\s*\d+)?|제\s*\d+\s*항|제\s*\d+\s*호"
 )
+HEADING_ONLY_PATTERN = re.compile(r"^\([^)]*\)\s*$")
 
 
 def _normalize_article_token(token: str) -> str:
@@ -33,14 +34,16 @@ REGULATION_QA_PROMPT = """당신은 대학 규정 전문가입니다.
 - **반드시 제공된 규정 내용에 명시된 사항만 답변하세요.**
 - 규정에 없는 내용은 절대 추측하거나 일반적인 관행을 언급하지 마세요.
 - 괄호로 부연 설명을 달지 마세요.
+- 규정에 절차·결정 주체·승인 단계가 **명시된 경우에만** 그 표현을 사용하세요.
 
 ## 답변 지침
 1. 규정에 명시된 내용을 바탕으로 **단계별로 상세히** 설명하세요.
-2. 관련 조항 번호와 규정명을 함께 언급하세요 (예: "휴학규정 제4조에 따르면...").
+2. 관련 조항 번호와 규정명을 함께 언급하세요. **경로/번호 표기는 제공된 텍스트를 그대로 사용**하고, "제N조"로 바꾸지 마세요.
 3. 규정에 명시된 정보만 포함하세요. 규정에 없는 서류, 조건, 기한 등을 추가하지 마세요.
-4. 규정에서 확인되지 않는 내용은 언급하지 말고 넘어가세요.
-5. 폐지된 규정은 현행 규정이 아님을 주의하세요.
-6. 마크다운 형식(번호 목록, 굵은 글씨 등)을 사용하여 가독성을 높이세요.
+4. 업무 범위나 담당 부서 **표제만 있는 경우**, 그 범위에 포함됨을 밝히고 절차·권한은 **규정에서 확인되지 않음**이라고 명시하세요.
+5. 제목/표제 수준만 제공된 경우, 구체 절차·조건은 **규정에서 확인되지 않음**이라고 명시하세요.
+6. 폐지된 규정은 현행 규정이 아님을 주의하세요.
+7. 마크다운 형식(번호 목록, 굵은 글씨 등)을 사용하여 가독성을 높이세요.
 """
 
 
@@ -311,7 +314,7 @@ class SearchUseCase:
         results = self.search(
             question,
             filter=filter,
-            top_k=top_k,
+            top_k=top_k * 3,
             include_abolished=include_abolished,
         )
 
@@ -322,8 +325,13 @@ class SearchUseCase:
                 confidence=0.0,
             )
 
+        # Filter out low-signal headings when possible
+        filtered_results = self._select_answer_sources(results, top_k)
+        if not filtered_results:
+            filtered_results = results[:top_k]
+
         # Build context from search results
-        context = self._build_context(results)
+        context = self._build_context(filtered_results)
 
         # Generate answer
         user_message = f"""질문: {question}
@@ -340,11 +348,11 @@ class SearchUseCase:
         )
 
         # Compute confidence based on search scores
-        confidence = self._compute_confidence(results)
+        confidence = self._compute_confidence(filtered_results)
 
         return Answer(
             text=answer_text,
-            sources=results,
+            sources=filtered_results,
             confidence=confidence,
         )
 
@@ -357,12 +365,63 @@ class SearchUseCase:
             path_str = " > ".join(chunk.parent_path) if chunk.parent_path else ""
             
             context_parts.append(
-                f"[{i}] {path_str}\n"
-                f"    {chunk.text}\n"
+                f"[{i}] 규정명/경로: {path_str or chunk.rule_code}\n"
+                f"    본문: {chunk.text}\n"
                 f"    (출처: {chunk.rule_code})"
             )
 
         return "\n\n".join(context_parts)
+
+    def _select_answer_sources(
+        self,
+        results: List[SearchResult],
+        top_k: int,
+    ) -> List[SearchResult]:
+        """Select best sources for LLM answer, skipping low-signal headings."""
+        selected: List[SearchResult] = []
+        seen_ids = set()
+
+        for result in results:
+            if result.chunk.id in seen_ids:
+                continue
+
+            if self._is_low_signal_chunk(result.chunk):
+                continue
+
+            seen_ids.add(result.chunk.id)
+            selected.append(result)
+            if len(selected) >= top_k:
+                break
+
+        if len(selected) < top_k:
+            for result in results:
+                if result.chunk.id in seen_ids:
+                    continue
+                selected.append(result)
+                seen_ids.add(result.chunk.id)
+                if len(selected) >= top_k:
+                    break
+
+        # Re-rank after filtering
+        return [
+            SearchResult(chunk=r.chunk, score=r.score, rank=i + 1)
+            for i, r in enumerate(selected)
+        ]
+
+    def _is_low_signal_chunk(self, chunk: Chunk) -> bool:
+        """Heuristic: drop heading-only chunks when richer text exists."""
+        text = (chunk.text or "").strip()
+        if not text:
+            return True
+
+        content = text
+        if ":" in text:
+            content = text.split(":", 1)[-1].strip()
+
+        if HEADING_ONLY_PATTERN.match(content) and chunk.token_count < 30:
+            return True
+
+        return False
 
     def _compute_confidence(self, results: List[SearchResult]) -> float:
         """
