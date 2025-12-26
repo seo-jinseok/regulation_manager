@@ -395,7 +395,7 @@ def cmd_ask(args) -> int:
             border_style="green",
         ))
 
-        # Print sources (show full text, not preview)
+        # Print sources with enhanced visual format
         if answer.sources:
             console.print()
             console.print("[bold cyan]📚 참고 규정:[/bold cyan]")
@@ -405,15 +405,23 @@ def cmd_ask(args) -> int:
                 reg_name = chunk.parent_path[0] if chunk.parent_path else chunk.title
                 path = " > ".join(chunk.parent_path[-3:]) if chunk.parent_path else chunk.title
                 
-                # Show preview or full text based on --show-sources option
-                if args.show_sources:
-                    display_text = chunk.text  # Full text
-                else:
-                    display_text = chunk.text[:150] + "..." if len(chunk.text) > 150 else chunk.text
+                # Score indicator (visual bar)
+                score_pct = min(100, int(result.score * 500))  # Scale 0.20 -> 100%
+                score_bar = "█" * (score_pct // 10) + "░" * (10 - score_pct // 10)
+                
+                # Format content with visual hierarchy
+                content_parts = [
+                    f"[bold blue]📖 {reg_name}[/bold blue]",
+                    f"[dim]조항: {path}[/dim]",
+                    "",
+                    chunk.text,  # Always show full text
+                    "",
+                    f"[dim]출처: {chunk.rule_code} | 관련도: {score_bar} {result.score:.0%}[/dim]",
+                ]
                 
                 console.print(Panel(
-                    f"{display_text}\n\n[dim](출처: {chunk.rule_code} {reg_name}, 점수: {result.score:.2f})[/dim]",
-                    title=f"[{i}] {path}",
+                    "\n".join(content_parts),
+                    title=f"[{i}]",
                     border_style="blue",
                 ))
 
