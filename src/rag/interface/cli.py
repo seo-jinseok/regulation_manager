@@ -182,6 +182,11 @@ def create_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="BGE Reranker 비활성화 (기본: reranking 사용)",
     )
+    ask_parser.add_argument(
+        "-v", "--verbose",
+        action="store_true",
+        help="상세 정보 출력 (LLM 설정, 인덱스 구축 현황 등)",
+    )
 
     # status command
     status_parser = subparsers.add_parser(
@@ -341,10 +346,13 @@ def cmd_ask(args) -> int:
         print_error("데이터베이스가 비어 있습니다. 먼저 sync를 실행하세요.")
         return 1
 
-    # Initialize LLM client
-    print_info(f"LLM 프로바이더: {args.provider}")
-    if args.model:
-        print_info(f"모델: {args.model}")
+    # Initialize LLM client (verbose info only)
+    if args.verbose:
+        print_info(f"LLM 프로바이더: {args.provider}")
+        if args.model:
+            print_info(f"모델: {args.model}")
+        if args.base_url:
+            print_info(f"Base URL: {args.base_url}")
     
     try:
         llm = LLMClientAdapter(
@@ -361,20 +369,28 @@ def cmd_ask(args) -> int:
         return 1
 
     use_reranker = not args.no_rerank
-    if use_reranker:
-        print_info("🎯 BGE Reranker 활성화 (비활성화: --no-rerank)")
+    if args.verbose:
+        if use_reranker:
+            print_info("🎯 BGE Reranker 활성화")
+        else:
+            print_info("BGE Reranker 비활성화")
 
     # Initialize HybridSearcher with BM25 index
-    print_info("🔄 Hybrid Search 인덱스 구축 중...")
+    if args.verbose:
+        print_info("🔄 Hybrid Search 인덱스 구축 중...")
     hybrid = HybridSearcher()
     documents = store.get_all_documents()
     hybrid.add_documents(documents)
-    print_info(f"✓ BM25 인덱스 구축 완료 ({len(documents):,}개 문서)")
+    if args.verbose:
+        print_info(f"✓ BM25 인덱스 구축 완료 ({len(documents):,}개 문서)")
+        print_info(f"ChromaDB 경로: {args.db_path}")
+        print_info(f"Top-K: {args.top_k}")
 
     # Create search use case with LLM and hybrid searcher
     search = SearchUseCase(store, llm_client=llm, use_reranker=use_reranker, hybrid_searcher=hybrid)
 
-    print_info(f"질문: {args.question}")
+    if args.verbose:
+        print_info(f"질문: {args.question}")
     print_info("답변 생성 중...")
 
     try:
@@ -399,24 +415,42 @@ def cmd_ask(args) -> int:
         if answer.sources:
             console.print()
             console.print("[bold cyan]📚 참고 규정:[/bold cyan]")
+            
+            # Get max score for normalization (top result)
+            max_score = max(r.score for r in answer.sources) if answer.sources else 0.20
+            
             for i, result in enumerate(answer.sources, 1):
                 chunk = result.chunk
                 # Show regulation name from parent_path[0] if available
                 reg_name = chunk.parent_path[0] if chunk.parent_path else chunk.title
                 path = " > ".join(chunk.parent_path[-3:]) if chunk.parent_path else chunk.title
                 
-                # Score indicator (visual bar)
-                score_pct = min(100, int(result.score * 500))  # Scale 0.20 -> 100%
-                score_bar = "█" * (score_pct // 10) + "░" * (10 - score_pct // 10)
+                # Normalize score to 0-100% (relative to top result)
+                rel_score = min(100, int((result.score / max_score) * 100)) if max_score > 0 else 0
+                score_bar = "█" * (rel_score // 10) + "░" * (10 - rel_score // 10)
+                
+                # Relevance label for better understanding
+                if rel_score >= 80:
+                    rel_label = "🟢 매우 높음"
+                elif rel_score >= 50:
+                    rel_label = "🟡 높음"
+                elif rel_score >= 30:
+                    rel_label = "🟠 보통"
+                else:
+                    rel_label = "🔴 낮음"
+                
+                # Clean up text format (e.g., "1.:" -> "1.")
+                import re
+                display_text = re.sub(r'(\d+)\.\s*:', r'\1.', chunk.text)
                 
                 # Format content with visual hierarchy
                 content_parts = [
                     f"[bold blue]📖 {reg_name}[/bold blue]",
-                    f"[dim]조항: {path}[/dim]",
+                    f"[dim]📍 {path}[/dim]",
                     "",
-                    chunk.text,  # Always show full text
+                    display_text,
                     "",
-                    f"[dim]출처: {chunk.rule_code} | 관련도: {score_bar} {result.score:.0%}[/dim]",
+                    f"[dim]📋 규정번호: {chunk.rule_code} | 관련도: {score_bar} {rel_score}% {rel_label}[/dim]",
                 ]
                 
                 console.print(Panel(
@@ -425,10 +459,23 @@ def cmd_ask(args) -> int:
                     border_style="blue",
                 ))
 
-        # Print confidence
+        # Print confidence with user-friendly description and explanation
         console.print()
-        confidence_color = "green" if answer.confidence > 0.7 else "yellow" if answer.confidence > 0.4 else "red"
-        console.print(f"[dim]신뢰도: [{confidence_color}]{answer.confidence:.0%}[/{confidence_color}][/dim]")
+        if answer.confidence >= 0.7:
+            conf_desc = "🟢 높음"
+            conf_detail = "검색된 규정이 질문과 높은 관련성을 보입니다. 답변을 신뢰할 수 있습니다."
+        elif answer.confidence >= 0.4:
+            conf_desc = "🟡 보통"
+            conf_detail = "관련 규정을 찾았지만, 중요한 결정은 위 규정 원문을 직접 확인하세요."
+        else:
+            conf_desc = "🔴 낮음"
+            conf_detail = "관련 규정을 찾기 어렵습니다. 학교 행정실이나 규정집을 직접 확인하세요."
+        
+        console.print(Panel(
+            f"[bold]{conf_desc}[/bold] (신뢰도 {answer.confidence:.0%})\n\n{conf_detail}",
+            title="📊 답변 신뢰도",
+            border_style="dim",
+        ))
     else:
         print(f"\n=== LLM 답변 ===")
         print(answer.text)
