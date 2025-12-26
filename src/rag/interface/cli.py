@@ -402,7 +402,8 @@ def cmd_ask(args) -> int:
             for i, result in enumerate(answer.sources, 1):
                 chunk = result.chunk
                 path = " > ".join(chunk.parent_path[-3:]) if chunk.parent_path else chunk.title
-                text_preview = chunk.text[:150] + "..." if len(chunk.text) > 150 else chunk.text
+                # Show more text (400 chars instead of 150)
+                text_preview = chunk.text[:400] + "..." if len(chunk.text) > 400 else chunk.text
                 
                 console.print(Panel(
                     f"{text_preview}\n\n[dim](출처: {chunk.rule_code}, 점수: {result.score:.2f})[/dim]",
