@@ -106,6 +106,31 @@ uv run regulation-web
 
 ---
 
+## 7단계: MCP 서버 (선택)
+
+AI 에이전트(Claude, Cursor 등)에서 규정 검색 기능을 사용할 수 있습니다.
+
+```bash
+# MCP 서버 실행
+uv run regulation-mcp
+```
+
+**Claude Desktop 연결** (`~/Library/Application Support/Claude/claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "regulation-rag": {
+      "command": "uv",
+      "args": ["run", "regulation-mcp"],
+      "cwd": "/path/to/regulation_manager"
+    }
+  }
+}
+```
+
+---
+
 ## 자주 사용하는 명령어
 
 | 작업 | 명령어 |
@@ -116,6 +141,7 @@ uv run regulation-web
 | AI 질문 | `regulation-rag ask "<질문>"` |
 | 상태 확인 | `regulation-rag status` |
 | DB 초기화 | `regulation-rag reset --confirm` |
+| MCP 서버 | `regulation-mcp` |
 
 ---
 

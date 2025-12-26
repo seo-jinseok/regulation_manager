@@ -7,9 +7,10 @@
 ## LLM 사용 위치
 
 | 기능 | 용도 | 명령어 |
-|------|------|--------|
+|------|------|---------|
 | **전처리** | HWP → Markdown 변환 품질 향상 | `regulation-manager --use_llm` |
 | **질문 답변** | 자연어 답변 생성 | `regulation-rag ask` |
+| **MCP 서버** | AI 에이전트 연동 | `regulation-mcp` |
 
 ---
 
@@ -202,9 +203,10 @@ LLM_BASE_URL=http://localhost:11434
 코드 기본값(옵션/`.env` 미설정 시):
 
 | 사용 위치 | LLM 기본값 |
-|-----------|------------|
+|-----------|-----------|
 | `regulation-manager` | provider: `openai` (model: `gpt-4o`) |
 | `regulation-rag` / 웹 UI | provider: `ollama` (model: `gemma2`, base_url: `http://localhost:11434`) |
+| `regulation-mcp` | provider: `lmstudio` (base_url: `http://127.0.0.1:1234`) |
 
 ---
 
