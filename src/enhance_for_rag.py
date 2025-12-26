@@ -283,6 +283,45 @@ def build_full_text(parent_path: List[str], node: Dict[str, Any]) -> str:
     return text
 
 
+def build_embedding_text(parent_path: List[str], node: Dict[str, Any]) -> str:
+    """
+    Build context-aware embedding text for vector search.
+    
+    Unlike full_text (for display), embedding_text includes path context
+    to help the embedding model understand the hierarchical position.
+    
+    Args:
+        parent_path: List of path segments (최근 3단계만 사용).
+        node: The current node.
+        
+    Returns:
+        A string with path context prefix and node text.
+        
+    Example:
+        Input: parent_path=["동의대학교학칙", "제3장 학사", "제1절 수업"]
+               node={"display_no": "제15조", "title": "수업일수", "text": "..."}
+        Output: "제3장 학사 > 제1절 수업 > 제15조 수업일수: ..."
+    """
+    text = node.get("text", "")
+    if not text:
+        return ""
+    
+    # Use only the last 3 path segments for context (avoid too long prefix)
+    if parent_path:
+        recent_path = parent_path[-3:] if len(parent_path) > 3 else parent_path
+        path_str = " > ".join(recent_path)
+        label = build_path_label(node)
+        if label:
+            return f"{path_str} > {label}: {text}"
+        return f"{path_str}: {text}"
+    
+    # If no path, include label if available
+    label = build_path_label(node)
+    if label:
+        return f"{label}: {text}"
+    return text
+
+
 def enhance_node(
     node: Dict[str, Any],
     parent_path: List[str],
@@ -312,9 +351,9 @@ def enhance_node(
     if text:
         node["full_text"] = build_full_text(current_path, node)
     
-    # 3. embedding_text (for vector embedding, pure text only)
+    # 3. embedding_text (for vector embedding, with path context)
     if text:
-        node["embedding_text"] = text
+        node["embedding_text"] = build_embedding_text(current_path, node)
     
     # 4. chunk_level
     node["chunk_level"] = determine_chunk_level(node)

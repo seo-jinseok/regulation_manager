@@ -4,11 +4,16 @@ Search Use Case for Regulation RAG System.
 Provides search functionality with optional LLM-based Q&A.
 """
 
+import re
 from typing import List, Optional
 
 from ..domain.entities import Answer, SearchResult
 from ..domain.repositories import ILLMClient, IVectorStore
 from ..domain.value_objects import Query, SearchFilter
+
+
+# Regex for matching article/paragraph/item numbers (제N조, 제N항, 제N호)
+ARTICLE_PATTERN = re.compile(r"제\d+조(?:의\d+)?|제\d+항|제\d+호")
 
 
 # System prompt for regulation Q&A
@@ -90,7 +95,15 @@ class SearchUseCase:
                 )
                 keyword_bonus = min(0.3, keyword_hits * 0.05)
 
-            new_score = min(1.0, r.score + bonus + keyword_bonus)
+            # Article number exact match bonus (제N조, 제N항, 제N호)
+            article_bonus = 0.0
+            query_articles = set(ARTICLE_PATTERN.findall(query_text))
+            if query_articles:
+                text_articles = set(ARTICLE_PATTERN.findall(r.chunk.text))
+                if query_articles & text_articles:
+                    article_bonus = 0.2  # Exact article match
+
+            new_score = min(1.0, r.score + bonus + keyword_bonus + article_bonus)
             boosted_results.append(SearchResult(
                 chunk=r.chunk,
                 score=new_score,

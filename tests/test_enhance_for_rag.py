@@ -410,8 +410,8 @@ class TestEnhanceNodeNewFields:
         assert "effective_date" in node
         assert node["effective_date"] == "2024-03-01"
 
-    def test_embedding_text_pure(self):
-        """Test that embedding_text contains pure text without path."""
+    def test_embedding_text_with_context(self):
+        """Test that embedding_text contains path context for better search."""
         node = {
             "type": "article",
             "display_no": "제1조",
@@ -420,8 +420,51 @@ class TestEnhanceNodeNewFields:
             "children": [],
         }
         enhance_node(node, [], "학칙")
-        # embedding_text should be pure text only
-        assert node["embedding_text"] == "본 규정의 목적"
-        # full_text should include path
+        # embedding_text should include path context for better search
+        assert "학칙" in node["embedding_text"]
+        assert "제1조 목적" in node["embedding_text"]
+        assert "본 규정의 목적" in node["embedding_text"]
+        # full_text should include path as well
         assert "[" in node["full_text"] and ">" in node["full_text"]
 
+
+class TestBuildEmbeddingText:
+    """Tests for build_embedding_text function."""
+
+    def test_includes_path_context(self):
+        """Test that embedding text includes path context."""
+        from src.enhance_for_rag import build_embedding_text
+        parent_path = ["동의대학교학칙", "제3장 학사", "제1절 수업"]
+        node = {"text": "수업일수는 연간 16주 이상으로 한다.", "display_no": "제15조", "title": "수업일수"}
+        result = build_embedding_text(parent_path, node)
+        assert "제3장 학사" in result
+        assert "제1절 수업" in result
+        assert "제15조 수업일수" in result
+        assert "수업일수는 연간 16주 이상" in result
+
+    def test_truncates_long_path(self):
+        """Test that only last 3 path segments are used."""
+        from src.enhance_for_rag import build_embedding_text
+        parent_path = ["규정", "제1편", "제1장", "제1절", "제1관"]
+        node = {"text": "내용", "display_no": "제1조", "title": ""}
+        result = build_embedding_text(parent_path, node)
+        # Only last 3 segments
+        assert "규정" not in result
+        assert "제1편" not in result
+        assert "제1장" in result
+        assert "제1절" in result
+        assert "제1관" in result
+
+    def test_empty_text_returns_empty(self):
+        """Test that empty text returns empty string."""
+        from src.enhance_for_rag import build_embedding_text
+        result = build_embedding_text(["path"], {"text": ""})
+        assert result == ""
+
+    def test_no_path_includes_label(self):
+        """Test that label is included even without path."""
+        from src.enhance_for_rag import build_embedding_text
+        node = {"text": "내용", "display_no": "제1조", "title": "목적"}
+        result = build_embedding_text([], node)
+        assert "제1조 목적" in result
+        assert "내용" in result
