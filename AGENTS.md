@@ -108,24 +108,28 @@ uv run pytest tests/rag/ -v          # RAG 테스트만
 [Query]
    │
    ▼
-[ChromaDB Dense Search] ────────┐
-   │                            │
-   ▼                            ▼
-[Keyword Bonus Scoring] ── [BGE Reranker (Cross-Encoder)]
-   │                            │
-   ▼                            ▼
-[Results]              [Reranked Results]
-   │                            │
-   └────────────┬───────────────┘
-                ▼
-         [LLM 답변 생성]
+[QueryAnalyzer] ─── 유형 분석, 동의어 확장, 불용어 제거
+   │
+   ├── BM25 (Sparse) ───────┐
+   │                        ├── RRF 융합 ── [Hybrid Results]
+   └── Dense (Embedding) ───┘                    │
+                                                 ▼
+                                      [BGE Reranker (Cross-Encoder)]
+                                                 │
+                                                 ▼
+                                   [Reranked Results + 조항 매칭 보너스]
+                                                 │
+                                                 ▼
+                                          [LLM 답변 생성]
 ```
 
 ### 핵심 컴포넌트
 
 | 컴포넌트 | 파일 | 설명 |
 |----------|------|------|
+| 쿼리 분석기 | `infrastructure/hybrid_search.py` | 쿼리 유형 분석, 동적 가중치, 동의어 확장 |
 | 벡터 저장소 | `infrastructure/chroma_store.py` | ChromaDB 기반 임베딩 저장/검색 |
+| Hybrid 검색 | `infrastructure/hybrid_search.py` | BM25 + Dense, RRF 융합 |
 | Reranker | `infrastructure/reranker.py` | BGE-reranker-v2-m3 Cross-encoder |
 | 검색 Use Case | `application/search_usecase.py` | 검색 로직, 스코어링, 재정렬 |
 | 동기화 Use Case | `application/sync_usecase.py` | 증분/전체 동기화 |
