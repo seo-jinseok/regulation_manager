@@ -461,7 +461,7 @@ def cmd_ask(args) -> int:
                     "",
                     display_text,
                     "",
-                    f"[dim]📋 규정번호: {chunk.rule_code} | 관련도(정규화): {score_bar} {rel_score}% {rel_label} | 점수: {result.score:.3f}[/dim]",
+                    f"[dim]📋 규정번호: {chunk.rule_code} | 관련도: {rel_score}% {rel_label} | AI 신뢰도: {result.score:.3f}[/dim]",
                 ]
                 
                 console.print(Panel(
