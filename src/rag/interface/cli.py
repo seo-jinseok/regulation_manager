@@ -433,7 +433,8 @@ def cmd_ask(args) -> int:
                 chunk = result.chunk
                 # Show regulation name from parent_path[0] if available
                 reg_name = chunk.parent_path[0] if chunk.parent_path else chunk.title
-                path = " > ".join(chunk.parent_path[-3:]) if chunk.parent_path else chunk.title
+                # Show full path for context
+                path = " > ".join(chunk.parent_path) if chunk.parent_path else chunk.title
                 
                 # Use relative normalization for display
                 norm_score = norm_scores.get(chunk.id, 0.0)
@@ -450,9 +451,14 @@ def cmd_ask(args) -> int:
                 else:
                     rel_label = "🔴 낮음"
                 
-                # Clean up text format (e.g., "1.:" -> "1.")
+                # Remove path prefix from text to avoid duplication
+                # Text format: "path: content" -> extract only content
                 import re
-                display_text = re.sub(r'(\d+)\.\s*:', r'\1.', chunk.text)
+                display_text = chunk.text
+                # Remove leading path pattern (e.g., "규정명 > 조항 > 항목: ")
+                display_text = re.sub(r'^[^:]+:\s*', '', display_text)
+                # Clean up remaining format (e.g., "1.:" -> "1.")
+                display_text = re.sub(r'(\d+)\.\s*:', r'\1.', display_text)
                 
                 # Format content with visual hierarchy
                 content_parts = [
