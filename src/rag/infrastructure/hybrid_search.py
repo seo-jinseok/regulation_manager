@@ -112,19 +112,14 @@ class ScoredDocument:
 
 class BM25:
     """
-    BM25 sparse retrieval implementation.
+    Simple BM25 implementation for sparse retrieval.
 
-    Standard BM25 algorithm for keyword-based document ranking.
+    BM25 parameters:
+    - k1: Term frequency saturation (default: 1.5)
+    - b: Document length normalization (default: 0.75)
     """
 
     def __init__(self, k1: float = 1.5, b: float = 0.75):
-        """
-        Initialize BM25 with tuning parameters.
-
-        Args:
-            k1: Term frequency saturation parameter (default: 1.5).
-            b: Length normalization parameter (default: 0.75).
-        """
         self.k1 = k1
         self.b = b
         self.doc_lengths: Dict[str, int] = {}
@@ -133,6 +128,7 @@ class BM25:
         self.term_doc_freq: Dict[str, int] = defaultdict(int)
         self.inverted_index: Dict[str, Dict[str, int]] = defaultdict(dict)
         self.documents: Dict[str, str] = {}
+        self.doc_metadata: Dict[str, Dict] = {}  # NEW: Store metadata
 
     def _tokenize(self, text: str) -> List[str]:
         """Tokenize text into terms."""
@@ -155,6 +151,7 @@ class BM25:
             tokens = self._tokenize(content)
             self.doc_lengths[doc_id] = len(tokens)
             self.documents[doc_id] = content
+            self.doc_metadata[doc_id] = metadata  # NEW: Store metadata
 
             # Count term frequencies
             term_freq: Dict[str, int] = defaultdict(int)
@@ -211,7 +208,7 @@ class BM25:
                 doc_id=doc_id,
                 score=score,
                 content=self.documents.get(doc_id, ""),
-                metadata={},
+                metadata=self.doc_metadata.get(doc_id, {}),
             )
             for doc_id, score in sorted_docs
         ]

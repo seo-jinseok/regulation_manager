@@ -357,6 +357,7 @@ class SearchUseCase:
         Compute confidence score based on search results.
 
         Higher scores = more confident in the answer.
+        RRF scores are typically in 0.01~0.20 range, so we normalize them.
         """
         if not results:
             return 0.0
@@ -365,8 +366,12 @@ class SearchUseCase:
         top_scores = [r.score for r in results[:3]]
         avg_score = sum(top_scores) / len(top_scores)
 
-        # Normalize to 0-1 range
-        return min(1.0, max(0.0, avg_score))
+        # RRF scores are typically 0.01 ~ 0.20, normalize to 0~1 range
+        # A score of 0.10+ is considered good (50%+ confidence)
+        # A score of 0.20+ is considered excellent (100% confidence)
+        normalized = min(1.0, avg_score / 0.20)
+
+        return max(0.0, normalized)
 
     def search_by_rule_code(
         self,
