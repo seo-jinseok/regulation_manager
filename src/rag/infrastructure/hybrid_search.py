@@ -30,6 +30,8 @@ class QueryAnalyzer:
     - Regulation names: OO규정, OO학칙 → balanced
     - Academic keywords: 휴학, 복학, 등록 등 → favor BM25
     - Natural questions: 어떻게, 무엇 → favor Dense
+    
+    Also provides query expansion with synonyms for better recall.
     """
 
     # Pattern for article/paragraph/item numbers
@@ -56,6 +58,34 @@ class QueryAnalyzer:
         QueryType.REGULATION_NAME: (0.5, 0.5),  # Balanced (also used for academic keywords)
         QueryType.NATURAL_QUESTION: (0.4, 0.6),  # Slightly favor semantic, but still consider keywords
         QueryType.GENERAL: (0.5, 0.5),  # Balanced default (increased BM25 from 0.3)
+    }
+
+    # Synonym dictionary for query expansion (학사 용어)
+    SYNONYMS: Dict[str, List[str]] = {
+        # 학과/전공 관련
+        "폐과": ["학과 폐지", "전공 폐지", "학부 폐지", "과 폐지"],
+        "모집정지": ["신입생 모집 정지", "학생 모집 중단", "모집 중단", "입학 정지"],
+        "정원": ["입학정원", "모집정원", "학생정원"],
+        # 학적 관련
+        "휴학": ["휴학원", "휴학 신청", "학업 중단"],
+        "복학": ["복학원", "복학 신청", "학업 복귀"],
+        "제적": ["학적 상실", "등록금 미납 제적"],
+        "자퇴": ["자퇴원", "자퇴 신청", "자진 퇴학"],
+        "전과": ["전과 신청", "학과 이동", "전공 변경"],
+        "편입": ["편입학", "편입 신청"],
+        # 등록/재정 관련
+        "등록금": ["수업료", "납입금"],
+        "장학금": ["장학", "학비 지원"],
+        "분납": ["등록금 분납", "분할 납부"],
+        # 학위/졸업 관련
+        "졸업": ["학위 수여", "졸업 요건"],
+        "학위": ["학사 학위", "석사 학위", "박사 학위"],
+        "논문": ["학위 논문", "졸업 논문"],
+        # 교원 관련
+        "교원": ["교수", "교직원", "전임 교원"],
+        "임용": ["교원 임용", "교수 채용"],
+        "재임용": ["계약 갱신", "임기 연장"],
+        "승진": ["교원 승진", "직급 상승"],
     }
 
     def analyze(self, query: str) -> QueryType:
@@ -98,6 +128,27 @@ class QueryAnalyzer:
         """
         query_type = self.analyze(query)
         return self.WEIGHT_PRESETS[query_type]
+
+    def expand_query(self, query: str) -> str:
+        """
+        Expand query with synonyms for better recall.
+
+        Args:
+            query: The original search query text.
+
+        Returns:
+            Expanded query with synonyms appended.
+        """
+        expansions = []
+        for term, synonyms in self.SYNONYMS.items():
+            if term in query:
+                # Add first 2 synonyms to avoid over-expansion
+                expansions.extend(synonyms[:2])
+        
+        if expansions:
+            # Append synonyms to original query
+            return f"{query} {' '.join(expansions)}"
+        return query
 
 
 @dataclass
@@ -340,7 +391,7 @@ class HybridSearcher:
 
     def search_sparse(self, query: str, top_k: int = 20) -> List[ScoredDocument]:
         """
-        Perform BM25 sparse search.
+        Perform BM25 sparse search with query expansion.
 
         Args:
             query: The search query.
@@ -349,7 +400,21 @@ class HybridSearcher:
         Returns:
             List of sparse search results.
         """
-        return self.bm25.search(query, top_k)
+        # Expand query with synonyms for better recall
+        expanded_query = self._query_analyzer.expand_query(query)
+        return self.bm25.search(expanded_query, top_k)
+
+    def expand_query(self, query: str) -> str:
+        """
+        Expand query with synonyms.
+
+        Args:
+            query: The original search query.
+
+        Returns:
+            Expanded query with synonyms appended.
+        """
+        return self._query_analyzer.expand_query(query)
 
     def clear(self) -> None:
         """Clear the BM25 index."""
