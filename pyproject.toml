@@ -29,6 +29,13 @@ regulation-manager = "src.main:main"
 regulation-rag = "src.rag.interface.cli:main"
 regulation-web = "src.rag.interface.gradio_app:main"
 
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = '-m "not debug"'

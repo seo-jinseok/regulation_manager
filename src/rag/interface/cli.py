@@ -18,6 +18,13 @@ import sys
 from pathlib import Path
 from typing import Optional
 
+# Load .env file
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 # Rich for pretty output (optional)
 try:
     from rich.console import Console

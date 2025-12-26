@@ -83,17 +83,35 @@ class ChromaVectorStore(IVectorStore):
         if not chunks:
             return 0
 
-        ids = [c.id for c in chunks]
-        documents = [c.embedding_text for c in chunks]
-        metadatas = [c.to_metadata() for c in chunks]
+        # Deduplicate by ID (keep first occurrence)
+        seen_ids = set()
+        unique_chunks = []
+        for c in chunks:
+            if c.id not in seen_ids:
+                seen_ids.add(c.id)
+                unique_chunks.append(c)
 
-        self._collection.add(
-            ids=ids,
-            documents=documents,
-            metadatas=metadatas,
-        )
+        if not unique_chunks:
+            return 0
 
-        return len(chunks)
+        # ChromaDB has max batch size of ~5000
+        BATCH_SIZE = 5000
+        total_added = 0
+
+        for i in range(0, len(unique_chunks), BATCH_SIZE):
+            batch = unique_chunks[i:i + BATCH_SIZE]
+            ids = [c.id for c in batch]
+            documents = [c.embedding_text for c in batch]
+            metadatas = [c.to_metadata() for c in batch]
+
+            self._collection.add(
+                ids=ids,
+                documents=documents,
+                metadatas=metadatas,
+            )
+            total_added += len(batch)
+
+        return total_added
 
     def delete_by_rule_codes(self, rule_codes: List[str]) -> int:
         """
