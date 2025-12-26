@@ -28,6 +28,7 @@ class QueryAnalyzer:
     Detects query patterns:
     - Article references: 제N조, 제N항 → favor BM25
     - Regulation names: OO규정, OO학칙 → balanced
+    - Academic keywords: 휴학, 복학, 등록 등 → favor BM25
     - Natural questions: 어떻게, 무엇 → favor Dense
     """
 
@@ -39,15 +40,22 @@ class QueryAnalyzer:
     # Pattern for regulation names
     REGULATION_PATTERN = re.compile(r"[가-힣]*(?:규정|학칙|내규|세칙|지침)")
 
+    # Academic/procedural keywords that benefit from exact match
+    ACADEMIC_KEYWORDS = [
+        "휴학", "복학", "제적", "자퇴", "전과", "편입", "졸업", "입학",
+        "등록", "수강", "장학", "학점", "성적", "시험", "출석", "학위",
+        "논문", "석사", "박사", "교원", "교수", "조교", "학생회",
+    ]
+
     # Question markers indicating natural language queries
     QUESTION_MARKERS = ["어떻게", "무엇", "왜", "언제", "어디", "누가", "어떤", "할까", "인가", "?"]
 
     # Weight presets for each query type: (bm25_weight, dense_weight)
     WEIGHT_PRESETS: Dict[QueryType, Tuple[float, float]] = {
         QueryType.ARTICLE_REFERENCE: (0.6, 0.4),  # Favor exact keyword match
-        QueryType.REGULATION_NAME: (0.5, 0.5),  # Balanced
-        QueryType.NATURAL_QUESTION: (0.2, 0.8),  # Favor semantic understanding
-        QueryType.GENERAL: (0.3, 0.7),  # Default
+        QueryType.REGULATION_NAME: (0.5, 0.5),  # Balanced (also used for academic keywords)
+        QueryType.NATURAL_QUESTION: (0.4, 0.6),  # Slightly favor semantic, but still consider keywords
+        QueryType.GENERAL: (0.5, 0.5),  # Balanced default (increased BM25 from 0.3)
     }
 
     def analyze(self, query: str) -> QueryType:
@@ -64,13 +72,17 @@ class QueryAnalyzer:
         if self.ARTICLE_PATTERN.search(query):
             return QueryType.ARTICLE_REFERENCE
 
-        # Check for natural language questions
-        if any(marker in query for marker in self.QUESTION_MARKERS):
-            return QueryType.NATURAL_QUESTION
-
         # Check for regulation name patterns
         if self.REGULATION_PATTERN.search(query):
             return QueryType.REGULATION_NAME
+
+        # Check for academic keywords (treat like regulation names for balanced search)
+        if any(keyword in query for keyword in self.ACADEMIC_KEYWORDS):
+            return QueryType.REGULATION_NAME
+
+        # Check for natural language questions
+        if any(marker in query for marker in self.QUESTION_MARKERS):
+            return QueryType.NATURAL_QUESTION
 
         return QueryType.GENERAL
 

@@ -5,11 +5,14 @@ Provides search functionality with optional LLM-based Q&A.
 """
 
 import re
-from typing import List, Optional
+from typing import List, Optional, TYPE_CHECKING
 
 from ..domain.entities import Answer, SearchResult
 from ..domain.repositories import ILLMClient, IVectorStore
 from ..domain.value_objects import Query, SearchFilter
+
+if TYPE_CHECKING:
+    from ..infrastructure.hybrid_search import HybridSearcher
 
 
 # Regex for matching article/paragraph/item numbers (제N조, 제N항, 제N호)
@@ -51,6 +54,7 @@ class SearchUseCase:
         store: IVectorStore,
         llm_client: Optional[ILLMClient] = None,
         use_reranker: bool = False,
+        hybrid_searcher: Optional["HybridSearcher"] = None,
     ):
         """
         Initialize search use case.
@@ -59,10 +63,13 @@ class SearchUseCase:
             store: Vector store implementation.
             llm_client: Optional LLM client for generating answers.
             use_reranker: Whether to use BGE reranker for improved accuracy.
+            hybrid_searcher: Optional HybridSearcher for BM25+Dense fusion.
         """
         self.store = store
         self.llm = llm_client
         self.use_reranker = use_reranker
+        self.hybrid_searcher = hybrid_searcher
+
 
     def search(
         self,
@@ -84,7 +91,60 @@ class SearchUseCase:
             List of SearchResult sorted by relevance.
         """
         query = Query(text=query_text, include_abolished=include_abolished)
-        results = self.store.search(query, filter, top_k * 3)  # Get more for filtering
+        
+        # Get dense search results from vector store
+        dense_results = self.store.search(query, filter, top_k * 3)
+        
+        # Apply Hybrid Search if HybridSearcher is available
+        if self.hybrid_searcher:
+            from ..infrastructure.hybrid_search import ScoredDocument
+            
+            # Get BM25 sparse results
+            sparse_results = self.hybrid_searcher.search_sparse(query_text, top_k * 3)
+            
+            # Convert dense results to ScoredDocument format for fusion
+            dense_docs = [
+                ScoredDocument(
+                    doc_id=r.chunk.id,
+                    score=r.score,
+                    content=r.chunk.text,
+                    metadata=r.chunk.to_metadata(),
+                )
+                for r in dense_results
+            ]
+            
+            # Fuse results using RRF
+            fused = self.hybrid_searcher.fuse_results(
+                sparse_results=sparse_results,
+                dense_results=dense_docs,
+                top_k=top_k * 3,
+                query_text=query_text,
+            )
+            
+            # Convert back to SearchResult (rebuild chunks from metadata)
+            id_to_result = {r.chunk.id: r for r in dense_results}
+            results = []
+            for i, doc in enumerate(fused):
+                if doc.doc_id in id_to_result:
+                    # Use existing chunk from dense results
+                    original = id_to_result[doc.doc_id]
+                    results.append(SearchResult(
+                        chunk=original.chunk,
+                        score=doc.score,
+                        rank=i + 1,
+                    ))
+                else:
+                    # BM25-only result: need to rebuild chunk from metadata
+                    from ..domain.entities import Chunk
+                    chunk = Chunk.from_metadata(doc.doc_id, doc.content, doc.metadata)
+                    results.append(SearchResult(
+                        chunk=chunk,
+                        score=doc.score,
+                        rank=i + 1,
+                    ))
+        else:
+            # No hybrid searcher, use dense results directly
+            results = dense_results
         
         # Apply keyword bonus: boost score if query terms appear in text or keywords
         query_terms = query_text.lower().split()

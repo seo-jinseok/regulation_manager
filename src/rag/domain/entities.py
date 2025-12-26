@@ -138,6 +138,59 @@ class Chunk:
             )
         return payload
 
+    @classmethod
+    def from_metadata(cls, doc_id: str, text: str, metadata: Dict[str, Any]) -> "Chunk":
+        """
+        Reconstruct a Chunk from stored metadata.
+
+        Used when rebuilding Chunk from BM25 search results that don't have
+        the full Chunk object available.
+
+        Args:
+            doc_id: The chunk ID.
+            text: The chunk text content.
+            metadata: Metadata dict from vector store.
+
+        Returns:
+            A Chunk instance.
+        """
+        # Parse parent_path from string
+        parent_path_str = metadata.get("parent_path", "")
+        parent_path = parent_path_str.split(" > ") if parent_path_str else []
+
+        # Parse keywords if present
+        keywords = []
+        raw_keywords = metadata.get("keywords")
+        if raw_keywords:
+            try:
+                if isinstance(raw_keywords, str):
+                    parsed = json.loads(raw_keywords)
+                elif isinstance(raw_keywords, list):
+                    parsed = raw_keywords
+                else:
+                    parsed = []
+                for item in parsed:
+                    if isinstance(item, dict) and "term" in item and "weight" in item:
+                        keywords.append(Keyword.from_dict(item))
+            except json.JSONDecodeError:
+                pass
+
+        return cls(
+            id=doc_id,
+            rule_code=metadata.get("rule_code", ""),
+            level=ChunkLevel.from_string(metadata.get("level", "text")),
+            title=metadata.get("title", ""),
+            text=text,
+            embedding_text=text,
+            full_text="",
+            parent_path=parent_path,
+            token_count=metadata.get("token_count", 0),
+            keywords=keywords,
+            is_searchable=metadata.get("is_searchable", True),
+            effective_date=metadata.get("effective_date") or None,
+            status=RegulationStatus(metadata.get("status", "active")),
+        )
+
 
 @dataclass
 class Regulation:

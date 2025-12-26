@@ -229,6 +229,28 @@ class ChromaVectorStore(IVectorStore):
         """
         return self._collection.count()
 
+    def get_all_documents(self) -> list:
+        """
+        Get all documents for BM25 index building.
+
+        Returns:
+            List of (doc_id, text, metadata) tuples.
+        """
+        results = self._collection.get(
+            include=["documents", "metadatas"]
+        )
+
+        documents = []
+        ids = results.get("ids", [])
+        docs = results.get("documents", [])
+        metas = results.get("metadatas", [])
+
+        for doc_id, text, meta in zip(ids, docs, metas):
+            if text:  # Only include non-empty documents
+                documents.append((doc_id, text, meta or {}))
+
+        return documents
+
     def clear_all(self) -> int:
         """
         Delete all chunks from the store.

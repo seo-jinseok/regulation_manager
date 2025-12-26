@@ -63,16 +63,26 @@ class TestQueryAnalyzer:
         assert analyzer.analyze("왜 그런가요") == QueryType.NATURAL_QUESTION
 
     def test_detects_question_mark(self, analyzer: QueryAnalyzer):
-        """물음표를 NATURAL_QUESTION으로 분류"""
-        assert analyzer.analyze("휴학하려면?") == QueryType.NATURAL_QUESTION
-        assert analyzer.analyze("졸업 조건은?") == QueryType.NATURAL_QUESTION
+        """물음표를 NATURAL_QUESTION으로 분류 (단, 학사 키워드가 없는 경우)"""
+        # 학사 키워드가 포함된 경우 REGULATION_NAME이 우선
+        assert analyzer.analyze("휴학하려면?") == QueryType.REGULATION_NAME
+        # 학사 키워드 없으면 물음표로 NATURAL_QUESTION
+        assert analyzer.analyze("이게 뭔가요?") == QueryType.NATURAL_QUESTION
+
+    # --- Academic Keywords Detection ---
+
+    def test_detects_academic_keywords(self, analyzer: QueryAnalyzer):
+        """학사 키워드는 REGULATION_NAME으로 분류"""
+        assert analyzer.analyze("휴학") == QueryType.REGULATION_NAME
+        assert analyzer.analyze("복학 절차") == QueryType.REGULATION_NAME
+        assert analyzer.analyze("장학금 신청") == QueryType.REGULATION_NAME
 
     # --- General Queries ---
 
     def test_general_query(self, analyzer: QueryAnalyzer):
         """특정 패턴 없으면 GENERAL로 분류"""
-        assert analyzer.analyze("장학금") == QueryType.GENERAL
-        assert analyzer.analyze("휴학 수속") == QueryType.GENERAL
+        assert analyzer.analyze("일반 검색어") == QueryType.GENERAL
+        assert analyzer.analyze("도서관 이용") == QueryType.GENERAL
 
     # --- Priority: Article > Question > Regulation ---
 
@@ -96,16 +106,16 @@ class TestQueryAnalyzer:
         assert dense_w == 0.5
 
     def test_get_weights_question(self, analyzer: QueryAnalyzer):
-        """NATURAL_QUESTION은 Dense 가중치가 높아야 함"""
-        bm25_w, dense_w = analyzer.get_weights("어떻게 휴학하나요?")
-        assert bm25_w == 0.2
-        assert dense_w == 0.8
+        """NATURAL_QUESTION은 약간 Dense 가중치가 높음 (0.4, 0.6)"""
+        bm25_w, dense_w = analyzer.get_weights("이건 뭔가요?")
+        assert bm25_w == 0.4
+        assert dense_w == 0.6
 
     def test_get_weights_general(self, analyzer: QueryAnalyzer):
-        """GENERAL은 기본 가중치 (0.3, 0.7)"""
-        bm25_w, dense_w = analyzer.get_weights("장학금")
-        assert bm25_w == 0.3
-        assert dense_w == 0.7
+        """GENERAL은 균형 가중치 (0.5, 0.5)"""
+        bm25_w, dense_w = analyzer.get_weights("일반 검색어")
+        assert bm25_w == 0.5
+        assert dense_w == 0.5
 
 
 class TestHybridSearcherDynamicWeights:

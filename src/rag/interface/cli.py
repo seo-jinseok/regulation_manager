@@ -257,6 +257,7 @@ def cmd_sync(args) -> int:
 def cmd_search(args) -> int:
     """Execute search command."""
     from ..infrastructure.chroma_store import ChromaVectorStore
+    from ..infrastructure.hybrid_search import HybridSearcher
     from ..application.search_usecase import SearchUseCase
 
     store = ChromaVectorStore(persist_directory=args.db_path)
@@ -269,7 +270,14 @@ def cmd_search(args) -> int:
     if use_reranker:
         print_info("🎯 BGE Reranker 활성화 (비활성화: --no-rerank)")
 
-    search = SearchUseCase(store, use_reranker=use_reranker)
+    # Initialize HybridSearcher with BM25 index
+    print_info("🔄 Hybrid Search 인덱스 구축 중...")
+    hybrid = HybridSearcher()
+    documents = store.get_all_documents()
+    hybrid.add_documents(documents)
+    print_info(f"✓ BM25 인덱스 구축 완료 ({len(documents):,}개 문서)")
+
+    search = SearchUseCase(store, use_reranker=use_reranker, hybrid_searcher=hybrid)
     results = search.search_unique(
         args.query,
         top_k=args.top_k,
@@ -323,6 +331,7 @@ def cmd_search(args) -> int:
 def cmd_ask(args) -> int:
     """Execute ask command with LLM."""
     from ..infrastructure.chroma_store import ChromaVectorStore
+    from ..infrastructure.hybrid_search import HybridSearcher
     from ..infrastructure.llm_adapter import LLMClientAdapter
     from ..application.search_usecase import SearchUseCase
 
@@ -355,8 +364,15 @@ def cmd_ask(args) -> int:
     if use_reranker:
         print_info("🎯 BGE Reranker 활성화 (비활성화: --no-rerank)")
 
-    # Create search use case with LLM
-    search = SearchUseCase(store, llm_client=llm, use_reranker=use_reranker)
+    # Initialize HybridSearcher with BM25 index
+    print_info("🔄 Hybrid Search 인덱스 구축 중...")
+    hybrid = HybridSearcher()
+    documents = store.get_all_documents()
+    hybrid.add_documents(documents)
+    print_info(f"✓ BM25 인덱스 구축 완료 ({len(documents):,}개 문서)")
+
+    # Create search use case with LLM and hybrid searcher
+    search = SearchUseCase(store, llm_client=llm, use_reranker=use_reranker, hybrid_searcher=hybrid)
 
     print_info(f"질문: {args.question}")
     print_info("답변 생성 중...")
