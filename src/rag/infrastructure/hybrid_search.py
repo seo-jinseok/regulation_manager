@@ -7,8 +7,85 @@ search results for improved retrieval quality.
 
 import re
 from collections import defaultdict
-from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass
+from enum import Enum
+from typing import Dict, List, Optional, Tuple
+
+
+class QueryType(Enum):
+    """Types of queries for dynamic weight adjustment."""
+
+    ARTICLE_REFERENCE = "article_reference"  # 제N조, 제N항, 제N호
+    REGULATION_NAME = "regulation_name"  # OO규정, OO학칙
+    NATURAL_QUESTION = "natural_question"  # 어떻게, 무엇, ?
+    GENERAL = "general"  # Default
+
+
+class QueryAnalyzer:
+    """
+    Analyzes query text to determine optimal BM25/Dense weights.
+
+    Detects query patterns:
+    - Article references: 제N조, 제N항 → favor BM25
+    - Regulation names: OO규정, OO학칙 → balanced
+    - Natural questions: 어떻게, 무엇 → favor Dense
+    """
+
+    # Pattern for article/paragraph/item numbers
+    ARTICLE_PATTERN = re.compile(
+        r"제\s*\d+\s*조(?:\s*의\s*\d+)?|제\s*\d+\s*항|제\s*\d+\s*호"
+    )
+
+    # Pattern for regulation names
+    REGULATION_PATTERN = re.compile(r"[가-힣]*(?:규정|학칙|내규|세칙|지침)")
+
+    # Question markers indicating natural language queries
+    QUESTION_MARKERS = ["어떻게", "무엇", "왜", "언제", "어디", "누가", "어떤", "할까", "인가", "?"]
+
+    # Weight presets for each query type: (bm25_weight, dense_weight)
+    WEIGHT_PRESETS: Dict[QueryType, Tuple[float, float]] = {
+        QueryType.ARTICLE_REFERENCE: (0.6, 0.4),  # Favor exact keyword match
+        QueryType.REGULATION_NAME: (0.5, 0.5),  # Balanced
+        QueryType.NATURAL_QUESTION: (0.2, 0.8),  # Favor semantic understanding
+        QueryType.GENERAL: (0.3, 0.7),  # Default
+    }
+
+    def analyze(self, query: str) -> QueryType:
+        """
+        Analyze query text and determine its type.
+
+        Args:
+            query: The search query text.
+
+        Returns:
+            QueryType indicating the detected query pattern.
+        """
+        # Check for article references (highest priority for exact match)
+        if self.ARTICLE_PATTERN.search(query):
+            return QueryType.ARTICLE_REFERENCE
+
+        # Check for natural language questions
+        if any(marker in query for marker in self.QUESTION_MARKERS):
+            return QueryType.NATURAL_QUESTION
+
+        # Check for regulation name patterns
+        if self.REGULATION_PATTERN.search(query):
+            return QueryType.REGULATION_NAME
+
+        return QueryType.GENERAL
+
+    def get_weights(self, query: str) -> Tuple[float, float]:
+        """
+        Get optimal BM25/Dense weights for the given query.
+
+        Args:
+            query: The search query text.
+
+        Returns:
+            Tuple of (bm25_weight, dense_weight).
+        """
+        query_type = self.analyze(query)
+        return self.WEIGHT_PRESETS[query_type]
 
 
 @dataclass
@@ -158,6 +235,8 @@ class HybridSearcher:
 
     Uses Reciprocal Rank Fusion (RRF) to merge results from
     sparse and dense retrieval methods.
+
+    Supports dynamic weight adjustment based on query characteristics.
     """
 
     def __init__(
@@ -165,19 +244,23 @@ class HybridSearcher:
         bm25_weight: float = 0.3,
         dense_weight: float = 0.7,
         rrf_k: int = 60,
+        use_dynamic_weights: bool = True,
     ):
         """
         Initialize hybrid searcher.
 
         Args:
-            bm25_weight: Weight for BM25 scores (default: 0.3).
-            dense_weight: Weight for dense scores (default: 0.7).
+            bm25_weight: Default weight for BM25 scores (default: 0.3).
+            dense_weight: Default weight for dense scores (default: 0.7).
             rrf_k: RRF ranking constant (default: 60).
+            use_dynamic_weights: Enable query-based dynamic weighting (default: True).
         """
         self.bm25 = BM25()
         self.bm25_weight = bm25_weight
         self.dense_weight = dense_weight
         self.rrf_k = rrf_k
+        self.use_dynamic_weights = use_dynamic_weights
+        self._query_analyzer = QueryAnalyzer()
 
     def add_documents(self, documents: List[Tuple[str, str, Dict]]) -> None:
         """
@@ -193,6 +276,7 @@ class HybridSearcher:
         sparse_results: List[ScoredDocument],
         dense_results: List[ScoredDocument],
         top_k: int = 10,
+        query_text: Optional[str] = None,
     ) -> List[ScoredDocument]:
         """
         Fuse sparse and dense results using weighted RRF.
@@ -201,23 +285,32 @@ class HybridSearcher:
             sparse_results: Results from BM25 search.
             dense_results: Results from dense/embedding search.
             top_k: Maximum number of results.
+            query_text: Optional query for dynamic weight calculation.
+                If provided and use_dynamic_weights is True, weights are
+                automatically adjusted based on query characteristics.
 
         Returns:
             Fused results sorted by combined score.
         """
+        # Determine weights: dynamic or static
+        if self.use_dynamic_weights and query_text:
+            bm25_w, dense_w = self._query_analyzer.get_weights(query_text)
+        else:
+            bm25_w, dense_w = self.bm25_weight, self.dense_weight
+
         scores: Dict[str, float] = defaultdict(float)
         doc_data: Dict[str, ScoredDocument] = {}
 
         # Add sparse results with RRF scoring
         for rank, doc in enumerate(sparse_results, start=1):
             rrf_score = 1 / (self.rrf_k + rank)
-            scores[doc.doc_id] += self.bm25_weight * rrf_score
+            scores[doc.doc_id] += bm25_w * rrf_score
             doc_data[doc.doc_id] = doc
 
         # Add dense results with RRF scoring
         for rank, doc in enumerate(dense_results, start=1):
             rrf_score = 1 / (self.rrf_k + rank)
-            scores[doc.doc_id] += self.dense_weight * rrf_score
+            scores[doc.doc_id] += dense_w * rrf_score
             if doc.doc_id not in doc_data:
                 doc_data[doc.doc_id] = doc
 
@@ -234,6 +327,7 @@ class HybridSearcher:
             for doc_id, score in sorted_ids
             if doc_id in doc_data
         ]
+
 
     def search_sparse(self, query: str, top_k: int = 20) -> List[ScoredDocument]:
         """
