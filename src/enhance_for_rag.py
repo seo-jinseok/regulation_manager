@@ -348,12 +348,15 @@ def enhance_node(
     node["parent_path"] = current_path.copy()
     
     # 2. full_text (for display, includes path)
+    embedding_text = ""
     if text:
         node["full_text"] = build_full_text(current_path, node)
     
     # 3. embedding_text (for vector embedding, with path context)
     if text:
-        node["embedding_text"] = build_embedding_text(current_path, node)
+        embedding_text = build_embedding_text(current_path, node)
+        if embedding_text:
+            node["embedding_text"] = embedding_text
     
     # 4. chunk_level
     node["chunk_level"] = determine_chunk_level(node)
@@ -362,8 +365,8 @@ def enhance_node(
     node["is_searchable"] = is_node_searchable(node)
     
     # 6. token_count (based on embedding_text)
-    if text:
-        node["token_count"] = calculate_token_count(text)
+    if embedding_text:
+        node["token_count"] = calculate_token_count(embedding_text)
     
     # 7. keywords (combine title and text)
     combined_text = f"{node.get('title', '')} {text}"

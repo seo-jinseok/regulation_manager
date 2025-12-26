@@ -19,6 +19,12 @@ source .venv/bin/activate  # Windows: .venv\Scripts\activate
 uv sync
 ```
 
+필요 시 `.env`를 설정하면 코드 기본값보다 우선 적용됩니다:
+
+```bash
+cp .env.example .env
+```
+
 ---
 
 ## 2단계: 규정 변환
@@ -28,6 +34,8 @@ HWP 파일을 `data/input/` 폴더에 배치한 후 변환합니다.
 ```bash
 uv run regulation-manager "data/input/규정집.hwp"
 ```
+
+> 변환에는 `hwp5html` CLI가 필요합니다. 설치되어 있지 않으면 변환이 실패합니다.
 
 **출력 결과** (`data/output/`):
 

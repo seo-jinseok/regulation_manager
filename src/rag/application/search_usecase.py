@@ -13,7 +13,13 @@ from ..domain.value_objects import Query, SearchFilter
 
 
 # Regex for matching article/paragraph/item numbers (제N조, 제N항, 제N호)
-ARTICLE_PATTERN = re.compile(r"제\d+조(?:의\d+)?|제\d+항|제\d+호")
+ARTICLE_PATTERN = re.compile(
+    r"제\s*\d+\s*조(?:\s*의\s*\d+)?|제\s*\d+\s*항|제\s*\d+\s*호"
+)
+
+
+def _normalize_article_token(token: str) -> str:
+    return re.sub(r"\s+", "", token)
 
 
 # System prompt for regulation Q&A
@@ -101,9 +107,16 @@ class SearchUseCase:
 
             # Article number exact match bonus (제N조, 제N항, 제N호)
             article_bonus = 0.0
-            query_articles = set(ARTICLE_PATTERN.findall(query_text))
+            query_articles = {
+                _normalize_article_token(t)
+                for t in ARTICLE_PATTERN.findall(query_text)
+            }
             if query_articles:
-                text_articles = set(ARTICLE_PATTERN.findall(r.chunk.text))
+                article_haystack = r.chunk.embedding_text or r.chunk.text
+                text_articles = {
+                    _normalize_article_token(t)
+                    for t in ARTICLE_PATTERN.findall(article_haystack)
+                }
                 if query_articles & text_articles:
                     article_bonus = 0.2  # Exact article match
 

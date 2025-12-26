@@ -128,6 +128,15 @@ OPENAI_API_KEY=sk-...
 GEMINI_API_KEY=AIza...
 ```
 
+실행 시 `.env`를 자동 로드하므로, 위 설정이 코드 기본값보다 우선 적용됩니다.
+
+코드 기본값(옵션/`.env` 미설정 시):
+
+| 사용 위치 | LLM 기본값 |
+|-----------|------------|
+| `regulation-manager` | provider: `openai` (model: `gpt-4o`) |
+| `regulation-rag` / 웹 UI | provider: `ollama` (model: `gemma2`, base_url: `http://localhost:11434`) |
+
 ---
 
 ## 문서
@@ -149,6 +158,7 @@ GEMINI_API_KEY=AIza...
 | "파일을 찾을 수 없습니다" | 파일 경로 확인 (절대 경로 권장) |
 | 검색 결과가 부정확함 | `--no-rerank` 제거하여 AI 재정렬 활성화 확인 |
 | 변환 품질이 낮음 | `--use_llm` 옵션으로 LLM 전처리 활성화 |
+| "hwp5html 실행 파일을 찾을 수 없습니다" | `hwp5html` 설치 후 다시 실행 (변환은 hwp5html CLI 필요) |
 
 ---
 
@@ -221,4 +231,4 @@ uv add <package>
 
 - Python 3.11+
 - `uv` 패키지 매니저
-- `hwp5` 라이브러리 (HWP 파일 처리)
+- `hwp5` 라이브러리 + `hwp5html` CLI (HWP 파일 처리)

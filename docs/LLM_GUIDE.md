@@ -197,6 +197,15 @@ LLM_MODEL=gemma2
 LLM_BASE_URL=http://localhost:11434
 ```
 
+`.env`는 실행 시 자동 로드되므로, 위 값이 코드 기본값(예: `regulation-manager`는 `openai`, `regulation-rag`/웹은 `ollama`)보다 우선 적용됩니다.
+
+코드 기본값(옵션/`.env` 미설정 시):
+
+| 사용 위치 | LLM 기본값 |
+|-----------|------------|
+| `regulation-manager` | provider: `openai` (model: `gpt-4o`) |
+| `regulation-rag` / 웹 UI | provider: `ollama` (model: `gemma2`, base_url: `http://localhost:11434`) |
+
 ---
 
 ## 웹 UI

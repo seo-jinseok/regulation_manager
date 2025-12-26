@@ -44,6 +44,8 @@ def run_pipeline(args, console=None):
         from rich.console import Console
         console = Console()
 
+    load_dotenv()
+
     input_path = Path(args.input_path)
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -219,7 +221,13 @@ def run_pipeline(args, console=None):
                 
                 # 1. HWP -> MD
                 hwp5html_available = shutil.which("hwp5html") is not None
-                if raw_md_path.exists() and ((not args.force and cache_hit and raw_md_cache_hit) or not hwp5html_available):
+                can_reuse_raw_md = (
+                    raw_md_path.exists()
+                    and not args.force
+                    and cache_hit
+                    and raw_md_cache_hit
+                )
+                if can_reuse_raw_md:
                     with open(raw_md_path, "r", encoding="utf-8") as f:
                         raw_md = f.read()
                     if raw_html_path.exists():
@@ -228,6 +236,12 @@ def run_pipeline(args, console=None):
                     if cache_manager and hwp_hash:
                         cache_manager.update_file_state(str(file), hwp_hash=hwp_hash, raw_md_hash=raw_md_hash)
                 else:
+                    if not hwp5html_available:
+                        raise RuntimeError(
+                            "hwp5html 실행 파일을 찾을 수 없습니다. "
+                            "HWP 변환을 위해 hwp5html을 설치하거나, "
+                            "현재 HWP와 일치하는 캐시된 raw markdown이 필요합니다."
+                        )
                     reader = HwpToMarkdownReader(keep_html=False)
                     docs = reader.load_data(file, status_callback=status_callback, verbose=args.verbose)
                     raw_md = docs[0].text
@@ -340,6 +354,8 @@ def run_pipeline(args, console=None):
     return 1 if had_errors else 0
 
 def main():
+    load_dotenv()
+
     providers = ["openai", "gemini", "openrouter", "ollama", "lmstudio", "local", "mlx"]
     default_provider = os.getenv("LLM_PROVIDER") or "openai"
     if default_provider not in providers:
@@ -381,7 +397,6 @@ def main():
     else:
         args = parser.parse_args()
     
-    load_dotenv()
     try:
         status = run_pipeline(args)
         if status != 0:

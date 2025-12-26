@@ -18,6 +18,12 @@ from pathlib import Path
 from typing import List, Optional, Tuple
 
 try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
+try:
     import gradio as gr
     GRADIO_AVAILABLE = True
 except ImportError:
