@@ -245,10 +245,25 @@ def build_path_label(node: Dict[str, Any]) -> str:
         node: The node dictionary.
         
     Returns:
-        A string label combining display_no and title.
+        A string label combining display_no and title (or text excerpt if title is empty).
     """
     display_no = node.get("display_no", "")
     title = node.get("title", "")
+    
+    # If title is empty, use the first part of text (extract key phrase)
+    if not title:
+        text = node.get("text", "")
+        if text:
+            # Extract key phrase: up to verb pattern (~은/는/이란/란) or max 30 chars
+            # Allow Korean text, parentheses, and common punctuation
+            match = re.match(r'^(.{1,30}?)(?:은|는|이란|란|의)\s', text)
+            if match:
+                title = match.group(1).strip()
+            else:
+                # Fallback: extract up to first major punctuation
+                match = re.match(r'^([^.。\n]{1,25})', text)
+                if match:
+                    title = match.group(1).strip()
     
     if display_no and title:
         return f"{display_no} {title}"

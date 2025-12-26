@@ -433,8 +433,44 @@ def cmd_ask(args) -> int:
                 chunk = result.chunk
                 # Show regulation name from parent_path[0] if available
                 reg_name = chunk.parent_path[0] if chunk.parent_path else chunk.title
-                # Show full path for context
-                path = " > ".join(chunk.parent_path) if chunk.parent_path else chunk.title
+                
+                # Clean up duplicate path segments (e.g., "부칙 > 부 칙" -> "부칙")
+                def clean_path_segments(segments: list) -> list:
+                    if not segments:
+                        return segments
+                    cleaned = [segments[0]]
+                    for seg in segments[1:]:
+                        # Normalize by removing spaces for comparison
+                        prev_normalized = cleaned[-1].replace(" ", "").replace("　", "")
+                        curr_normalized = seg.replace(" ", "").replace("　", "")
+                        # Skip if same as previous (only whitespace differs)
+                        if prev_normalized != curr_normalized:
+                            cleaned.append(seg)
+                    return cleaned
+                
+                # Show full path with duplicates removed
+                cleaned_segments = clean_path_segments(chunk.parent_path) if chunk.parent_path else []
+                
+                # Extract more precise path from text if available
+                # Text format: "규정명 > 조항 > 호 > 목: 내용"
+                import re
+                text_path_match = re.match(r'^([^:]+):\s*', chunk.text)
+                if text_path_match:
+                    text_path = text_path_match.group(1).strip()
+                    text_segments = [s.strip() for s in text_path.split('>')]
+                    # Use text path if it's more detailed than parent_path
+                    if len(text_segments) > len(cleaned_segments):
+                        cleaned_segments = clean_path_segments(text_segments)
+                
+                # Ensure regulation name is at the beginning of the path
+                if cleaned_segments and reg_name and cleaned_segments[0] != reg_name:
+                    # Check if reg_name is not already in the path (normalized comparison)
+                    first_normalized = cleaned_segments[0].replace(" ", "")
+                    reg_normalized = reg_name.replace(" ", "")
+                    if first_normalized != reg_normalized:
+                        cleaned_segments = [reg_name] + cleaned_segments
+                
+                path = " > ".join(cleaned_segments) if cleaned_segments else chunk.title
                 
                 # Use relative normalization for display
                 norm_score = norm_scores.get(chunk.id, 0.0)
