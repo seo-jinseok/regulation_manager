@@ -33,8 +33,10 @@ env/
 # IDEs
 .vscode/
 .idea/
+.cursor/
 *.swp
 *.swo
+*.code-workspace
 
 # MacOS
 .DS_Store
@@ -47,10 +49,16 @@ logs/
 .cache/
 .cache*/
 .pytest_cache/
+.ruff_cache/
+.mypy_cache/
 
 # Coverage
 .coverage
 htmlcov/
+
+# Backup & Temp
+*.bak
+*.tmp
 
 # Data & Output
 data/output/*

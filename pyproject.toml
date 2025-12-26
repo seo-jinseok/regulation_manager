@@ -4,6 +4,14 @@ version = "0.1.0"
 description = "Convert HWP regulations to structured JSON and power RAG search."
 readme = "README.md"
 requires-python = ">=3.11"
+license = { text = "MIT" }
+keywords = ["regulation", "hwp", "rag", "llm", "chromadb", "university"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Text Processing :: General",
+]
 dependencies = [
     "llama-index>=0.14.10",
     "llama-index-llms-openai",
@@ -29,6 +37,12 @@ dependencies = [
 regulation-manager = "src.main:main"
 regulation-rag = "src.rag.interface.cli:main"
 regulation-web = "src.rag.interface.gradio_app:main"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=9.0.0",
+    "pytest-cov>=7.0.0",
+]
 
 [build-system]
 requires = ["hatchling"]
