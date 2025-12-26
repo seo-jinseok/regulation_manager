@@ -98,6 +98,13 @@ class SearchUseCase:
         """
         query = Query(text=query_text, include_abolished=include_abolished)
         
+        # Expand query with synonyms if HybridSearcher is available
+        expanded_query_text = query_text
+        if self.hybrid_searcher:
+            expanded_query_text = self.hybrid_searcher.expand_query(query_text)
+            # Use expanded query for dense search too
+            query = Query(text=expanded_query_text, include_abolished=include_abolished)
+        
         # Get dense search results from vector store
         dense_results = self.store.search(query, filter, top_k * 3)
         
@@ -105,9 +112,8 @@ class SearchUseCase:
         if self.hybrid_searcher:
             from ..infrastructure.hybrid_search import ScoredDocument
             
-            # Get BM25 sparse results
+            # Get BM25 sparse results (already uses expanded query internally)
             sparse_results = self.hybrid_searcher.search_sparse(query_text, top_k * 3)
-            
             # Convert dense results to ScoredDocument format for fusion
             dense_docs = [
                 ScoredDocument(

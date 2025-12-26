@@ -116,6 +116,11 @@ class QueryAnalyzer:
 
         return QueryType.GENERAL
 
+    def has_synonyms(self, query: str) -> bool:
+        """Check if query contains any terms with synonyms."""
+        cleaned = self.clean_query(query)
+        return any(term in cleaned for term in self.SYNONYMS)
+
     def get_weights(self, query: str) -> Tuple[float, float]:
         """
         Get optimal BM25/Dense weights for the given query.
@@ -127,28 +132,76 @@ class QueryAnalyzer:
             Tuple of (bm25_weight, dense_weight).
         """
         query_type = self.analyze(query)
-        return self.WEIGHT_PRESETS[query_type]
+        bm25_w, dense_w = self.WEIGHT_PRESETS[query_type]
+        
+        # If query has synonyms, boost BM25 weight for better keyword matching
+        if self.has_synonyms(query):
+            # Shift weight towards BM25 (e.g., 0.5/0.5 -> 0.7/0.3)
+            bm25_w = min(0.8, bm25_w + 0.2)
+            dense_w = max(0.2, dense_w - 0.2)
+        
+        return bm25_w, dense_w
 
-    def expand_query(self, query: str) -> str:
+    # Stopwords to remove from queries (너무 일반적인 단어들)
+    STOPWORDS = [
+        # 규정/법률 관련 일반어 (조사 포함 형태도)
+        "규정", "규정은", "규정이", "규정을", "규정에", "규정의",
+        "규칙", "조례", "법", "관련", "내용", "사항", "경우",
+        "대해", "대한", "대해서",
+        # 질문 관련
+        "뭐", "뭔가", "무엇", "어떤", "어떻게", "왜", "언제", "어디",
+        "알려줘", "알려주세요", "설명해줘", "설명해주세요",
+        # 기타
+        "좀", "것", "수", "때", "중", "있나요", "있어요", "있습니까",
+    ]
+
+    def clean_query(self, query: str) -> str:
         """
-        Expand query with synonyms for better recall.
+        Clean query by removing stopwords and normalizing.
 
         Args:
             query: The original search query text.
 
         Returns:
-            Expanded query with synonyms appended.
+            Cleaned query with stopwords removed.
         """
+        # Remove question mark and other punctuation
+        cleaned = query.replace("?", "").replace("!", "").replace(".", "").strip()
+        
+        # Remove stopwords (exact match)
+        words = cleaned.split()
+        filtered_words = [w for w in words if w not in self.STOPWORDS]
+        
+        # If all words were filtered, return original (without punctuation)
+        if not filtered_words:
+            return cleaned
+        
+        return " ".join(filtered_words)
+
+    def expand_query(self, query: str) -> str:
+        """
+        Clean and expand query with synonyms for better recall.
+
+        Args:
+            query: The original search query text.
+
+        Returns:
+            Cleaned and expanded query with synonyms appended.
+        """
+        # First clean the query
+        cleaned = self.clean_query(query)
+        
+        # Then expand with synonyms
         expansions = []
         for term, synonyms in self.SYNONYMS.items():
-            if term in query:
+            if term in cleaned:
                 # Add first 2 synonyms to avoid over-expansion
                 expansions.extend(synonyms[:2])
         
         if expansions:
-            # Append synonyms to original query
-            return f"{query} {' '.join(expansions)}"
-        return query
+            # Append synonyms to cleaned query
+            return f"{cleaned} {' '.join(expansions)}"
+        return cleaned
 
 
 @dataclass
