@@ -395,32 +395,26 @@ def cmd_ask(args) -> int:
             border_style="green",
         ))
 
-        # Print sources
+        # Print sources (show full text, not preview)
         if answer.sources:
             console.print()
             console.print("[bold cyan]📚 참고 규정:[/bold cyan]")
             for i, result in enumerate(answer.sources, 1):
                 chunk = result.chunk
+                # Show regulation name from parent_path[0] if available
+                reg_name = chunk.parent_path[0] if chunk.parent_path else chunk.title
                 path = " > ".join(chunk.parent_path[-3:]) if chunk.parent_path else chunk.title
-                # Show more text (400 chars instead of 150)
-                text_preview = chunk.text[:400] + "..." if len(chunk.text) > 400 else chunk.text
+                
+                # Show preview or full text based on --show-sources option
+                if args.show_sources:
+                    display_text = chunk.text  # Full text
+                else:
+                    display_text = chunk.text[:150] + "..." if len(chunk.text) > 150 else chunk.text
                 
                 console.print(Panel(
-                    f"{text_preview}\n\n[dim](출처: {chunk.rule_code}, 점수: {result.score:.2f})[/dim]",
+                    f"{display_text}\n\n[dim](출처: {chunk.rule_code} {reg_name}, 점수: {result.score:.2f})[/dim]",
                     title=f"[{i}] {path}",
                     border_style="blue",
-                ))
-
-        # Show full sources if requested
-        if args.show_sources and answer.sources:
-            console.print()
-            console.print("[bold yellow]━━ 관련 규정 전문 ━━[/bold yellow]")
-            for result in answer.sources:
-                chunk = result.chunk
-                console.print(Panel(
-                    chunk.text,
-                    title=f"{chunk.rule_code} - {' > '.join(chunk.parent_path[-2:]) if chunk.parent_path else ''}",
-                    border_style="yellow",
                 ))
 
         # Print confidence
