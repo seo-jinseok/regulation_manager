@@ -57,6 +57,7 @@ uv run regulation-rag ask "교원 연구년 신청 자격은?"
 |------|------|
 | `--provider ollama` | LLM 프로바이더 (ollama, lmstudio, openai 등) |
 | `--model gemma2` | 사용할 모델명 |
+| `-v`, `--verbose` | 상세 정보 출력 (LLM 설정, 인덱스 구축 등) |
 | `--show-sources` | 참고 규정 전문 출력 |
 
 ### 웹 UI
@@ -106,9 +107,9 @@ uv run regulation-web
   | 쿼리 유형 | 예시 | BM25 | Dense |
   |-----------|------|------|-------|
   | 조문 번호 | "제15조" | 0.6 | 0.4 |
-  | 규정명 | "장학금규정" | 0.5 | 0.5 |
-  | 자연어 질문 | "어떻게 휴학?" | 0.2 | 0.8 |
-  | 기본값 | 그 외 | 0.3 | 0.7 |
+  | 규정명/학사 키워드 | "휴학규정", "장학금" | 0.5 | 0.5 |
+  | 자연어 질문 | "어떻게 휴학?" | 0.4 | 0.6 |
+  | 기본값 | 그 외 | 0.5 | 0.5 |
 
 ### 증분 동기화
 
@@ -196,10 +197,10 @@ regulation_manager/
 ## RAG 아키텍처
 
 ```
-[Query] → [ChromaDB 검색] → [BGE Reranker] → [LLM 답변 생성]
-                ↓                  ↓
-         Dense + Sparse      Cross-Encoder
-           Retrieval           Reranking
+[Query] → [Hybrid Search] → [BGE Reranker] → [LLM 답변 생성]
+                 ↓                  ↓
+         BM25 + Dense         Cross-Encoder
+        (RRF 융합)             Reranking
 ```
 
 ### 핵심 컴포넌트

@@ -87,6 +87,9 @@ LLM을 사용하여 자연어 답변을 생성합니다.
 # 기본 (Ollama)
 uv run regulation-rag ask "교원 연구년 신청 자격은?"
 
+# 상세 정보 출력 (LLM 설정, 인덱스 구축 현황 등)
+uv run regulation-rag ask "휴학 절차" --verbose
+
 # 다른 LLM 프로바이더 사용
 uv run regulation-rag ask "휴학 절차" --provider lmstudio --base-url http://localhost:1234
 ```
