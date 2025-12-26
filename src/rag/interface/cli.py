@@ -416,10 +416,18 @@ def cmd_ask(args) -> int:
             console.print()
             console.print("[bold cyan]📚 참고 규정:[/bold cyan]")
             
-            def normalize_score(score: float) -> float:
-                if score <= 0:
-                    return 0.0
-                return min(1.0, score / 0.20)
+            # Relative normalization: min-max scaling within the batch
+            # This correctly represents the Reranker's relative ranking
+            def normalize_scores_relative(sources):
+                if not sources:
+                    return {}
+                scores = [r.score for r in sources]
+                max_s, min_s = max(scores), min(scores)
+                if max_s == min_s:
+                    return {r.chunk.id: 1.0 for r in sources}
+                return {r.chunk.id: (r.score - min_s) / (max_s - min_s) for r in sources}
+            
+            norm_scores = normalize_scores_relative(answer.sources)
             
             for i, result in enumerate(answer.sources, 1):
                 chunk = result.chunk
@@ -427,8 +435,8 @@ def cmd_ask(args) -> int:
                 reg_name = chunk.parent_path[0] if chunk.parent_path else chunk.title
                 path = " > ".join(chunk.parent_path[-3:]) if chunk.parent_path else chunk.title
                 
-                # Normalize score to 0-100% (absolute scale, aligned with confidence)
-                norm_score = normalize_score(result.score)
+                # Use relative normalization for display
+                norm_score = norm_scores.get(chunk.id, 0.0)
                 rel_score = int(norm_score * 100)
                 score_bar = "█" * (rel_score // 10) + "░" * (10 - rel_score // 10)
                 

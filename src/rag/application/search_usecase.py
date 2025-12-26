@@ -427,22 +427,35 @@ class SearchUseCase:
         """
         Compute confidence score based on search results.
 
+        Uses two metrics:
+        1. Absolute score: Reranker sigmoid scores (typically 0.001~0.02 range)
+        2. Score spread: Difference between top and bottom scores (indicates clear ranking)
+        
         Higher scores = more confident in the answer.
-        RRF scores are typically in 0.01~0.20 range, so we normalize them.
         """
         if not results:
             return 0.0
 
-        # Average of top 3 scores
-        top_scores = [r.score for r in results[:3]]
-        avg_score = sum(top_scores) / len(top_scores)
-
-        # RRF scores are typically 0.01 ~ 0.20, normalize to 0~1 range
-        # A score of 0.10+ is considered good (50%+ confidence)
-        # A score of 0.20+ is considered excellent (100% confidence)
-        normalized = min(1.0, avg_score / 0.20)
-
-        return max(0.0, normalized)
+        scores = [r.score for r in results[:5]]
+        avg_score = sum(scores) / len(scores)
+        
+        # Reranker sigmoid scores are typically 0.001 ~ 0.02 range
+        # A score of 0.005+ is considered good (50%+ confidence)
+        # A score of 0.01+ is considered excellent (100% confidence)
+        abs_confidence = min(1.0, avg_score / 0.01)
+        
+        # Also consider score spread (clear differentiation = higher confidence)
+        if len(scores) >= 2:
+            spread = max(scores) - min(scores)
+            # If top score is significantly higher than bottom, it's a good sign
+            spread_confidence = min(1.0, spread / 0.005) if spread > 0 else 0.5
+        else:
+            spread_confidence = 0.5
+        
+        # Combine both metrics (weighted average)
+        combined = (abs_confidence * 0.7) + (spread_confidence * 0.3)
+        
+        return max(0.0, min(1.0, combined))
 
     def search_by_rule_code(
         self,
