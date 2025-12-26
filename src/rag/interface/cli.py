@@ -125,6 +125,11 @@ def create_parser() -> argparse.ArgumentParser:
         default="data/chroma_db",
         help="ChromaDB 저장 경로",
     )
+    search_parser.add_argument(
+        "--no-rerank",
+        action="store_true",
+        help="BGE Reranker 비활성화 (기본: reranking 사용)",
+    )
 
     # ask command
     ask_parser = subparsers.add_parser(
@@ -171,6 +176,11 @@ def create_parser() -> argparse.ArgumentParser:
         "--show-sources",
         action="store_true",
         help="관련 규정 전문 출력",
+    )
+    ask_parser.add_argument(
+        "--no-rerank",
+        action="store_true",
+        help="BGE Reranker 비활성화 (기본: reranking 사용)",
     )
 
     # status command
@@ -255,7 +265,11 @@ def cmd_search(args) -> int:
         print_error("데이터베이스가 비어 있습니다. 먼저 sync를 실행하세요.")
         return 1
 
-    search = SearchUseCase(store)
+    use_reranker = not args.no_rerank
+    if use_reranker:
+        print_info("🎯 BGE Reranker 활성화 (비활성화: --no-rerank)")
+
+    search = SearchUseCase(store, use_reranker=use_reranker)
     results = search.search_unique(
         args.query,
         top_k=args.top_k,
@@ -337,8 +351,12 @@ def cmd_ask(args) -> int:
             print_info("API 키 설정을 확인하세요.")
         return 1
 
+    use_reranker = not args.no_rerank
+    if use_reranker:
+        print_info("🎯 BGE Reranker 활성화 (비활성화: --no-rerank)")
+
     # Create search use case with LLM
-    search = SearchUseCase(store, llm_client=llm)
+    search = SearchUseCase(store, llm_client=llm, use_reranker=use_reranker)
 
     print_info(f"질문: {args.question}")
     print_info("답변 생성 중...")

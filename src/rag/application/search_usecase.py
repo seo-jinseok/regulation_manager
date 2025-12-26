@@ -35,6 +35,7 @@ class SearchUseCase:
     
     Supports:
     - Hybrid search (dense + sparse)
+    - Cross-encoder reranking (BGE)
     - Metadata filtering
     - LLM-based Q&A
     """
@@ -43,6 +44,7 @@ class SearchUseCase:
         self,
         store: IVectorStore,
         llm_client: Optional[ILLMClient] = None,
+        use_reranker: bool = False,
     ):
         """
         Initialize search use case.
@@ -50,9 +52,11 @@ class SearchUseCase:
         Args:
             store: Vector store implementation.
             llm_client: Optional LLM client for generating answers.
+            use_reranker: Whether to use BGE reranker for improved accuracy.
         """
         self.store = store
         self.llm = llm_client
+        self.use_reranker = use_reranker
 
     def search(
         self,
@@ -112,6 +116,34 @@ class SearchUseCase:
         
         # Re-sort by boosted score
         boosted_results.sort(key=lambda x: -x.score)
+        
+        # Apply reranker if enabled
+        if self.use_reranker and boosted_results:
+            from ..infrastructure.reranker import rerank
+            
+            # Prepare documents for reranking (use top candidates)
+            candidates = boosted_results[:top_k * 2]
+            documents = [
+                (r.chunk.id, r.chunk.text, {})
+                for r in candidates
+            ]
+            
+            # Rerank using BGE cross-encoder
+            reranked = rerank(query_text, documents, top_k=top_k)
+            
+            # Map back to SearchResult
+            id_to_result = {r.chunk.id: r for r in candidates}
+            final_results = []
+            for i, rr in enumerate(reranked):
+                original = id_to_result.get(rr.doc_id)
+                if original:
+                    final_results.append(SearchResult(
+                        chunk=original.chunk,
+                        score=rr.score,
+                        rank=i + 1,
+                    ))
+            return final_results
+        
         return boosted_results[:top_k]
 
     def search_unique(
