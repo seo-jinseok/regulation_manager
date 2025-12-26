@@ -1,301 +1,160 @@
-# 규정 관리 시스템 (Regulation Management System)
+# 규정 관리 시스템
 
-대학 규정(HWP 파일)을 구조화된 JSON으로 변환하고, Hybrid RAG 데이터베이스로 검색할 수 있게 해주는 시스템입니다.
+대학 규정집(HWP)을 구조화된 JSON으로 변환하고, AI 기반 검색을 제공하는 시스템입니다.
 
 ---
 
-## 🚀 Quick Start
+## 개요
 
-5분 안에 규정 검색까지 시작해 보세요!
+이 시스템은 두 가지 핵심 기능을 제공합니다:
+
+1. **규정 변환**: HWP 파일 → 구조화된 JSON
+2. **규정 검색**: 자연어 질의 기반 AI 검색 및 답변 생성
+
+```
+[HWP 파일] → [JSON 변환] → [벡터 DB 저장] → [자연어 검색/질문]
+```
+
+---
+
+## 사용 방법
+
+### 설치
 
 ```bash
-# 1. 설치
 git clone <repository-url> && cd regulation_manager
 uv venv && source .venv/bin/activate
 uv sync
+```
 
-# 2. HWP → JSON 변환 (data/input/에 HWP 파일 배치 후)
+### 기본 워크플로우
+
+```bash
+# 1. HWP 파일을 JSON으로 변환
 uv run regulation-manager "data/input/규정집.hwp"
 
-# 3. 벡터 DB 동기화
+# 2. 벡터 DB에 저장
 uv run regulation-rag sync data/output/규정집.json
 
-# 4. 검색!
-uv run regulation-rag search "교원 연구년 신청 자격"
-```
-
-> `uv run python -m src.main ...` / `uv run python -m src.rag.interface.cli ...` 도 동일하게 동작합니다.
-
-> 💡 **더 자세한 단계별 가이드**: [QUICKSTART.md](./QUICKSTART.md)
-
----
-
-## 🎯 가장 쉬운 시작
-
-| 하고 싶은 것 | 명령어 |
-|-------------|--------|
-| HWP → JSON만 | `uv run regulation-manager "data/input/규정집.hwp"` |
-| 검색까지 | `uv run regulation-rag sync data/output/규정집.json` → `uv run regulation-rag search "검색어"` |
-| LLM 질문 | `uv run regulation-rag ask "질문"` |
-| 웹 UI (올인원) | `uv run regulation-web` |
-
----
-
-## 📊 전체 워크플로우
-
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                         규정 관리 시스템 워크플로우                          │
-└─────────────────────────────────────────────────────────────────────────┘
-
-  ┌─────────┐     ┌──────────────┐     ┌──────────────┐     ┌───────────┐
-  │  HWP   │ ──▶ │   Markdown   │ ──▶ │     JSON     │ ──▶ │  ChromaDB │
-  │  파일   │     │   (중간형식)   │     │ (RAG Enhanced)│     │ (벡터 DB) │
-  └─────────┘     └──────────────┘     └──────────────┘     └───────────┘
-                                             │                     │
-       regulation-manager ───────────────▶│                     │
-                                             │                     │
-       regulation-rag sync ─────────────▶│
-                                                                   │
-       regulation-rag search ◀──────────┘
-```
-
-| 단계 | 입력 | 출력 | 명령어 |
-|------|------|------|--------|
-| **1. 변환** | `규정집.hwp` | `규정집.json`, `규정집_raw.md` | `regulation-manager` |
-| **2. 동기화** | `규정집.json` | ChromaDB (`data/chroma_db/`) | `regulation-rag sync` |
-| **3. 검색** | 자연어 쿼리 | 관련 규정 조항 | `regulation-rag search` |
-
----
-
-## 📋 주요 기능
-
-| 기능 | 설명 |
-|------|------|
-| **HWP → JSON 변환** | 표, 이미지, 계층 구조 보존 |
-| **계층적 파싱** | 장 > 절 > 관 > 조 > 항 > 호 > 목 |
-| **RAG 최적화** | `parent_path`, `full_text`, `embedding_text`, `chunk_level`, `is_searchable`, `token_count`, `keywords(term/weight)`, `amendment_history`, `effective_date` 필드 자동 생성 |
-| **벡터 검색** | ChromaDB 기반 의미론적 검색 |
-| **증분 동기화** | 월간 업데이트 시 변경분만 동기화 |
-
----
-
-## 💻 사용법
-
-### 1. 규정 변환 (HWP → JSON)
-
-```bash
-# 기본 실행 (RAG 최적화 자동 적용)
-uv run regulation-manager "data/input/규정집.hwp"
-
-# 출력 디렉토리 지정
-uv run regulation-manager "data/input/규정집.hwp" --output_dir ./result
-
-# RAG 최적화 비활성화
-uv run regulation-manager "data/input/규정집.hwp" --no-enhance-rag
-```
-
-**출력 파일:**
-- `규정집.json` - 구조화된 규정 데이터 (RAG 필드 포함)
-- `규정집_raw.md` - 변환된 마크다운 원문
-- `규정집_raw.xhtml` - HTML 원문 (디버깅용)
-- `규정집_metadata.json` - 목차/색인 정보
-
-### 2. RAG 데이터베이스 관리
-
-#### 동기화 (sync)
-JSON 파일을 벡터 DB에 적재합니다.
-
-```bash
-# 증분 동기화 (기본값 - 변경분만)
-uv run regulation-rag sync data/output/규정집.json
-
-# 전체 재동기화
-uv run regulation-rag sync data/output/규정집.json --full
-
-# DB 경로 지정
-uv run regulation-rag sync data/output/규정집.json --db-path ./my_db
-```
-
-**출력 예시:**
-```
-ℹ 데이터베이스: data/chroma_db
-ℹ JSON 파일: 규정집.json
-ℹ 증분 동기화 실행 중...
-✓ 동기화 완료: 추가 1,234 / 수정 56 / 삭제 12
-ℹ 총 청크 수: 15,678
-```
-
-#### 검색 (search)
-자연어로 규정을 검색합니다.
-
-```bash
-# 기본 검색 (상위 5개)
+# 3. 규정 검색
 uv run regulation-rag search "교원 연구년 신청 자격"
 
-# 결과 개수 지정
-uv run regulation-rag search "장학금 지급 기준" -n 10
-
-# 폐지 규정 포함
-uv run regulation-rag search "학칙" --include-abolished
-```
-
-**출력 예시:**
-```
-          검색 결과: '교원 연구년 신청 자격'
-┏━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┳━━━━━━┓
-┃ # ┃ 규정                    ┃ 조항                 ┃ 점수 ┃
-┡━━━╇━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━╇━━━━━━┩
-│ 1 │ 동의대학교교원연구년규정 │ 제3조 연구년 신청자격 │ 0.89 │
-│ 2 │ 동의대학교교원연구년규정 │ 제4조 연구년 기간    │ 0.76 │
-│ 3 │ 동의대학교학칙           │ 제42조 교원의 임무   │ 0.65 │
-└───┴─────────────────────────┴─────────────────────┴──────┘
-```
-
-#### 질문 (ask) - LLM 자연어 답변
-LLM이 규정을 해석하여 자연어로 답변합니다.
-
-```bash
-# 기본 사용 (Ollama)
+# 4. AI에게 질문 (선택)
 uv run regulation-rag ask "교원 연구년 신청 자격은?"
-
-# 다른 모델 사용
-uv run regulation-rag ask "장학금 수혜 조건" --model gemma2:7b
-
-# LM Studio 사용
-uv run regulation-rag ask "휴학 절차" --provider lmstudio --base-url http://localhost:1234
-
-# OpenAI 사용 (API 키 필요)
-uv run regulation-rag ask "졸업 요건" --provider openai
-
-# 규정 전문 출력
-uv run regulation-rag ask "교원 연구년" --show-sources
 ```
 
-**출력 예시:**
-```
-╭─────────────────── 🤖 LLM 답변 ───────────────────╮
-│ 교원 연구년 신청 자격은 다음과 같습니다:           │
-│                                                   │
-│ 1. 본교에 6년 이상 재직한 전임교원                │
-│ 2. 최근 3년간 강의평가 평균 3.5 이상              │
-│ 3. 연구실적이 소정 기준을 충족하는 자              │
-│                                                   │
-│ (동의대학교교원연구년규정 제3조 참조)              │
-╰───────────────────────────────────────────────────╯
+### 검색 옵션
 
-📚 참고 규정:
-╭ [1] 교원연구년규정 > 제3조 신청자격 ────────────────╮
-│ 연구년을 신청할 수 있는 자는 본교에 6년 이상...     │
-│ (출처: 동의대학교교원연구년규정, 점수: 0.89)        │
-╰─────────────────────────────────────────────────────╯
-```
+| 옵션 | 설명 |
+|------|------|
+| `-n 10` | 검색 결과 개수 지정 |
+| `--include-abolished` | 폐지된 규정 포함 |
+| `--no-rerank` | AI 재정렬 비활성화 (빠른 검색) |
 
-**지원 LLM 프로바이더:**
-| 프로바이더 | 옵션 | 비고 |
-|-----------|------|------|
-| Ollama (기본) | `--provider ollama` | 로컬, 무료 |
-| LM Studio | `--provider lmstudio --base-url http://localhost:1234` | 로컬 |
-| MLX (macOS) | `--provider mlx --base-url http://localhost:8080` | 로컬 (OpenAI 호환 서버 필요) |
-| Local (OpenAI 호환) | `--provider local --base-url URL` | 로컬 |
-| OpenAI | `--provider openai` | API 키 필요 |
-| Gemini | `--provider gemini` | API 키 필요 |
-| OpenRouter | `--provider openrouter` | API 키 필요 |
+### LLM 질문 옵션
 
-> LLM 설정 상세는 [docs/LLM_GUIDE.md](./docs/LLM_GUIDE.md) 참고
-> 환경 변수 기본값: `LLM_PROVIDER`, `LLM_MODEL`, `LLM_BASE_URL`
-> RAG CLI는 `--base-url`, 변환 파이프라인은 `--base_url` 옵션을 사용합니다.
+| 옵션 | 설명 |
+|------|------|
+| `--provider ollama` | LLM 프로바이더 (ollama, lmstudio, openai 등) |
+| `--model gemma2` | 사용할 모델명 |
+| `--show-sources` | 참고 규정 전문 출력 |
 
-### 웹 UI (올인원)
+### 웹 UI
 
-비개발자라면 웹 UI를 추천합니다. 파일 업로드부터 변환, DB 동기화, 질문까지 한 화면에서 진행할 수 있습니다.
+비개발자를 위한 통합 웹 인터페이스를 제공합니다.
 
 ```bash
 uv run regulation-web
 ```
 
-브라우저에서 “올인원” 탭을 열고 순서대로 진행하세요.
-올인원 탭의 LLM 설정은 전처리와 질문에 함께 적용됩니다.
-“데이터 현황” 탭에서 HWP/JSON 목록과 동기화 상태를 확인할 수 있습니다.
-
-#### 상태 확인 (status)
-동기화 상태를 확인합니다.
-
-```bash
-uv run regulation-rag status
-```
-
-**출력 예시:**
-```
-        동기화 상태
-┏━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┓
-┃ 항목             ┃ 값                  ┃
-┡━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━┩
-│ 마지막 동기화     │ 2025-12-25 15:30:00│
-│ JSON 파일        │ 규정집-test01.json  │
-│ 상태 파일 규정 수 │ 234                 │
-│ DB 청크 수       │ 15,678              │
-│ DB 규정 수       │ 234                 │
-└──────────────────┴────────────────────┘
-```
-
-#### 초기화 (reset)
-데이터베이스의 모든 데이터를 삭제합니다.
-
-```bash
-# DB 초기화 (--confirm 필수)
-uv run regulation-rag reset --confirm
-```
-
-**출력 예시:**
-```
-ℹ 데이터베이스: data/chroma_db
-ℹ 삭제 예정 청크 수: 15,678
-✓ 데이터베이스 초기화 완료! 15,678개 청크 삭제됨
-```
-
-> ⚠️ **주의**: 이 명령은 모든 데이터를 삭제합니다. 복구할 수 없습니다.
+파일 업로드 → 변환 → DB 동기화 → 질문까지 한 화면에서 진행할 수 있습니다.
 
 ---
 
-## ⚙️ 고급 옵션
+## 명령어 요약
 
-### LLM 전처리 (문서 품질이 낮은 경우)
+### 규정 변환
 
-스캔 품질이 좋지 않아 문장이 부자연스럽게 끊어진 경우 LLM 보정을 사용합니다.
+| 명령어 | 설명 |
+|--------|------|
+| `regulation-manager "파일.hwp"` | HWP → JSON 변환 |
+| `regulation-manager "파일.hwp" --use_llm` | LLM 전처리 활성화 (품질 향상) |
+| `regulation-manager "파일.hwp" --no-enhance-rag` | RAG 최적화 비활성화 |
 
-```bash
-# Ollama (로컬)
-uv run regulation-manager "규정.hwp" --use_llm --provider ollama --model gemma2
+### RAG 시스템
 
-# LM Studio (로컬)
-uv run regulation-manager "규정.hwp" --use_llm --provider lmstudio --base_url http://127.0.0.1:1234
-
-# MLX (macOS, OpenAI 호환 서버)
-uv run regulation-manager "규정.hwp" --use_llm --provider mlx --base_url http://127.0.0.1:8080
-
-# OpenRouter (클라우드)
-uv run regulation-manager "규정.hwp" --use_llm --provider openrouter --model google/gemini-pro-1.5
-
-# OpenAI (클라우드)
-uv run regulation-manager "규정.hwp" --use_llm --provider openai --model gpt-4o
-```
-
-### 전체 명령어 옵션
-
-| 옵션 | 설명 | 기본값 |
-| :--- | :--- | :--- |
-| `input_path` | (필수) 입력 HWP 파일 경로 | - |
-| `--output_dir` | 결과 파일 저장 경로 | `data/output` |
-| `--use_llm` | LLM 전처리 활성화 | False |
-| `--provider` | `ollama`, `lmstudio`, `mlx`, `local`, `openai`, `gemini`, `openrouter` | `openai` |
-| `--model` | 사용할 모델 이름 | (Provider별) |
-| `--base_url` | 로컬 서버 URL (ollama/lmstudio/mlx/local) | (선택) |
-| `--no-enhance-rag` | RAG 최적화 비활성화 | False |
+| 명령어 | 설명 |
+|--------|------|
+| `regulation-rag sync <json>` | JSON → 벡터 DB 동기화 |
+| `regulation-rag sync <json> --full` | 전체 재동기화 |
+| `regulation-rag search "<쿼리>"` | 규정 검색 |
+| `regulation-rag ask "<질문>"` | AI 답변 생성 |
+| `regulation-rag status` | 동기화 상태 확인 |
+| `regulation-rag reset --confirm` | DB 초기화 |
 
 ---
 
-## 📁 프로젝트 구조
+## 시스템 특징
+
+### 검색 정확도 향상
+
+- **계층적 맥락 임베딩**: `제3장 > 제1절 > 제15조` 형태의 경로 정보가 검색에 반영
+- **BGE Reranker**: Cross-encoder 기반 결과 재정렬 (기본 활성화)
+- **조항 번호 매칭**: `제N조`, `제N항` 등 정확한 조항 검색 지원
+- **Hybrid Search**: 키워드 검색과 의미 검색 결합
+
+### 증분 동기화
+
+월간 규정 업데이트 시 변경된 규정만 동기화하여 처리 시간을 단축합니다.
+
+---
+
+## 환경 설정
+
+```bash
+cp .env.example .env
+```
+
+**주요 설정:**
+
+```bash
+# LLM 기본값
+LLM_PROVIDER=ollama
+LLM_MODEL=gemma2
+LLM_BASE_URL=http://localhost:11434
+
+# API 키 (클라우드 LLM 사용 시)
+OPENAI_API_KEY=sk-...
+GEMINI_API_KEY=AIza...
+```
+
+---
+
+## 문서
+
+| 문서 | 설명 |
+|------|------|
+| [QUICKSTART.md](./QUICKSTART.md) | 빠른 시작 가이드 |
+| [docs/LLM_GUIDE.md](./docs/LLM_GUIDE.md) | LLM 설정 가이드 |
+| [SCHEMA_REFERENCE.md](./SCHEMA_REFERENCE.md) | JSON 출력 스키마 명세 |
+| [AGENTS.md](./AGENTS.md) | 개발자 가이드 |
+
+---
+
+## 문제 해결
+
+| 문제 | 해결 방법 |
+|------|----------|
+| "데이터베이스가 비어 있습니다" | `sync` 명령 실행 |
+| "파일을 찾을 수 없습니다" | 파일 경로 확인 (절대 경로 권장) |
+| 검색 결과가 부정확함 | `--no-rerank` 제거하여 AI 재정렬 활성화 확인 |
+| 변환 품질이 낮음 | `--use_llm` 옵션으로 LLM 전처리 활성화 |
+
+---
+
+# 개발자 가이드
+
+## 프로젝트 구조
 
 ```
 regulation_manager/
@@ -304,74 +163,62 @@ regulation_manager/
 │   ├── converter.py         # HWP → Markdown/HTML
 │   ├── formatter.py         # Markdown → JSON
 │   ├── enhance_for_rag.py   # RAG 최적화 필드 추가
-│   ├── exceptions.py        # 도메인 예외 클래스
-│   ├── parsing/             # 파싱 모듈 패키지
-│   │   ├── regulation_parser.py
-│   │   ├── reference_resolver.py
-│   │   ├── table_extractor.py
-│   │   └── id_assigner.py
-│   └── rag/                  # RAG 시스템
-│       ├── interface/cli.py  # CLI (sync, search, status)
-│       ├── application/      # Use Cases
-│       ├── domain/           # 도메인 모델
-│       └── infrastructure/   # ChromaDB, Hybrid Search, LLM Cache
+│   ├── parsing/             # 파싱 모듈
+│   └── rag/                 # RAG 시스템 (Clean Architecture)
+│       ├── interface/       # CLI, Web UI
+│       ├── application/     # Use Cases
+│       ├── domain/          # 도메인 모델
+│       └── infrastructure/  # ChromaDB, Reranker, LLM
 ├── data/
 │   ├── input/               # HWP 파일 입력
 │   ├── output/              # JSON 출력
 │   └── chroma_db/           # 벡터 DB 저장소
-├── QUICKSTART.md            # 빠른 시작 가이드
-├── SCHEMA_REFERENCE.md      # JSON 스키마 상세
-└── AGENTS.md                # 개발자 가이드
+└── tests/                   # pytest 테스트
 ```
 
----
+## RAG 아키텍처
 
-## 📚 문서
+```
+[Query] → [ChromaDB 검색] → [BGE Reranker] → [LLM 답변 생성]
+                ↓                  ↓
+         Dense + Sparse      Cross-Encoder
+           Retrieval           Reranking
+```
 
-| 문서 | 설명 |
-|------|------|
-| [QUICKSTART.md](./QUICKSTART.md) | 5분 빠른 시작 가이드 |
-| [docs/LLM_GUIDE.md](./docs/LLM_GUIDE.md) | LLM 설정/선택 가이드 |
-| [SCHEMA_REFERENCE.md](./SCHEMA_REFERENCE.md) | JSON 출력 스키마 상세 명세 |
-| [AGENTS.md](./AGENTS.md) | 개발자 가이드 (빌드, 테스트, 코딩 스타일) |
+### 핵심 컴포넌트
 
----
+| 컴포넌트 | 파일 | 설명 |
+|----------|------|------|
+| 벡터 저장소 | `chroma_store.py` | ChromaDB 기반 임베딩 저장/검색 |
+| Reranker | `reranker.py` | BGE-reranker-v2-m3 Cross-encoder |
+| 검색 Use Case | `search_usecase.py` | 검색 로직 및 스코어링 |
+| JSON 로더 | `json_loader.py` | 규정 JSON 파싱 및 청크 추출 |
 
-## 🔧 설치 상세
+### 임베딩 텍스트 구조
 
-### 요구사항
+```python
+# 기존 (순수 텍스트)
+embedding_text = "수업일수는 연간 16주 이상으로 한다."
+
+# 현재 (계층 맥락 포함)
+embedding_text = "제3장 학사 > 제1절 수업 > 제15조 수업일수: 수업일수는 연간 16주 이상으로 한다."
+```
+
+## 개발 명령어
+
+```bash
+# 테스트 실행
+uv run pytest
+
+# 특정 테스트
+uv run pytest tests/test_enhance_for_rag.py -v
+
+# 의존성 추가
+uv add <package>
+```
+
+## 요구 사항
+
 - Python 3.11+
-- `uv` (권장) 또는 `pip`
+- `uv` 패키지 매니저
 - `hwp5` 라이브러리 (HWP 파일 처리)
-
-### 설치
-
-```bash
-cd regulation_manager
-uv venv
-source .venv/bin/activate
-uv sync
-```
-
-### 환경 변수 설정
-
-```bash
-cp .env.example .env
-```
-
-**`.env` 주요 설정:**
-```bash
-# 클라우드 LLM API 키 (선택)
-OPENAI_API_KEY=sk-...
-GEMINI_API_KEY=AIza...
-OPENROUTER_API_KEY=sk-or-...
-
-# LLM 기본값 (선택)
-LLM_PROVIDER=ollama
-LLM_MODEL=gemma2
-LLM_BASE_URL=http://localhost:11434
-
-# 캐시 설정 (선택)
-LLM_CACHE_TTL_DAYS=30
-LLM_CACHE_MAX_ENTRIES=5000
-```

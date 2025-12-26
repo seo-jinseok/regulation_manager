@@ -1,13 +1,13 @@
-# Quick Start Guide
+# 빠른 시작 가이드
 
-5분 안에 규정 검색을 시작하세요!
+규정 관리 시스템의 설치부터 검색까지 단계별 안내입니다.
 
 ---
 
-## 1️⃣ 설치 (2분)
+## 1단계: 설치
 
 ```bash
-# 저장소 클론 및 이동
+# 저장소 클론
 git clone <repository-url>
 cd regulation_manager
 
@@ -19,35 +19,36 @@ source .venv/bin/activate  # Windows: .venv\Scripts\activate
 uv sync
 ```
 
-> `regulation-*` 명령이 없으면 `uv run python -m src.main ...` / `uv run python -m src.rag.interface.cli ...`를 사용하세요.
-
 ---
 
-## 2️⃣ 규정 변환 (1분)
+## 2단계: 규정 변환
 
-HWP 파일을 `data/input/` 폴더에 넣고 변환합니다.
+HWP 파일을 `data/input/` 폴더에 배치한 후 변환합니다.
 
 ```bash
-# 변환 실행
 uv run regulation-manager "data/input/규정집.hwp"
 ```
 
-**결과물** (`data/output/`):
-- ✅ `규정집.json` - 구조화된 JSON (RAG 필드 포함)
-- 📄 `규정집_raw.md` - 마크다운 원문
-- 📋 `규정집_metadata.json` - 목차/색인
+**출력 결과** (`data/output/`):
+
+| 파일 | 설명 |
+|------|------|
+| `규정집.json` | 구조화된 JSON (RAG 필드 포함) |
+| `규정집_raw.md` | 마크다운 원문 |
+| `규정집_metadata.json` | 목차 및 색인 정보 |
 
 ---
 
-## 3️⃣ 벡터 DB 동기화 (1분)
+## 3단계: 벡터 DB 동기화
 
-변환된 JSON을 ChromaDB에 적재합니다.
+변환된 JSON을 검색 가능한 형태로 저장합니다.
 
 ```bash
 uv run regulation-rag sync data/output/규정집.json
 ```
 
 **성공 시 출력:**
+
 ```
 ✓ 동기화 완료: 추가 15,678 / 수정 0 / 삭제 0
 ℹ 총 청크 수: 15,678
@@ -55,71 +56,82 @@ uv run regulation-rag sync data/output/규정집.json
 
 ---
 
-## 4️⃣ 검색! (바로 사용)
+## 4단계: 규정 검색
 
 ```bash
-# 자연어로 검색
+# 기본 검색
 uv run regulation-rag search "교원 연구년 신청 자격"
 
-# 더 많은 결과
+# 검색 결과 개수 지정
 uv run regulation-rag search "장학금" -n 10
+
+# 폐지 규정 포함
+uv run regulation-rag search "학칙" --include-abolished
 ```
 
 ---
 
-## 5️⃣ LLM 질문 (선택)
+## 5단계: AI 질문 (선택)
+
+LLM을 사용하여 자연어 답변을 생성합니다.
 
 ```bash
-# 로컬 LLM (기본: Ollama)
+# 기본 (Ollama)
 uv run regulation-rag ask "교원 연구년 신청 자격은?"
 
-# 다른 프로바이더
+# 다른 LLM 프로바이더 사용
 uv run regulation-rag ask "휴학 절차" --provider lmstudio --base-url http://localhost:1234
 ```
 
 ---
 
-## 6️⃣ 웹 UI (선택)
+## 6단계: 웹 UI (선택)
 
 ```bash
 uv run regulation-web
 ```
 
-브라우저에서 “올인원” 탭을 열고 파일 업로드 → 변환 → DB 동기화 → 질문까지 한 번에 진행하세요.
-올인원 탭의 LLM 설정은 전처리와 질문에 함께 적용됩니다.
-“데이터 현황” 탭에서 HWP/JSON 목록과 동기화 상태를 확인할 수 있습니다.
+브라우저에서 파일 업로드 → 변환 → DB 동기화 → 질문까지 통합 인터페이스로 진행할 수 있습니다.
 
 ---
 
-## 📌 자주 쓰는 명령어
+## 자주 사용하는 명령어
 
 | 작업 | 명령어 |
 |------|--------|
-| 변환 | `uv run regulation-manager "data/input/규정집.hwp"` |
-| 동기화 | `uv run regulation-rag sync <json-path>` |
-| 검색 | `uv run regulation-rag search "<쿼리>"` |
-| **LLM 질문** | `uv run regulation-rag ask "<질문>"` |
-| 웹 UI | `uv run regulation-web` |
-| 상태 확인 | `uv run regulation-rag status` |
-| DB 초기화 | `uv run regulation-rag reset --confirm` |
+| 변환 | `regulation-manager "data/input/규정집.hwp"` |
+| 동기화 | `regulation-rag sync <json-path>` |
+| 검색 | `regulation-rag search "<쿼리>"` |
+| AI 질문 | `regulation-rag ask "<질문>"` |
+| 상태 확인 | `regulation-rag status` |
+| DB 초기화 | `regulation-rag reset --confirm` |
 
 ---
 
-## ❓ 문제 해결
+## 문제 해결
 
 ### "데이터베이스가 비어 있습니다"
-→ `sync` 명령을 먼저 실행하세요.
+
+`sync` 명령을 먼저 실행하세요.
 
 ### "파일을 찾을 수 없습니다"
-→ 파일 경로를 확인하세요. `data/input/` 또는 절대 경로를 사용합니다.
 
-### 변환 품질이 좋지 않음
-→ `--use_llm` 옵션으로 LLM 보정을 활성화하세요:
+파일 경로를 확인하세요. 절대 경로 또는 `data/input/` 상대 경로를 사용합니다.
+
+### 변환 품질이 낮음
+
+LLM 전처리를 활성화하세요:
+
 ```bash
 uv run regulation-manager "규정.hwp" --use_llm --provider ollama --model gemma2
 ```
-→ 로컬/상용 LLM 설정은 [docs/LLM_GUIDE.md](./docs/LLM_GUIDE.md)를 참고하세요.
+
+LLM 설정에 대한 자세한 내용은 [docs/LLM_GUIDE.md](./docs/LLM_GUIDE.md)를 참고하세요.
 
 ---
 
-**더 자세한 정보**: [README.md](./README.md) | [docs/LLM_GUIDE.md](./docs/LLM_GUIDE.md) | [SCHEMA_REFERENCE.md](./SCHEMA_REFERENCE.md)
+## 관련 문서
+
+- [README.md](./README.md) - 전체 안내
+- [docs/LLM_GUIDE.md](./docs/LLM_GUIDE.md) - LLM 설정 가이드
+- [SCHEMA_REFERENCE.md](./SCHEMA_REFERENCE.md) - JSON 스키마 명세
