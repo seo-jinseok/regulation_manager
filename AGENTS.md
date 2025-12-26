@@ -22,7 +22,7 @@ regulation_manager/
 │   │   ├── table_extractor.py
 │   │   └── id_assigner.py
 │   └── rag/                    # RAG 시스템 (Clean Architecture)
-│       ├── interface/          # CLI, Web UI
+│       ├── interface/          # CLI, Web UI, MCP Server
 │       ├── application/        # Use Cases (SearchUseCase, SyncUseCase)
 │       ├── domain/             # 엔티티, 값 객체, 리포지토리 인터페이스
 │       └── infrastructure/     # ChromaDB, Reranker, LLM Adapter
@@ -91,6 +91,26 @@ uv run regulation-rag ask "장학금 조건" --show-sources
 uv run regulation-rag status
 uv run regulation-rag reset --confirm
 ```
+
+### MCP 서버
+
+```bash
+# MCP 서버 실행 (stdio 모드)
+uv run regulation-mcp
+
+# 개발 모드 (MCP Inspector)
+uv run mcp dev src/rag/interface/mcp_server.py
+```
+
+MCP 서버는 CLI와 동일한 Use Case 레이어를 재사용하여 다음 Tools를 제공합니다:
+
+| Tool | 설명 |
+|------|------|
+| `sync_regulations` | 규정 DB 동기화 (증분/전체) |
+| `search_regulations` | 규정 검색 (Hybrid + Rerank) |
+| `ask_regulations` | AI 질문-답변 (LLM) |
+| `get_sync_status` | 동기화 상태 조회 |
+| `reset_database` | DB 초기화 |
 
 ### 테스트
 

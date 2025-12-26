@@ -70,6 +70,39 @@ uv run regulation-web
 
 파일 업로드 → 변환 → DB 동기화 → 질문까지 한 화면에서 진행할 수 있습니다.
 
+### MCP 서버
+
+AI 에이전트(Claude, Cursor 등)에서 규정 검색 기능을 사용할 수 있는 MCP(Model Context Protocol) 서버를 제공합니다.
+
+```bash
+# MCP 서버 실행 (stdio 모드)
+uv run regulation-mcp
+```
+
+**지원 도구 (Tools)**:
+
+| Tool | 설명 |
+|------|------|
+| `sync_regulations` | 규정 DB 동기화 |
+| `search_regulations` | 규정 검색 (Hybrid + Rerank) |
+| `ask_regulations` | AI 질문-답변 |
+| `get_sync_status` | 동기화 상태 조회 |
+| `reset_database` | DB 초기화 |
+
+**클라이언트 연결 설정** (Claude Desktop 예시):
+
+```json
+{
+  "mcpServers": {
+    "regulation-rag": {
+      "command": "uv",
+      "args": ["run", "regulation-mcp"],
+      "cwd": "/path/to/regulation_manager"
+    }
+  }
+}
+```
+
 ---
 
 ## 명령어 요약

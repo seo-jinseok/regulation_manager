@@ -31,12 +31,14 @@ dependencies = [
     "openai>=2.11.0",
     "gradio>=6.2.0",
     "flagembedding>=1.3.5",
+    "mcp[cli]>=1.9.0",
 ]
 
 [project.scripts]
 regulation-manager = "src.main:main"
 regulation-rag = "src.rag.interface.cli:main"
 regulation-web = "src.rag.interface.gradio_app:main"
+regulation-mcp = "src.rag.interface.mcp_server:main"
 
 [project.optional-dependencies]
 dev = [
