@@ -76,7 +76,7 @@ def create_app(
     if use_mock_llm:
         llm_status = "⚠️ Mock LLM (테스트 모드)"
 
-    search_usecase = SearchUseCase(store)
+    search_usecase = SearchUseCase(store, use_reranker=True)  # Reranker 활성화
     sync_usecase = SyncUseCase(loader, store)
 
     data_input_dir = Path("data/input")
@@ -133,7 +133,7 @@ def create_app(
         lines.append(f"- 청크 수: {store_local.count()}")
         lines.append(f"- 규정 수: {len(store_local.get_all_rule_codes())}")
         if last_synced:
-            lines.append(f"- 마지막 동기화 JSON: `{last_synced}`")
+            lines.append(f"- **규정집: `{last_synced}`**")
 
         lines.append("\n## JSON 파일 목록 (`data/output`)")
         if json_files:
@@ -206,9 +206,16 @@ def create_app(
             return "검색어를 입력해주세요.", ""
 
         if store.count() == 0:
-            return "데이터베이스가 비어 있습니다. 먼저 동기화를 실행하세요.", ""
+            return "데이터베이스가 비어 있습니다. CLI에서 'regulation-rag sync'를 실행하세요.", ""
 
-        results = search_usecase.search(
+        # Use HybridSearcher for better results (like CLI)
+        from ..infrastructure.hybrid_search import HybridSearcher
+        hybrid = HybridSearcher()
+        documents = store.get_all_documents()
+        hybrid.add_documents(documents)
+        
+        search_with_hybrid = SearchUseCase(store, use_reranker=True, hybrid_searcher=hybrid)
+        results = search_with_hybrid.search_unique(
             query,
             top_k=top_k,
             include_abolished=include_abolished,
@@ -217,21 +224,27 @@ def create_app(
         if not results:
             return "검색 결과가 없습니다.", ""
 
-        # Format results as markdown table
-        table_rows = ["| # | 규정명 | 조항 | 점수 |", "|---|------|------|------|"]
+        # Format results as markdown table (CLI 수준)
+        table_rows = ["| # | 규정명 | 코드 | 조항 | 점수 |", "|---|------|------|------|------|"]
         for i, r in enumerate(results, 1):
+            reg_title = r.chunk.parent_path[0] if r.chunk.parent_path else r.chunk.title
             path = " > ".join(r.chunk.parent_path[-2:]) if r.chunk.parent_path else r.chunk.title
-            reg_title = r.chunk.parent_path[0] if r.chunk.parent_path else r.chunk.rule_code
-            table_rows.append(f"| {i} | {reg_title} | {path[:30]} | {r.score:.2f} |")
+            table_rows.append(f"| {i} | {reg_title} | {r.chunk.rule_code} | {path[:40]} | {r.score:.2f} |")
 
         table = "\n".join(table_rows)
 
-        # Top result detail
+        # Top result detail (CLI 수준)
         top = results[0]
-        detail = f"""### 1위 결과: {top.chunk.rule_code}
-**경로:** {' > '.join(top.chunk.parent_path)}
+        full_path = ' > '.join(top.chunk.parent_path) if top.chunk.parent_path else top.chunk.title
+        detail = f"""### 🏆 1위 결과: {top.chunk.rule_code}
 
-{top.chunk.text[:500]}{'...' if len(top.chunk.text) > 500 else ''}
+**규정명:** {top.chunk.parent_path[0] if top.chunk.parent_path else top.chunk.title}
+
+**경로:** {full_path}
+
+---
+
+{top.chunk.text}
 """
 
         return table, detail
@@ -266,9 +279,15 @@ def create_app(
                 return f"LLM 초기화 실패: {e}", ""
 
         if store_for_ask.count() == 0:
-            return "데이터베이스가 비어 있습니다.", ""
+            return "데이터베이스가 비어 있습니다. CLI에서 'regulation-rag sync'를 실행하세요.", ""
 
-        search_with_llm = SearchUseCase(store_for_ask, llm_client)
+        # Use HybridSearcher for better results (like CLI)
+        from ..infrastructure.hybrid_search import HybridSearcher
+        hybrid = HybridSearcher()
+        documents = store_for_ask.get_all_documents()
+        hybrid.add_documents(documents)
+
+        search_with_llm = SearchUseCase(store_for_ask, llm_client, use_reranker=True, hybrid_searcher=hybrid)
 
         filter = None
         if not include_abolished:
@@ -281,15 +300,56 @@ def create_app(
             include_abolished=include_abolished,
         )
 
-        # Format sources
-        sources = []
+        # Format sources (CLI 수준)
+        # Relative normalization for display
+        sources_list = answer.sources
+        if sources_list:
+            scores = [r.score for r in sources_list]
+            max_s, min_s = max(scores), min(scores)
+            if max_s == min_s:
+                norm_scores = {r.chunk.id: 1.0 for r in sources_list}
+            else:
+                norm_scores = {r.chunk.id: (r.score - min_s) / (max_s - min_s) for r in sources_list}
+        else:
+            norm_scores = {}
+
+        sources_md = ["### 📚 참고 규정\n"]
         for i, r in enumerate(answer.sources, 1):
-            path = " > ".join(r.chunk.parent_path[-2:]) if r.chunk.parent_path else ""
-            sources.append(f"{i}. [{r.chunk.rule_code}] {path}")
+            reg_name = r.chunk.parent_path[0] if r.chunk.parent_path else r.chunk.title
+            path = " > ".join(r.chunk.parent_path) if r.chunk.parent_path else r.chunk.title
+            norm_score = norm_scores.get(r.chunk.id, 0.0)
+            rel_pct = int(norm_score * 100)
+            
+            if rel_pct >= 80:
+                rel_label = "🟢 매우 높음"
+            elif rel_pct >= 50:
+                rel_label = "🟡 높음"
+            elif rel_pct >= 30:
+                rel_label = "🟠 보통"
+            else:
+                rel_label = "🔴 낮음"
+            
+            sources_md.append(f"""#### [{i}] {reg_name}
+**경로:** {path}
 
-        sources_text = "\n".join(sources) if sources else "출처 없음"
+{r.chunk.text[:300]}{'...' if len(r.chunk.text) > 300 else ''}
 
-        return answer.text, f"### 참고 규정\n{sources_text}\n\n*신뢰도: {answer.confidence:.0%}*"
+*규정번호: {r.chunk.rule_code} | 관련도: {rel_pct}% {rel_label}*
+
+---
+""")
+
+        # Confidence description
+        if answer.confidence >= 0.7:
+            conf_desc = "🟢 답변 신뢰도 높음"
+        elif answer.confidence >= 0.4:
+            conf_desc = "🟡 답변 신뢰도 보통 - 원문 확인 권장"
+        else:
+            conf_desc = "🔴 답변 신뢰도 낮음 - 학교 행정실 문의 권장"
+
+        sources_text = "\n".join(sources_md) + f"\n**{conf_desc}** (신뢰도 {answer.confidence:.0%})"
+
+        return answer.text, sources_text
 
     # Sync function
     def run_sync(json_path: str, full_sync: bool) -> str:
@@ -389,143 +449,6 @@ def create_app(
         gr.Markdown("# 📚 대학 규정집 Q&A 시스템")
 
         with gr.Tabs():
-            # Tab 0: All-in-one
-            with gr.TabItem("🧩 올인원"):
-                gr.Markdown("HWP 업로드 → JSON 변환 → DB 동기화 → 질문까지 한 번에 진행합니다.")
-
-                hwp_file = gr.File(
-                    label="HWP 파일 업로드",
-                    file_types=[".hwp"],
-                    type="filepath",
-                )
-                use_llm_preprocess = gr.Checkbox(
-                    label="LLM 전처리 사용 (문서 품질 낮은 경우 추천)",
-                    value=False,
-                )
-
-                with gr.Accordion("LLM 설정", open=False):
-                    llm_provider_easy = gr.Dropdown(
-                        choices=LLM_PROVIDERS,
-                        value=DEFAULT_LLM_PROVIDER,
-                        label="프로바이더",
-                    )
-                    llm_model_easy = gr.Textbox(
-                        value=DEFAULT_LLM_MODEL,
-                        label="모델 (선택)",
-                    )
-                    llm_base_url_easy = gr.Textbox(
-                        value=DEFAULT_LLM_BASE_URL,
-                        label="Base URL (로컬용)",
-                        placeholder="예: http://127.0.0.1:11434",
-                    )
-
-                with gr.Accordion("고급 설정", open=False):
-                    output_dir = gr.Textbox(
-                        value="data/output",
-                        label="출력 폴더",
-                    )
-                    db_path_input = gr.Textbox(
-                        value=db_path,
-                        label="DB 경로",
-                    )
-                    full_sync_input = gr.Checkbox(
-                        label="전체 동기화",
-                        value=False,
-                    )
-
-                convert_btn = gr.Button("변환 + DB 동기화", variant="primary")
-                pipeline_status = gr.Textbox(label="진행 로그", lines=12)
-                output_json_path = gr.Textbox(label="생성된 JSON 경로")
-                output_db_path = gr.Textbox(label="DB 경로")
-
-                convert_btn.click(
-                    fn=run_conversion_and_sync,
-                    inputs=[
-                        hwp_file,
-                        use_llm_preprocess,
-                        llm_provider_easy,
-                        llm_model_easy,
-                        llm_base_url_easy,
-                        output_dir,
-                        db_path_input,
-                        full_sync_input,
-                    ],
-                    outputs=[pipeline_status, output_json_path, output_db_path],
-                )
-
-                gr.Markdown("---")
-                ask_question_input_easy = gr.Textbox(
-                    label="질문",
-                    placeholder="예: 교원 연구년 신청 자격은 무엇인가요?",
-                    lines=2,
-                )
-                ask_top_k_easy = gr.Slider(
-                    minimum=1, maximum=10, value=5, step=1,
-                    label="참고 규정 수",
-                )
-                ask_abolished_easy = gr.Checkbox(
-                    label="폐지 규정 포함",
-                    value=False,
-                )
-                ask_btn_easy = gr.Button("질문하기", variant="secondary")
-                ask_answer_easy = gr.Markdown(label="답변")
-                ask_sources_easy = gr.Markdown(label="참고 규정")
-
-                ask_btn_easy.click(
-                    fn=ask_question,
-                    inputs=[
-                        ask_question_input_easy,
-                        ask_top_k_easy,
-                        ask_abolished_easy,
-                        llm_provider_easy,
-                        llm_model_easy,
-                        llm_base_url_easy,
-                        db_path_input,
-                    ],
-                    outputs=[ask_answer_easy, ask_sources_easy],
-                )
-
-            # Tab 0.5: Status
-            with gr.TabItem("📂 데이터 현황"):
-                status_db_path = gr.Textbox(
-                    value=db_path,
-                    label="DB 경로",
-                )
-                status_markdown = gr.Markdown(_render_status(db_path))
-                refresh_btn = gr.Button("새로고침", variant="secondary")
-
-                with gr.Row():
-                    json_choices = _json_choices()
-                    json_select = gr.Dropdown(
-                        choices=json_choices,
-                        value=json_choices[0] if json_choices else "",
-                        label="동기화할 JSON 선택",
-                    )
-                    full_sync_select = gr.Checkbox(
-                        label="전체 동기화",
-                        value=False,
-                    )
-                    sync_btn = gr.Button("동기화 실행", variant="primary")
-                sync_result = gr.Markdown()
-
-                def _refresh_status(target_db_path: str):
-                    updated_status = _render_status(target_db_path)
-                    choices = _json_choices()
-                    value = choices[0] if choices else ""
-                    return updated_status, gr.update(choices=choices, value=value)
-
-                refresh_btn.click(
-                    fn=_refresh_status,
-                    inputs=[status_db_path],
-                    outputs=[status_markdown, json_select],
-                )
-
-                sync_btn.click(
-                    fn=run_sync,
-                    inputs=[json_select, full_sync_select],
-                    outputs=[sync_result],
-                )
-
             # Tab 1: Search
             with gr.TabItem("🔍 검색"):
                 with gr.Row():
@@ -603,27 +526,25 @@ def create_app(
                     outputs=[ask_answer, ask_sources],
                 )
 
-            # Tab 3: Sync
-            with gr.TabItem("⚙️ 설정"):
-                gr.Markdown(get_status_text())
+            # Tab 3: Status (Read-only)
+            with gr.TabItem("📂 데이터 현황"):
+                gr.Markdown("> DB 관리(동기화, 초기화)는 CLI에서 수행합니다: `regulation-rag sync`, `regulation-rag reset`")
+                
+                status_db_path = gr.Textbox(
+                    value=db_path,
+                    label="DB 경로",
+                    interactive=False,
+                )
+                status_markdown = gr.Markdown(_render_status(db_path))
+                refresh_btn = gr.Button("새로고침", variant="secondary")
 
-                with gr.Row():
-                    sync_json_path = gr.Textbox(
-                        label="JSON 파일 경로",
-                        value=DEFAULT_JSON_PATH,
-                    )
-                    sync_full = gr.Checkbox(
-                        label="전체 동기화",
-                        value=False,
-                    )
+                def _refresh_status_only(target_db_path: str):
+                    return _render_status(target_db_path)
 
-                sync_btn = gr.Button("동기화 실행", variant="secondary")
-                sync_result = gr.Markdown(label="결과")
-
-                sync_btn.click(
-                    fn=run_sync,
-                    inputs=[sync_json_path, sync_full],
-                    outputs=[sync_result],
+                refresh_btn.click(
+                    fn=_refresh_status_only,
+                    inputs=[status_db_path],
+                    outputs=[status_markdown],
                 )
 
     return app

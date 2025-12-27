@@ -562,7 +562,7 @@ def cmd_status(args) -> int:
         table.add_column("값", style="green")
 
         table.add_row("마지막 동기화", status["last_sync"] or "없음")
-        table.add_row("JSON 파일", status["json_file"] or "없음")
+        table.add_row("📚 규정집", status["json_file"] or "없음")
         table.add_row("상태 파일 규정 수", str(status["state_regulations"]))
         table.add_row("DB 청크 수", str(status["store_chunks"]))
         table.add_row("DB 규정 수", str(status["store_regulations"]))
