@@ -84,6 +84,11 @@ def _format_query_rewrite_debug(info: Optional[QueryRewriteInfo]) -> str:
             f"- 쿼리 리라이팅[{method_label}]{extra_text}: '{info.original}' -> '{info.rewritten}'"
         )
 
+    if info.used_synonyms is not None:
+        lines.append(f"- 동의어 사전: {'사용' if info.used_synonyms else '미사용'}")
+    if info.used_intent is not None:
+        lines.append(f"- 의도 키워드: {'사용' if info.used_intent else '미사용'}")
+
     return "\n".join(lines)
 
 

@@ -45,6 +45,9 @@ class RAGConfig:
     use_reranker: bool = True
     use_hybrid: bool = True
     default_top_k: int = 5
+    synonyms_path: Optional[str] = field(
+        default_factory=lambda: os.getenv("RAG_SYNONYMS_PATH")
+    )
     
     # Supported LLM providers
     llm_providers: List[str] = field(
@@ -73,6 +76,13 @@ class RAGConfig:
     def sync_state_path_resolved(self) -> Path:
         """Get absolute path to sync state file."""
         return Path(self.sync_state_path).resolve()
+
+    @property
+    def synonyms_path_resolved(self) -> Optional[Path]:
+        """Get absolute path to synonyms file if configured."""
+        if not self.synonyms_path:
+            return None
+        return Path(self.synonyms_path).resolve()
 
 
 # Global configuration instance (singleton)

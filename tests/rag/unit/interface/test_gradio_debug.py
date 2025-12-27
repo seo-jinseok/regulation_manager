@@ -10,6 +10,8 @@ def test_format_query_rewrite_debug_llm_cache():
         method="llm",
         from_cache=True,
         fallback=False,
+        used_synonyms=True,
+        used_intent=False,
     )
 
     output = _format_query_rewrite_debug(info)
@@ -18,6 +20,7 @@ def test_format_query_rewrite_debug_llm_cache():
     assert "캐시" in output
     assert "원문" in output
     assert "재작성" in output
+    assert "동의어 사전" in output
 
 
 def test_format_query_rewrite_debug_rules_fallback():
@@ -28,12 +31,15 @@ def test_format_query_rewrite_debug_rules_fallback():
         method="rules",
         from_cache=False,
         fallback=True,
+        used_synonyms=False,
+        used_intent=True,
     )
 
     output = _format_query_rewrite_debug(info)
 
     assert "규칙" in output
     assert "LLM 실패 폴백" in output
+    assert "의도 키워드" in output
 
 
 def test_format_query_rewrite_debug_no_change():
@@ -44,6 +50,8 @@ def test_format_query_rewrite_debug_no_change():
         method="llm",
         from_cache=False,
         fallback=False,
+        used_synonyms=False,
+        used_intent=False,
     )
 
     output = _format_query_rewrite_debug(info)
@@ -59,6 +67,8 @@ def test_format_query_rewrite_debug_unused():
         method=None,
         from_cache=False,
         fallback=False,
+        used_synonyms=None,
+        used_intent=None,
     )
 
     output = _format_query_rewrite_debug(info)

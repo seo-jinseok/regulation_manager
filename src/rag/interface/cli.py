@@ -92,6 +92,11 @@ def print_query_rewrite(search, original_query: str) -> None:
 
     print_info(f"{prefix}: '{info.original}' -> '{info.rewritten}'")
 
+    if info.used_synonyms is not None:
+        print_info(f"동의어 사전: {'사용' if info.used_synonyms else '미사용'}")
+    if info.used_intent is not None:
+        print_info(f"의도 키워드: {'사용' if info.used_intent else '미사용'}")
+
 
 def create_parser() -> argparse.ArgumentParser:
     """Create argument parser."""

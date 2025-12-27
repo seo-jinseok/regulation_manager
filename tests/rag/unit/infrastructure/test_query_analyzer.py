@@ -2,6 +2,8 @@
 Unit tests for QueryAnalyzer and dynamic hybrid search weights.
 """
 
+import json
+
 import pytest
 
 from src.rag.infrastructure.hybrid_search import (
@@ -250,6 +252,38 @@ class TestQueryRewriting:
 
         assert "휴직" in result
         assert "연구년" in result
+
+    def test_external_synonyms_loaded(self, tmp_path):
+        """외부 동의어 파일을 로드해 확장에 반영."""
+        data = {
+            "terms": {
+                "복학": ["학교로 돌아가기", "복학 신청"],
+            }
+        }
+        path = tmp_path / "synonyms.json"
+        path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+
+        analyzer = QueryAnalyzer(synonyms_path=str(path))
+        result = analyzer.expand_query("복학")
+
+        assert "학교로 돌아가기" in result
+        assert "복학 신청" in result
+
+    def test_external_synonyms_merge_with_builtin(self, tmp_path):
+        """외부 동의어가 기본 사전과 병합됨."""
+        data = {
+            "terms": {
+                "교수": ["교수님"],
+            }
+        }
+        path = tmp_path / "synonyms.json"
+        path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+
+        analyzer = QueryAnalyzer(synonyms_path=str(path))
+        result = analyzer.expand_query("교수")
+
+        assert "교원" in result
+        assert "교수님" in result
 
     def test_rewrite_fallback_on_llm_failure(self, mock_llm):
         """LLM 실패 시 기존 방식으로 폴백."""

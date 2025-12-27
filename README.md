@@ -447,6 +447,9 @@ LLM_BASE_URL=http://localhost:11434
 # API 키 (클라우드 LLM 사용 시)
 OPENAI_API_KEY=sk-...
 GEMINI_API_KEY=AIza...
+
+# (선택) 검색 동의어 사전
+RAG_SYNONYMS_PATH=data/synonyms.json
 ```
 
 실행 시 `.env`를 자동 로드하므로, 위 설정이 코드 기본값보다 우선 적용됩니다.
@@ -457,6 +460,17 @@ GEMINI_API_KEY=AIza...
 |-----------|------------|
 | `regulation-manager` | provider: `openai` (model: `gpt-4o`) |
 | `regulation-rag` / 웹 UI | provider: `ollama` (model: `gemma2`, base_url: `http://localhost:11434`) |
+
+### 검색 동의어 사전 생성 (선택)
+
+규정 용어의 구어/오타 변형을 체계적으로 확장하려면 동의어 사전을 생성하세요.
+
+```bash
+uv run python scripts/generate_synonyms.py \
+  --json-path data/output/regulations.json \
+  --output data/synonyms.json \
+  --provider lmstudio --model your-model --base-url http://localhost:1234
+```
 
 ---
 

@@ -5,10 +5,13 @@ Provides weighted fusion of sparse (keyword-based) and dense (embedding-based)
 search results for improved retrieval quality.
 """
 
+import json
+import os
 import re
 from collections import defaultdict
 from dataclasses import dataclass
 from enum import Enum
+from pathlib import Path
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 if TYPE_CHECKING:
@@ -136,7 +139,11 @@ class QueryAnalyzer:
 ## 출력 형식
 키워드1 키워드2 키워드3"""
 
-    def __init__(self, llm_client: Optional["ILLMClient"] = None):
+    def __init__(
+        self,
+        llm_client: Optional["ILLMClient"] = None,
+        synonyms_path: Optional[str] = None,
+    ):
         """
         Initialize QueryAnalyzer.
         
@@ -146,6 +153,7 @@ class QueryAnalyzer:
         """
         self._llm_client = llm_client
         self._cache: Dict[str, QueryRewriteResult] = {}  # Query rewrite cache
+        self._synonyms = self._load_synonyms(synonyms_path)
 
     def rewrite_query(self, query: str) -> str:
         """
@@ -281,7 +289,11 @@ class QueryAnalyzer:
     def has_synonyms(self, query: str) -> bool:
         """Check if query contains any terms with synonyms."""
         cleaned = self.clean_query(query)
-        return any(term in cleaned for term in self.SYNONYMS)
+        return any(term in cleaned for term in self._synonyms)
+
+    def has_intent(self, query: str) -> bool:
+        """Check if query matches intent patterns."""
+        return bool(self._intent_keywords(query))
 
     def get_weights(self, query: str) -> Tuple[float, float]:
         """
@@ -367,7 +379,7 @@ class QueryAnalyzer:
     def _get_synonym_expansions(self, cleaned_query: str) -> List[str]:
         """Collect synonym expansions for the cleaned query."""
         expansions: List[str] = []
-        for term, synonyms in self.SYNONYMS.items():
+        for term, synonyms in self._synonyms.items():
             if term in cleaned_query:
                 # Add first 2 synonyms to avoid over-expansion
                 expansions.extend(synonyms[:2])
@@ -395,6 +407,61 @@ class QueryAnalyzer:
         base_tokens = keyword_string.split()
         merged = self._merge_token_list(base_tokens, extra_tokens)
         return " ".join(merged)
+
+    def _load_synonyms(self, synonyms_path: Optional[str]) -> Dict[str, List[str]]:
+        """Load external synonyms and merge with built-in defaults."""
+        merged: Dict[str, List[str]] = {
+            term: list(synonyms) for term, synonyms in self.SYNONYMS.items()
+        }
+
+        path_value = synonyms_path or os.getenv("RAG_SYNONYMS_PATH")
+        if not path_value:
+            return merged
+
+        path = Path(path_value)
+        if not path.exists():
+            return merged
+
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except Exception:
+            return merged
+
+        if isinstance(data, dict) and "terms" in data:
+            data = data.get("terms")
+
+        if not isinstance(data, dict):
+            return merged
+
+        for term, synonyms in data.items():
+            if not isinstance(term, str):
+                continue
+            term = term.strip()
+            if not term:
+                continue
+            if isinstance(synonyms, str):
+                synonyms_list = [synonyms]
+            elif isinstance(synonyms, list):
+                synonyms_list = synonyms
+            else:
+                continue
+
+            cleaned = [
+                s.strip()
+                for s in synonyms_list
+                if isinstance(s, str) and s.strip()
+            ]
+            if not cleaned:
+                continue
+
+            if term not in merged:
+                merged[term] = []
+
+            for synonym in cleaned:
+                if synonym not in merged[term]:
+                    merged[term].append(synonym)
+
+        return merged
 
 
 @dataclass
@@ -551,6 +618,7 @@ class HybridSearcher:
         dense_weight: float = 0.7,
         rrf_k: int = 60,
         use_dynamic_weights: bool = True,
+        synonyms_path: Optional[str] = None,
     ):
         """
         Initialize hybrid searcher.
@@ -566,7 +634,13 @@ class HybridSearcher:
         self.dense_weight = dense_weight
         self.rrf_k = rrf_k
         self.use_dynamic_weights = use_dynamic_weights
-        self._query_analyzer = QueryAnalyzer()
+        if synonyms_path is None:
+            try:
+                from ..config import get_config
+                synonyms_path = get_config().synonyms_path
+            except Exception:
+                synonyms_path = None
+        self._query_analyzer = QueryAnalyzer(synonyms_path=synonyms_path)
 
     def set_llm_client(self, llm_client: Optional["ILLMClient"]) -> None:
         """
