@@ -106,11 +106,11 @@ MCP 서버는 CLI와 동일한 Use Case 레이어를 재사용하여 다음 Tool
 
 | Tool | 설명 |
 |------|------|
-| `sync_regulations` | 규정 DB 동기화 (증분/전체) |
 | `search_regulations` | 규정 검색 (Hybrid + Rerank) |
 | `ask_regulations` | AI 질문-답변 (LLM) |
 | `get_sync_status` | 동기화 상태 조회 |
-| `reset_database` | DB 초기화 |
+
+> DB 관리(sync, reset)는 보안상 CLI로만 수행합니다.
 
 ### 테스트
 

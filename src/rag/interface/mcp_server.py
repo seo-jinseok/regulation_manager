@@ -2,10 +2,11 @@
 MCP Server for Regulation RAG System.
 
 Provides Model Context Protocol interface for:
-- Syncing regulations to vector database
 - Searching regulations with hybrid search + reranking
 - Asking questions with LLM-powered answers
 - Checking sync status
+
+Note: Database management (sync, reset) should be done via CLI for security.
 
 Usage:
     # Run as MCP server (stdio mode)
@@ -33,12 +34,11 @@ except ImportError:
 # Initialize MCP server with metadata
 mcp = FastMCP(
     name="regulation-rag",
-    instructions="대학 규정집 RAG 검색 및 Q&A 서버. 규정 동기화, 검색, AI 질문-답변 기능을 제공합니다.",
+    instructions="대학 규정집 RAG 검색 및 Q&A 서버. 규정 검색, AI 질문-답변 기능을 제공합니다.",
 )
 
 # Default paths (can be overridden via environment variables)
 DEFAULT_DB_PATH = os.getenv("RAG_DB_PATH", "data/chroma_db")
-DEFAULT_JSON_PATH = os.getenv("RAG_JSON_PATH", "data/output/규정집.json")
 
 
 def _get_store():
@@ -59,61 +59,6 @@ def _get_hybrid_searcher(store):
 # ============================================================================
 # MCP Tools
 # ============================================================================
-
-@mcp.tool()
-def sync_regulations(
-    json_path: Optional[str] = None,
-    full_sync: bool = False,
-) -> str:
-    """
-    규정 데이터베이스를 동기화합니다.
-    
-    Args:
-        json_path: 규정집 JSON 파일 경로 (기본: data/output/규정집.json)
-        full_sync: True면 전체 재동기화, False면 증분 동기화 (기본: False)
-    
-    Returns:
-        동기화 결과 요약 (JSON 형식)
-    """
-    from ..infrastructure.json_loader import JSONDocumentLoader
-    from ..infrastructure.chroma_store import ChromaVectorStore
-    from ..application.sync_usecase import SyncUseCase
-    
-    json_path = json_path or DEFAULT_JSON_PATH
-    path = Path(json_path)
-    
-    if not path.exists():
-        return json.dumps({
-            "success": False,
-            "error": f"파일을 찾을 수 없습니다: {json_path}"
-        }, ensure_ascii=False)
-    
-    # Initialize components
-    loader = JSONDocumentLoader()
-    store = ChromaVectorStore(persist_directory=DEFAULT_DB_PATH)
-    sync = SyncUseCase(loader, store)
-    
-    # Execute sync
-    if full_sync:
-        result = sync.full_sync(str(path))
-    else:
-        result = sync.incremental_sync(str(path))
-    
-    if result.has_errors:
-        return json.dumps({
-            "success": False,
-            "errors": result.errors
-        }, ensure_ascii=False)
-    
-    return json.dumps({
-        "success": True,
-        "added": result.added,
-        "modified": result.modified,
-        "removed": result.removed,
-        "unchanged": result.unchanged,
-        "total_chunks": store.count(),
-    }, ensure_ascii=False)
-
 
 @mcp.tool()
 def search_regulations(
@@ -141,7 +86,7 @@ def search_regulations(
     if store.count() == 0:
         return json.dumps({
             "success": False,
-            "error": "데이터베이스가 비어 있습니다. 먼저 sync_regulations를 실행하세요."
+            "error": "데이터베이스가 비어 있습니다. CLI에서 'regulation-rag sync'를 실행하세요."
         }, ensure_ascii=False)
     
     hybrid = _get_hybrid_searcher(store)
@@ -211,7 +156,7 @@ def ask_regulations(
     if store.count() == 0:
         return json.dumps({
             "success": False,
-            "error": "데이터베이스가 비어 있습니다. 먼저 sync_regulations를 실행하세요."
+            "error": "데이터베이스가 비어 있습니다. CLI에서 'regulation-rag sync'를 실행하세요."
         }, ensure_ascii=False)
     
     # Use environment variables as fallback
@@ -290,50 +235,6 @@ def get_sync_status() -> str:
         "state_regulations": status["state_regulations"],
         "store_chunks": status["store_chunks"],
         "store_regulations": status["store_regulations"],
-    }, ensure_ascii=False)
-
-
-@mcp.tool()
-def reset_database(confirm: bool = False) -> str:
-    """
-    데이터베이스를 초기화합니다 (모든 데이터 삭제).
-    
-    Args:
-        confirm: 초기화 확인 (True로 설정해야 실행됨)
-    
-    Returns:
-        초기화 결과 (JSON 형식)
-    """
-    if not confirm:
-        return json.dumps({
-            "success": False,
-            "error": "초기화를 수행하려면 confirm=True로 설정하세요."
-        }, ensure_ascii=False)
-    
-    from ..infrastructure.json_loader import JSONDocumentLoader
-    from ..application.sync_usecase import SyncUseCase
-    
-    store = _get_store()
-    loader = JSONDocumentLoader()
-    sync = SyncUseCase(loader, store)
-    
-    chunk_count = store.count()
-    
-    if chunk_count == 0:
-        return json.dumps({
-            "success": True,
-            "message": "데이터베이스가 이미 비어 있습니다."
-        }, ensure_ascii=False)
-    
-    # Clear vector store
-    deleted = store.clear_all()
-    
-    # Clear sync state
-    sync.reset_state()
-    
-    return json.dumps({
-        "success": True,
-        "message": f"데이터베이스 초기화 완료! {deleted}개 청크 삭제됨"
     }, ensure_ascii=False)
 
 

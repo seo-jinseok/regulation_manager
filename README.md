@@ -83,11 +83,11 @@ uv run regulation-mcp
 
 | Tool | 설명 |
 |------|------|
-| `sync_regulations` | 규정 DB 동기화 |
 | `search_regulations` | 규정 검색 (Hybrid + Rerank) |
 | `ask_regulations` | AI 질문-답변 |
 | `get_sync_status` | 동기화 상태 조회 |
-| `reset_database` | DB 초기화 |
+
+> DB 관리(sync, reset)는 CLI로 수행합니다.
 
 **클라이언트 연결 설정** (Claude Desktop 예시):
 
