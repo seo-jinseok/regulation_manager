@@ -12,6 +12,7 @@ def test_format_query_rewrite_debug_llm_cache():
         fallback=False,
         used_synonyms=True,
         used_intent=False,
+        matched_intents=["근무 회피"],
     )
 
     output = _format_query_rewrite_debug(info)
@@ -21,6 +22,7 @@ def test_format_query_rewrite_debug_llm_cache():
     assert "원문" in output
     assert "재작성" in output
     assert "동의어 사전" in output
+    assert "매칭 의도" in output
 
 
 def test_format_query_rewrite_debug_rules_fallback():
@@ -33,6 +35,7 @@ def test_format_query_rewrite_debug_rules_fallback():
         fallback=True,
         used_synonyms=False,
         used_intent=True,
+        matched_intents=["근무 회피"],
     )
 
     output = _format_query_rewrite_debug(info)
@@ -52,6 +55,7 @@ def test_format_query_rewrite_debug_no_change():
         fallback=False,
         used_synonyms=False,
         used_intent=False,
+        matched_intents=[],
     )
 
     output = _format_query_rewrite_debug(info)
@@ -69,6 +73,7 @@ def test_format_query_rewrite_debug_unused():
         fallback=False,
         used_synonyms=None,
         used_intent=None,
+        matched_intents=None,
     )
 
     output = _format_query_rewrite_debug(info)

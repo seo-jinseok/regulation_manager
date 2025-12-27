@@ -220,6 +220,27 @@ class TestQueryRewriting:
         assert info.from_cache is False
         assert info.fallback is False
 
+    def test_rewrite_info_includes_matched_intents(self, tmp_path, mock_llm):
+        """리라이팅 정보에 매칭된 의도 레이블 포함."""
+        mock_llm.generate.return_value = "휴직"
+        data = {
+            "intents": [
+                {
+                    "id": "work_avoid",
+                    "label": "근무 회피",
+                    "triggers": ["야근 싫어"],
+                    "keywords": ["휴직"],
+                }
+            ]
+        }
+        path = tmp_path / "intents.json"
+        path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+
+        analyzer = QueryAnalyzer(llm_client=mock_llm, intents_path=str(path))
+        info = analyzer.rewrite_query_with_info("야근 싫어")
+
+        assert "근무 회피" in info.matched_intents
+
     def test_rewrite_without_llm_uses_expand_query(self):
         """LLM 미설정 시 기존 expand_query 사용."""
         analyzer = QueryAnalyzer()  # LLM 없음
@@ -252,6 +273,27 @@ class TestQueryRewriting:
 
         assert "휴직" in result
         assert "연구년" in result
+
+    def test_external_intents_loaded(self, tmp_path):
+        """외부 의도 파일을 로드해 확장에 반영."""
+        data = {
+            "intents": [
+                {
+                    "id": "work_avoid",
+                    "label": "근무 회피",
+                    "triggers": ["야근 싫어"],
+                    "keywords": ["휴직", "휴가"],
+                }
+            ]
+        }
+        path = tmp_path / "intents.json"
+        path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+
+        analyzer = QueryAnalyzer(intents_path=str(path))
+        result = analyzer.expand_query("야근 싫어")
+
+        assert "휴직" in result
+        assert analyzer.analyze("야근 싫어") == QueryType.INTENT
 
     def test_external_synonyms_loaded(self, tmp_path):
         """외부 동의어 파일을 로드해 확장에 반영."""

@@ -88,14 +88,15 @@ def print_query_rewrite(search, original_query: str) -> None:
 
     if info.original == info.rewritten:
         print_info(f"{prefix}: (변경 없음) '{info.original}'")
-        return
-
-    print_info(f"{prefix}: '{info.original}' -> '{info.rewritten}'")
+    else:
+        print_info(f"{prefix}: '{info.original}' -> '{info.rewritten}'")
 
     if info.used_synonyms is not None:
         print_info(f"동의어 사전: {'사용' if info.used_synonyms else '미사용'}")
     if info.used_intent is not None:
         print_info(f"의도 키워드: {'사용' if info.used_intent else '미사용'}")
+    if info.matched_intents:
+        print_info(f"매칭 의도: {', '.join(info.matched_intents)}")
 
 
 def create_parser() -> argparse.ArgumentParser:

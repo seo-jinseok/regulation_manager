@@ -48,6 +48,9 @@ class RAGConfig:
     synonyms_path: Optional[str] = field(
         default_factory=lambda: os.getenv("RAG_SYNONYMS_PATH")
     )
+    intents_path: Optional[str] = field(
+        default_factory=lambda: os.getenv("RAG_INTENTS_PATH")
+    )
     
     # Supported LLM providers
     llm_providers: List[str] = field(
@@ -83,6 +86,13 @@ class RAGConfig:
         if not self.synonyms_path:
             return None
         return Path(self.synonyms_path).resolve()
+
+    @property
+    def intents_path_resolved(self) -> Optional[Path]:
+        """Get absolute path to intents file if configured."""
+        if not self.intents_path:
+            return None
+        return Path(self.intents_path).resolve()
 
 
 # Global configuration instance (singleton)

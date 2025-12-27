@@ -60,6 +60,7 @@ class QueryRewriteInfo:
     fallback: bool = False
     used_synonyms: Optional[bool] = None
     used_intent: Optional[bool] = None
+    matched_intents: Optional[List[str]] = None
 
 
 class SearchUseCase:
@@ -159,6 +160,7 @@ class SearchUseCase:
         rewrite_fallback = False
         used_synonyms: Optional[bool] = None
         used_intent: Optional[bool] = None
+        matched_intents: Optional[List[str]] = None
         if self.hybrid_searcher:
             # Set LLM client if not already set
             if self.llm and not self.hybrid_searcher._query_analyzer._llm_client:
@@ -170,9 +172,12 @@ class SearchUseCase:
             rewrite_method = rewrite_info.method
             rewrite_from_cache = rewrite_info.from_cache
             rewrite_fallback = rewrite_info.fallback
+            used_intent = rewrite_info.used_intent
+            used_synonyms = rewrite_info.used_synonyms
+            matched_intents = rewrite_info.matched_intents
             analyzer = self.hybrid_searcher._query_analyzer
-            used_intent = analyzer.has_intent(query_text)
-            used_synonyms = analyzer.has_synonyms(query_text)
+            if used_synonyms is None:
+                used_synonyms = analyzer.has_synonyms(query_text)
             if rewritten_query_text and rewritten_query_text != query_text:
                 used_synonyms = used_synonyms or analyzer.has_synonyms(rewritten_query_text)
             # Use rewritten query for dense search too
@@ -187,6 +192,7 @@ class SearchUseCase:
             fallback=rewrite_fallback,
             used_synonyms=used_synonyms,
             used_intent=used_intent,
+            matched_intents=matched_intents,
         )
         scoring_query_text = self._select_scoring_query(query_text, rewritten_query_text)
         

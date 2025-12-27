@@ -40,6 +40,28 @@ class QueryRewriteResult:
     used_intent: bool
     used_synonyms: bool
     fallback: bool
+    matched_intents: List[str]
+
+
+@dataclass(frozen=True)
+class IntentRule:
+    """Intent rule with triggers/patterns and expansion keywords."""
+
+    intent_id: str
+    label: str
+    keywords: List[str]
+    patterns: List[re.Pattern]
+    triggers: List[str]
+
+
+@dataclass(frozen=True)
+class IntentMatch:
+    """Matched intent with score and keywords."""
+
+    intent_id: str
+    label: str
+    keywords: List[str]
+    score: int
 
 
 class QueryAnalyzer:
@@ -119,6 +141,7 @@ class QueryAnalyzer:
         (re.compile(r"(그만두고\s*싶|그만\s*두고\s*싶|퇴직|사직)"), ["퇴직", "사직", "명예퇴직"]),
         (re.compile(r"(수업|강의).*안.*하.*싶"), ["휴강", "보강", "강의", "면제"]),
     ]
+    INTENT_MAX_MATCHES = 3
 
     # LLM Query Rewriting prompt
     QUERY_REWRITE_PROMPT = """당신은 대학 규정 검색 시스템의 쿼리 분석기입니다.
@@ -143,6 +166,7 @@ class QueryAnalyzer:
         self,
         llm_client: Optional["ILLMClient"] = None,
         synonyms_path: Optional[str] = None,
+        intents_path: Optional[str] = None,
     ):
         """
         Initialize QueryAnalyzer.
@@ -154,6 +178,7 @@ class QueryAnalyzer:
         self._llm_client = llm_client
         self._cache: Dict[str, QueryRewriteResult] = {}  # Query rewrite cache
         self._synonyms = self._load_synonyms(synonyms_path)
+        self._intent_rules = self._load_intents(intents_path)
 
     def rewrite_query(self, query: str) -> str:
         """
@@ -190,10 +215,13 @@ class QueryAnalyzer:
                 used_intent=cached.used_intent,
                 used_synonyms=cached.used_synonyms,
                 fallback=cached.fallback,
+                matched_intents=list(cached.matched_intents),
             )
 
-        intent_keywords = self._intent_keywords(query)
-        used_intent = bool(intent_keywords)
+        intent_matches = self._match_intents(query)
+        intent_keywords = self._intent_keywords_from_matches(intent_matches)
+        used_intent = bool(intent_matches)
+        matched_intents = [m.label or m.intent_id for m in intent_matches]
 
         # No LLM client: fall back to synonym expansion
         if not self._llm_client:
@@ -209,6 +237,7 @@ class QueryAnalyzer:
                 used_intent=used_intent,
                 used_synonyms=used_synonyms,
                 fallback=False,
+                matched_intents=matched_intents,
             )
             self._cache[query] = result
             return result
@@ -233,6 +262,7 @@ class QueryAnalyzer:
                 used_intent=used_intent,
                 used_synonyms=False,
                 fallback=False,
+                matched_intents=matched_intents,
             )
             self._cache[query] = result
             return result
@@ -250,6 +280,7 @@ class QueryAnalyzer:
                 used_intent=used_intent,
                 used_synonyms=used_synonyms,
                 fallback=True,
+                matched_intents=matched_intents,
             )
             self._cache[query] = result
             return result
@@ -269,7 +300,7 @@ class QueryAnalyzer:
             return QueryType.ARTICLE_REFERENCE
 
         # Check for intent expressions before academic keywords
-        if self._intent_keywords(query):
+        if self.has_intent(query):
             return QueryType.INTENT
 
         # Check for regulation name patterns
@@ -293,7 +324,7 @@ class QueryAnalyzer:
 
     def has_intent(self, query: str) -> bool:
         """Check if query matches intent patterns."""
-        return bool(self._intent_keywords(query))
+        return bool(self._match_intents(query))
 
     def get_weights(self, query: str) -> Tuple[float, float]:
         """
@@ -387,10 +418,15 @@ class QueryAnalyzer:
 
     def _intent_keywords(self, query: str) -> List[str]:
         """Return intent-based keywords for colloquial queries."""
-        for pattern, keywords in self.INTENT_PATTERNS:
-            if pattern.search(query):
-                return list(keywords)
-        return []
+        matches = self._match_intents(query)
+        return self._intent_keywords_from_matches(matches)
+
+    def _intent_keywords_from_matches(self, matches: List[IntentMatch]) -> List[str]:
+        """Flatten keywords from matched intents (top-N)."""
+        keywords: List[str] = []
+        for match in matches[: self.INTENT_MAX_MATCHES]:
+            keywords = self._merge_token_list(keywords, match.keywords)
+        return keywords
 
     def _merge_token_list(self, base_tokens: List[str], extra_tokens: List[str]) -> List[str]:
         """Merge keyword lists while preserving order and uniqueness."""
@@ -462,6 +498,121 @@ class QueryAnalyzer:
                     merged[term].append(synonym)
 
         return merged
+
+    def _load_intents(self, intents_path: Optional[str]) -> List[IntentRule]:
+        """Load external intents and merge with built-in rules."""
+        rules: List[IntentRule] = []
+
+        # Built-in rules
+        for idx, (pattern, keywords) in enumerate(self.INTENT_PATTERNS, start=1):
+            label = " / ".join(keywords[:2]) if keywords else f"intent_{idx}"
+            rules.append(
+                IntentRule(
+                    intent_id=f"legacy_{idx}",
+                    label=label,
+                    keywords=list(keywords),
+                    patterns=[pattern],
+                    triggers=[],
+                )
+            )
+
+        path_value = intents_path or os.getenv("RAG_INTENTS_PATH")
+        if not path_value:
+            return rules
+
+        path = Path(path_value)
+        if not path.exists():
+            return rules
+
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except Exception:
+            return rules
+
+        intents = data.get("intents") if isinstance(data, dict) else data
+        if not isinstance(intents, list):
+            return rules
+
+        for item in intents:
+            if not isinstance(item, dict):
+                continue
+            intent_id = str(item.get("id") or "").strip()
+            label = str(item.get("label") or intent_id).strip()
+            if not intent_id:
+                continue
+
+            raw_keywords = item.get("keywords") or []
+            raw_triggers = item.get("triggers") or item.get("examples") or []
+            raw_patterns = item.get("patterns") or []
+
+            keywords = [
+                k.strip()
+                for k in raw_keywords
+                if isinstance(k, str) and k.strip()
+            ]
+            triggers = [
+                t.strip()
+                for t in raw_triggers
+                if isinstance(t, str) and t.strip()
+            ]
+
+            patterns: List[re.Pattern] = []
+            for raw in raw_patterns:
+                if not isinstance(raw, str) or not raw.strip():
+                    continue
+                try:
+                    patterns.append(re.compile(raw))
+                except re.error:
+                    continue
+
+            if not (keywords or triggers or patterns):
+                continue
+
+            rules.append(
+                IntentRule(
+                    intent_id=intent_id,
+                    label=label or intent_id,
+                    keywords=keywords,
+                    patterns=patterns,
+                    triggers=triggers,
+                )
+            )
+
+        return rules
+
+    def _match_intents(self, query: str) -> List[IntentMatch]:
+        """Match query against intent rules and return ranked matches."""
+        if not query:
+            return []
+
+        cleaned = self.clean_query(query)
+        haystack = cleaned or query
+        matches: List[IntentMatch] = []
+
+        for rule in self._intent_rules:
+            score = 0
+            for pattern in rule.patterns:
+                if pattern.search(haystack):
+                    score += 2
+            for trigger in rule.triggers:
+                if trigger in haystack:
+                    score += 1
+            for keyword in rule.keywords:
+                if keyword and keyword in haystack:
+                    score += 1
+
+            if score > 0:
+                matches.append(
+                    IntentMatch(
+                        intent_id=rule.intent_id,
+                        label=rule.label or rule.intent_id,
+                        keywords=rule.keywords,
+                        score=score,
+                    )
+                )
+
+        matches.sort(key=lambda m: (-m.score, m.intent_id))
+        return matches[: self.INTENT_MAX_MATCHES]
 
 
 @dataclass
@@ -619,6 +770,7 @@ class HybridSearcher:
         rrf_k: int = 60,
         use_dynamic_weights: bool = True,
         synonyms_path: Optional[str] = None,
+        intents_path: Optional[str] = None,
     ):
         """
         Initialize hybrid searcher.
@@ -640,7 +792,16 @@ class HybridSearcher:
                 synonyms_path = get_config().synonyms_path
             except Exception:
                 synonyms_path = None
-        self._query_analyzer = QueryAnalyzer(synonyms_path=synonyms_path)
+        if intents_path is None:
+            try:
+                from ..config import get_config
+                intents_path = get_config().intents_path
+            except Exception:
+                intents_path = None
+        self._query_analyzer = QueryAnalyzer(
+            synonyms_path=synonyms_path,
+            intents_path=intents_path,
+        )
 
     def set_llm_client(self, llm_client: Optional["ILLMClient"]) -> None:
         """

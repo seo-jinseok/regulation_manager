@@ -88,6 +88,8 @@ def _format_query_rewrite_debug(info: Optional[QueryRewriteInfo]) -> str:
         lines.append(f"- 동의어 사전: {'사용' if info.used_synonyms else '미사용'}")
     if info.used_intent is not None:
         lines.append(f"- 의도 키워드: {'사용' if info.used_intent else '미사용'}")
+    if info.matched_intents:
+        lines.append(f"- 매칭 의도: {', '.join(info.matched_intents)}")
 
     return "\n".join(lines)
 

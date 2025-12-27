@@ -450,6 +450,9 @@ GEMINI_API_KEY=AIza...
 
 # (선택) 검색 동의어 사전
 RAG_SYNONYMS_PATH=data/synonyms.json
+
+# (선택) 검색 의도 사전
+RAG_INTENTS_PATH=data/intents.json
 ```
 
 실행 시 `.env`를 자동 로드하므로, 위 설정이 코드 기본값보다 우선 적용됩니다.
@@ -469,6 +472,17 @@ RAG_SYNONYMS_PATH=data/synonyms.json
 uv run python scripts/generate_synonyms.py \
   --json-path data/output/regulations.json \
   --output data/synonyms.json \
+  --provider lmstudio --model your-model --base-url http://localhost:1234
+```
+
+### 검색 의도 사전 생성 (선택)
+
+의도(구어/오타 표현)를 체계적으로 처리하려면 의도 사전을 생성하세요.
+
+```bash
+uv run python scripts/generate_intents.py \
+  --json-path data/output/regulations.json \
+  --output data/intents.json \
   --provider lmstudio --model your-model --base-url http://localhost:1234
 ```
 
