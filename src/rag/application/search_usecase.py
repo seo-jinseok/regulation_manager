@@ -5,6 +5,7 @@ Provides search functionality with optional LLM-based Q&A.
 """
 
 import re
+from dataclasses import dataclass
 from typing import List, Optional, TYPE_CHECKING
 
 from ..domain.entities import Answer, Chunk, SearchResult
@@ -47,6 +48,15 @@ REGULATION_QA_PROMPT = """당신은 대학 규정 전문가입니다.
 """
 
 
+@dataclass(frozen=True)
+class QueryRewriteInfo:
+    """Stores query rewrite details for debugging/verbose output."""
+
+    original: str
+    rewritten: str
+    used: bool
+
+
 class SearchUseCase:
     """
     Use case for searching regulations and generating answers.
@@ -86,6 +96,7 @@ class SearchUseCase:
         self._hybrid_searcher = hybrid_searcher
         self._use_hybrid = use_hybrid if use_hybrid is not None else config.use_hybrid
         self._hybrid_initialized = hybrid_searcher is not None
+        self._last_query_rewrite: Optional[QueryRewriteInfo] = None
 
     @property
     def hybrid_searcher(self) -> Optional["HybridSearcher"]:
@@ -137,14 +148,23 @@ class SearchUseCase:
         # Rewrite query using LLM if HybridSearcher is available (with LLM)
         # Falls back to synonym expansion if LLM is not available
         rewritten_query_text = query_text
+        rewrite_used = False
         if self.hybrid_searcher:
             # Set LLM client if not already set
             if self.llm and not self.hybrid_searcher._query_analyzer._llm_client:
                 self.hybrid_searcher.set_llm_client(self.llm)
             # Rewrite query (uses LLM if available, otherwise expands with synonyms)
             rewritten_query_text = self.hybrid_searcher._query_analyzer.rewrite_query(query_text)
+            rewrite_used = True
             # Use rewritten query for dense search too
             query = Query(text=rewritten_query_text, include_abolished=include_abolished)
+
+        self._last_query_rewrite = QueryRewriteInfo(
+            original=query_text,
+            rewritten=rewritten_query_text,
+            used=rewrite_used,
+        )
+        scoring_query_text = self._select_scoring_query(query_text, rewritten_query_text)
         
         # Get dense search results from vector store
         dense_results = self.store.search(query, filter, top_k * 3)
@@ -154,7 +174,8 @@ class SearchUseCase:
             from ..infrastructure.hybrid_search import ScoredDocument
             
             # Get BM25 sparse results (already uses expanded query internally)
-            sparse_results = self.hybrid_searcher.search_sparse(query_text, top_k * 3)
+            sparse_query_text = rewritten_query_text or query_text
+            sparse_results = self.hybrid_searcher.search_sparse(sparse_query_text, top_k * 3)
             # Convert dense results to ScoredDocument format for fusion
             dense_docs = [
                 ScoredDocument(
@@ -200,8 +221,8 @@ class SearchUseCase:
             results = dense_results
         
         # Apply keyword bonus: boost score if query terms appear in text or keywords
-        query_terms = query_text.lower().split()
-        query_text_lower = query_text.lower()
+        query_terms = scoring_query_text.lower().split()
+        query_text_lower = scoring_query_text.lower()
         boosted_results = []
         for r in results:
             text_lower = r.chunk.text.lower()
@@ -255,7 +276,7 @@ class SearchUseCase:
             ]
             
             # Rerank using BGE cross-encoder
-            reranked = rerank(query_text, documents, top_k=top_k)
+            reranked = rerank(scoring_query_text, documents, top_k=top_k)
             
             # Map back to SearchResult
             id_to_result = {r.chunk.id: r for r in candidates}
@@ -271,6 +292,20 @@ class SearchUseCase:
             return final_results
         
         return boosted_results[:top_k]
+
+    def get_last_query_rewrite(self) -> Optional[QueryRewriteInfo]:
+        """Return last query rewrite info (if any)."""
+        return self._last_query_rewrite
+
+    def _select_scoring_query(self, original: str, rewritten: str) -> str:
+        """Choose query text for scoring/reranking without losing article refs."""
+        if not rewritten:
+            return original
+        if rewritten == original:
+            return original
+        if ARTICLE_PATTERN.search(original) and not ARTICLE_PATTERN.search(rewritten):
+            return f"{original} {rewritten}"
+        return rewritten
 
     def search_unique(
         self,

@@ -69,6 +69,13 @@ class TestQueryAnalyzer:
         # 학사 키워드 없으면 물음표로 NATURAL_QUESTION
         assert analyzer.analyze("이게 뭔가요?") == QueryType.NATURAL_QUESTION
 
+    # --- Intent Detection ---
+
+    def test_detects_intent_queries(self, analyzer: QueryAnalyzer):
+        """의도 표현은 INTENT로 분류"""
+        assert analyzer.analyze("학교에 가기 싫어") == QueryType.INTENT
+        assert analyzer.analyze("그만두고 싶어") == QueryType.INTENT
+
     # --- Academic Keywords Detection ---
 
     def test_detects_academic_keywords(self, analyzer: QueryAnalyzer):
@@ -111,6 +118,11 @@ class TestQueryAnalyzer:
         bm25_w, dense_w = analyzer.get_weights("이건 뭔가요?")
         assert bm25_w == 0.4
         assert dense_w == 0.6
+
+    def test_get_weights_intent(self, analyzer: QueryAnalyzer):
+        """INTENT는 Dense 가중치가 더 높음"""
+        bm25_w, dense_w = analyzer.get_weights("학교에 가기 싫어")
+        assert bm25_w < dense_w
 
     def test_get_weights_general(self, analyzer: QueryAnalyzer):
         """GENERAL은 균형 가중치 (0.5, 0.5)"""

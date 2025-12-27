@@ -62,6 +62,23 @@ def print_error(msg: str) -> None:
         print(f"[ERROR] {msg}")
 
 
+def print_query_rewrite(search, original_query: str) -> None:
+    """Print query rewrite info when available."""
+    info = search.get_last_query_rewrite()
+    if not info:
+        return
+
+    if not info.used:
+        print_info(f"쿼리 리라이팅: (적용 안됨) '{original_query}'")
+        return
+
+    if info.original == info.rewritten:
+        print_info(f"쿼리 리라이팅: (변경 없음) '{info.original}'")
+        return
+
+    print_info(f"쿼리 리라이팅: '{info.original}' -> '{info.rewritten}'")
+
+
 def create_parser() -> argparse.ArgumentParser:
     """Create argument parser."""
     providers = ["ollama", "lmstudio", "mlx", "local", "openai", "gemini", "openrouter"]
@@ -130,6 +147,16 @@ def create_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="BGE Reranker 비활성화 (기본: reranking 사용)",
     )
+    search_parser.add_argument(
+        "-v", "--verbose",
+        action="store_true",
+        help="상세 정보 출력 (쿼리 리라이팅 등)",
+    )
+    search_parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="디버그 정보 출력 (쿼리 리라이팅 등)",
+    )
 
     # ask command
     ask_parser = subparsers.add_parser(
@@ -186,6 +213,11 @@ def create_parser() -> argparse.ArgumentParser:
         "-v", "--verbose",
         action="store_true",
         help="상세 정보 출력 (LLM 설정, 인덱스 구축 현황 등)",
+    )
+    ask_parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="디버그 정보 출력 (쿼리 리라이팅 등)",
     )
 
     # status command
@@ -284,6 +316,9 @@ def cmd_search(args) -> int:
         top_k=args.top_k,
         include_abolished=args.include_abolished,
     )
+
+    if args.verbose or args.debug:
+        print_query_rewrite(search, args.query)
 
     if not results:
         print_info("검색 결과가 없습니다.")
@@ -425,6 +460,9 @@ def cmd_ask(args) -> int:
         except Exception as e:
             print_error(f"답변 생성 실패: {e}")
             return 1
+
+    if args.verbose or args.debug:
+        print_query_rewrite(search, args.question)
 
     # Print answer
     if RICH_AVAILABLE:

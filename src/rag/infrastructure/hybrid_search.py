@@ -21,6 +21,7 @@ class QueryType(Enum):
     ARTICLE_REFERENCE = "article_reference"  # 제N조, 제N항, 제N호
     REGULATION_NAME = "regulation_name"  # OO규정, OO학칙
     NATURAL_QUESTION = "natural_question"  # 어떻게, 무엇, ?
+    INTENT = "intent"  # 자연어 의도 표현
     GENERAL = "general"  # Default
 
 
@@ -33,6 +34,7 @@ class QueryAnalyzer:
     - Regulation names: OO규정, OO학칙 → balanced
     - Academic keywords: 휴학, 복학, 등록 등 → favor BM25
     - Natural questions: 어떻게, 무엇 → favor Dense
+    - Intent expressions: ~하기 싫어, 그만두고 싶어 → favor Dense
     
     Also provides query expansion with synonyms for better recall.
     """
@@ -60,6 +62,7 @@ class QueryAnalyzer:
         QueryType.ARTICLE_REFERENCE: (0.6, 0.4),  # Favor exact keyword match
         QueryType.REGULATION_NAME: (0.5, 0.5),  # Balanced (also used for academic keywords)
         QueryType.NATURAL_QUESTION: (0.4, 0.6),  # Slightly favor semantic, but still consider keywords
+        QueryType.INTENT: (0.35, 0.65),  # Intent-heavy queries lean semantic
         QueryType.GENERAL: (0.5, 0.5),  # Balanced default (increased BM25 from 0.3)
     }
 
@@ -182,6 +185,10 @@ class QueryAnalyzer:
         # Check for article references (highest priority for exact match)
         if self.ARTICLE_PATTERN.search(query):
             return QueryType.ARTICLE_REFERENCE
+
+        # Check for intent expressions before academic keywords
+        if self._intent_keywords(query):
+            return QueryType.INTENT
 
         # Check for regulation name patterns
         if self.REGULATION_PATTERN.search(query):
