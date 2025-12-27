@@ -55,6 +55,9 @@ class QueryRewriteInfo:
     original: str
     rewritten: str
     used: bool
+    method: Optional[str] = None
+    from_cache: bool = False
+    fallback: bool = False
 
 
 class SearchUseCase:
@@ -149,13 +152,20 @@ class SearchUseCase:
         # Falls back to synonym expansion if LLM is not available
         rewritten_query_text = query_text
         rewrite_used = False
+        rewrite_method: Optional[str] = None
+        rewrite_from_cache = False
+        rewrite_fallback = False
         if self.hybrid_searcher:
             # Set LLM client if not already set
             if self.llm and not self.hybrid_searcher._query_analyzer._llm_client:
                 self.hybrid_searcher.set_llm_client(self.llm)
             # Rewrite query (uses LLM if available, otherwise expands with synonyms)
-            rewritten_query_text = self.hybrid_searcher._query_analyzer.rewrite_query(query_text)
+            rewrite_info = self.hybrid_searcher._query_analyzer.rewrite_query_with_info(query_text)
+            rewritten_query_text = rewrite_info.rewritten
             rewrite_used = True
+            rewrite_method = rewrite_info.method
+            rewrite_from_cache = rewrite_info.from_cache
+            rewrite_fallback = rewrite_info.fallback
             # Use rewritten query for dense search too
             query = Query(text=rewritten_query_text, include_abolished=include_abolished)
 
@@ -163,6 +173,9 @@ class SearchUseCase:
             original=query_text,
             rewritten=rewritten_query_text,
             used=rewrite_used,
+            method=rewrite_method,
+            from_cache=rewrite_from_cache,
+            fallback=rewrite_fallback,
         )
         scoring_query_text = self._select_scoring_query(query_text, rewritten_query_text)
         

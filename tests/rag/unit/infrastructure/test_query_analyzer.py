@@ -206,6 +206,18 @@ class TestQueryRewriting:
         assert "휴직" in result
         assert "연구년" in result
 
+    def test_rewrite_info_reports_llm_source(self, mock_llm):
+        """리라이팅 정보에 LLM 사용 여부가 포함됨."""
+        mock_llm.generate.return_value = "휴직 휴가"
+
+        analyzer = QueryAnalyzer(llm_client=mock_llm)
+        info = analyzer.rewrite_query_with_info("학교에 가기 싫어")
+
+        assert info.used_llm is True
+        assert info.method == "llm"
+        assert info.from_cache is False
+        assert info.fallback is False
+
     def test_rewrite_without_llm_uses_expand_query(self):
         """LLM 미설정 시 기존 expand_query 사용."""
         analyzer = QueryAnalyzer()  # LLM 없음
@@ -214,6 +226,14 @@ class TestQueryRewriting:
         # 기존 동의어 확장 결과 반환
         assert "휴학" in result
         assert "휴학 신청" in result  # 동의어 확장됨
+
+    def test_rewrite_info_reports_rules_source(self):
+        """LLM 미설정 시 규칙 기반으로 표시됨."""
+        analyzer = QueryAnalyzer()
+        info = analyzer.rewrite_query_with_info("휴학")
+
+        assert info.used_llm is False
+        assert info.method == "rules"
 
     def test_expand_query_adds_professor_synonyms(self):
         """교수 키워드는 교원/교직원으로 확장."""
@@ -236,10 +256,12 @@ class TestQueryRewriting:
         mock_llm.generate.side_effect = Exception("LLM connection error")
         
         analyzer = QueryAnalyzer(llm_client=mock_llm)
-        result = analyzer.rewrite_query("폐과")
+        info = analyzer.rewrite_query_with_info("폐과")
         
         # 기존 동의어 확장 결과 반환
-        assert "폐과" in result or "학과 폐지" in result
+        assert "폐과" in info.rewritten or "학과 폐지" in info.rewritten
+        assert info.used_llm is False
+        assert info.fallback is True
 
     def test_rewrite_caching(self, mock_llm):
         """동일 쿼리 캐싱 확인."""
@@ -248,13 +270,14 @@ class TestQueryRewriting:
         analyzer = QueryAnalyzer(llm_client=mock_llm)
         
         # 첫 번째 호출
-        result1 = analyzer.rewrite_query("학교에 가기 싫어")
+        result1 = analyzer.rewrite_query_with_info("학교에 가기 싫어")
         # 두 번째 호출 (캐시 히트)
-        result2 = analyzer.rewrite_query("학교에 가기 싫어")
+        result2 = analyzer.rewrite_query_with_info("학교에 가기 싫어")
         
         # LLM은 한 번만 호출되어야 함
         assert mock_llm.generate.call_count == 1
-        assert result1 == result2
+        assert result1.rewritten == result2.rewritten
+        assert result2.from_cache is True
 
     def test_rewrite_merges_intent_keywords_with_llm(self, mock_llm):
         """의도 키워드는 LLM 출력과 병합되어 유지."""

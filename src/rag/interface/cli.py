@@ -72,11 +72,25 @@ def print_query_rewrite(search, original_query: str) -> None:
         print_info(f"쿼리 리라이팅: (적용 안됨) '{original_query}'")
         return
 
+    method_label = None
+    if info.method == "llm":
+        method_label = "LLM"
+    elif info.method == "rules":
+        method_label = "규칙"
+
+    extras = []
+    if info.from_cache:
+        extras.append("캐시")
+    if info.fallback:
+        extras.append("LLM 실패 폴백")
+    extra_text = f" ({', '.join(extras)})" if extras else ""
+    prefix = f"쿼리 리라이팅[{method_label}]{extra_text}" if method_label else "쿼리 리라이팅"
+
     if info.original == info.rewritten:
-        print_info(f"쿼리 리라이팅: (변경 없음) '{info.original}'")
+        print_info(f"{prefix}: (변경 없음) '{info.original}'")
         return
 
-    print_info(f"쿼리 리라이팅: '{info.original}' -> '{info.rewritten}'")
+    print_info(f"{prefix}: '{info.original}' -> '{info.rewritten}'")
 
 
 def create_parser() -> argparse.ArgumentParser:

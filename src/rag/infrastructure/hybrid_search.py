@@ -25,6 +25,20 @@ class QueryType(Enum):
     GENERAL = "general"  # Default
 
 
+@dataclass(frozen=True)
+class QueryRewriteResult:
+    """Detailed result of query rewriting."""
+
+    original: str
+    rewritten: str
+    method: str  # "llm" or "rules"
+    from_cache: bool
+    used_llm: bool
+    used_intent: bool
+    used_synonyms: bool
+    fallback: bool
+
+
 class QueryAnalyzer:
     """
     Analyzes query text to determine optimal BM25/Dense weights.
@@ -131,7 +145,7 @@ class QueryAnalyzer:
                        If not provided, falls back to synonym-based expansion.
         """
         self._llm_client = llm_client
-        self._cache: Dict[str, str] = {}  # Query rewrite cache
+        self._cache: Dict[str, QueryRewriteResult] = {}  # Query rewrite cache
 
     def rewrite_query(self, query: str) -> str:
         """
@@ -144,15 +158,52 @@ class QueryAnalyzer:
             Rewritten query with search keywords.
             Falls back to expand_query() on LLM failure.
         """
+        return self.rewrite_query_with_info(query).rewritten
+
+    def rewrite_query_with_info(self, query: str) -> QueryRewriteResult:
+        """
+        Rewrite query and return detailed metadata.
+
+        Args:
+            query: The original natural language query.
+
+        Returns:
+            QueryRewriteResult containing rewrite metadata.
+        """
         # Check cache first
         if query in self._cache:
-            return self._cache[query]
-        
+            cached = self._cache[query]
+            return QueryRewriteResult(
+                original=cached.original,
+                rewritten=cached.rewritten,
+                method=cached.method,
+                from_cache=True,
+                used_llm=cached.used_llm,
+                used_intent=cached.used_intent,
+                used_synonyms=cached.used_synonyms,
+                fallback=cached.fallback,
+            )
+
         intent_keywords = self._intent_keywords(query)
+        used_intent = bool(intent_keywords)
 
         # No LLM client: fall back to synonym expansion
         if not self._llm_client:
-            return self.expand_query(query)
+            cleaned = self.clean_query(query)
+            used_synonyms = bool(self._get_synonym_expansions(cleaned))
+            rewritten = self.expand_query(query)
+            result = QueryRewriteResult(
+                original=query,
+                rewritten=rewritten,
+                method="rules",
+                from_cache=False,
+                used_llm=False,
+                used_intent=used_intent,
+                used_synonyms=used_synonyms,
+                fallback=False,
+            )
+            self._cache[query] = result
+            return result
         
         # Call LLM for rewriting
         try:
@@ -165,12 +216,35 @@ class QueryAnalyzer:
             rewritten = response.strip().replace("\n", " ")
             if intent_keywords:
                 rewritten = self._merge_keywords(rewritten, intent_keywords)
-            # Cache the result
-            self._cache[query] = rewritten
-            return rewritten
+            result = QueryRewriteResult(
+                original=query,
+                rewritten=rewritten,
+                method="llm",
+                from_cache=False,
+                used_llm=True,
+                used_intent=used_intent,
+                used_synonyms=False,
+                fallback=False,
+            )
+            self._cache[query] = result
+            return result
         except Exception:
             # On any error, fall back to synonym expansion
-            return self.expand_query(query)
+            cleaned = self.clean_query(query)
+            used_synonyms = bool(self._get_synonym_expansions(cleaned))
+            rewritten = self.expand_query(query)
+            result = QueryRewriteResult(
+                original=query,
+                rewritten=rewritten,
+                method="rules",
+                from_cache=False,
+                used_llm=False,
+                used_intent=used_intent,
+                used_synonyms=used_synonyms,
+                fallback=True,
+            )
+            self._cache[query] = result
+            return result
 
     def analyze(self, query: str) -> QueryType:
         """
