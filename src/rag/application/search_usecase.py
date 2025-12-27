@@ -62,9 +62,9 @@ class SearchUseCase:
         self,
         store: IVectorStore,
         llm_client: Optional[ILLMClient] = None,
-        use_reranker: bool = False,
+        use_reranker: Optional[bool] = None,
         hybrid_searcher: Optional["HybridSearcher"] = None,
-        use_hybrid: bool = True,
+        use_hybrid: Optional[bool] = None,
     ):
         """
         Initialize search use case.
@@ -72,15 +72,19 @@ class SearchUseCase:
         Args:
             store: Vector store implementation.
             llm_client: Optional LLM client for generating answers.
-            use_reranker: Whether to use BGE reranker for improved accuracy.
+            use_reranker: Whether to use BGE reranker (default: from config).
             hybrid_searcher: Optional HybridSearcher (auto-created if None and use_hybrid=True).
-            use_hybrid: Whether to use hybrid search (default: True).
+            use_hybrid: Whether to use hybrid search (default: from config).
         """
+        # Use config defaults if not explicitly specified
+        from ..config import get_config
+        config = get_config()
+        
         self.store = store
         self.llm = llm_client
-        self.use_reranker = use_reranker
+        self.use_reranker = use_reranker if use_reranker is not None else config.use_reranker
         self._hybrid_searcher = hybrid_searcher
-        self._use_hybrid = use_hybrid
+        self._use_hybrid = use_hybrid if use_hybrid is not None else config.use_hybrid
         self._hybrid_initialized = hybrid_searcher is not None
 
     @property

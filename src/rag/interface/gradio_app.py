@@ -76,7 +76,7 @@ def create_app(
     if use_mock_llm:
         llm_status = "⚠️ Mock LLM (테스트 모드)"
 
-    search_usecase = SearchUseCase(store, use_reranker=True)  # Reranker 활성화
+    search_usecase = SearchUseCase(store)  # use_reranker는 config 기본값 사용
     sync_usecase = SyncUseCase(loader, store)
 
     data_input_dir = Path("data/input")
@@ -209,7 +209,7 @@ def create_app(
             return "데이터베이스가 비어 있습니다. CLI에서 'regulation-rag sync'를 실행하세요.", ""
 
         # SearchUseCase가 HybridSearcher를 자동 초기화
-        search_with_hybrid = SearchUseCase(store, use_reranker=True)
+        search_with_hybrid = SearchUseCase(store)
         results = search_with_hybrid.search_unique(
             query,
             top_k=top_k,
@@ -277,7 +277,7 @@ def create_app(
             return "데이터베이스가 비어 있습니다. CLI에서 'regulation-rag sync'를 실행하세요.", ""
 
         # SearchUseCase가 HybridSearcher를 자동 초기화
-        search_with_llm = SearchUseCase(store_for_ask, llm_client, use_reranker=True)
+        search_with_llm = SearchUseCase(store_for_ask, llm_client)
 
         filter = None
         if not include_abolished:
