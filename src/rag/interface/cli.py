@@ -262,7 +262,6 @@ def cmd_sync(args) -> int:
 def cmd_search(args) -> int:
     """Execute search command."""
     from ..infrastructure.chroma_store import ChromaVectorStore
-    from ..infrastructure.hybrid_search import HybridSearcher
     from ..application.search_usecase import SearchUseCase
 
     store = ChromaVectorStore(persist_directory=args.db_path)
@@ -275,14 +274,11 @@ def cmd_search(args) -> int:
     if use_reranker:
         print_info("🎯 BGE Reranker 활성화 (비활성화: --no-rerank)")
 
-    # Initialize HybridSearcher with BM25 index
+    # SearchUseCase가 HybridSearcher를 자동 초기화
     print_info("🔄 Hybrid Search 인덱스 구축 중...")
-    hybrid = HybridSearcher()
-    documents = store.get_all_documents()
-    hybrid.add_documents(documents)
-    print_info(f"✓ BM25 인덱스 구축 완료 ({len(documents):,}개 문서)")
+    search = SearchUseCase(store, use_reranker=use_reranker)
+    print_info(f"✓ 인덱스 구축 완료")
 
-    search = SearchUseCase(store, use_reranker=use_reranker, hybrid_searcher=hybrid)
     results = search.search_unique(
         args.query,
         top_k=args.top_k,
@@ -336,7 +332,6 @@ def cmd_search(args) -> int:
 def cmd_ask(args) -> int:
     """Execute ask command with LLM."""
     from ..infrastructure.chroma_store import ChromaVectorStore
-    from ..infrastructure.hybrid_search import HybridSearcher
     from ..infrastructure.llm_adapter import LLMClientAdapter
     from ..application.search_usecase import SearchUseCase
 
@@ -375,19 +370,14 @@ def cmd_ask(args) -> int:
         else:
             print_info("BGE Reranker 비활성화")
 
-    # Initialize HybridSearcher with BM25 index
+    # SearchUseCase가 HybridSearcher를 자동 초기화
     if args.verbose:
         print_info("🔄 Hybrid Search 인덱스 구축 중...")
-    hybrid = HybridSearcher()
-    documents = store.get_all_documents()
-    hybrid.add_documents(documents)
-    if args.verbose:
-        print_info(f"✓ BM25 인덱스 구축 완료 ({len(documents):,}개 문서)")
         print_info(f"ChromaDB 경로: {args.db_path}")
         print_info(f"Top-K: {args.top_k}")
 
-    # Create search use case with LLM and hybrid searcher
-    search = SearchUseCase(store, llm_client=llm, use_reranker=use_reranker, hybrid_searcher=hybrid)
+    # Create search use case with LLM (HybridSearcher auto-initialized)
+    search = SearchUseCase(store, llm_client=llm, use_reranker=use_reranker)
 
     if args.verbose:
         print_info(f"질문: {args.question}")

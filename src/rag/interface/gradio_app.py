@@ -208,13 +208,8 @@ def create_app(
         if store.count() == 0:
             return "데이터베이스가 비어 있습니다. CLI에서 'regulation-rag sync'를 실행하세요.", ""
 
-        # Use HybridSearcher for better results (like CLI)
-        from ..infrastructure.hybrid_search import HybridSearcher
-        hybrid = HybridSearcher()
-        documents = store.get_all_documents()
-        hybrid.add_documents(documents)
-        
-        search_with_hybrid = SearchUseCase(store, use_reranker=True, hybrid_searcher=hybrid)
+        # SearchUseCase가 HybridSearcher를 자동 초기화
+        search_with_hybrid = SearchUseCase(store, use_reranker=True)
         results = search_with_hybrid.search_unique(
             query,
             top_k=top_k,
@@ -281,13 +276,8 @@ def create_app(
         if store_for_ask.count() == 0:
             return "데이터베이스가 비어 있습니다. CLI에서 'regulation-rag sync'를 실행하세요.", ""
 
-        # Use HybridSearcher for better results (like CLI)
-        from ..infrastructure.hybrid_search import HybridSearcher
-        hybrid = HybridSearcher()
-        documents = store_for_ask.get_all_documents()
-        hybrid.add_documents(documents)
-
-        search_with_llm = SearchUseCase(store_for_ask, llm_client, use_reranker=True, hybrid_searcher=hybrid)
+        # SearchUseCase가 HybridSearcher를 자동 초기화
+        search_with_llm = SearchUseCase(store_for_ask, llm_client, use_reranker=True)
 
         filter = None
         if not include_abolished:

@@ -47,15 +47,6 @@ def _get_store():
     return ChromaVectorStore(persist_directory=DEFAULT_DB_PATH)
 
 
-def _get_hybrid_searcher(store):
-    """Get HybridSearcher with BM25 index built."""
-    from ..infrastructure.hybrid_search import HybridSearcher
-    hybrid = HybridSearcher()
-    documents = store.get_all_documents()
-    hybrid.add_documents(documents)
-    return hybrid
-
-
 # ============================================================================
 # MCP Tools
 # ============================================================================
@@ -89,8 +80,8 @@ def search_regulations(
             "error": "데이터베이스가 비어 있습니다. CLI에서 'regulation-rag sync'를 실행하세요."
         }, ensure_ascii=False)
     
-    hybrid = _get_hybrid_searcher(store)
-    search = SearchUseCase(store, use_reranker=use_rerank, hybrid_searcher=hybrid)
+    # SearchUseCase가 HybridSearcher를 자동 초기화
+    search = SearchUseCase(store, use_reranker=use_rerank)
     
     results = search.search_unique(
         query,
@@ -177,8 +168,8 @@ def ask_regulations(
             "hint": "로컬 LLM 서버가 실행 중인지 확인하세요." if provider in ("lmstudio", "ollama") else "API 키 설정을 확인하세요."
         }, ensure_ascii=False)
     
-    hybrid = _get_hybrid_searcher(store)
-    search = SearchUseCase(store, llm_client=llm, use_reranker=True, hybrid_searcher=hybrid)
+    # SearchUseCase가 HybridSearcher를 자동 초기화
+    search = SearchUseCase(store, llm_client=llm, use_reranker=True)
     
     try:
         answer = search.ask(question=question, top_k=top_k)

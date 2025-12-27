@@ -64,6 +64,7 @@ class SearchUseCase:
         llm_client: Optional[ILLMClient] = None,
         use_reranker: bool = False,
         hybrid_searcher: Optional["HybridSearcher"] = None,
+        use_hybrid: bool = True,
     ):
         """
         Initialize search use case.
@@ -72,12 +73,37 @@ class SearchUseCase:
             store: Vector store implementation.
             llm_client: Optional LLM client for generating answers.
             use_reranker: Whether to use BGE reranker for improved accuracy.
-            hybrid_searcher: Optional HybridSearcher for BM25+Dense fusion.
+            hybrid_searcher: Optional HybridSearcher (auto-created if None and use_hybrid=True).
+            use_hybrid: Whether to use hybrid search (default: True).
         """
         self.store = store
         self.llm = llm_client
         self.use_reranker = use_reranker
-        self.hybrid_searcher = hybrid_searcher
+        self._hybrid_searcher = hybrid_searcher
+        self._use_hybrid = use_hybrid
+        self._hybrid_initialized = hybrid_searcher is not None
+
+    @property
+    def hybrid_searcher(self) -> Optional["HybridSearcher"]:
+        """Lazy-initialize HybridSearcher on first access."""
+        if self._use_hybrid and not self._hybrid_initialized:
+            self._ensure_hybrid_searcher()
+        return self._hybrid_searcher
+
+    def _ensure_hybrid_searcher(self) -> None:
+        """Initialize HybridSearcher with documents from vector store."""
+        if self._hybrid_initialized:
+            return
+        
+        from ..infrastructure.hybrid_search import HybridSearcher
+        
+        # Get all documents from store for BM25 indexing
+        documents = self.store.get_all_documents()
+        if documents:
+            self._hybrid_searcher = HybridSearcher()
+            self._hybrid_searcher.add_documents(documents)
+        
+        self._hybrid_initialized = True
 
 
     def search(
