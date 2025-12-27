@@ -244,7 +244,7 @@ def create_app(
 
         return table, detail
 
-    # Ask function (with LLM)
+    # Ask function (with LLM) - Generator for streaming progress
     def ask_question(
         question: str,
         top_k: int,
@@ -253,14 +253,25 @@ def create_app(
         llm_model: str,
         llm_base_url: str,
         target_db_path: str,
-    ) -> Tuple[str, str]:
-        """Ask question and get LLM answer."""
+    ):
+        """Ask question and get LLM answer with progress updates."""
         if not question.strip():
-            return "질문을 입력해주세요.", ""
+            yield "질문을 입력해주세요.", ""
+            return
 
+        # Step 1: Initialize
+        yield "⏳ 데이터베이스 연결 중...", ""
+        
         db_path_value = target_db_path or db_path
         store_for_ask = ChromaVectorStore(persist_directory=db_path_value)
 
+        if store_for_ask.count() == 0:
+            yield "데이터베이스가 비어 있습니다. CLI에서 'regulation-rag sync'를 실행하세요.", ""
+            return
+
+        # Step 2: Initialize LLM
+        yield "⏳ LLM 클라이언트 초기화 중...", ""
+        
         if use_mock_llm:
             llm_client = MockLLMClient()
         else:
@@ -271,18 +282,21 @@ def create_app(
                     base_url=llm_base_url or None,
                 )
             except Exception as e:
-                return f"LLM 초기화 실패: {e}", ""
+                yield f"LLM 초기화 실패: {e}", ""
+                return
 
-        if store_for_ask.count() == 0:
-            return "데이터베이스가 비어 있습니다. CLI에서 'regulation-rag sync'를 실행하세요.", ""
-
-        # SearchUseCase가 HybridSearcher를 자동 초기화
+        # Step 3: Search
+        yield "🔍 관련 규정 검색 중...", ""
+        
         search_with_llm = SearchUseCase(store_for_ask, llm_client)
 
         filter = None
         if not include_abolished:
             filter = SearchFilter(status=RegulationStatus.ACTIVE)
 
+        # Step 4: Generate answer
+        yield "🤖 AI 답변 생성 중... (10-30초 소요)", ""
+        
         answer = search_with_llm.ask(
             question,
             filter=filter,
@@ -339,7 +353,7 @@ def create_app(
 
         sources_text = "\n".join(sources_md) + f"\n**{conf_desc}** (신뢰도 {answer.confidence:.0%})"
 
-        return answer.text, sources_text
+        yield answer.text, sources_text
 
     # Sync function
     def run_sync(json_path: str, full_sync: bool) -> str:

@@ -335,13 +335,21 @@ def cmd_ask(args) -> int:
     from ..infrastructure.llm_adapter import LLMClientAdapter
     from ..application.search_usecase import SearchUseCase
 
-    # Check if DB has data
-    store = ChromaVectorStore(persist_directory=args.db_path)
-    if store.count() == 0:
+    # Step 1: Check database
+    if RICH_AVAILABLE:
+        with console.status("[bold blue]⏳ 데이터베이스 확인 중...[/bold blue]"):
+            store = ChromaVectorStore(persist_directory=args.db_path)
+            chunk_count = store.count()
+    else:
+        print("[1/4] 데이터베이스 확인 중...")
+        store = ChromaVectorStore(persist_directory=args.db_path)
+        chunk_count = store.count()
+
+    if chunk_count == 0:
         print_error("데이터베이스가 비어 있습니다. 먼저 sync를 실행하세요.")
         return 1
 
-    # Initialize LLM client (verbose info only)
+    # Step 2: Initialize LLM
     if args.verbose:
         print_info(f"LLM 프로바이더: {args.provider}")
         if args.model:
@@ -349,19 +357,32 @@ def cmd_ask(args) -> int:
         if args.base_url:
             print_info(f"Base URL: {args.base_url}")
     
-    try:
-        llm = LLMClientAdapter(
-            provider=args.provider,
-            model=args.model,
-            base_url=args.base_url,
-        )
-    except Exception as e:
-        print_error(f"LLM 초기화 실패: {e}")
-        if args.provider in ("ollama", "lmstudio", "local", "mlx"):
-            print_info("로컬 LLM 서버가 실행 중인지 확인하세요.")
-        else:
-            print_info("API 키 설정을 확인하세요.")
-        return 1
+    if RICH_AVAILABLE:
+        with console.status("[bold blue]⏳ LLM 클라이언트 초기화 중...[/bold blue]"):
+            try:
+                llm = LLMClientAdapter(
+                    provider=args.provider,
+                    model=args.model,
+                    base_url=args.base_url,
+                )
+            except Exception as e:
+                print_error(f"LLM 초기화 실패: {e}")
+                if args.provider in ("ollama", "lmstudio", "local", "mlx"):
+                    print_info("로컬 LLM 서버가 실행 중인지 확인하세요.")
+                else:
+                    print_info("API 키 설정을 확인하세요.")
+                return 1
+    else:
+        print("[2/4] LLM 초기화 중...")
+        try:
+            llm = LLMClientAdapter(
+                provider=args.provider,
+                model=args.model,
+                base_url=args.base_url,
+            )
+        except Exception as e:
+            print_error(f"LLM 초기화 실패: {e}")
+            return 1
 
     use_reranker = not args.no_rerank
     if args.verbose:
@@ -370,27 +391,40 @@ def cmd_ask(args) -> int:
         else:
             print_info("BGE Reranker 비활성화")
 
-    # SearchUseCase가 HybridSearcher를 자동 초기화
+    # Step 3: Build search index
+    if RICH_AVAILABLE:
+        with console.status("[bold blue]🔍 관련 규정 검색 중...[/bold blue]"):
+            search = SearchUseCase(store, llm_client=llm, use_reranker=use_reranker)
+    else:
+        print("[3/4] 관련 규정 검색 중...")
+        search = SearchUseCase(store, llm_client=llm, use_reranker=use_reranker)
+
     if args.verbose:
-        print_info("🔄 Hybrid Search 인덱스 구축 중...")
         print_info(f"ChromaDB 경로: {args.db_path}")
         print_info(f"Top-K: {args.top_k}")
-
-    # Create search use case with LLM (HybridSearcher auto-initialized)
-    search = SearchUseCase(store, llm_client=llm, use_reranker=use_reranker)
-
-    if args.verbose:
         print_info(f"질문: {args.question}")
-    print_info("답변 생성 중...")
 
-    try:
-        answer = search.ask(
-            question=args.question,
-            top_k=args.top_k,
-        )
-    except Exception as e:
-        print_error(f"답변 생성 실패: {e}")
-        return 1
+    # Step 4: Generate answer
+    if RICH_AVAILABLE:
+        with console.status("[bold green]🤖 AI 답변 생성 중... (10-30초 소요)[/bold green]"):
+            try:
+                answer = search.ask(
+                    question=args.question,
+                    top_k=args.top_k,
+                )
+            except Exception as e:
+                print_error(f"답변 생성 실패: {e}")
+                return 1
+    else:
+        print("[4/4] AI 답변 생성 중...")
+        try:
+            answer = search.ask(
+                question=args.question,
+                top_k=args.top_k,
+            )
+        except Exception as e:
+            print_error(f"답변 생성 실패: {e}")
+            return 1
 
     # Print answer
     if RICH_AVAILABLE:
