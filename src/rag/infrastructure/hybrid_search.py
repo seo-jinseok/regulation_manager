@@ -86,10 +86,19 @@ class QueryAnalyzer:
         "논문": ["학위 논문", "졸업 논문"],
         # 교원 관련
         "교원": ["교수", "교직원", "전임 교원"],
+        "교수": ["교원", "교직원"],
         "임용": ["교원 임용", "교수 채용"],
         "재임용": ["계약 갱신", "임기 연장"],
         "승진": ["교원 승진", "직급 상승"],
     }
+
+    # Intent patterns for natural language queries
+    INTENT_PATTERNS = [
+        (re.compile(r"(학교|출근|근무).*(가기|출근).*싫"), ["휴직", "휴가", "연구년", "안식년"]),
+        (re.compile(r"(월급|급여|보수|연봉).*더.*받.*싶"), ["보수", "수당", "승급", "호봉"]),
+        (re.compile(r"(그만두고\s*싶|그만\s*두고\s*싶|퇴직|사직)"), ["퇴직", "사직", "명예퇴직"]),
+        (re.compile(r"(수업|강의).*안.*하.*싶"), ["휴강", "보강", "강의", "면제"]),
+    ]
 
     # LLM Query Rewriting prompt
     QUERY_REWRITE_PROMPT = """당신은 대학 규정 검색 시스템의 쿼리 분석기입니다.
@@ -136,6 +145,8 @@ class QueryAnalyzer:
         if query in self._cache:
             return self._cache[query]
         
+        intent_keywords = self._intent_keywords(query)
+
         # No LLM client: fall back to synonym expansion
         if not self._llm_client:
             return self.expand_query(query)
@@ -149,6 +160,8 @@ class QueryAnalyzer:
             )
             # Clean up response (remove extra whitespace, newlines)
             rewritten = response.strip().replace("\n", " ")
+            if intent_keywords:
+                rewritten = self._merge_keywords(rewritten, intent_keywords)
             # Cache the result
             self._cache[query] = rewritten
             return rewritten
@@ -258,18 +271,49 @@ class QueryAnalyzer:
         """
         # First clean the query
         cleaned = self.clean_query(query)
-        
-        # Then expand with synonyms
-        expansions = []
+        tokens = cleaned.split() if cleaned else []
+
+        intent_keywords = self._intent_keywords(cleaned or query)
+        if intent_keywords:
+            tokens = self._merge_token_list(tokens, intent_keywords)
+
+        expansions = self._get_synonym_expansions(cleaned)
+        if expansions:
+            tokens = self._merge_token_list(tokens, expansions)
+
+        return " ".join(tokens) if tokens else cleaned
+
+    def _get_synonym_expansions(self, cleaned_query: str) -> List[str]:
+        """Collect synonym expansions for the cleaned query."""
+        expansions: List[str] = []
         for term, synonyms in self.SYNONYMS.items():
-            if term in cleaned:
+            if term in cleaned_query:
                 # Add first 2 synonyms to avoid over-expansion
                 expansions.extend(synonyms[:2])
-        
-        if expansions:
-            # Append synonyms to cleaned query
-            return f"{cleaned} {' '.join(expansions)}"
-        return cleaned
+        return expansions
+
+    def _intent_keywords(self, query: str) -> List[str]:
+        """Return intent-based keywords for colloquial queries."""
+        for pattern, keywords in self.INTENT_PATTERNS:
+            if pattern.search(query):
+                return list(keywords)
+        return []
+
+    def _merge_token_list(self, base_tokens: List[str], extra_tokens: List[str]) -> List[str]:
+        """Merge keyword lists while preserving order and uniqueness."""
+        seen = set(base_tokens)
+        merged = list(base_tokens)
+        for token in extra_tokens:
+            if token not in seen:
+                merged.append(token)
+                seen.add(token)
+        return merged
+
+    def _merge_keywords(self, keyword_string: str, extra_tokens: List[str]) -> str:
+        """Merge keyword string with extra tokens."""
+        base_tokens = keyword_string.split()
+        merged = self._merge_token_list(base_tokens, extra_tokens)
+        return " ".join(merged)
 
 
 @dataclass

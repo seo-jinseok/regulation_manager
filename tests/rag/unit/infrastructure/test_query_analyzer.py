@@ -203,6 +203,22 @@ class TestQueryRewriting:
         assert "휴학" in result
         assert "휴학 신청" in result  # 동의어 확장됨
 
+    def test_expand_query_adds_professor_synonyms(self):
+        """교수 키워드는 교원/교직원으로 확장."""
+        analyzer = QueryAnalyzer()
+        result = analyzer.expand_query("교수")
+
+        assert "교원" in result
+        assert "교직원" in result
+
+    def test_expand_query_adds_intent_keywords(self):
+        """자연어 의도 표현은 관련 키워드로 보강."""
+        analyzer = QueryAnalyzer()
+        result = analyzer.expand_query("나는 교수인데 학교에 가기 싫어")
+
+        assert "휴직" in result
+        assert "연구년" in result
+
     def test_rewrite_fallback_on_llm_failure(self, mock_llm):
         """LLM 실패 시 기존 방식으로 폴백."""
         mock_llm.generate.side_effect = Exception("LLM connection error")
@@ -228,6 +244,16 @@ class TestQueryRewriting:
         assert mock_llm.generate.call_count == 1
         assert result1 == result2
 
+    def test_rewrite_merges_intent_keywords_with_llm(self, mock_llm):
+        """의도 키워드는 LLM 출력과 병합되어 유지."""
+        mock_llm.generate.return_value = "교원 복무"
+
+        analyzer = QueryAnalyzer(llm_client=mock_llm)
+        result = analyzer.rewrite_query("나는 교수인데 학교에 가기 싫어")
+
+        assert "휴직" in result
+        assert "연구년" in result
+
     def test_rewrite_clears_cache_for_different_queries(self, mock_llm):
         """다른 쿼리는 캐시 미스."""
         mock_llm.generate.side_effect = ["휴직 휴가", "퇴직 사직"]
@@ -241,4 +267,3 @@ class TestQueryRewriting:
         assert mock_llm.generate.call_count == 2
         assert "휴직" in result1
         assert "퇴직" in result2
-
