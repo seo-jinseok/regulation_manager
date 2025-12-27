@@ -5,8 +5,11 @@ Provides cross-encoder based reranking to improve search result quality.
 Uses BAAI/bge-reranker-v2-m3 for multilingual support (including Korean).
 """
 
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, TYPE_CHECKING
 from dataclasses import dataclass
+
+if TYPE_CHECKING:
+    from ..domain.entities import SearchResult
 
 # Lazy loading to avoid slow import on startup
 _reranker = None
@@ -105,9 +108,9 @@ def rerank(
 
 def rerank_search_results(
     query: str,
-    search_results: List,
+    search_results: List["SearchResult"],
     top_k: int = 10,
-) -> List:
+) -> List["SearchResult"]:
     """
     Rerank SearchResult objects from the RAG system.
     
@@ -122,8 +125,8 @@ def rerank_search_results(
     if not search_results:
         return []
     
-    # Import here to avoid circular imports
-    from .chroma_store import SearchResult
+    # Import from domain layer to avoid circular imports
+    from ..domain.entities import SearchResult
     
     # Convert SearchResult to tuples for reranking
     documents = [

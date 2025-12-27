@@ -17,7 +17,6 @@ Usage:
 """
 
 import json
-import os
 from pathlib import Path
 from typing import Optional
 
@@ -30,6 +29,7 @@ try:
 except ImportError:
     pass
 
+from ..config import get_config
 
 # Initialize MCP server with metadata
 mcp = FastMCP(
@@ -37,14 +37,12 @@ mcp = FastMCP(
     instructions="대학 규정집 RAG 검색 및 Q&A 서버. 규정 검색, AI 질문-답변 기능을 제공합니다.",
 )
 
-# Default paths (can be overridden via environment variables)
-DEFAULT_DB_PATH = os.getenv("RAG_DB_PATH", "data/chroma_db")
-
 
 def _get_store():
     """Get ChromaVectorStore instance."""
     from ..infrastructure.chroma_store import ChromaVectorStore
-    return ChromaVectorStore(persist_directory=DEFAULT_DB_PATH)
+    config = get_config()
+    return ChromaVectorStore(persist_directory=config.db_path)
 
 
 # ============================================================================
@@ -122,7 +120,7 @@ def search_regulations(
 def ask_regulations(
     question: str,
     top_k: int = 5,
-    provider: str = "lmstudio",
+    provider: Optional[str] = None,
     model: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> str:
@@ -143,6 +141,7 @@ def ask_regulations(
     from ..application.search_usecase import SearchUseCase
     
     store = _get_store()
+    config = get_config()
     
     if store.count() == 0:
         return json.dumps({
@@ -150,10 +149,10 @@ def ask_regulations(
             "error": "데이터베이스가 비어 있습니다. CLI에서 'regulation-rag sync'를 실행하세요."
         }, ensure_ascii=False)
     
-    # Use environment variables as fallback
-    provider = provider or os.getenv("LLM_PROVIDER", "lmstudio")
-    model = model or os.getenv("LLM_MODEL")
-    base_url = base_url or os.getenv("LLM_BASE_URL")
+    # Use config defaults if not provided
+    provider = provider or config.llm_provider
+    model = model or config.llm_model
+    base_url = base_url or config.llm_base_url
     
     try:
         llm = LLMClientAdapter(
@@ -169,7 +168,7 @@ def ask_regulations(
         }, ensure_ascii=False)
     
     # SearchUseCase가 HybridSearcher를 자동 초기화
-    search = SearchUseCase(store, llm_client=llm, use_reranker=True)
+    search = SearchUseCase(store, llm_client=llm, use_reranker=config.use_reranker)
     
     try:
         answer = search.ask(question=question, top_k=top_k)
