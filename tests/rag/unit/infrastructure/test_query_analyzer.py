@@ -100,8 +100,9 @@ class TestQueryAnalyzer:
         assert dense_w == 0.4
 
     def test_get_weights_regulation(self, analyzer: QueryAnalyzer):
-        """REGULATION_NAME은 균형 잡힌 가중치"""
-        bm25_w, dense_w = analyzer.get_weights("장학금규정")
+        """REGULATION_NAME은 균형 잡힌 가중치 (동의어 없을 때)"""
+        # "인사규정"은 동의어가 없어서 기본 가중치 적용
+        bm25_w, dense_w = analyzer.get_weights("인사규정")
         assert bm25_w == 0.5
         assert dense_w == 0.5
 
