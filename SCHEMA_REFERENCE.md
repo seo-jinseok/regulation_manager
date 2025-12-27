@@ -2,6 +2,8 @@
 
 이 문서는 `regulation_manager`가 생성하는 JSON 출력 결과의 구조를 정의합니다. 이 스키마는 대한민국 법령(법률, 시행령, 대학 규정)을 데이터베이스에 적재하기 적합하도록, 원문의 계층 구조를 완벽하게 보존하여 표현하도록 설계되었습니다.
 
+> HWP → JSON 변환 과정 및 RAG 최적화 필드 상세는 [README.md#1%EF%B8%8F⃣-hwp--json-변환-문서-구조화](./README.md#1%EF%B8%8F⃣-hwp--json-변환-문서-구조화)를 참고하세요.
+
 > 데이터베이스 적재 시 `rag_enhanced=true`이고 `rag_schema_version`이 존재하면 RAG 필드(예: `keywords`, `chunk_level`)가 포함된 것으로 판단할 수 있습니다.
 
 > 변환/동기화 명령은 [README.md](./README.md) 또는 [QUICKSTART.md](./QUICKSTART.md)를 참고하세요.

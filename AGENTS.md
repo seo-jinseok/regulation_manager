@@ -1,6 +1,71 @@
-# 개발자 가이드
+# AI Agent Context (AGENTS.md)
 
-규정 관리 시스템의 개발 환경, 아키텍처, 코딩 표준에 대한 안내입니다.
+> 이 파일은 AI 에이전트(Gemini CLI, Cursor, GitHub Copilot, Claude, Codex 등)가 프로젝트를 이해하고 작업할 때 참조하는 컨텍스트입니다.
+> Gemini CLI는 이 파일을 `GEMINI.md`로도 읽습니다. 필요시 심볼릭 링크를 생성하세요: `ln -s AGENTS.md GEMINI.md`
+
+---
+
+## 프로젝트 개요
+
+**이름**: 대학 규정 관리 시스템 (Regulation Manager)
+
+**목적**: 대학 규정집(HWP)을 구조화된 JSON으로 변환하고, Hybrid RAG 기반 AI 검색 및 Q&A를 제공
+
+**핵심 기능**:
+1. HWP → JSON 변환 (계층 구조 보존, RAG 최적화 필드 자동 생성)
+2. 벡터 DB 동기화 (ChromaDB + BGE-M3 임베딩)
+3. Hybrid Search (BM25 + Dense) + BGE Reranker
+4. LLM 기반 Q&A (다양한 프로바이더 지원)
+
+**인터페이스**:
+- CLI: `regulation-rag` (검색, 질문, 동기화)
+- Web UI: `regulation-web` (Gradio)
+- MCP Server: `regulation-mcp` (AI 에이전트 연동)
+
+---
+
+## ⚠️ 필수 개발 원칙
+
+### 1. TDD (Test-Driven Development)
+
+```
+RED → GREEN → REFACTOR
+```
+
+- **테스트 먼저 작성**: 기능 구현 전 실패하는 테스트를 먼저 작성
+- **최소 구현**: 테스트를 통과하는 최소한의 코드만 작성
+- **리팩토링**: 테스트가 통과한 후 코드 개선
+- **테스트 위치**: `tests/` 디렉토리, `pytest` 프레임워크 사용
+
+**테스트 명령어**:
+```bash
+uv run pytest                      # 전체 테스트
+uv run pytest tests/rag/ -v        # RAG 모듈 테스트
+uv run pytest -k "test_search"     # 특정 패턴 매칭
+```
+
+### 2. Clean Architecture
+
+```
+[Interface] → [Application] → [Domain] ← [Infrastructure]
+```
+
+**레이어 규칙**:
+- **Domain**: 비즈니스 로직, 엔티티, 인터페이스 정의 (의존성 없음)
+- **Application**: Use Cases (Domain에만 의존)
+- **Infrastructure**: 외부 시스템 구현 (Domain 인터페이스 구현)
+- **Interface**: CLI, Web UI, MCP Server (Application 호출)
+
+**의존성 방향**: 항상 안쪽(Domain)을 향해야 함. Domain은 외부를 모름.
+
+**디렉토리 구조**:
+```
+src/rag/
+├── domain/           # 엔티티, 값 객체, 리포지토리 인터페이스
+├── application/      # Use Cases (SearchUseCase, SyncUseCase)
+├── infrastructure/   # ChromaDB, Reranker, LLM 구현체
+└── interface/        # CLI, Web UI, MCP Server
+```
 
 ---
 
@@ -8,219 +73,206 @@
 
 ```
 regulation_manager/
-├── src/                        # 핵심 소스 코드
-│   ├── main.py                 # 변환 파이프라인 진입점
-│   ├── converter.py            # HWP → Markdown/HTML 변환
-│   ├── formatter.py            # Markdown → JSON 변환
+├── src/
+│   ├── main.py                 # HWP 변환 파이프라인 진입점
+│   ├── converter.py            # HWP → HTML 변환 (hwp5html)
+│   ├── formatter.py            # HTML → JSON 변환
 │   ├── enhance_for_rag.py      # RAG 최적화 필드 추가
-│   ├── exceptions.py           # 도메인 예외 클래스
-│   ├── llm_client.py           # LLM 전처리 클라이언트
-│   ├── cache_manager.py        # 캐시 관리
 │   ├── parsing/                # 파싱 모듈
-│   │   ├── regulation_parser.py
-│   │   ├── reference_resolver.py
-│   │   ├── table_extractor.py
-│   │   └── id_assigner.py
+│   │   ├── regulation_parser.py    # 편/장/절/조/항/호/목 파싱
+│   │   └── reference_resolver.py   # 상호 참조 해석
 │   └── rag/                    # RAG 시스템 (Clean Architecture)
-│       ├── interface/          # CLI, Web UI, MCP Server
-│       ├── application/        # Use Cases (SearchUseCase, SyncUseCase)
-│       ├── domain/             # 엔티티, 값 객체, 리포지토리 인터페이스
-│       └── infrastructure/     # ChromaDB, Reranker, LLM Adapter
-├── scripts/                    # 유틸리티 스크립트
+│       ├── domain/
+│       │   ├── entities.py         # Chunk, Regulation, SearchResult
+│       │   ├── value_objects.py    # SearchFilter, SyncResult
+│       │   └── repositories.py     # IVectorStore, ILLMClient 인터페이스
+│       ├── application/
+│       │   ├── search_usecase.py   # 검색/질문 로직
+│       │   └── sync_usecase.py     # 동기화 로직
+│       ├── infrastructure/
+│       │   ├── chroma_store.py     # ChromaDB 벡터 저장소
+│       │   ├── hybrid_search.py    # BM25 + Dense, QueryAnalyzer
+│       │   ├── reranker.py         # BGE Reranker
+│       │   ├── llm_adapter.py      # LLM 클라이언트 어댑터
+│       │   └── json_loader.py      # JSON → Chunk 변환
+│       └── interface/
+│           ├── cli.py              # CLI (search, ask, sync, status, reset)
+│           ├── gradio_app.py       # Gradio Web UI
+│           └── mcp_server.py       # MCP Server (FastMCP)
 ├── tests/                      # pytest 테스트
+│   ├── test_*.py               # 단위 테스트
+│   └── rag/                    # RAG 모듈 테스트
 ├── data/
 │   ├── input/                  # HWP 입력 파일
-│   ├── output/                 # JSON/MD/HTML 출력
-│   ├── chroma_db/              # ChromaDB 벡터 DB (gitignore)
-│   ├── llm_cache/              # LLM 응답 캐시 (gitignore)
-│   └── sync_state.json         # 동기화 상태 파일
+│   ├── output/                 # JSON 출력 파일
+│   ├── chroma_db/              # ChromaDB 저장소 (gitignore)
+│   └── sync_state.json         # 동기화 상태 (gitignore)
 └── docs/                       # 추가 문서
 ```
 
 ---
 
-## 환경 설정
+## 코딩 규칙
 
-```bash
-uv venv                          # 가상환경 생성
-uv sync                          # 의존성 설치
-cp .env.example .env             # 환경변수 설정
-```
+### Python 스타일
+- **버전**: Python 3.11+
+- **패키지 관리**: `uv` 사용 (`pip`, `conda` 사용 금지)
+- **네이밍**: `snake_case` (함수/변수), `CamelCase` (클래스)
+- **경로**: `pathlib.Path` 사용
+- **Import**: `src/` 내부에서 상대 import 사용
+- **들여쓰기**: 4 스페이스
 
-`.env` 파일에서 LLM 기본값을 설정할 수 있습니다:
+### 금지 사항 (DO NOT)
+- ❌ Domain 레이어에서 외부 라이브러리 import
+- ❌ Use Case에서 Infrastructure 직접 참조 (인터페이스 통해서만)
+- ❌ 테스트 없이 기능 추가
+- ❌ `sync_state.json`, `.env` 수동 수정
+- ❌ `data/chroma_db/` 직접 조작
 
-```bash
-LLM_PROVIDER=ollama
-LLM_MODEL=gemma2
-LLM_BASE_URL=http://localhost:11434
-```
-
----
-
-## 주요 명령어
-
-### 변환 파이프라인
-
-```bash
-# 기본 실행 (RAG 최적화 포함)
-uv run regulation-manager "data/input/규정집.hwp"
-
-# LLM 전처리 활성화
-uv run regulation-manager "data/input/규정집.hwp" --use_llm --provider ollama
-
-# RAG 최적화 비활성화
-uv run regulation-manager "data/input/규정집.hwp" --no-enhance-rag
-```
-
-### RAG CLI
-
-```bash
-# 동기화
-uv run regulation-rag sync data/output/규정집.json
-uv run regulation-rag sync data/output/규정집.json --full  # 전체 재동기화
-
-# 검색 (BGE Reranker 기본 활성화)
-uv run regulation-rag search "교원 연구년" -n 5
-uv run regulation-rag search "교원 연구년" --no-rerank  # Reranker 비활성화
-
-# LLM 질문
-uv run regulation-rag ask "교원 연구년 신청 자격은?" --provider ollama
-uv run regulation-rag ask "장학금 조건" --show-sources
-
-# 상태 확인 및 초기화
-uv run regulation-rag status
-uv run regulation-rag reset --confirm
-```
-
-### MCP 서버
-
-```bash
-# MCP 서버 실행 (stdio 모드)
-uv run regulation-mcp
-
-# 개발 모드 (MCP Inspector)
-uv run mcp dev src/rag/interface/mcp_server.py
-```
-
-MCP 서버는 CLI와 동일한 Use Case 레이어를 재사용하여 다음 Tools를 제공합니다:
-
-| Tool | 설명 |
-|------|------|
-| `search_regulations` | 규정 검색 (Hybrid + Rerank) |
-| `ask_regulations` | AI 질문-답변 (LLM) |
-| `get_sync_status` | 동기화 상태 조회 |
-
-> DB 관리(sync, reset)는 보안상 CLI로만 수행합니다.
-
-### 테스트
-
-```bash
-uv run pytest                        # 전체 테스트
-uv run pytest tests/test_*.py -v     # 상세 출력
-uv run pytest tests/rag/ -v          # RAG 테스트만
-```
+### 권장 사항 (DO)
+- ✅ 새 기능 추가 시 테스트 먼저 작성
+- ✅ 복잡한 로직은 작은 함수로 분리
+- ✅ 타입 힌트 사용
+- ✅ Docstring 작성 (Google 스타일)
+- ✅ 에러 핸들링은 도메인 예외 사용 (`src/exceptions.py`)
 
 ---
 
-## RAG 아키텍처
+## 핵심 컴포넌트
+
+### 검색 파이프라인 (Ask/Search)
 
 ```
-[Query]
-   │
-   ▼
-[QueryAnalyzer] ─── 유형 분석, 동의어 확장, 불용어 제거
-   │
-   ├── BM25 (Sparse) ───────┐
-   │                        ├── RRF 융합 ── [Hybrid Results]
-   └── Dense (Embedding) ───┘                    │
-                                                 ▼
-                                      [BGE Reranker (Cross-Encoder)]
-                                                 │
-                                                 ▼
-                                   [Reranked Results + 조항 매칭 보너스]
-                                                 │
-                                                 ▼
-                                          [LLM 답변 생성]
+Query → QueryAnalyzer → Hybrid Search → BGE Reranker → LLM 답변
+         ↓                ↓                ↓              ↓
+    유형 분석         BM25 + Dense     Cross-Encoder    Context 구성
+    동의어 확장        RRF 융합          재정렬          답변 생성
 ```
 
-### 핵심 컴포넌트
+**핵심 파일**:
+- `application/search_usecase.py`: `search()`, `search_unique()`, `ask()`
+- `infrastructure/hybrid_search.py`: `HybridSearcher`, `QueryAnalyzer`
+- `infrastructure/reranker.py`: `BGEReranker`
 
-| 컴포넌트 | 파일 | 설명 |
-|----------|------|------|
-| 쿼리 분석기 | `infrastructure/hybrid_search.py` | 쿼리 유형 분석, 동적 가중치, 동의어 확장 |
-| 벡터 저장소 | `infrastructure/chroma_store.py` | ChromaDB 기반 임베딩 저장/검색 |
-| Hybrid 검색 | `infrastructure/hybrid_search.py` | BM25 + Dense, RRF 융합 |
-| Reranker | `infrastructure/reranker.py` | BGE-reranker-v2-m3 Cross-encoder |
-| 검색 Use Case | `application/search_usecase.py` | 검색 로직, 스코어링, 재정렬 |
-| 동기화 Use Case | `application/sync_usecase.py` | 증분/전체 동기화 |
-| JSON 로더 | `infrastructure/json_loader.py` | 규정 JSON 파싱 및 청크 추출 |
-
-### 임베딩 텍스트 구조
+### 주요 데이터 구조
 
 ```python
-# 계층 맥락이 포함된 임베딩 텍스트
-embedding_text = "제3장 학사 > 제1절 수업 > 제15조 수업일수: 수업일수는 연간 16주 이상으로 한다."
+# domain/entities.py
+@dataclass
+class Chunk:
+    id: str                     # uuid5 (결정적)
+    text: str                   # 본문
+    title: str                  # 조항 제목
+    rule_code: str              # 규정 번호 (예: "3-1-24")
+    parent_path: List[str]      # 계층 경로
+    embedding_text: str         # 임베딩용 텍스트
+
+@dataclass
+class SearchResult:
+    chunk: Chunk
+    score: float                # 0.0 ~ 1.0
 ```
 
-### 동적 Hybrid 가중치
+---
 
-쿼리 유형에 따라 BM25/Dense 가중치가 자동 조절됩니다:
+## 명령어 레퍼런스
 
-| 쿼리 유형 | 예시 | BM25 | Dense |
-|-----------|------|------|-------|
-| 조문 번호 | "제15조", "학칙 제3조" | 0.6 | 0.4 |
-| 규정명 | "장학금규정", "휴학 학칙" | 0.5 | 0.5 |
-| 자연어 질문 | "어떻게 휴학하나요?" | 0.2 | 0.8 |
-| 기본값 | 그 외 | 0.3 | 0.7 |
+```bash
+# 환경 설정
+uv venv && uv sync
+cp .env.example .env
 
-구현: `infrastructure/hybrid_search.py`의 `QueryAnalyzer` 클래스
+# HWP 변환
+uv run regulation-manager "data/input/규정집.hwp"
+uv run regulation-manager "data/input/규정집.hwp" --use_llm  # LLM 전처리
+
+# DB 동기화
+uv run regulation-rag sync data/output/규정집.json
+uv run regulation-rag sync data/output/규정집.json --full   # 전체 재동기화
+
+# 검색
+uv run regulation-rag search "교원 연구년 자격" -n 5
+uv run regulation-rag search "제15조" --no-rerank
+
+# 질문
+uv run regulation-rag ask "교원 연구년 신청 자격은?" --provider lmstudio
+uv run regulation-rag ask "휴학 절차" --show-sources -v
+
+# 상태/초기화
+uv run regulation-rag status
+uv run regulation-rag reset --confirm
+
+# 인터페이스
+uv run regulation-web     # Web UI (Gradio)
+uv run regulation-mcp     # MCP Server
+
+# 테스트
+uv run pytest
+uv run pytest tests/rag/ -v
+```
 
 ---
 
-## 코딩 표준
+## 수정 시 주의사항
 
-- Python 3.11+, 4-space 들여쓰기
-- 함수/변수: `snake_case`, 클래스: `CamelCase`
-- `pathlib.Path` 사용 권장
-- `src/` 내부에서는 상대 import 사용
+| 변경 대상 | 영향 범위 | 필수 조치 |
+|-----------|----------|----------|
+| `SearchUseCase` | CLI, Web UI, MCP Server | 통합 테스트 실행 |
+| `QueryAnalyzer` | 검색 품질 | 검색 테스트 케이스 확인 |
+| `Reranker` | 재정렬 정확도 | 보너스 점수 로직 검증 |
+| `domain/entities.py` | 전체 시스템 | 모든 테스트 실행 |
+| `sync_usecase.py` | 데이터 무결성 | 증분 동기화 테스트 |
 
-### RAG 관련 필드
+---
 
-| 필드 | 설명 |
+## 환경 변수 (.env)
+
+```bash
+# LLM 기본 설정
+LLM_PROVIDER=ollama          # ollama, lmstudio, openai, gemini
+LLM_MODEL=gemma2             # 모델명 (프로바이더별 상이)
+LLM_BASE_URL=http://localhost:11434
+
+# API 키 (클라우드 사용 시)
+OPENAI_API_KEY=sk-...
+GEMINI_API_KEY=AIza...
+
+# 데이터 경로 (선택)
+RAG_DB_PATH=data/chroma_db
+RAG_JSON_PATH=data/output/규정집.json
+```
+
+---
+
+## 관련 문서
+
+| 문서 | 설명 |
 |------|------|
-| `parent_path` | 계층 경로 (breadcrumb) |
-| `embedding_text` | 맥락 포함 임베딩용 텍스트 |
-| `full_text` | 표시용 전체 텍스트 |
-| `chunk_level` | 청크 레벨 (article, paragraph 등) |
-| `is_searchable` | 검색 가능 여부 |
-| `keywords` | 추출된 키워드 (term/weight) |
-| `token_count` | 토큰 수 (근사값) |
-| `effective_date` | 시행일 (부칙용) |
-| `amendment_history` | 개정 이력 |
+| [README.md](./README.md) | 시스템 개요 및 상세 기술 설명 |
+| [QUICKSTART.md](./QUICKSTART.md) | 빠른 시작 가이드 |
+| [SCHEMA_REFERENCE.md](./SCHEMA_REFERENCE.md) | JSON 스키마 명세 |
+| [docs/LLM_GUIDE.md](./docs/LLM_GUIDE.md) | LLM 설정 가이드 |
 
 ---
 
-## 테스트 가이드라인
+## AI 에이전트별 추가 설정
 
-- 프레임워크: `pytest`
-- 테스트 파일: `tests/test_*.py`, `tests/rag/unit/**`
-- 파싱 로직 변경 시 관련 테스트 추가 필수
-- 외부 서비스 의존 테스트는 별도 디렉토리 (`tests/debug/`)
+### Gemini CLI
+```bash
+ln -s AGENTS.md GEMINI.md  # 심볼릭 링크 생성
+```
 
----
+### GitHub Copilot
+`.github/copilot-instructions.md` 파일에 이 내용을 참조하도록 설정:
+```markdown
+See AGENTS.md for project context and coding guidelines.
+```
 
-## 커밋 규칙
+### Cursor
+`.cursor/rules/regulations.mdc` 생성 또는 프로젝트 루트의 `AGENTS.md` 자동 인식
 
-- Conventional Commits 형식 사용: `feat:`, `fix:`, `chore:`, `docs:`
-- 스코프 사용 권장: `feat(parser):`, `fix(rag):`
-- PR 작성 시 테스트 명령어 포함
-
----
-
-## 데이터 파일
-
-| 파일/디렉토리 | 설명 | Git |
-|---------------|------|-----|
-| `data/chroma_db/` | ChromaDB 벡터 DB | gitignore |
-| `data/llm_cache/` | LLM 응답 캐시 | gitignore |
-| `data/sync_state.json` | 동기화 상태 추적 | gitignore |
+### Claude Code
+`CLAUDE.md`로 심볼릭 링크 생성:
+```bash
+ln -s AGENTS.md CLAUDE.md
+```
