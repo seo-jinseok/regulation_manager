@@ -251,7 +251,7 @@ RAG_JSON_PATH=data/output/규정집.json
 | [README.md](./README.md) | 시스템 개요 및 상세 기술 설명 |
 | [QUICKSTART.md](./QUICKSTART.md) | 빠른 시작 가이드 |
 | [SCHEMA_REFERENCE.md](./SCHEMA_REFERENCE.md) | JSON 스키마 명세 |
-| [docs/LLM_GUIDE.md](./docs/LLM_GUIDE.md) | LLM 설정 가이드 |
+| [LLM_GUIDE.md](./LLM_GUIDE.md) | LLM 설정 가이드 |
 
 ---
 

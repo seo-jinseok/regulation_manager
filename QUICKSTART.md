@@ -165,12 +165,12 @@ LLM 전처리를 활성화하세요:
 uv run regulation-manager "규정.hwp" --use_llm --provider ollama --model gemma2
 ```
 
-LLM 설정에 대한 자세한 내용은 [docs/LLM_GUIDE.md](./docs/LLM_GUIDE.md)를 참고하세요.
+LLM 설정에 대한 자세한 내용은 [LLM_GUIDE.md](./LLM_GUIDE.md)를 참고하세요.
 
 ---
 
 ## 관련 문서
 
 - [README.md](./README.md) - 전체 안내
-- [docs/LLM_GUIDE.md](./docs/LLM_GUIDE.md) - LLM 설정 가이드
+- [LLM_GUIDE.md](./LLM_GUIDE.md) - LLM 설정 가이드
 - [SCHEMA_REFERENCE.md](./SCHEMA_REFERENCE.md) - JSON 스키마 명세

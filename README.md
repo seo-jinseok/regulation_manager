@@ -465,7 +465,7 @@ GEMINI_API_KEY=AIza...
 | 문서 | 설명 |
 |------|------|
 | [QUICKSTART.md](./QUICKSTART.md) | 빠른 시작 가이드 |
-| [docs/LLM_GUIDE.md](./docs/LLM_GUIDE.md) | LLM 설정 가이드 |
+| [LLM_GUIDE.md](./LLM_GUIDE.md) | LLM 설정 가이드 |
 | [SCHEMA_REFERENCE.md](./SCHEMA_REFERENCE.md) | JSON 출력 스키마 명세 |
 | [AGENTS.md](./AGENTS.md) | 개발자 가이드 |
 
