@@ -35,7 +35,7 @@ from ...main import run_pipeline
 from ..infrastructure.llm_adapter import LLMClientAdapter
 from ..infrastructure.llm_client import MockLLMClient
 from ..application.sync_usecase import SyncUseCase
-from ..application.search_usecase import SearchUseCase
+from ..application.search_usecase import QueryRewriteInfo, SearchUseCase
 from ..domain.value_objects import SearchFilter
 from ..domain.entities import RegulationStatus
 
@@ -49,6 +49,42 @@ if DEFAULT_LLM_PROVIDER not in LLM_PROVIDERS:
     DEFAULT_LLM_PROVIDER = "ollama"
 DEFAULT_LLM_MODEL = os.getenv("LLM_MODEL") or ""
 DEFAULT_LLM_BASE_URL = os.getenv("LLM_BASE_URL") or ""
+
+
+def _format_query_rewrite_debug(info: Optional[QueryRewriteInfo]) -> str:
+    if not info:
+        return ""
+
+    lines = ["### 🐞 디버그"]
+
+    if not info.used:
+        lines.append(f"- 쿼리 리라이팅: (적용 안됨) '{info.original}'")
+        return "\n".join(lines)
+
+    if info.method == "llm":
+        method_label = "LLM"
+    elif info.method == "rules":
+        method_label = "규칙"
+    else:
+        method_label = "알수없음"
+
+    extras = []
+    if info.from_cache:
+        extras.append("캐시")
+    if info.fallback:
+        extras.append("LLM 실패 폴백")
+    extra_text = f" ({', '.join(extras)})" if extras else ""
+
+    if info.original == info.rewritten:
+        lines.append(
+            f"- 쿼리 리라이팅[{method_label}]{extra_text}: (변경 없음) '{info.original}'"
+        )
+    else:
+        lines.append(
+            f"- 쿼리 리라이팅[{method_label}]{extra_text}: '{info.original}' -> '{info.rewritten}'"
+        )
+
+    return "\n".join(lines)
 
 
 def create_app(
@@ -200,13 +236,14 @@ def create_app(
         query: str,
         top_k: int,
         include_abolished: bool,
-    ) -> Tuple[str, str]:
+        show_debug: bool,
+    ) -> Tuple[str, str, str]:
         """Execute search and return formatted results."""
         if not query.strip():
-            return "검색어를 입력해주세요.", ""
+            return "검색어를 입력해주세요.", "", ""
 
         if store.count() == 0:
-            return "데이터베이스가 비어 있습니다. CLI에서 'regulation-rag sync'를 실행하세요.", ""
+            return "데이터베이스가 비어 있습니다. CLI에서 'regulation-rag sync'를 실행하세요.", "", ""
 
         # SearchUseCase가 HybridSearcher를 자동 초기화
         search_with_hybrid = SearchUseCase(store)
@@ -217,7 +254,12 @@ def create_app(
         )
 
         if not results:
-            return "검색 결과가 없습니다.", ""
+            debug_text = ""
+            if show_debug:
+                debug_text = _format_query_rewrite_debug(
+                    search_with_hybrid.get_last_query_rewrite()
+                )
+            return "검색 결과가 없습니다.", "", debug_text
 
         # Format results as markdown table (CLI 수준)
         table_rows = ["| # | 규정명 | 코드 | 조항 | 점수 |", "|---|------|------|------|------|"]
@@ -242,7 +284,13 @@ def create_app(
 {top.chunk.text}
 """
 
-        return table, detail
+        debug_text = ""
+        if show_debug:
+            debug_text = _format_query_rewrite_debug(
+                search_with_hybrid.get_last_query_rewrite()
+            )
+
+        return table, detail, debug_text
 
     # Ask function (with LLM) - Generator for streaming progress
     def ask_question(
@@ -253,24 +301,25 @@ def create_app(
         llm_model: str,
         llm_base_url: str,
         target_db_path: str,
+        show_debug: bool,
     ):
         """Ask question and get LLM answer with progress updates."""
         if not question.strip():
-            yield "질문을 입력해주세요.", ""
+            yield "질문을 입력해주세요.", "", ""
             return
 
         # Step 1: Initialize
-        yield "⏳ 데이터베이스 연결 중...", ""
+        yield "⏳ 데이터베이스 연결 중...", "", ""
         
         db_path_value = target_db_path or db_path
         store_for_ask = ChromaVectorStore(persist_directory=db_path_value)
 
         if store_for_ask.count() == 0:
-            yield "데이터베이스가 비어 있습니다. CLI에서 'regulation-rag sync'를 실행하세요.", ""
+            yield "데이터베이스가 비어 있습니다. CLI에서 'regulation-rag sync'를 실행하세요.", "", ""
             return
 
         # Step 2: Initialize LLM
-        yield "⏳ LLM 클라이언트 초기화 중...", ""
+        yield "⏳ LLM 클라이언트 초기화 중...", "", ""
         
         if use_mock_llm:
             llm_client = MockLLMClient()
@@ -282,11 +331,11 @@ def create_app(
                     base_url=llm_base_url or None,
                 )
             except Exception as e:
-                yield f"LLM 초기화 실패: {e}", ""
+                yield f"LLM 초기화 실패: {e}", "", ""
                 return
 
         # Step 3: Search
-        yield "🔍 관련 규정 검색 중...", ""
+        yield "🔍 관련 규정 검색 중...", "", ""
         
         search_with_llm = SearchUseCase(store_for_ask, llm_client)
 
@@ -295,7 +344,7 @@ def create_app(
             filter = SearchFilter(status=RegulationStatus.ACTIVE)
 
         # Step 4: Generate answer
-        yield "🤖 AI 답변 생성 중... (10-30초 소요)", ""
+        yield "🤖 AI 답변 생성 중... (10-30초 소요)", "", ""
         
         answer = search_with_llm.ask(
             question,
@@ -353,7 +402,13 @@ def create_app(
 
         sources_text = "\n".join(sources_md) + f"\n**{conf_desc}** (신뢰도 {answer.confidence:.0%})"
 
-        yield answer.text, sources_text
+        debug_text = ""
+        if show_debug:
+            debug_text = _format_query_rewrite_debug(
+                search_with_llm.get_last_query_rewrite()
+            )
+
+        yield answer.text, sources_text, debug_text
 
     # Sync function
     def run_sync(json_path: str, full_sync: bool) -> str:
@@ -471,16 +526,22 @@ def create_app(
                             label="폐지 규정 포함",
                             value=False,
                         )
+                        search_debug_toggle = gr.Checkbox(
+                            label="디버그 출력",
+                            value=False,
+                        )
 
                 search_btn = gr.Button("검색", variant="primary")
 
                 search_results = gr.Markdown(label="검색 결과")
                 search_detail = gr.Markdown(label="상세 내용")
+                with gr.Accordion("디버그", open=False):
+                    search_debug = gr.Markdown()
 
                 search_btn.click(
                     fn=search_regulations,
-                    inputs=[search_query, search_top_k, search_abolished],
-                    outputs=[search_results, search_detail],
+                    inputs=[search_query, search_top_k, search_abolished, search_debug_toggle],
+                    outputs=[search_results, search_detail, search_debug],
                 )
 
             # Tab 2: Ask (Q&A)
@@ -499,6 +560,10 @@ def create_app(
                         )
                         ask_abolished = gr.Checkbox(
                             label="폐지 규정 포함",
+                            value=False,
+                        )
+                        ask_debug_toggle = gr.Checkbox(
+                            label="디버그 출력",
                             value=False,
                         )
 
@@ -523,11 +588,22 @@ def create_app(
 
                 ask_answer = gr.Markdown(label="답변")
                 ask_sources = gr.Markdown(label="참고 규정")
+                with gr.Accordion("디버그", open=False):
+                    ask_debug = gr.Markdown()
 
                 ask_btn.click(
                     fn=ask_question,
-                    inputs=[ask_question_input, ask_top_k, ask_abolished, llm_provider, llm_model, llm_base_url, gr.State(db_path)],
-                    outputs=[ask_answer, ask_sources],
+                    inputs=[
+                        ask_question_input,
+                        ask_top_k,
+                        ask_abolished,
+                        llm_provider,
+                        llm_model,
+                        llm_base_url,
+                        gr.State(db_path),
+                        ask_debug_toggle,
+                    ],
+                    outputs=[ask_answer, ask_sources, ask_debug],
                 )
 
             # Tab 3: Status (Read-only)
