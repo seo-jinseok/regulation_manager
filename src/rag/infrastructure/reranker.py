@@ -49,11 +49,18 @@ def get_reranker(model_name: Optional[str] = None):
                 _model_name,
                 use_fp16=True,  # Use FP16 for faster inference on Apple Silicon
             )
-        except ImportError:
-            raise ImportError(
-                "FlagEmbedding is required for reranking. "
-                "Install with: uv add FlagEmbedding"
-            )
+        except ImportError as e:
+            from ..exceptions import RerankerError
+            raise RerankerError(
+                "FlagEmbedding is required. Install with: uv add FlagEmbedding",
+                model=_model_name,
+            ) from e
+        except Exception as e:
+            from ..exceptions import RerankerError
+            raise RerankerError(
+                f"Failed to initialize reranker: {e}",
+                model=_model_name,
+            ) from e
     
     return _reranker
 
