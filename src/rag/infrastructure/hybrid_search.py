@@ -9,7 +9,10 @@ import re
 from collections import defaultdict
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
+
+if TYPE_CHECKING:
+    from ..domain.repositories import ILLMClient
 
 
 class QueryType(Enum):
@@ -87,6 +90,71 @@ class QueryAnalyzer:
         "재임용": ["계약 갱신", "임기 연장"],
         "승진": ["교원 승진", "직급 상승"],
     }
+
+    # LLM Query Rewriting prompt
+    QUERY_REWRITE_PROMPT = """당신은 대학 규정 검색 시스템의 쿼리 분석기입니다.
+사용자의 자연어 질문을 분석하여 규정 검색에 적합한 키워드를 추출하세요.
+
+## 지침
+1. 사용자의 **실제 의도**를 파악하세요.
+2. 규정집에서 검색할 수 있는 **구체적인 키워드**로 변환하세요.
+3. 결과는 **키워드만** 공백으로 구분하여 출력하세요.
+4. 설명이나 부연 없이 키워드만 출력하세요.
+
+## 예시
+- "학교에 가기 싫어" → "휴직 휴가 연구년 안식년"
+- "월급 더 받고 싶어" → "보수 수당 승급 호봉"
+- "그만두고 싶어" → "퇴직 사직 명예퇴직"
+- "수업 안 하고 싶어" → "휴강 보강 강의 면제"
+
+## 출력 형식
+키워드1 키워드2 키워드3"""
+
+    def __init__(self, llm_client: Optional["ILLMClient"] = None):
+        """
+        Initialize QueryAnalyzer.
+        
+        Args:
+            llm_client: Optional LLM client for query rewriting.
+                       If not provided, falls back to synonym-based expansion.
+        """
+        self._llm_client = llm_client
+        self._cache: Dict[str, str] = {}  # Query rewrite cache
+
+    def rewrite_query(self, query: str) -> str:
+        """
+        Rewrite natural language query to regulation search keywords using LLM.
+        
+        Args:
+            query: The original natural language query.
+        
+        Returns:
+            Rewritten query with search keywords.
+            Falls back to expand_query() on LLM failure.
+        """
+        # Check cache first
+        if query in self._cache:
+            return self._cache[query]
+        
+        # No LLM client: fall back to synonym expansion
+        if not self._llm_client:
+            return self.expand_query(query)
+        
+        # Call LLM for rewriting
+        try:
+            response = self._llm_client.generate(
+                system_prompt=self.QUERY_REWRITE_PROMPT,
+                user_message=query,
+                temperature=0.0,
+            )
+            # Clean up response (remove extra whitespace, newlines)
+            rewritten = response.strip().replace("\n", " ")
+            # Cache the result
+            self._cache[query] = rewritten
+            return rewritten
+        except Exception:
+            # On any error, fall back to synonym expansion
+            return self.expand_query(query)
 
     def analyze(self, query: str) -> QueryType:
         """
@@ -374,6 +442,15 @@ class HybridSearcher:
         self.rrf_k = rrf_k
         self.use_dynamic_weights = use_dynamic_weights
         self._query_analyzer = QueryAnalyzer()
+
+    def set_llm_client(self, llm_client: Optional["ILLMClient"]) -> None:
+        """
+        Set LLM client for query rewriting.
+        
+        Args:
+            llm_client: LLM client to use for query rewriting.
+        """
+        self._query_analyzer._llm_client = llm_client
 
     def add_documents(self, documents: List[Tuple[str, str, Dict]]) -> None:
         """

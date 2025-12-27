@@ -106,6 +106,9 @@ class SearchUseCase:
         if documents:
             self._hybrid_searcher = HybridSearcher()
             self._hybrid_searcher.add_documents(documents)
+            # Set LLM client for query rewriting if available
+            if self.llm:
+                self._hybrid_searcher.set_llm_client(self.llm)
         
         self._hybrid_initialized = True
 
@@ -131,12 +134,17 @@ class SearchUseCase:
         """
         query = Query(text=query_text, include_abolished=include_abolished)
         
-        # Expand query with synonyms if HybridSearcher is available
-        expanded_query_text = query_text
+        # Rewrite query using LLM if HybridSearcher is available (with LLM)
+        # Falls back to synonym expansion if LLM is not available
+        rewritten_query_text = query_text
         if self.hybrid_searcher:
-            expanded_query_text = self.hybrid_searcher.expand_query(query_text)
-            # Use expanded query for dense search too
-            query = Query(text=expanded_query_text, include_abolished=include_abolished)
+            # Set LLM client if not already set
+            if self.llm and not self.hybrid_searcher._query_analyzer._llm_client:
+                self.hybrid_searcher.set_llm_client(self.llm)
+            # Rewrite query (uses LLM if available, otherwise expands with synonyms)
+            rewritten_query_text = self.hybrid_searcher._query_analyzer.rewrite_query(query_text)
+            # Use rewritten query for dense search too
+            query = Query(text=rewritten_query_text, include_abolished=include_abolished)
         
         # Get dense search results from vector store
         dense_results = self.store.search(query, filter, top_k * 3)

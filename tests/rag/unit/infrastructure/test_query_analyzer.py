@@ -170,3 +170,75 @@ class TestHybridSearcherDynamicWeights:
 
         # doc2 should rank higher (static 0.7 > 0.3)
         assert results[0].doc_id == "doc2"
+
+
+class TestQueryRewriting:
+    """LLM 기반 쿼리 리라이팅 테스트."""
+
+    @pytest.fixture
+    def mock_llm(self):
+        """Mock LLM client for testing."""
+        from unittest.mock import Mock
+        from src.rag.domain.repositories import ILLMClient
+        
+        mock = Mock(spec=ILLMClient)
+        return mock
+
+    def test_rewrite_with_llm(self, mock_llm):
+        """LLM을 사용한 쿼리 리라이팅 테스트."""
+        mock_llm.generate.return_value = "휴직 휴가 연구년 안식년"
+        
+        analyzer = QueryAnalyzer(llm_client=mock_llm)
+        result = analyzer.rewrite_query("학교에 가기 싫어")
+        
+        assert "휴직" in result
+        assert "연구년" in result
+
+    def test_rewrite_without_llm_uses_expand_query(self):
+        """LLM 미설정 시 기존 expand_query 사용."""
+        analyzer = QueryAnalyzer()  # LLM 없음
+        result = analyzer.rewrite_query("휴학")
+        
+        # 기존 동의어 확장 결과 반환
+        assert "휴학" in result
+        assert "휴학 신청" in result  # 동의어 확장됨
+
+    def test_rewrite_fallback_on_llm_failure(self, mock_llm):
+        """LLM 실패 시 기존 방식으로 폴백."""
+        mock_llm.generate.side_effect = Exception("LLM connection error")
+        
+        analyzer = QueryAnalyzer(llm_client=mock_llm)
+        result = analyzer.rewrite_query("폐과")
+        
+        # 기존 동의어 확장 결과 반환
+        assert "폐과" in result or "학과 폐지" in result
+
+    def test_rewrite_caching(self, mock_llm):
+        """동일 쿼리 캐싱 확인."""
+        mock_llm.generate.return_value = "휴직 휴가"
+        
+        analyzer = QueryAnalyzer(llm_client=mock_llm)
+        
+        # 첫 번째 호출
+        result1 = analyzer.rewrite_query("학교에 가기 싫어")
+        # 두 번째 호출 (캐시 히트)
+        result2 = analyzer.rewrite_query("학교에 가기 싫어")
+        
+        # LLM은 한 번만 호출되어야 함
+        assert mock_llm.generate.call_count == 1
+        assert result1 == result2
+
+    def test_rewrite_clears_cache_for_different_queries(self, mock_llm):
+        """다른 쿼리는 캐시 미스."""
+        mock_llm.generate.side_effect = ["휴직 휴가", "퇴직 사직"]
+        
+        analyzer = QueryAnalyzer(llm_client=mock_llm)
+        
+        result1 = analyzer.rewrite_query("학교에 가기 싫어")
+        result2 = analyzer.rewrite_query("그만두고 싶어")
+        
+        # 각각 LLM 호출
+        assert mock_llm.generate.call_count == 2
+        assert "휴직" in result1
+        assert "퇴직" in result2
+
