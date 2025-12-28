@@ -61,6 +61,36 @@ def test_find_matches_ambiguous(tmp_path):
     assert len(matches) == 2
 
 
+def test_find_matches_prefers_exact_over_prefix(tmp_path):
+    json_path = tmp_path / "reg.json"
+    data = {
+        "docs": [
+            {
+                "doc_type": "regulation",
+                "title": "교원인사규정",
+                "metadata": {"rule_code": "3-1-5"},
+                "content": [],
+                "addenda": [],
+            },
+            {
+                "doc_type": "regulation",
+                "title": "JA교원인사규정",
+                "metadata": {"rule_code": "3-1-133"},
+                "content": [],
+                "addenda": [],
+            },
+        ]
+    }
+    json_path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+    loader = JSONDocumentLoader()
+    usecase = FullViewUseCase(loader, str(json_path))
+
+    matches = usecase.find_matches("교원인사규정 별첨")
+
+    assert len(matches) == 1
+    assert matches[0].title == "교원인사규정"
+
+
 def test_get_full_view_by_rule_code(tmp_path):
     json_path = tmp_path / "reg.json"
     _write_sample_json(json_path)

@@ -15,6 +15,7 @@ from ..domain.repositories import IDocumentLoader
 
 
 FULL_VIEW_MARKERS = ["전문", "전체", "원문", "全文", "full text", "fullview"]
+ATTACHMENT_MARKERS = ["별표", "별첨", "별지"]
 TOC_ALLOWED_TYPES = {"chapter", "section", "subsection", "article", "addendum"}
 TOC_SKIP_RECURSION_TYPES = {"paragraph", "item", "subitem", "text", "addendum_item", "addendum"}
 
@@ -74,7 +75,7 @@ class FullViewUseCase:
             title_norm = self._normalize(title)
             score = 0
             if term_norm and term_norm == title_norm:
-                score = 3
+                score = 4
             elif term_norm and term_norm in title_norm:
                 score = 3
             elif tokens and all(t in title for t in tokens):
@@ -84,6 +85,11 @@ class FullViewUseCase:
 
             if score > 0:
                 matches.append(RegulationMatch(title=title, rule_code=rule_code, score=score))
+
+        if term_norm:
+            exact_matches = [m for m in matches if self._normalize(m.title) == term_norm]
+            if exact_matches:
+                matches = exact_matches
 
         matches.sort(key=lambda m: (-m.score, m.title))
         return matches
@@ -208,6 +214,8 @@ class FullViewUseCase:
         cleaned = query
         for marker in FULL_VIEW_MARKERS:
             cleaned = cleaned.replace(marker, "")
+        attachment_pattern = "|".join(re.escape(marker) for marker in ATTACHMENT_MARKERS)
+        cleaned = re.sub(rf"(?:{attachment_pattern})\s*\d*\s*번?", "", cleaned)
         return cleaned.strip()
 
     @staticmethod
