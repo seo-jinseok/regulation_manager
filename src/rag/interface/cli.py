@@ -31,6 +31,7 @@ from .chat_logic import (
     attachment_label_variants,
     build_history_context,
     expand_followup_query,
+    has_explicit_target,
     parse_attachment_request,
 )
 from .formatters import (
@@ -534,6 +535,7 @@ def _perform_unified_search(
     state = state or {}
     raw_query = _sanitize_query_input(args.query)
     query = raw_query
+    context_hint = None
     if interactive and query:
         context_hint = state.get("last_regulation") or state.get("last_query")
         query = expand_followup_query(query, context_hint)
@@ -549,6 +551,7 @@ def _perform_unified_search(
     )
     if interactive:
         _append_history(state, "user", raw_query)
+    explicit_target = has_explicit_target(raw_query)
 
     mode = force_mode or _decide_search_mode(args)
     if args.verbose:
@@ -755,9 +758,13 @@ def _perform_unified_search(
             _collect_cli_feedback(args.query, results[0].chunk.rule_code)
         if results:
             top = results[0]
-            state["last_regulation"] = (
+            top_regulation = (
                 top.chunk.parent_path[0] if top.chunk.parent_path else top.chunk.title
             )
+            if explicit_target or not state.get("last_regulation"):
+                state["last_regulation"] = top_regulation
+            elif state.get("last_regulation") == top_regulation:
+                state["last_regulation"] = top_regulation
             state["last_rule_code"] = top.chunk.rule_code
             state["last_query"] = raw_query
             if interactive:
@@ -883,9 +890,11 @@ def _perform_unified_search(
             _collect_cli_feedback(args.query, answer.sources[0].chunk.rule_code)
         if answer.sources:
             top = answer.sources[0].chunk
-            state["last_regulation"] = (
-                top.parent_path[0] if top.parent_path else top.title
-            )
+            top_regulation = top.parent_path[0] if top.parent_path else top.title
+            if explicit_target or not state.get("last_regulation"):
+                state["last_regulation"] = top_regulation
+            elif state.get("last_regulation") == top_regulation:
+                state["last_regulation"] = top_regulation
             state["last_rule_code"] = top.rule_code
         state["last_query"] = raw_query
         if interactive:

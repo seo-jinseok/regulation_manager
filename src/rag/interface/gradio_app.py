@@ -47,6 +47,7 @@ from .chat_logic import (
     build_history_context,
     expand_followup_query,
     format_clarification,
+    has_explicit_target,
     parse_attachment_request,
     resolve_audience_choice,
     resolve_regulation_choice,
@@ -567,6 +568,7 @@ def create_app(
                 normalized.append({"role": "assistant", "content": assistant_text})
             history = normalized
         history_context = build_history_context(history)
+        explicit_target = has_explicit_target(message)
 
         history.append({"role": "user", "content": message})
 
@@ -803,11 +805,15 @@ def create_app(
 """
                 state["last_query"] = query
                 state["last_mode"] = "search"
-                state["last_regulation"] = (
+                top_regulation = (
                     top.chunk.parent_path[0]
                     if top.chunk.parent_path
                     else top.chunk.title
                 )
+                if explicit_target or not state.get("last_regulation"):
+                    state["last_regulation"] = top_regulation
+                elif state.get("last_regulation") == top_regulation:
+                    state["last_regulation"] = top_regulation
                 state["last_rule_code"] = top.chunk.rule_code
             if show_debug:
                 debug_text = _format_query_rewrite_debug(
@@ -835,7 +841,10 @@ def create_app(
         state["last_query"] = query
         state["last_mode"] = "ask"
         if regulation_title:
-            state["last_regulation"] = regulation_title
+            if explicit_target or not state.get("last_regulation"):
+                state["last_regulation"] = regulation_title
+            elif state.get("last_regulation") == regulation_title:
+                state["last_regulation"] = regulation_title
         if rule_code:
             state["last_rule_code"] = rule_code
         return history, details, debug_text, state
