@@ -227,6 +227,27 @@ def extract_display_text(text: str) -> str:
 _INLINE_NODE_TYPES = {"paragraph", "item", "subitem", "addendum_item"}
 
 
+def _inject_tables(text: str, metadata: Dict[str, object]) -> str:
+    tables = metadata.get("tables") if isinstance(metadata, dict) else None
+    if not text or not tables:
+        return text
+
+    def replace(match: re.Match) -> str:
+        index = int(match.group(1)) - 1
+        if index < 0 or index >= len(tables):
+            return match.group(0)
+        table = tables[index]
+        if isinstance(table, dict):
+            markdown = table.get("markdown")
+        else:
+            markdown = None
+        if not markdown:
+            return match.group(0)
+        return f"\n\n{markdown.strip()}\n\n"
+
+    return re.sub(r"\[TABLE:(\d+)\]", replace, text)
+
+
 def render_full_view_nodes(nodes: List[dict], depth: int = 0) -> str:
     """
     Render regulation nodes for full-view display.
@@ -239,6 +260,7 @@ def render_full_view_nodes(nodes: List[dict], depth: int = 0) -> str:
         display_no = str(node.get("display_no") or "").strip()
         title = str(node.get("title") or "").strip()
         text = str(node.get("text") or "").strip()
+        text = _inject_tables(text, node.get("metadata") or {})
         node_type = node.get("type")
 
         if display_no and text and (node_type in _INLINE_NODE_TYPES or not title):

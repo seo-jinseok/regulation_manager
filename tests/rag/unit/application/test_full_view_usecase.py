@@ -166,3 +166,123 @@ def test_toc_skips_paragraphs_and_addendum_items(tmp_path):
     assert all("①" not in label for label in view.toc)
     assert all("1." not in label for label in view.toc)
     assert all("경과조치" not in label for label in view.toc)
+
+
+def test_find_tables_prefers_labeled_matches(tmp_path):
+    json_path = tmp_path / "reg.json"
+    data = {
+        "docs": [
+            {
+                "doc_type": "regulation",
+                "title": "교원인사규정",
+                "metadata": {"rule_code": "3-1-5"},
+                "content": [
+                    {
+                        "type": "paragraph",
+                        "display_no": "①",
+                        "title": "",
+                        "text": "별표 1 기준은 다음과 같다.\n[TABLE:1]",
+                        "metadata": {
+                            "tables": [
+                                {"format": "markdown", "markdown": "| A | B |\\n| --- | --- |\\n| 1 | 2 |"}
+                            ]
+                        },
+                        "children": [],
+                    },
+                    {
+                        "type": "paragraph",
+                        "display_no": "②",
+                        "title": "",
+                        "text": "기타 기준.\n[TABLE:1]",
+                        "metadata": {
+                            "tables": [
+                                {"format": "markdown", "markdown": "| C | D |\\n| --- | --- |\\n| 3 | 4 |"}
+                            ]
+                        },
+                        "children": [],
+                    },
+                ],
+                "addenda": [],
+            }
+        ]
+    }
+    json_path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+    loader = JSONDocumentLoader()
+    usecase = FullViewUseCase(loader, str(json_path))
+
+    tables = usecase.find_tables("3-1-5", table_no=1)
+
+    assert len(tables) == 1
+    assert "| A | B |" in tables[0].markdown
+
+
+def test_find_tables_fallback_to_placeholder(tmp_path):
+    json_path = tmp_path / "reg.json"
+    data = {
+        "docs": [
+            {
+                "doc_type": "regulation",
+                "title": "교원인사규정",
+                "metadata": {"rule_code": "3-1-5"},
+                "content": [
+                    {
+                        "type": "paragraph",
+                        "display_no": "①",
+                        "title": "",
+                        "text": "기준은 다음과 같다.\n[TABLE:1]",
+                        "metadata": {
+                            "tables": [
+                                {"format": "markdown", "markdown": "| A | B |\\n| --- | --- |\\n| 1 | 2 |"}
+                            ]
+                        },
+                        "children": [],
+                    },
+                ],
+                "addenda": [],
+            }
+        ]
+    }
+    json_path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+    loader = JSONDocumentLoader()
+    usecase = FullViewUseCase(loader, str(json_path))
+
+    tables = usecase.find_tables("교원인사규정", table_no=1)
+
+    assert len(tables) == 1
+    assert "| A | B |" in tables[0].markdown
+
+
+def test_find_tables_matches_addendum_label(tmp_path):
+    json_path = tmp_path / "reg.json"
+    data = {
+        "docs": [
+            {
+                "doc_type": "regulation",
+                "title": "교원인사규정",
+                "metadata": {"rule_code": "3-1-5"},
+                "content": [
+                    {
+                        "type": "paragraph",
+                        "display_no": "①",
+                        "title": "",
+                        "text": "별첨 1 기준은 다음과 같다.\n[TABLE:1]",
+                        "metadata": {
+                            "tables": [
+                                {"format": "markdown", "markdown": "| A | B |\\n| --- | --- |\\n| 1 | 2 |"}
+                            ]
+                        },
+                        "children": [],
+                    }
+                ],
+                "addenda": [],
+            }
+        ]
+    }
+    json_path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+    loader = JSONDocumentLoader()
+    usecase = FullViewUseCase(loader, str(json_path))
+
+    tables = usecase.find_tables("3-1-5", table_no=1, label_variants=["별첨"])
+
+    assert len(tables) == 1
+    assert "| A | B |" in tables[0].markdown

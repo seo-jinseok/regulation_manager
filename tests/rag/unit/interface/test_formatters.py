@@ -299,6 +299,43 @@ class TestRenderFullViewNodes:
         rendered = render_full_view_nodes(nodes)
         assert "제16조 내용이 이어진다." in rendered
 
+    def test_injects_table_markdown(self):
+        nodes = [
+            {
+                "type": "paragraph",
+                "display_no": "①",
+                "title": "",
+                "text": "기준은 다음과 같다.\n[TABLE:1]",
+                "metadata": {
+                    "tables": [
+                        {"format": "markdown", "markdown": "| A | B |\n| --- | --- |\n| 1 | 2 |"},
+                    ]
+                },
+                "children": [],
+            }
+        ]
+        rendered = render_full_view_nodes(nodes)
+        assert "[TABLE:1]" not in rendered
+        assert "| A | B |" in rendered
+
+    def test_keeps_unknown_table_placeholder(self):
+        nodes = [
+            {
+                "type": "paragraph",
+                "display_no": "①",
+                "title": "",
+                "text": "기준은 다음과 같다.\n[TABLE:2]",
+                "metadata": {
+                    "tables": [
+                        {"format": "markdown", "markdown": "| A | B |"},
+                    ]
+                },
+                "children": [],
+            }
+        ]
+        rendered = render_full_view_nodes(nodes)
+        assert "[TABLE:2]" in rendered
+
 
 # ============================================================================
 # get_confidence_info tests

@@ -15,6 +15,7 @@ import os
 import shutil
 from datetime import datetime
 from pathlib import Path
+import re
 from typing import List, Optional, Tuple
 
 try:
@@ -37,7 +38,7 @@ from ..infrastructure.llm_client import MockLLMClient
 from ..infrastructure.hybrid_search import QueryAnalyzer, Audience
 from ..application.sync_usecase import SyncUseCase
 from ..application.search_usecase import QueryRewriteInfo, SearchUseCase
-from ..application.full_view_usecase import FullViewUseCase
+from ..application.full_view_usecase import FullViewUseCase, TableMatch
 from ..domain.value_objects import SearchFilter
 from ..domain.entities import RegulationStatus
 from .chat_logic import (
@@ -302,6 +303,47 @@ def create_app(
             return Audience.STAFF
         return None
 
+    def _parse_attachment_request(
+        query: str,
+        fallback_regulation: Optional[str],
+    ) -> Optional[Tuple[str, Optional[int], str]]:
+        match = re.search(r"(별표|별첨|별지)\s*(\d+)?", query)
+        if not match:
+            return None
+        label = match.group(1)
+        table_no = int(match.group(2)) if match.group(2) else None
+        cleaned = re.sub(rf"{label}\s*\d*", "", query).strip()
+        if not cleaned and fallback_regulation:
+            cleaned = fallback_regulation
+        if not cleaned:
+            return None
+        return cleaned, table_no, label
+
+    def _attachment_label_variants(label: Optional[str]) -> List[str]:
+        if label:
+            variants = [label]
+            if label != "별표":
+                variants.append("별표")
+            return variants
+        return ["별표", "별첨", "별지"]
+
+    def _format_table_matches(
+        matches: List[TableMatch],
+        table_no: Optional[int],
+        label: Optional[str],
+    ) -> str:
+        label_text = label or "별표"
+        lines = []
+        for idx, match in enumerate(matches, 1):
+            path = clean_path_segments(match.path) if match.path else []
+            heading = " > ".join(path) if path else match.title or label_text
+            table_label = f"{label_text} {table_no}" if table_no else label_text
+            lines.append(f"### [{idx}] {heading} ({table_label})")
+            if match.text:
+                lines.append(match.text)
+            lines.append(match.markdown.strip())
+        return "\n\n".join([line for line in lines if line])
+
     def _format_toc(toc: List[str]) -> str:
         if not toc:
             return "목차 정보가 없습니다."
@@ -412,6 +454,33 @@ def create_app(
             yield "내용을 입력해주세요.", "", "", "", ""
             return
 
+        attachment_request = _parse_attachment_request(query, None)
+        if attachment_request:
+            reg_query, table_no, label = attachment_request
+            matches = full_view_usecase.find_matches(reg_query)
+            if not matches:
+                yield "해당 규정을 찾을 수 없습니다.", "", "", query, ""
+                return
+            if len(matches) > 1:
+                options = "\n".join([f"- {m.title}" for m in matches])
+                detail = f"다음 규정 중 하나를 선택해주세요:\n{options}"
+                yield "규정 후보가 여러 개입니다.", detail, "", query, ""
+                return
+            match = matches[0]
+            label_variants = _attachment_label_variants(label)
+            tables = full_view_usecase.find_tables(match.rule_code, table_no, label_variants)
+            if not tables:
+                label_text = label or "별표"
+                yield f"{label_text}를 찾을 수 없습니다.", "", "", query, match.rule_code
+                return
+            label_text = label or "별표"
+            title_label = f"{match.title} {label_text}"
+            if table_no:
+                title_label = f"{match.title} {label_text} {table_no}"
+            detail = _format_table_matches(tables, table_no, label_text)
+            yield title_label, detail, "", query, match.rule_code
+            return
+
         mode = _decide_search_mode_ui(query, mode_selection)
         audience_override = _parse_audience(target_audience)
         if mode in ("search", "ask") and audience_override is None:
@@ -488,6 +557,10 @@ def create_app(
             state["audience"] = explicit_audience
 
         pending = state.get("pending")
+        attachment_query = None
+        attachment_no = None
+        attachment_label = None
+        attachment_requested = False
         if pending:
             if pending["type"] == "audience":
                 choice = resolve_audience_choice(message) or state.get("audience")
@@ -508,6 +581,19 @@ def create_app(
                 state["pending"] = None
                 query = choice
                 mode = "full_view"
+            elif pending["type"] == "regulation_table":
+                choice = resolve_regulation_choice(message, pending["options"])
+                if not choice:
+                    response = format_clarification("regulation", pending["options"])
+                    history.append({"role": "assistant", "content": response})
+                    return history, details, debug_text, state
+                state["pending"] = None
+                attachment_query = choice
+                attachment_no = pending.get("table_no")
+                attachment_label = pending.get("label")
+                attachment_requested = True
+                query = choice
+                mode = "attachment"
             else:
                 state["pending"] = None
                 query = message
@@ -518,8 +604,53 @@ def create_app(
                 context_hint = state.get("last_regulation") or state.get("last_query")
             query = expand_followup_query(message, context_hint)
             mode = _decide_search_mode_ui(query, "자동 (Auto)")
+            attachment_request = _parse_attachment_request(
+                query,
+                state.get("last_regulation") if use_context else None,
+            )
+            if attachment_request:
+                attachment_query, attachment_no, attachment_label = attachment_request
+                attachment_requested = True
+                query = attachment_query
+                mode = "attachment"
 
         analyzer = query_analyzer
+
+        if attachment_requested:
+            matches = full_view_usecase.find_matches(attachment_query or query)
+            if not matches:
+                history.append({"role": "assistant", "content": "해당 규정을 찾을 수 없습니다."})
+                return history, details, debug_text, state
+            if len(matches) > 1:
+                options = [m.title for m in matches]
+                state["pending"] = {
+                    "type": "regulation_table",
+                    "options": options,
+                    "query": query,
+                    "table_no": attachment_no,
+                    "label": attachment_label,
+                }
+                history.append({"role": "assistant", "content": format_clarification("regulation", options)})
+                return history, details, debug_text, state
+
+            match = matches[0]
+            label_variants = _attachment_label_variants(attachment_label)
+            tables = full_view_usecase.find_tables(match.rule_code, attachment_no, label_variants)
+            if not tables:
+                label_text = attachment_label or "별표"
+                history.append({"role": "assistant", "content": f"{label_text}를 찾을 수 없습니다."})
+                return history, details, debug_text, state
+            label_text = attachment_label or "별표"
+            details = _format_table_matches(tables, attachment_no, label_text)
+            title_label = f"{match.title} {label_text}"
+            if attachment_no:
+                title_label = f"{match.title} {label_text} {attachment_no}"
+            history.append({"role": "assistant", "content": f"**{title_label}** 내용을 표시합니다."})
+            state["last_query"] = query
+            state["last_mode"] = "attachment"
+            state["last_regulation"] = match.title
+            state["last_rule_code"] = match.rule_code
+            return history, details, debug_text, state
 
         if mode == "full_view":
             matches = full_view_usecase.find_matches(query)
@@ -552,7 +683,7 @@ def create_app(
         if state.get("audience") is None and analyzer.is_audience_ambiguous(query):
             options = ["교수", "학생", "직원"]
             state["pending"] = {"type": "audience", "options": options, "query": query, "mode": mode}
-            history[-1][1] = format_clarification("audience", options)
+            history.append({"role": "assistant", "content": format_clarification("audience", options)})
             return history, details, debug_text, state
 
         audience_override = _parse_audience(state.get("audience") or "")

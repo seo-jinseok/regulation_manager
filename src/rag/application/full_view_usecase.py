@@ -35,6 +35,16 @@ class RegulationView:
     addenda: List[dict]
 
 
+@dataclass(frozen=True)
+class TableMatch:
+    path: List[str]
+    display_no: str
+    title: str
+    text: str
+    markdown: str
+    table_index: int
+
+
 class FullViewUseCase:
     """Regulation full-view retrieval use case."""
 
@@ -102,6 +112,97 @@ class FullViewUseCase:
             content=content,
             addenda=addenda,
         )
+
+    def find_tables(
+        self,
+        identifier: str,
+        table_no: Optional[int] = None,
+        label_variants: Optional[List[str]] = None,
+    ) -> List[TableMatch]:
+        """Find tables for a regulation, optionally filtered by table number."""
+        json_path = self._resolve_json_path()
+        if not json_path:
+            return []
+        try:
+            doc = self.loader.get_regulation_doc(json_path, identifier)
+        except Exception:
+            return []
+        if not doc:
+            return []
+
+        labeled_matches: List[TableMatch] = []
+        placeholder_matches: List[TableMatch] = []
+        label_pattern = None
+        variants = [v for v in (label_variants or ["별표"]) if v]
+        if table_no is not None:
+            escaped = "|".join(re.escape(v) for v in variants)
+            if escaped:
+                label_pattern = re.compile(rf"(?:{escaped})\s*{table_no}")
+
+        def walk(nodes: List[dict], path_stack: List[str]) -> None:
+            for node in nodes:
+                text = str(node.get("text") or "")
+                title = str(node.get("title") or "")
+                display_no = str(node.get("display_no") or "")
+                metadata = node.get("metadata") or {}
+                tables = metadata.get("tables") if isinstance(metadata, dict) else None
+
+                current_path = node.get("parent_path") or path_stack
+                if not current_path:
+                    label = f"{display_no} {title}".strip()
+                    current_path = path_stack + ([label] if label else [])
+
+                if tables and text:
+                    placeholders = re.findall(r"\[TABLE:(\d+)\]", text)
+                    if placeholders:
+                        context = re.sub(r"\[TABLE:\d+\]", "", text).strip()
+                        for placeholder in placeholders:
+                            index = int(placeholder)
+                            if index <= 0 or index > len(tables):
+                                continue
+                            table = tables[index - 1]
+                            if isinstance(table, dict):
+                                markdown = table.get("markdown") or ""
+                            else:
+                                markdown = ""
+                            if not markdown:
+                                continue
+                            match = TableMatch(
+                                path=list(current_path),
+                                display_no=display_no,
+                                title=title,
+                                text=context,
+                                markdown=markdown,
+                                table_index=index,
+                            )
+                            if table_no is None:
+                                placeholder_matches.append(match)
+                            else:
+                                target_text = " ".join([display_no, title, text]).strip()
+                                if label_pattern and label_pattern.search(target_text):
+                                    labeled_matches.append(match)
+                                elif index == table_no:
+                                    placeholder_matches.append(match)
+
+                children = node.get("children") or []
+                if children:
+                    next_path = list(current_path)
+                    walk(children, next_path)
+
+        walk(doc.get("content", []) or [], [])
+        walk(doc.get("addenda", []) or [], [])
+
+        if table_no is not None and labeled_matches:
+            return labeled_matches
+        if table_no is None and variants:
+            labeled = []
+            for match in placeholder_matches:
+                target_text = " ".join([match.display_no, match.title, match.text]).strip()
+                if any(variant in target_text for variant in variants):
+                    labeled.append(match)
+            if labeled:
+                return labeled
+        return placeholder_matches
 
     def _strip_full_view_markers(self, query: str) -> str:
         cleaned = query
