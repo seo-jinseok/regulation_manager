@@ -103,15 +103,7 @@ regulation_manager/
 ├── tests/                      # pytest 테스트
 │   ├── test_*.py               # 단위 테스트
 │   └── rag/                    # RAG 모듈 테스트
-├── data/
-│   ├── input/                  # HWP 입력 파일
-│   ├── output/                 # JSON 출력 파일
-│   ├── chroma_db/              # ChromaDB 저장소 (gitignore)
-│   ├── sync_state.json         # 동기화 상태 (gitignore)
-│   └── config/                 # 설정 파일
-│       ├── synonyms.json       # 동의어 사전 (167개 용어)
-│       └── intents.json        # 인텐트 규칙 (51개 규칙)
-└── docs/                       # 추가 문서
+└── data/
 ```
 
 ---
@@ -195,7 +187,7 @@ cp .env.example .env
 
 # HWP 변환
 uv run regulation convert "data/input/규정집.hwp"
-uv run regulation convert "data/input/규정집.hwp" --use-llm  # LLM 전처리
+uv run regulation convert "data/input/규정집.hwp" --use_llm  # LLM 전처리
 
 # DB 동기화
 uv run regulation sync data/output/규정집.json

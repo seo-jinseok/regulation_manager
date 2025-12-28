@@ -178,7 +178,7 @@ uv run regulation serve --mcp
 LLM 전처리를 활성화하세요:
 
 ```bash
-uv run regulation convert "규정.hwp" --use-llm --provider ollama --model gemma2
+uv run regulation convert "규정.hwp" --use_llm --provider ollama --model gemma2
 ```
 
 LLM 설정에 대한 자세한 내용은 [LLM_GUIDE.md](./LLM_GUIDE.md)를 참고하세요.

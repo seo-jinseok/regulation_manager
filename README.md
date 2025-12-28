@@ -113,7 +113,7 @@ uv run regulation serve --mcp
 | 명령어 | 설명 |
 |--------|------|
 | `regulation convert "파일.hwp"` | HWP → JSON 변환 |
-| `regulation convert "파일.hwp" --use-llm` | LLM 전처리 활성화 |
+| `regulation convert "파일.hwp" --use_llm` | LLM 전처리 활성화 |
 | `regulation sync <json>` | JSON → 벡터 DB 동기화 |
 | `regulation sync <json> --full` | 전체 재동기화 |
 | `regulation search "<쿼리>"` | 규정 검색 |
