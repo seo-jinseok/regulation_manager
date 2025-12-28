@@ -179,12 +179,13 @@ def create_parser() -> argparse.ArgumentParser:
     # search command
     search_parser = subparsers.add_parser(
         "search",
-        help="규정 검색",
+        help="규정 검색 (자동으로 답변 생성 또는 문서 검색)",
+        description="질문이면 AI 답변을, 키워드면 문서 검색 결과를 자동으로 보여줍니다. (혹은 -a/-q 옵션으로 강제)"
     )
     search_parser.add_argument(
         "query",
         type=str,
-        help="검색 쿼리",
+        help="검색 쿼리 또는 질문",
     )
     search_parser.add_argument(
         "-n", "--top-k",
@@ -195,7 +196,7 @@ def create_parser() -> argparse.ArgumentParser:
     search_parser.add_argument(
         "--include-abolished",
         action="store_true",
-        help="폐지 규정 포함",
+        help="폐지 규정 포함 (검색 모드일 때만 유효)",
     )
     search_parser.add_argument(
         "--db-path",
@@ -206,31 +207,68 @@ def create_parser() -> argparse.ArgumentParser:
     search_parser.add_argument(
         "--no-rerank",
         action="store_true",
-        help="BGE Reranker 비활성화 (기본: reranking 사용)",
+        help="BGE Reranker 비활성화",
     )
     search_parser.add_argument(
         "-v", "--verbose",
         action="store_true",
-        help="상세 정보 출력 (쿼리 리라이팅 등)",
+        help="상세 정보 출력",
     )
     search_parser.add_argument(
         "--debug",
         action="store_true",
-        help="디버그 정보 출력 (쿼리 리라이팅 등)",
+        help="디버그 정보 출력",
     )
     search_parser.add_argument(
         "--feedback",
         action="store_true",
-        help="결과에 대한 피드백 남기기 (인터랙티브)",
+        help="결과에 대한 피드백 남기기",
+    )
+    # Unified specific arguments
+    mode_group = search_parser.add_mutually_exclusive_group()
+    mode_group.add_argument(
+        "-a", "--answer",
+        action="store_true",
+        help="AI 답변 생성 강제 (Ask 모드)",
+    )
+    mode_group.add_argument(
+        "-q", "--quick",
+        action="store_true",
+        help="문서 검색만 수행 (Search 모드)",
+    )
+    # LLM options for when answer is triggered
+    search_parser.add_argument(
+        "--provider",
+        type=str,
+        default=default_provider,
+        choices=providers,
+        help="LLM 프로바이더 (답변 생성 시)",
+    )
+    search_parser.add_argument(
+        "--model",
+        type=str,
+        default=default_model,
+        help="모델 이름",
+    )
+    search_parser.add_argument(
+        "--base-url",
+        type=str,
+        default=default_base_url,
+        help="로컬 서버 URL",
+    )
+    search_parser.add_argument(
+        "--show-sources",
+        action="store_true",
+        help="관련 규정 전문 출력 (답변 생성 시)",
     )
 
-    # ask command
+    # ask command (Legacy Wrapper)
     ask_parser = subparsers.add_parser(
         "ask",
-        help="규정 질문 (LLM 답변)",
+        help="규정 질문 (search -a와 동일)",
     )
     ask_parser.add_argument(
-        "question",
+        "query",
         type=str,
         help="질문",
     )
@@ -238,7 +276,7 @@ def create_parser() -> argparse.ArgumentParser:
         "-n", "--top-k",
         type=int,
         default=5,
-        help="참고 규정 수 (기본: 5)",
+        help="참고 규정 수",
     )
     ask_parser.add_argument(
         "--db-path",
@@ -362,260 +400,249 @@ def cmd_sync(args) -> int:
     return 0
 
 
-def cmd_search(args) -> int:
-    """Execute search command."""
+def _decide_search_mode(args) -> str:
+    """
+    Decide whether to use 'search' (retrieval) or 'ask' (LLM answer) mode.
+    
+    Returns:
+        "ask" or "search"
+    """
+    # 1. Explicit Flags
+    if hasattr(args, 'answer') and args.answer:
+        return "ask"
+    if hasattr(args, 'quick') and args.quick:
+        return "search"
+        
+    # 2. Heuristic for "auto"
+    query = args.query.strip()
+    
+    # Heuristic A: Question mark
+    if query.endswith("?"):
+        return "ask"
+        
+    # Heuristic B: Question words
+    question_words = ["어떻게", "언제", "무엇", "누가", "어디서", "얼마나", "방법", "절차", "자격", "알려줘", "해줘"]
+    if any(word in query for word in question_words):
+        return "ask"
+        
+    return "search"
+
+
+def _perform_unified_search(args, force_mode: Optional[str] = None) -> int:
+    """Core logic for unified search/ask."""
     from ..infrastructure.chroma_store import ChromaVectorStore
+    from ..infrastructure.llm_adapter import LLMClientAdapter
     from ..application.search_usecase import SearchUseCase
+    from rich.panel import Panel
 
+    mode = force_mode or _decide_search_mode(args)
+    if args.verbose:
+        print_info(f"실행 모드: {mode.upper()} (쿼리: '{args.query}')")
+
+    # Step 1: Check database
     store = ChromaVectorStore(persist_directory=args.db_path)
-
     if store.count() == 0:
         print_error("데이터베이스가 비어 있습니다. 먼저 sync를 실행하세요.")
         return 1
 
     use_reranker = not args.no_rerank
-    if use_reranker:
-        print_info("🎯 BGE Reranker 활성화 (비활성화: --no-rerank)")
 
-    # SearchUseCase가 HybridSearcher를 자동 초기화
-    print_info("🔄 Hybrid Search 인덱스 구축 중...")
-    search = SearchUseCase(store, use_reranker=use_reranker)
-    print_info(f"✓ 인덱스 구축 완료")
-
-    results = search.search_unique(
-        args.query,
-        top_k=args.top_k,
-        include_abolished=args.include_abolished,
-    )
-
-    if args.verbose or args.debug:
-        print_query_rewrite(search, args.query)
-
-    if not results:
-        print_info("검색 결과가 없습니다.")
-        return 0
-
-    # Print results
-    if RICH_AVAILABLE:
-        table = Table(title=f"검색 결과: '{args.query}'")
-        table.add_column("#", style="dim", width=3)
-        table.add_column("규정명", style="cyan")
-        table.add_column("코드", style="magenta")
-        table.add_column("조항", style="green")
-        table.add_column("점수", justify="right", style="magenta")
-
-        for i, r in enumerate(results, 1):
-            path = " > ".join(r.chunk.parent_path[-2:]) if r.chunk.parent_path else ""
-            reg_title = r.chunk.parent_path[0] if r.chunk.parent_path else r.chunk.title
-            table.add_row(
-                str(i),
-                reg_title or r.chunk.rule_code,
-                r.chunk.rule_code,
-                path or r.chunk.title,
-                f"{r.score:.2f}",
-            )
-        console.print(table)
-
-        # Print first result details
-        if results:
-            top = results[0]
-            console.print(Panel(
-                top.chunk.text[:500] + "..." if len(top.chunk.text) > 500 else top.chunk.text,
-                title=f"[1위] {top.chunk.rule_code}",
-                border_style="green",
-            ))
-    else:
-        print(f"\n검색 결과: '{args.query}'")
-        print("-" * 60)
-        for i, r in enumerate(results, 1):
-            reg_title = r.chunk.parent_path[0] if r.chunk.parent_path else r.chunk.title
-            print(f"{i}. {reg_title} [{r.chunk.rule_code}] (점수: {r.score:.2f})")
-            print(f"   {r.chunk.text[:100]}...")
-
-    if args.feedback and results:
-        _collect_cli_feedback(args.query, results[0].chunk.rule_code)
-
-    return 0
-
-
-def cmd_ask(args) -> int:
-    """Execute ask command with LLM."""
-    from ..infrastructure.chroma_store import ChromaVectorStore
-    from ..infrastructure.llm_adapter import LLMClientAdapter
-    from ..application.search_usecase import SearchUseCase
-
-    # Step 1: Check database
-    if RICH_AVAILABLE:
-        with console.status("[bold blue]⏳ 데이터베이스 확인 중...[/bold blue]"):
-            store = ChromaVectorStore(persist_directory=args.db_path)
-            chunk_count = store.count()
-    else:
-        print("[1/4] 데이터베이스 확인 중...")
-        store = ChromaVectorStore(persist_directory=args.db_path)
-        chunk_count = store.count()
-
-    if chunk_count == 0:
-        print_error("데이터베이스가 비어 있습니다. 먼저 sync를 실행하세요.")
-        return 1
-
-    # Step 2: Initialize LLM
-    if args.verbose:
-        print_info(f"LLM 프로바이더: {args.provider}")
-        if args.model:
-            print_info(f"모델: {args.model}")
-        if args.base_url:
-            print_info(f"Base URL: {args.base_url}")
-    
-    if RICH_AVAILABLE:
-        with console.status("[bold blue]⏳ LLM 클라이언트 초기화 중...[/bold blue]"):
-            try:
+    # Initialize LLM only if needed
+    llm = None
+    if mode == "ask":
+        if RICH_AVAILABLE:
+            with console.status("[bold blue]⏳ LLM 클라이언트 초기화 중...[/bold blue]"):
+                try:
+                    llm = LLMClientAdapter(
+                        provider=args.provider,
+                        model=args.model,
+                        base_url=args.base_url,
+                    )
+                except Exception as e:
+                    print_error(f"LLM 초기화 실패: {e}")
+                    return 1
+        else:
+             try:
                 llm = LLMClientAdapter(
                     provider=args.provider,
                     model=args.model,
                     base_url=args.base_url,
                 )
-            except Exception as e:
+             except Exception as e:
                 print_error(f"LLM 초기화 실패: {e}")
-                if args.provider in ("ollama", "lmstudio", "local", "mlx"):
-                    print_info("로컬 LLM 서버가 실행 중인지 확인하세요.")
-                else:
-                    print_info("API 키 설정을 확인하세요.")
                 return 1
-    else:
-        print("[2/4] LLM 초기화 중...")
-        try:
-            llm = LLMClientAdapter(
-                provider=args.provider,
-                model=args.model,
-                base_url=args.base_url,
-            )
-        except Exception as e:
-            print_error(f"LLM 초기화 실패: {e}")
-            return 1
 
-    use_reranker = not args.no_rerank
-    if args.verbose:
-        if use_reranker:
-            print_info("🎯 BGE Reranker 활성화")
-        else:
-            print_info("BGE Reranker 비활성화")
-
-    # Step 3: Build search index
+    # Step 2: Build Search Interface
+    # SearchUseCase initializes HybridSearcher automatically
     if RICH_AVAILABLE:
-        with console.status("[bold blue]🔍 관련 규정 검색 중...[/bold blue]"):
+        status_msg = "[bold blue]🔍 검색 엔진 준비 중...[/bold blue]"
+        with console.status(status_msg):
             search = SearchUseCase(store, llm_client=llm, use_reranker=use_reranker)
     else:
-        print("[3/4] 관련 규정 검색 중...")
         search = SearchUseCase(store, llm_client=llm, use_reranker=use_reranker)
 
-    if args.verbose:
-        print_info(f"ChromaDB 경로: {args.db_path}")
-        print_info(f"Top-K: {args.top_k}")
-        print_info(f"질문: {args.question}")
+    # Step 3: Execute Logic based on Mode
+    if mode == "search":
+        # Retrieval Only
+        results = search.search_unique(
+            args.query,
+            top_k=args.top_k,
+            include_abolished=args.include_abolished if hasattr(args, 'include_abolished') else False,
+        )
+        
+        if args.verbose or args.debug:
+            print_query_rewrite(search, args.query)
 
-    # Step 4: Generate answer
-    if RICH_AVAILABLE:
-        with console.status("[bold green]🤖 AI 답변 생성 중... (10-30초 소요)[/bold green]"):
+        if not results:
+            print_info("검색 결과가 없습니다.")
+            return 0
+            
+        # Display Results (Search Style)
+        if RICH_AVAILABLE:
+            table = Table(title=f"검색 결과: '{args.query}'")
+            table.add_column("#", style="dim", width=3)
+            table.add_column("규정명", style="cyan")
+            table.add_column("코드", style="magenta")
+            table.add_column("조항", style="green")
+            table.add_column("점수", justify="right", style="magenta")
+
+            for i, r in enumerate(results, 1):
+                path = " > ".join(r.chunk.parent_path[-2:]) if r.chunk.parent_path else ""
+                reg_title = r.chunk.parent_path[0] if r.chunk.parent_path else r.chunk.title
+                table.add_row(
+                    str(i),
+                    str(reg_title or r.chunk.rule_code),
+                    str(r.chunk.rule_code),
+                    str(path or r.chunk.title),
+                    f"{r.score:.2f}",
+                )
+            console.print(table)
+            
+            # Print first result detail
+            if results:
+                top = results[0]
+                console.print(Panel(
+                    top.chunk.text[:500] + "..." if len(top.chunk.text) > 500 else top.chunk.text,
+                    title=f"[1위] {top.chunk.rule_code}",
+                    border_style="green",
+                ))
+        else:
+            print(f"\n검색 결과: '{args.query}'")
+            print("-" * 60)
+            for i, r in enumerate(results, 1):
+                reg_title = r.chunk.parent_path[0] if r.chunk.parent_path else r.chunk.title
+                print(f"{i}. {reg_title} [{r.chunk.rule_code}] (점수: {r.score:.2f})")
+                print(f"   {r.chunk.text[:100]}...")
+                
+        if args.feedback and results:
+             _collect_cli_feedback(args.query, results[0].chunk.rule_code)
+
+    else:
+        # Ask (LLM Answer)
+        if RICH_AVAILABLE:
+            with console.status("[bold green]🤖 AI 답변 생성 중... (10-30초 소요)[/bold green]"):
+                try:
+                    answer = search.ask(
+                        question=args.query,
+                        top_k=args.top_k,
+                    )
+                except Exception as e:
+                    print_error(f"답변 생성 실패: {e}")
+                    return 1
+        else:
+            print("AI 답변 생성 중...")
             try:
                 answer = search.ask(
-                    question=args.question,
+                    question=args.query,
                     top_k=args.top_k,
                 )
             except Exception as e:
                 print_error(f"답변 생성 실패: {e}")
                 return 1
-    else:
-        print("[4/4] AI 답변 생성 중...")
-        try:
-            answer = search.ask(
-                question=args.question,
-                top_k=args.top_k,
-            )
-        except Exception as e:
-            print_error(f"답변 생성 실패: {e}")
-            return 1
 
-    if args.verbose or args.debug:
-        print_query_rewrite(search, args.question)
+        if args.verbose or args.debug:
+            print_query_rewrite(search, args.query)
 
-    # Print answer
-    if RICH_AVAILABLE:
-        console.print()
-        console.print(Panel(
-            Markdown(answer.text),
-            title="🤖 LLM 답변",
-            border_style="green",
-        ))
-
-        # Print sources with enhanced visual format
-        if answer.sources:
+        # Display Answer (Ask Style)
+        if RICH_AVAILABLE:
             console.print()
-            console.print("[bold cyan]📚 참고 규정:[/bold cyan]")
+            console.print(Panel(
+                Markdown(answer.text),
+                title="🤖 AI 답변",
+                border_style="green",
+            ))
             
-            # Use shared formatters for score normalization and filtering
-            norm_scores = normalize_relevance_scores(answer.sources)
-            display_sources = filter_by_relevance(answer.sources, norm_scores)
+            if answer.sources:
+                console.print()
+                console.print("[bold cyan]📚 참고 규정:[/bold cyan]")
+                
+                # Shared formatting logic
+                norm_scores = normalize_relevance_scores(answer.sources)
+                display_sources = filter_by_relevance(answer.sources, norm_scores)
+                
+                for i, result in enumerate(display_sources, 1):
+                    chunk = result.chunk
+                    reg_name = chunk.parent_path[0] if chunk.parent_path else chunk.title
+                    path = build_display_path(chunk.parent_path, chunk.text, chunk.title)
+                    norm_score = norm_scores.get(chunk.id, 0.0)
+                    rel_score = int(norm_score * 100)
+                    rel_label = get_relevance_label_combined(rel_score)
+                    display_text = extract_display_text(chunk.text)
+                    
+                    content_parts = [
+                        f"[bold blue]📖 {reg_name}[/bold blue]",
+                        f"[dim]📍 {path}[/dim]",
+                        "",
+                        display_text,
+                        "",
+                        f"[dim]📋 규정번호: {chunk.rule_code} | 관련도: {rel_score}% {rel_label}[/dim]" + (f" [dim]| AI 신뢰도: {result.score:.3f}[/dim]" if args.verbose else ""),
+                    ]
+                    
+                    console.print(Panel(
+                        "\n".join(content_parts),
+                        title=f"[{i}]",
+                        border_style="blue",
+                    ))
             
-            for i, result in enumerate(display_sources, 1):
-                chunk = result.chunk
-                # Show regulation name from parent_path[0] if available
-                reg_name = chunk.parent_path[0] if chunk.parent_path else chunk.title
-                
-                # Use shared formatter for path building
-                path = build_display_path(chunk.parent_path, chunk.text, chunk.title)
-                
-                # Use relative normalization for display
-                norm_score = norm_scores.get(chunk.id, 0.0)
-                rel_score = int(norm_score * 100)
-                
-                # Use shared formatter for relevance label
-                rel_label = get_relevance_label_combined(rel_score)
-                
-                # Use shared formatter for display text
-                display_text = extract_display_text(chunk.text)
-                
-                # Format content with visual hierarchy
-                content_parts = [
-                    f"[bold blue]📖 {reg_name}[/bold blue]",
-                    f"[dim]📍 {path}[/dim]",
-                    "",
-                    display_text,
-                    "",
-                    f"[dim]📋 규정번호: {chunk.rule_code} | 관련도: {rel_score}% {rel_label}[/dim]" + (f" [dim]| AI 신뢰도: {result.score:.3f}[/dim]" if args.verbose else ""),
-                ]
-                
-                console.print(Panel(
-                    "\n".join(content_parts),
-                    title=f"[{i}]",
-                    border_style="blue",
-                ))
+            # Confidence Info
+            console.print()
+            conf_icon, conf_label, conf_detail = get_confidence_info(answer.confidence)
+            console.print(Panel(
+                f"[bold]{conf_icon} {conf_label}[/bold] (신뢰도 {answer.confidence:.0%})\n\n{conf_detail}",
+                title="📊 답변 신뢰도",
+                border_style="dim",
+            ))
 
-        # Print confidence with user-friendly description and explanation
-        console.print()
-        conf_icon, conf_label, conf_detail = get_confidence_info(answer.confidence)
-        conf_desc = f"{conf_icon} {conf_label}"
-        
-        console.print(Panel(
-            f"[bold]{conf_desc}[/bold] (신뢰도 {answer.confidence:.0%})\n\n{conf_detail}",
-            title="📊 답변 신뢰도",
-            border_style="dim",
-        ))
-    else:
-        print(f"\n=== LLM 답변 ===")
-        print(answer.text)
-        print(f"\n=== 참고 규정 ===")
-        for i, result in enumerate(answer.sources, 1):
-            print(f"[{i}] {result.chunk.rule_code}: {result.chunk.text[:100]}...")
-        if args.show_sources:
-            print(f"\n=== 규정 전문 ===")
-            for result in answer.sources:
-                print(f"\n--- {result.chunk.rule_code} ---")
-                print(result.chunk.text)
+        else:
+            print(f"\n=== AI 답변 ===")
+            print(answer.text)
+            print(f"\n=== 참고 규정 ===")
+            for i, result in enumerate(answer.sources, 1):
+                print(f"[{i}] {result.chunk.rule_code}: {result.chunk.text[:100]}...")
+            
+            if getattr(args, 'show_sources', False):
+                print(f"\n=== 규정 전문 ===")
+                for result in answer.sources:
+                    print(f"\n--- {result.chunk.rule_code} ---")
+                    print(result.chunk.text)
 
-    if args.feedback and answer.sources:
-        _collect_cli_feedback(args.question, answer.sources[0].chunk.rule_code)
+        if args.feedback and answer.sources:
+            _collect_cli_feedback(args.query, answer.sources[0].chunk.rule_code)
 
     return 0
+
+
+def cmd_search(args) -> int:
+    """Execute search command (Unified)."""
+    return _perform_unified_search(args)
+
+
+def cmd_ask(args) -> int:
+    """Execute ask command (Legacy Wrapper)."""
+    # Map 'question' arg to 'query' expected by unified logic
+    if hasattr(args, 'question'):
+        args.query = args.question
+    return _perform_unified_search(args, force_mode="ask")
 
 
 def _collect_cli_feedback(query: str, rule_code: str):

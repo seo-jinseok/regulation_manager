@@ -148,15 +148,19 @@ def _add_sync_parser(subparsers):
 
 def _add_search_parser(subparsers):
     """Add search subcommand parser."""
+    
+    # Get default settings
+    providers, default_provider, default_model, default_base_url = _get_default_llm_settings()
+
     parser = subparsers.add_parser(
         "search",
-        help="규정 검색",
-        description="Hybrid Search + Reranking으로 규정을 검색합니다.",
+        help="규정 검색 (자동으로 답변 생성 또는 문서 검색)",
+        description="질문이면 AI 답변을, 키워드면 문서 검색 결과를 자동으로 보여줍니다. (혹은 -a/-q 옵션으로 강제)",
     )
     parser.add_argument(
         "query",
         type=str,
-        help="검색 쿼리",
+        help="검색 쿼리 또는 질문",
     )
     parser.add_argument(
         "-n", "--top-k",
@@ -167,7 +171,7 @@ def _add_search_parser(subparsers):
     parser.add_argument(
         "--include-abolished",
         action="store_true",
-        help="폐지 규정 포함",
+        help="폐지 규정 포함 (검색 모드일 때만 유효)",
     )
     parser.add_argument(
         "--db-path",
@@ -195,15 +199,54 @@ def _add_search_parser(subparsers):
         action="store_true",
         help="결과에 대한 피드백 남기기 (인터랙티브)",
     )
+    
+    # Unified specific arguments
+    mode_group = parser.add_mutually_exclusive_group()
+    mode_group.add_argument(
+        "-a", "--answer",
+        action="store_true",
+        help="AI 답변 생성 강제 (Ask 모드)",
+    )
+    mode_group.add_argument(
+        "-q", "--quick",
+        action="store_true",
+        help="문서 검색만 수행 (Search 모드)",
+    )
+    
+    # LLM options (for answer mode)
+    parser.add_argument(
+        "--provider",
+        type=str,
+        default=default_provider,
+        choices=providers,
+        help="LLM 프로바이더 (답변 생성 시)",
+    )
+    parser.add_argument(
+        "--model",
+        type=str,
+        default=default_model,
+        help="모델 이름",
+    )
+    parser.add_argument(
+        "--base-url",
+        type=str,
+        default=default_base_url,
+        help="로컬 서버 URL",
+    )
+    parser.add_argument(
+        "--show-sources",
+        action="store_true",
+        help="관련 규정 전문 출력 (답변 생성 시)",
+    )
 
 
 def _add_ask_parser(subparsers):
-    """Add ask subcommand parser."""
+    """Add ask subcommand parser (Legacy Wrapper)."""
     providers, default_provider, default_model, default_base_url = _get_default_llm_settings()
     
     parser = subparsers.add_parser(
         "ask",
-        help="규정 질문 (LLM 답변)",
+        help="규정 질문 (search -a와 동일)",
         description="LLM을 사용하여 규정에 대한 질문에 답변합니다.",
     )
     parser.add_argument(
@@ -215,7 +258,7 @@ def _add_ask_parser(subparsers):
         "-n", "--top-k",
         type=int,
         default=5,
-        help="참고 규정 수 (기본: 5)",
+        help="참고 규정 수",
     )
     parser.add_argument(
         "--db-path",

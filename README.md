@@ -36,21 +36,25 @@ uv run regulation convert "data/input/규정집.hwp"
 # 2. 벡터 DB에 저장
 uv run regulation sync data/output/규정집.json
 
-# 3. 규정 검색
-uv run regulation search "교원 연구년 신청 자격"
+# 3. 규정 검색/질문 (통합 명령어)
+uv run regulation search "교원 연구년 신청 자격은?"  # 자동으로 질문 인식 -> 답변 생성
+uv run regulation search "연구년 규정"              # 자동으로 키워드 인식 -> 문서 검색
 
-# 4. AI에게 질문 (선택)
-uv run regulation ask "교원 연구년 신청 자격은?"
+# 4. 강제 모드 사용 (선택)
+uv run regulation search "연구년" -a   # 질문 모드 강제 (답변 생성)
+uv run regulation search "연구년" -q   # 검색 모드 강제 (빠른 검색)
 ```
 
-### 검색 옵션
+### 검색 및 질문 옵션
 
 | 옵션 | 설명 |
 |------|------|
+| `-a`, `--answer` | AI 답변 생성 강제 (Ask 모드) |
+| `-q`, `--quick` | 문서 검색만 수행 (Search 모드) |
 | `-n 10` | 검색 결과 개수 지정 |
-| `--include-abolished` | 폐지된 규정 포함 |
-| `--no-rerank` | AI 재정렬 비활성화 (빠른 검색) |
-| `-v`, `--verbose` | 상세 정보 출력 (쿼리 분석 과정, 동의어/인텐트 적용 여부) |
+| `--include-abolished` | 폐지된 규정 포함 (Search 모드) |
+| `--no-rerank` | AI 재정렬 비활성화 (Search 모드) |
+| `-v`, `--verbose` | 상세 정보 출력 (쿼리 분석, 모드 결정 이유 등) |
 
 ### LLM 질문 옵션
 
@@ -116,8 +120,10 @@ uv run regulation serve --mcp
 | `regulation convert "파일.hwp" --use_llm` | LLM 전처리 활성화 |
 | `regulation sync <json>` | JSON → 벡터 DB 동기화 |
 | `regulation sync <json> --full` | 전체 재동기화 |
-| `regulation search "<쿼리>"` | 규정 검색 |
-| `regulation ask "<질문>"` | AI 답변 생성 |
+| `regulation search "<쿼리>"` | **규정 검색 및 AI 답변 (통합)** |
+| `regulation search "<질문>" -a` | AI 답변 생성 강제 |
+| `regulation search "<키워드>" -q` | 문서 검색 강제 |
+| `regulation ask "<질문>"` | AI 답변 생성 (구버전 호환용) |
 | `regulation status` | 동기화 상태 확인 |
 | `regulation reset --confirm` | DB 초기화 |
 | `regulation serve --web` | Web UI 시작 |
