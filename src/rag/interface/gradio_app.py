@@ -52,6 +52,7 @@ from .formatters import (
     get_relevance_label_combined,
     get_confidence_info,
     clean_path_segments,
+    render_full_view_nodes,
 )
 
 
@@ -306,23 +307,6 @@ def create_app(
             return "목차 정보가 없습니다."
         return "### 목차\n" + "\n".join([f"- {t}" for t in toc])
 
-    def _render_nodes(nodes: List[dict], depth: int = 0) -> str:
-        lines = []
-        for node in nodes:
-            display_no = node.get("display_no", "")
-            title = node.get("title", "")
-            label = f"{display_no} {title}".strip() if display_no or title else ""
-            if label:
-                heading = "#" * min(6, depth + 3)
-                lines.append(f"{heading} {label}")
-            text = (node.get("text") or "").strip()
-            if text:
-                lines.append(text)
-            children = node.get("children", []) or []
-            if children:
-                lines.append(_render_nodes(children, depth + 1))
-        return "\n\n".join([l for l in lines if l])
-
     def _build_search_table(results) -> str:
         table_rows = ["| # | 규정명 | 코드 | 조항 | 점수 |", "|---|------|------|------|------|"]
         for i, r in enumerate(results, 1):
@@ -553,8 +537,8 @@ def create_app(
                 return history, details, debug_text, state
 
             toc_text = _format_toc(view.toc)
-            content_text = _render_nodes(view.content)
-            addenda_text = _render_nodes(view.addenda)
+            content_text = render_full_view_nodes(view.content)
+            addenda_text = render_full_view_nodes(view.addenda)
             details = toc_text + "\n\n### 본문\n\n" + (content_text or "본문이 없습니다.")
             if addenda_text:
                 details += "\n\n### 부칙\n\n" + addenda_text
@@ -716,8 +700,8 @@ def create_app(
             return "규정 전문을 불러오지 못했습니다.", "", "", query, ""
 
         toc_text = _format_toc(view.toc)
-        content_text = _render_nodes(view.content)
-        addenda_text = _render_nodes(view.addenda)
+        content_text = render_full_view_nodes(view.content)
+        addenda_text = render_full_view_nodes(view.addenda)
         detail = "### 본문\n\n" + (content_text or "본문이 없습니다.")
         if addenda_text:
             detail += "\n\n### 부칙\n\n" + addenda_text

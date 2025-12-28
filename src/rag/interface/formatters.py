@@ -221,6 +221,48 @@ def extract_display_text(text: str) -> str:
 
 
 # ============================================================================
+# Full View Rendering
+# ============================================================================
+
+_INLINE_NODE_TYPES = {"paragraph", "item", "subitem", "addendum_item"}
+
+
+def render_full_view_nodes(nodes: List[dict], depth: int = 0) -> str:
+    """
+    Render regulation nodes for full-view display.
+
+    Uses inline formatting for numbered 항/호/목 to avoid line breaks after
+    display numbers (e.g., "1. 교수 : 정").
+    """
+    lines = []
+    for node in nodes:
+        display_no = str(node.get("display_no") or "").strip()
+        title = str(node.get("title") or "").strip()
+        text = str(node.get("text") or "").strip()
+        node_type = node.get("type")
+
+        if display_no and text and (node_type in _INLINE_NODE_TYPES or not title):
+            parts = [display_no]
+            if title:
+                parts.append(title)
+            parts.append(text)
+            lines.append(" ".join(parts))
+        else:
+            label = f"{display_no} {title}".strip() if display_no or title else ""
+            if label:
+                heading = "#" * min(6, depth + 3)
+                lines.append(f"{heading} {label}")
+            if text:
+                lines.append(text)
+
+        children = node.get("children", []) or []
+        if children:
+            lines.append(render_full_view_nodes(children, depth + 1))
+
+    return "\n\n".join([line for line in lines if line])
+
+
+# ============================================================================
 # Confidence Info
 # ============================================================================
 

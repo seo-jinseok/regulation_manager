@@ -15,6 +15,8 @@ from ..domain.repositories import IDocumentLoader
 
 
 FULL_VIEW_MARKERS = ["전문", "전체", "원문", "全文", "full text", "fullview"]
+TOC_ALLOWED_TYPES = {"chapter", "section", "subsection", "article", "addendum"}
+TOC_SKIP_RECURSION_TYPES = {"paragraph", "item", "subitem", "text", "addendum_item", "addendum"}
 
 
 @dataclass(frozen=True)
@@ -123,9 +125,13 @@ class FullViewUseCase:
 
     def _collect_toc(self, nodes: List[dict], toc: List[str]) -> None:
         for node in nodes:
-            label = self._format_label(node)
-            if label:
-                toc.append(label)
+            node_type = node.get("type")
+            if node_type in TOC_ALLOWED_TYPES:
+                label = self._format_label(node)
+                if label:
+                    toc.append(label)
+            if node_type in TOC_SKIP_RECURSION_TYPES:
+                continue
             children = node.get("children", []) or []
             if children:
                 self._collect_toc(children, toc)

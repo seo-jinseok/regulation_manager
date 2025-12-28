@@ -32,6 +32,7 @@ from src.rag.interface.formatters import (
     extract_display_text,
     get_confidence_info,
     build_display_path,
+    render_full_view_nodes,
     DEFAULT_RELEVANCE_THRESHOLD,
 )
 
@@ -237,6 +238,66 @@ class TestExtractDisplayText:
         text = "1.: 첫 번째 항목"
         result = extract_display_text(text)
         assert "1.:" not in result
+
+
+# ============================================================================
+# render_full_view_nodes tests
+# ============================================================================
+
+
+class TestRenderFullViewNodes:
+    def test_inline_paragraph_numbering(self):
+        nodes = [
+            {
+                "type": "paragraph",
+                "display_no": "①",
+                "title": "",
+                "text": "재직 중인 교원중에서 지정할 수 있다.",
+                "children": [],
+            }
+        ]
+        rendered = render_full_view_nodes(nodes)
+        assert "① 재직 중인 교원중에서 지정할 수 있다." in rendered
+
+    def test_inline_item_numbering(self):
+        nodes = [
+            {
+                "type": "item",
+                "display_no": "1.",
+                "title": "",
+                "text": "교수 : 정",
+                "children": [],
+            }
+        ]
+        rendered = render_full_view_nodes(nodes)
+        assert "1. 교수 : 정" in rendered
+
+    def test_article_with_title_keeps_heading(self):
+        nodes = [
+            {
+                "type": "article",
+                "display_no": "제1조",
+                "title": "목적",
+                "text": "이 규정은 목적을 규정한다.",
+                "children": [],
+            }
+        ]
+        rendered = render_full_view_nodes(nodes)
+        assert "### 제1조 목적" in rendered
+        assert "이 규정은 목적을 규정한다." in rendered
+
+    def test_article_without_title_inlines_text(self):
+        nodes = [
+            {
+                "type": "article",
+                "display_no": "제16조",
+                "title": "",
+                "text": "내용이 이어진다.",
+                "children": [],
+            }
+        ]
+        rendered = render_full_view_nodes(nodes)
+        assert "제16조 내용이 이어진다." in rendered
 
 
 # ============================================================================

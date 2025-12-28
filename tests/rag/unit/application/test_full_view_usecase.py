@@ -99,3 +99,70 @@ def test_find_matches_uses_sync_state(tmp_path):
 
     assert matches
     assert matches[0].title == "교원인사규정"
+
+
+def test_toc_skips_paragraphs_and_addendum_items(tmp_path):
+    json_path = tmp_path / "reg.json"
+    data = {
+        "docs": [
+            {
+                "doc_type": "regulation",
+                "title": "교원인사규정",
+                "metadata": {"rule_code": "3-1-5"},
+                "content": [
+                    {
+                        "type": "article",
+                        "display_no": "제1조",
+                        "title": "목적",
+                        "text": "내용",
+                        "children": [
+                            {
+                                "type": "paragraph",
+                                "display_no": "①",
+                                "title": "",
+                                "text": "항 내용",
+                                "children": [],
+                            },
+                            {
+                                "type": "item",
+                                "display_no": "1.",
+                                "title": "",
+                                "text": "호 내용",
+                                "children": [],
+                            },
+                        ],
+                    }
+                ],
+                "addenda": [
+                    {
+                        "type": "addendum",
+                        "display_no": "",
+                        "title": "부칙",
+                        "text": "",
+                        "children": [
+                            {
+                                "type": "addendum_item",
+                                "display_no": "1.",
+                                "title": "경과조치",
+                                "text": "부칙 내용",
+                                "children": [],
+                            }
+                        ],
+                    }
+                ],
+            }
+        ]
+    }
+    json_path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+
+    loader = JSONDocumentLoader()
+    usecase = FullViewUseCase(loader, str(json_path))
+
+    view = usecase.get_full_view("3-1-5")
+
+    assert view is not None
+    assert "제1조 목적" in view.toc
+    assert "부칙" in view.toc
+    assert all("①" not in label for label in view.toc)
+    assert all("1." not in label for label in view.toc)
+    assert all("경과조치" not in label for label in view.toc)
