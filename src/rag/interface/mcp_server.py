@@ -178,18 +178,38 @@ def ask_regulations(
             "error": f"답변 생성 실패: {str(e)}"
         }, ensure_ascii=False)
     
-    # Format sources
+    # Format sources with relative normalization
+    sources_list = answer.sources
+    if sources_list:
+        scores = [r.score for r in sources_list]
+        max_s, min_s = max(scores), min(scores)
+        if max_s == min_s:
+            norm_scores = {r.chunk.id: 1.0 for r in sources_list}
+        else:
+            norm_scores = {r.chunk.id: (r.score - min_s) / (max_s - min_s) for r in sources_list}
+    else:
+        norm_scores = {}
+    
+    # Filter out low relevance results (threshold: 10%)
+    MIN_RELEVANCE_THRESHOLD = 0.10
+    display_sources = [
+        r for r in sources_list 
+        if norm_scores.get(r.chunk.id, 0.0) >= MIN_RELEVANCE_THRESHOLD
+    ]
+    
     sources = []
-    for r in answer.sources:
+    for r in display_sources:
         reg_name = r.chunk.parent_path[0] if r.chunk.parent_path else r.chunk.title
         path = " > ".join(r.chunk.parent_path) if r.chunk.parent_path else r.chunk.title
+        norm_score = norm_scores.get(r.chunk.id, 0.0)
+        rel_pct = int(norm_score * 100)
         
         sources.append({
             "regulation_name": reg_name,
             "rule_code": r.chunk.rule_code,
             "path": path,
             "text": r.chunk.text,
-            "score": round(r.score, 4),
+            "relevance_pct": rel_pct,  # 정규화된 관련도 (%)
         })
     
     return json.dumps({

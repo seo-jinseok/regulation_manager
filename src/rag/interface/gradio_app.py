@@ -395,7 +395,15 @@ def create_app(
             norm_scores = {}
 
         sources_md = ["### 📚 참고 규정\n"]
-        for i, r in enumerate(answer.sources, 1):
+        
+        # Filter out low relevance results for display (threshold: 10%)
+        MIN_RELEVANCE_THRESHOLD = 0.10
+        display_sources = [
+            r for r in answer.sources 
+            if norm_scores.get(r.chunk.id, 0.0) >= MIN_RELEVANCE_THRESHOLD
+        ]
+        
+        for i, r in enumerate(display_sources, 1):
             reg_name = r.chunk.parent_path[0] if r.chunk.parent_path else r.chunk.title
             path = " > ".join(r.chunk.parent_path) if r.chunk.parent_path else r.chunk.title
             norm_score = norm_scores.get(r.chunk.id, 0.0)
@@ -410,12 +418,15 @@ def create_app(
             else:
                 rel_label = "🔴 낮음"
             
+            # AI 신뢰도는 show_debug일 때만 표시
+            score_info = f" | AI 신뢰도: {r.score:.3f}" if show_debug else ""
+            
             sources_md.append(f"""#### [{i}] {reg_name}
 **경로:** {path}
 
 {r.chunk.text[:300]}{'...' if len(r.chunk.text) > 300 else ''}
 
-*규정번호: {r.chunk.rule_code} | 관련도: {rel_pct}% {rel_label}*
+*규정번호: {r.chunk.rule_code} | 관련도: {rel_pct}% {rel_label}{score_info}*
 
 ---
 """)

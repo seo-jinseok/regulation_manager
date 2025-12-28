@@ -541,7 +541,15 @@ def cmd_ask(args) -> int:
             
             norm_scores = normalize_scores_relative(answer.sources)
             
-            for i, result in enumerate(answer.sources, 1):
+            # Filter out low relevance results for display (threshold: 10%)
+            # Note: LLM context still uses all sources, only display is filtered
+            MIN_RELEVANCE_THRESHOLD = 0.10
+            display_sources = [
+                r for r in answer.sources 
+                if norm_scores.get(r.chunk.id, 0.0) >= MIN_RELEVANCE_THRESHOLD
+            ]
+            
+            for i, result in enumerate(display_sources, 1):
                 chunk = result.chunk
                 # Show regulation name from parent_path[0] if available
                 reg_name = chunk.parent_path[0] if chunk.parent_path else chunk.title
@@ -615,7 +623,7 @@ def cmd_ask(args) -> int:
                     "",
                     display_text,
                     "",
-                    f"[dim]📋 규정번호: {chunk.rule_code} | 관련도: {rel_score}% {rel_label} | AI 신뢰도: {result.score:.3f}[/dim]",
+                    f"[dim]📋 규정번호: {chunk.rule_code} | 관련도: {rel_score}% {rel_label}[/dim]" + (f" [dim]| AI 신뢰도: {result.score:.3f}[/dim]" if args.verbose else ""),
                 ]
                 
                 console.print(Panel(
