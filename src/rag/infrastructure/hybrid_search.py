@@ -28,6 +28,15 @@ class QueryType(Enum):
     GENERAL = "general"  # Default
 
 
+class Audience(Enum):
+    """Target audience for the regulation query."""
+
+    ALL = "all"
+    STUDENT = "student"
+    FACULTY = "faculty"
+    STAFF = "staff"
+
+
 @dataclass(frozen=True)
 class QueryRewriteResult:
     """Detailed result of query rewriting."""
@@ -312,6 +321,54 @@ class QueryAnalyzer:
             return QueryType.NATURAL_QUESTION
 
         return QueryType.GENERAL
+
+    def detect_audience(self, query: str) -> Audience:
+        """
+        Detect the target audience from the query.
+
+        Args:
+            query: The search query text.
+
+        Returns:
+            Audience: Detected audience (STUDENT, FACULTY, STAFF, or ALL).
+        """
+        query_lower = query.lower()
+        
+        # Keywords for Faculty (Stronger indicators first)
+        faculty_keywords = ["교수", "교원", "강사", "전임", "안식년", "연구년", "책임시수", "업적평가"]
+        if any(k in query_lower for k in faculty_keywords):
+            return Audience.FACULTY
+
+        # Keywords for Student
+        student_keywords = ["학생", "학부", "대학원", "수강", "성적", "졸업", "휴학", "복학", "장학", "등록금", "학점"]
+        if any(k in query_lower for k in student_keywords):
+            return Audience.STUDENT
+
+        # Keywords for Staff
+        staff_keywords = ["직원", "행정", "사무", "참사", "주사", "승진", "전보", "징계"]
+        # Note: '징계' is ambiguous without context, but often associated with staff/faculty in reg context unless '학생' is present.
+        # But '학생 징계' would be caught by student keywords if priority is handled or if we check conjunctions.
+        # Here we use a simple precedence: Faculty > Student > Staff for now, or check explicit combinations.
+        
+        # Refined logic:
+        pass
+        
+        # Let's use the precedence:
+        # If query has "학생" explicitly, it's likely student.
+        if any(k in query_lower for k in student_keywords):
+             # Exception: "Student guidance by Professor" -> Faculty? But usually user asks about "Student rights" -> Student.
+             return Audience.STUDENT
+             
+        if any(k in query_lower for k in faculty_keywords):
+            return Audience.FACULTY
+
+        if any(k in query_lower for k in staff_keywords):
+            # '징계' alone might be ambiguous. Let's be careful.
+            # If '징계' is the only keyword, it defaults to ALL? 
+            # If query is "직원 승진" -> Staff.
+            return Audience.STAFF
+            
+        return Audience.ALL
 
     def has_synonyms(self, query: str) -> bool:
         """Check if query contains any terms with synonyms."""

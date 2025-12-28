@@ -201,6 +201,14 @@ class SearchUseCase:
             matched_intents=matched_intents,
         )
         scoring_query_text = self._select_scoring_query(query_text, rewritten_query_text)
+
+        # Detect audience if HybridSearcher/QueryAnalyzer is available
+        audience = None
+        if self.hybrid_searcher:
+            from ..infrastructure.hybrid_search import Audience
+            audience = self.hybrid_searcher._query_analyzer.detect_audience(query_text)
+            # Override audience if intentions/synonyms strongly suggest
+            # (Currently detect_audience handles simple keywords)
         
         # Get dense search results from vector store
         dense_results = self.store.search(query, filter, top_k * 3)
@@ -291,6 +299,33 @@ class SearchUseCase:
                     article_bonus = 0.2  # Exact article match
 
             new_score = min(1.0, r.score + bonus + keyword_bonus + article_bonus)
+            
+            # Audience-based penalty logic
+            if audience:
+                from ..infrastructure.hybrid_search import Audience
+                
+                # Check for audience mismatch
+                reg_name = r.chunk.parent_path[0] if r.chunk.parent_path else r.chunk.title
+                reg_name_lower = reg_name.lower()
+                chunk_text_lower = r.chunk.text.lower()
+                
+                # PENALTY: Faculty query -> Student regulation
+                if audience == Audience.FACULTY:
+                    is_student_reg = "학생" in reg_name_lower and "교원" not in reg_name_lower
+                    if is_student_reg:
+                       # Apply severe penalty (0.5x) or filter
+                       new_score *= 0.5
+                
+                # PENALTY: Student query -> Faculty/Staff regulation
+                elif audience == Audience.STUDENT:
+                    # Common faculty keywords in regulation titles
+                    is_faculty_reg = any(k in reg_name_lower for k in ["교원", "직원", "인사", "복무", "업적", "채용"])
+                    # Ensure it's not a student regulation (e.g. "student guidance by faculty")
+                    is_faculty_reg = is_faculty_reg and "학생" not in reg_name_lower
+                    
+                    if is_faculty_reg:
+                       new_score *= 0.5
+
             boosted_results.append(SearchResult(
                 chunk=r.chunk,
                 score=new_score,
