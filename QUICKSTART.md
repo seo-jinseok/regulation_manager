@@ -34,7 +34,7 @@ cp .env.example .env
 HWP 파일을 `data/input/` 폴더에 배치한 후 변환합니다.
 
 ```bash
-uv run regulation-manager "data/input/규정집.hwp"
+uv run regulation convert "data/input/규정집.hwp"
 ```
 
 > 변환에는 `hwp5html` CLI가 필요합니다. 설치되어 있지 않으면 변환이 실패합니다.
@@ -54,7 +54,7 @@ uv run regulation-manager "data/input/규정집.hwp"
 변환된 JSON을 검색 가능한 형태로 저장합니다.
 
 ```bash
-uv run regulation-rag sync data/output/규정집.json
+uv run regulation sync data/output/규정집.json
 ```
 
 **성공 시 출력:**
@@ -70,16 +70,16 @@ uv run regulation-rag sync data/output/규정집.json
 
 ```bash
 # 기본 검색
-uv run regulation-rag search "교원 연구년 신청 자격"
+uv run regulation search "교원 연구년 신청 자격"
 
 # 검색 결과 개수 지정
-uv run regulation-rag search "장학금" -n 10
+uv run regulation search "장학금" -n 10
 
 # 폐지 규정 포함
-uv run regulation-rag search "학칙" --include-abolished
+uv run regulation search "학칙" --include-abolished
 
 # 쿼리 분석 과정 확인 (verbose 모드)
-uv run regulation-rag search "학교에 가기 싫어" -v
+uv run regulation search "학교에 가기 싫어" -v
 ```
 
 **Verbose 모드 출력 예시:**
@@ -102,13 +102,13 @@ LLM을 사용하여 자연어 답변을 생성합니다.
 
 ```bash
 # 기본 (Ollama)
-uv run regulation-rag ask "교원 연구년 신청 자격은?"
+uv run regulation ask "교원 연구년 신청 자격은?"
 
 # 상세 정보 출력 (쿼리 분석, LLM 설정 등)
-uv run regulation-rag ask "휴학 절차" -v
+uv run regulation ask "휴학 절차" -v
 
 # 다른 LLM 프로바이더 사용
-uv run regulation-rag ask "휴학 절차" --provider lmstudio --base-url http://localhost:1234
+uv run regulation ask "휴학 절차" --provider lmstudio --base-url http://localhost:1234
 ```
 
 ---
@@ -116,7 +116,7 @@ uv run regulation-rag ask "휴학 절차" --provider lmstudio --base-url http://
 ## 6단계: 웹 UI (선택)
 
 ```bash
-uv run regulation-web
+uv run regulation serve --web
 ```
 
 브라우저에서 파일 업로드 → 변환 → DB 동기화 → 질문까지 통합 인터페이스로 진행할 수 있습니다.
@@ -129,7 +129,7 @@ AI 에이전트(Claude, Cursor 등)에서 규정 검색 기능을 사용할 수 
 
 ```bash
 # MCP 서버 실행
-uv run regulation-mcp
+uv run regulation serve --mcp
 ```
 
 **Claude Desktop 연결** (`~/Library/Application Support/Claude/claude_desktop_config.json`):
@@ -139,7 +139,7 @@ uv run regulation-mcp
   "mcpServers": {
     "regulation-rag": {
       "command": "uv",
-      "args": ["run", "regulation-mcp"],
+      "args": ["run", "regulation", "serve", "--mcp"],
       "cwd": "/path/to/regulation_manager"
     }
   }
@@ -152,13 +152,14 @@ uv run regulation-mcp
 
 | 작업 | 명령어 |
 |------|--------|
-| 변환 | `regulation-manager "data/input/규정집.hwp"` |
-| 동기화 | `regulation-rag sync <json-path>` |
-| 검색 | `regulation-rag search "<쿼리>" [-v]` |
-| AI 질문 | `regulation-rag ask "<질문>" [-v]` |
-| 상태 확인 | `regulation-rag status` |
-| DB 초기화 | `regulation-rag reset --confirm` |
-| MCP 서버 | `regulation-mcp` |
+| 변환 | `regulation convert "data/input/규정집.hwp"` |
+| 동기화 | `regulation sync <json-path>` |
+| 검색 | `regulation search "<쿼리>" [-v]` |
+| AI 질문 | `regulation ask "<질문>" [-v]` |
+| 상태 확인 | `regulation status` |
+| DB 초기화 | `regulation reset --confirm` |
+| 웹 UI | `regulation serve --web` |
+| MCP 서버 | `regulation serve --mcp` |
 
 ---
 
@@ -177,7 +178,7 @@ uv run regulation-mcp
 LLM 전처리를 활성화하세요:
 
 ```bash
-uv run regulation-manager "규정.hwp" --use_llm --provider ollama --model gemma2
+uv run regulation convert "규정.hwp" --use-llm --provider ollama --model gemma2
 ```
 
 LLM 설정에 대한 자세한 내용은 [LLM_GUIDE.md](./LLM_GUIDE.md)를 참고하세요.

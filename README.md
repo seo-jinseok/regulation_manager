@@ -31,16 +31,16 @@ uv sync
 
 ```bash
 # 1. HWP 파일을 JSON으로 변환
-uv run regulation-manager "data/input/규정집.hwp"
+uv run regulation convert "data/input/규정집.hwp"
 
 # 2. 벡터 DB에 저장
-uv run regulation-rag sync data/output/규정집.json
+uv run regulation sync data/output/규정집.json
 
 # 3. 규정 검색
-uv run regulation-rag search "교원 연구년 신청 자격"
+uv run regulation search "교원 연구년 신청 자격"
 
 # 4. AI에게 질문 (선택)
-uv run regulation-rag ask "교원 연구년 신청 자격은?"
+uv run regulation ask "교원 연구년 신청 자격은?"
 ```
 
 ### 검색 옵션
@@ -66,7 +66,7 @@ uv run regulation-rag ask "교원 연구년 신청 자격은?"
 비개발자를 위한 통합 웹 인터페이스를 제공합니다.
 
 ```bash
-uv run regulation-web
+uv run regulation serve --web
 ```
 
 파일 업로드 → 변환 → DB 동기화 → 질문까지 한 화면에서 진행할 수 있습니다.
@@ -77,7 +77,7 @@ AI 에이전트(Claude, Cursor 등)에서 규정 검색 기능을 사용할 수 
 
 ```bash
 # MCP 서버 실행 (stdio 모드)
-uv run regulation-mcp
+uv run regulation serve --mcp
 ```
 
 **지원 도구 (Tools)**:
@@ -97,7 +97,7 @@ uv run regulation-mcp
   "mcpServers": {
     "regulation-rag": {
       "command": "uv",
-      "args": ["run", "regulation-mcp"],
+      "args": ["run", "regulation", "serve", "--mcp"],
       "cwd": "/path/to/regulation_manager"
     }
   }
@@ -108,24 +108,20 @@ uv run regulation-mcp
 
 ## 명령어 요약
 
-### 규정 변환
+모든 기능은 `regulation` 단일 진입점으로 접근합니다.
 
 | 명령어 | 설명 |
 |--------|------|
-| `regulation-manager "파일.hwp"` | HWP → JSON 변환 |
-| `regulation-manager "파일.hwp" --use_llm` | LLM 전처리 활성화 (품질 향상) |
-| `regulation-manager "파일.hwp" --no-enhance-rag` | RAG 최적화 비활성화 |
-
-### RAG 시스템
-
-| 명령어 | 설명 |
-|--------|------|
-| `regulation-rag sync <json>` | JSON → 벡터 DB 동기화 |
-| `regulation-rag sync <json> --full` | 전체 재동기화 |
-| `regulation-rag search "<쿼리>"` | 규정 검색 |
-| `regulation-rag ask "<질문>"` | AI 답변 생성 |
-| `regulation-rag status` | 동기화 상태 확인 |
-| `regulation-rag reset --confirm` | DB 초기화 |
+| `regulation convert "파일.hwp"` | HWP → JSON 변환 |
+| `regulation convert "파일.hwp" --use-llm` | LLM 전처리 활성화 |
+| `regulation sync <json>` | JSON → 벡터 DB 동기화 |
+| `regulation sync <json> --full` | 전체 재동기화 |
+| `regulation search "<쿼리>"` | 규정 검색 |
+| `regulation ask "<질문>"` | AI 답변 생성 |
+| `regulation status` | 동기화 상태 확인 |
+| `regulation reset --confirm` | DB 초기화 |
+| `regulation serve --web` | Web UI 시작 |
+| `regulation serve --mcp` | MCP Server 시작 |
 
 ---
 
@@ -272,7 +268,7 @@ HWP 파일의 복잡한 규정 내용을 **계층적 JSON 구조**로 변환합�
 
 ### 3️⃣ 질문(Ask) 처리 파이프라인
 
-사용자가 `regulation-rag ask "질문"`을 실행하면 다음 단계로 처리됩니다.
+사용자가 `regulation ask "질문"`을 실행하면 다음 단계로 처리됩니다.
 
 #### Step 3-1: 쿼리 분석 (QueryAnalyzer)
 
@@ -461,8 +457,8 @@ RAG_INTENTS_PATH=data/config/intents.json
 
 | 사용 위치 | LLM 기본값 |
 |-----------|------------|
-| `regulation-manager` | provider: `openai` (model: `gpt-4o`) |
-| `regulation-rag` / 웹 UI | provider: `ollama` (model: `gemma2`, base_url: `http://localhost:11434`) |
+| `regulation convert` | provider: `openai` (model: `gpt-4o`) |
+| `regulation ask` / 웹 UI | provider: `ollama` (model: `gemma2`, base_url: `http://localhost:11434`) |
 
 ### 동의어 및 인텐트 사전
 
@@ -487,7 +483,7 @@ RAG_INTENTS_PATH=data/config/intents.json
 
 ```bash
 # 쿼리 분석 과정 확인
-uv run regulation-rag search "학교에 가기 싫어" -v
+uv run regulation search "학교에 가기 싫어" -v
 
 # 출력 예시:
 # 🔄 쿼리 분석 결과

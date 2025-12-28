@@ -10,9 +10,9 @@
 
 | 기능 | 용도 | 명령어 |
 |------|------|---------|
-| **전처리** | HWP → Markdown 변환 품질 향상 | `regulation-manager --use_llm` |
-| **질문 답변** | 자연어 답변 생성 | `regulation-rag ask` |
-| **MCP 서버** | AI 에이전트 연동 | `regulation-mcp` |
+| **전처리** | HWP → Markdown 변환 품질 향상 | `regulation convert --use-llm` |
+| **질문 답변** | 자연어 답변 생성 | `regulation ask` |
+| **MCP 서버** | AI 에이전트 연동 | `regulation serve --mcp` |
 
 ---
 
@@ -54,10 +54,10 @@ ollama serve  # 기본 포트: 11434
 **사용:**
 ```bash
 # 전처리
-uv run regulation-manager "data/input/규정집.hwp" --use_llm --provider ollama --model gemma2
+uv run regulation convert "data/input/규정집.hwp" --use-llm --provider ollama --model gemma2
 
 # 질문 답변
-uv run regulation-rag ask "교원 연구년 신청 자격은?" --provider ollama --model gemma2
+uv run regulation ask "교원 연구년 신청 자격은?" --provider ollama --model gemma2
 ```
 
 **권장 모델:**
@@ -79,10 +79,10 @@ GUI 기반 로컬 LLM 서버입니다.
 **사용:**
 ```bash
 # 전처리
-uv run regulation-manager "data/input/규정집.hwp" --use_llm --provider lmstudio --base_url http://127.0.0.1:1234
+uv run regulation convert "data/input/규정집.hwp" --use-llm --provider lmstudio --base-url http://127.0.0.1:1234
 
 # 질문 답변
-uv run regulation-rag ask "장학금 조건" --provider lmstudio --base-url http://127.0.0.1:1234
+uv run regulation ask "장학금 조건" --provider lmstudio --base-url http://127.0.0.1:1234
 ```
 
 **주의사항:**
@@ -109,10 +109,10 @@ mlx_lm.server --model mlx-community/Llama-3.2-3B-Instruct-4bit --port 8080
 **사용:**
 ```bash
 # 전처리
-uv run regulation-manager "data/input/규정집.hwp" --use_llm --provider mlx --base_url http://127.0.0.1:8080
+uv run regulation convert "data/input/규정집.hwp" --use-llm --provider mlx --base-url http://127.0.0.1:8080
 
 # 질문 답변
-uv run regulation-rag ask "휴학 절차" --provider mlx --base-url http://127.0.0.1:8080
+uv run regulation ask "휴학 절차" --provider mlx --base-url http://127.0.0.1:8080
 ```
 
 **권장 모델 (4bit 양자화):**
@@ -141,10 +141,10 @@ python -m vllm.entrypoints.openai.api_server --model meta-llama/Llama-3.1-8B-Ins
 **사용:**
 ```bash
 # 전처리
-uv run regulation-manager "data/input/규정집.hwp" --use_llm --provider local --base_url http://127.0.0.1:8000
+uv run regulation convert "data/input/규정집.hwp" --use-llm --provider local --base-url http://127.0.0.1:8000
 
 # 질문 답변
-uv run regulation-rag ask "등록금 감면" --provider local --base-url http://127.0.0.1:8000
+uv run regulation ask "등록금 감면" --provider local --base-url http://127.0.0.1:8000
 ```
 
 ---
@@ -159,8 +159,8 @@ OPENAI_API_KEY=sk-...
 ```
 
 ```bash
-uv run regulation-manager "data/input/규정집.hwp" --use_llm --provider openai --model gpt-4o
-uv run regulation-rag ask "졸업 요건" --provider openai --model gpt-4o
+uv run regulation convert "data/input/규정집.hwp" --use-llm --provider openai --model gpt-4o
+uv run regulation ask "졸업 요건" --provider openai --model gpt-4o
 ```
 
 ### Gemini
@@ -171,8 +171,8 @@ GEMINI_API_KEY=AIza...
 ```
 
 ```bash
-uv run regulation-manager "data/input/규정집.hwp" --use_llm --provider gemini --model models/gemini-1.5-pro
-uv run regulation-rag ask "장학금 조건" --provider gemini
+uv run regulation convert "data/input/규정집.hwp" --use-llm --provider gemini --model models/gemini-1.5-pro
+uv run regulation ask "장학금 조건" --provider gemini
 ```
 
 ### OpenRouter
@@ -183,8 +183,8 @@ OPENROUTER_API_KEY=sk-or-...
 ```
 
 ```bash
-uv run regulation-manager "data/input/규정집.hwp" --use_llm --provider openrouter --model google/gemini-pro-1.5
-uv run regulation-rag ask "연구년 요건" --provider openrouter
+uv run regulation convert "data/input/규정집.hwp" --use-llm --provider openrouter --model google/gemini-pro-1.5
+uv run regulation ask "연구년 요건" --provider openrouter
 ```
 
 ---
@@ -204,22 +204,22 @@ RAG_SYNONYMS_PATH=data/config/synonyms.json
 RAG_INTENTS_PATH=data/config/intents.json
 ```
 
-`.env`는 실행 시 자동 로드되므로, 위 값이 코드 기본값(예: `regulation-manager`는 `openai`, `regulation-rag`/웹은 `ollama`)보다 우선 적용됩니다.
+`.env`는 실행 시 자동 로드되므로, 위 값이 코드 기본값(예: `regulation convert`는 `openai`, `regulation ask`/웹은 `ollama`)보다 우선 적용됩니다.
 
 코드 기본값(옵션/`.env` 미설정 시):
 
 | 사용 위치 | LLM 기본값 |
 |-----------|-----------|
-| `regulation-manager` | provider: `openai` (model: `gpt-4o`) |
-| `regulation-rag` / 웹 UI | provider: `ollama` (model: `gemma2`, base_url: `http://localhost:11434`) |
-| `regulation-mcp` | provider: `lmstudio` (base_url: `http://127.0.0.1:1234`) |
+| `regulation convert` | provider: `openai` (model: `gpt-4o`) |
+| `regulation ask` / 웹 UI | provider: `ollama` (model: `gemma2`, base_url: `http://localhost:11434`) |
+| `regulation serve --mcp` | provider: `lmstudio` (base_url: `http://127.0.0.1:1234`) |
 
 ---
 
 ## 웹 UI
 
 ```bash
-uv run regulation-web
+uv run regulation serve --web
 ```
 
 - **올인원 탭**: 업로드 → 변환 → 동기화 → 질문 통합 워크플로우

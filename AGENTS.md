@@ -18,9 +18,9 @@
 4. LLM 기반 Q&A (다양한 프로바이더 지원)
 
 **인터페이스**:
-- CLI: `regulation-rag` (검색, 질문, 동기화)
-- Web UI: `regulation-web` (Gradio)
-- MCP Server: `regulation-mcp` (AI 에이전트 연동)
+- CLI: `regulation` (변환, 검색, 질문, 동기화 통합)
+- Web UI: `regulation serve --web` (Gradio)
+- MCP Server: `regulation serve --mcp` (AI 에이전트 연동)
 
 ---
 
@@ -96,7 +96,8 @@ regulation_manager/
 │       │   ├── llm_adapter.py      # LLM 클라이언트 어댑터
 │       │   └── json_loader.py      # JSON → Chunk 변환
 │       └── interface/
-│           ├── cli.py              # CLI (search, ask, sync, status, reset)
+│           ├── unified_cli.py      # 통합 CLI 진입점
+│           ├── cli.py              # CLI 로직 (search, ask, sync, status, reset)
 │           ├── gradio_app.py       # Gradio Web UI
 │           └── mcp_server.py       # MCP Server (FastMCP)
 ├── tests/                      # pytest 테스트
@@ -193,28 +194,28 @@ uv venv && uv sync
 cp .env.example .env
 
 # HWP 변환
-uv run regulation-manager "data/input/규정집.hwp"
-uv run regulation-manager "data/input/규정집.hwp" --use_llm  # LLM 전처리
+uv run regulation convert "data/input/규정집.hwp"
+uv run regulation convert "data/input/규정집.hwp" --use-llm  # LLM 전처리
 
 # DB 동기화
-uv run regulation-rag sync data/output/규정집.json
-uv run regulation-rag sync data/output/규정집.json --full   # 전체 재동기화
+uv run regulation sync data/output/규정집.json
+uv run regulation sync data/output/규정집.json --full   # 전체 재동기화
 
 # 검색
-uv run regulation-rag search "교원 연구년 자격" -n 5
-uv run regulation-rag search "제15조" --no-rerank
+uv run regulation search "교원 연구년 자격" -n 5
+uv run regulation search "제15조" --no-rerank
 
 # 질문
-uv run regulation-rag ask "교원 연구년 신청 자격은?" --provider lmstudio
-uv run regulation-rag ask "휴학 절차" --show-sources -v
+uv run regulation ask "교원 연구년 신청 자격은?" --provider lmstudio
+uv run regulation ask "휴학 절차" --show-sources -v
 
 # 상태/초기화
-uv run regulation-rag status
-uv run regulation-rag reset --confirm
+uv run regulation status
+uv run regulation reset --confirm
 
 # 인터페이스
-uv run regulation-web     # Web UI (Gradio)
-uv run regulation-mcp     # MCP Server
+uv run regulation serve --web     # Web UI (Gradio)
+uv run regulation serve --mcp     # MCP Server
 
 # 테스트
 uv run pytest
