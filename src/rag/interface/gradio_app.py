@@ -15,7 +15,6 @@ import os
 import shutil
 from datetime import datetime
 from pathlib import Path
-import re
 from typing import List, Optional, Tuple
 
 try:
@@ -42,8 +41,10 @@ from ..application.full_view_usecase import FullViewUseCase, TableMatch
 from ..domain.value_objects import SearchFilter
 from ..domain.entities import RegulationStatus
 from .chat_logic import (
+    attachment_label_variants,
     expand_followup_query,
     format_clarification,
+    parse_attachment_request,
     resolve_audience_choice,
     resolve_regulation_choice,
 )
@@ -303,30 +304,6 @@ def create_app(
             return Audience.STAFF
         return None
 
-    def _parse_attachment_request(
-        query: str,
-        fallback_regulation: Optional[str],
-    ) -> Optional[Tuple[str, Optional[int], str]]:
-        match = re.search(r"(별표|별첨|별지)\s*(\d+)?", query)
-        if not match:
-            return None
-        label = match.group(1)
-        table_no = int(match.group(2)) if match.group(2) else None
-        cleaned = re.sub(rf"{label}\s*\d*", "", query).strip()
-        if not cleaned and fallback_regulation:
-            cleaned = fallback_regulation
-        if not cleaned:
-            return None
-        return cleaned, table_no, label
-
-    def _attachment_label_variants(label: Optional[str]) -> List[str]:
-        if label:
-            variants = [label]
-            if label != "별표":
-                variants.append("별표")
-            return variants
-        return ["별표", "별첨", "별지"]
-
     def _format_table_matches(
         matches: List[TableMatch],
         table_no: Optional[int],
@@ -454,7 +431,7 @@ def create_app(
             yield "내용을 입력해주세요.", "", "", "", ""
             return
 
-        attachment_request = _parse_attachment_request(query, None)
+        attachment_request = parse_attachment_request(query, None)
         if attachment_request:
             reg_query, table_no, label = attachment_request
             matches = full_view_usecase.find_matches(reg_query)
@@ -467,7 +444,7 @@ def create_app(
                 yield "규정 후보가 여러 개입니다.", detail, "", query, ""
                 return
             match = matches[0]
-            label_variants = _attachment_label_variants(label)
+            label_variants = attachment_label_variants(label)
             tables = full_view_usecase.find_tables(match.rule_code, table_no, label_variants)
             if not tables:
                 label_text = label or "별표"
@@ -604,7 +581,7 @@ def create_app(
                 context_hint = state.get("last_regulation") or state.get("last_query")
             query = expand_followup_query(message, context_hint)
             mode = _decide_search_mode_ui(query, "자동 (Auto)")
-            attachment_request = _parse_attachment_request(
+            attachment_request = parse_attachment_request(
                 query,
                 state.get("last_regulation") if use_context else None,
             )
@@ -634,7 +611,7 @@ def create_app(
                 return history, details, debug_text, state
 
             match = matches[0]
-            label_variants = _attachment_label_variants(attachment_label)
+            label_variants = attachment_label_variants(attachment_label)
             tables = full_view_usecase.find_tables(match.rule_code, attachment_no, label_variants)
             if not tables:
                 label_text = attachment_label or "별표"

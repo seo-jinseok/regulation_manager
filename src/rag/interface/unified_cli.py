@@ -160,6 +160,7 @@ def _add_search_parser(subparsers):
     parser.add_argument(
         "query",
         type=str,
+        nargs="?",
         help="검색 쿼리 또는 질문",
     )
     parser.add_argument(
@@ -198,6 +199,11 @@ def _add_search_parser(subparsers):
         "--feedback",
         action="store_true",
         help="결과에 대한 피드백 남기기 (인터랙티브)",
+    )
+    parser.add_argument(
+        "--interactive",
+        action="store_true",
+        help="대화형 모드로 연속 질의",
     )
     
     # Unified specific arguments

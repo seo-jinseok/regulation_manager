@@ -1,5 +1,5 @@
 import re
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 
 def _normalize_text(text: str) -> str:
@@ -140,3 +140,72 @@ def format_clarification(kind: str, options: List[str]) -> str:
             return f"여러 규정이 매칭됩니다. 아래 중 하나를 선택해주세요:\n{choices}"
         return "여러 규정이 매칭됩니다. 규정명을 구체적으로 입력해주세요."
     return "추가 선택이 필요합니다."
+
+
+_REGULATION_SUFFIXES = (
+    "규정",
+    "규칙",
+    "학칙",
+    "정관",
+    "지침",
+    "요강",
+    "준칙",
+    "세칙",
+    "규정집",
+)
+_REGULATION_PATTERN = re.compile(
+    rf"([가-힣0-9·\s]+?(?:{'|'.join(_REGULATION_SUFFIXES)}))"
+)
+_ATTACHMENT_PATTERN = re.compile(r"(별표|별첨|별지)\s*(\d+)?")
+_TRAILING_PARTICLE_PATTERN = re.compile(r"(의|을|를|은|는|이|가|에|에서|으로|로)$")
+
+
+def extract_regulation_title(text: str) -> Optional[str]:
+    if not text:
+        return None
+
+    matches = list(_REGULATION_PATTERN.finditer(text))
+    if not matches:
+        return None
+
+    def score(match: re.Match) -> int:
+        return len(match.group(1).replace(" ", ""))
+
+    best = max(matches, key=score).group(1).strip()
+    best = _TRAILING_PARTICLE_PATTERN.sub("", best).strip()
+    return best or None
+
+
+def parse_attachment_request(
+    text: str,
+    fallback_regulation: Optional[str],
+) -> Optional[Tuple[str, Optional[int], str]]:
+    match = _ATTACHMENT_PATTERN.search(text or "")
+    if not match:
+        return None
+
+    label = match.group(1)
+    table_no = int(match.group(2)) if match.group(2) else None
+    if table_no is None:
+        nearby = re.search(rf"{label}\D{{0,12}}(\d+)\s*번?", text)
+        if nearby:
+            table_no = int(nearby.group(1))
+    regulation = extract_regulation_title(text)
+    if not regulation:
+        cleaned = _ATTACHMENT_PATTERN.sub("", text).strip()
+        regulation = extract_regulation_title(cleaned)
+    if not regulation:
+        regulation = fallback_regulation
+    if not regulation:
+        return None
+
+    return regulation, table_no, label
+
+
+def attachment_label_variants(label: Optional[str]) -> List[str]:
+    if label:
+        variants = [label]
+        if label != "별표":
+            variants.append("별표")
+        return variants
+    return ["별표", "별첨", "별지"]

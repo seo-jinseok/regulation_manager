@@ -34,6 +34,12 @@ from .formatters import (
     extract_display_text,
     build_display_path,
     get_confidence_info,
+    render_full_view_nodes,
+)
+from .chat_logic import (
+    attachment_label_variants,
+    expand_followup_query,
+    parse_attachment_request,
 )
 
 # Rich for pretty output (optional)
@@ -185,6 +191,7 @@ def create_parser() -> argparse.ArgumentParser:
     search_parser.add_argument(
         "query",
         type=str,
+        nargs="?",
         help="검색 쿼리 또는 질문",
     )
     search_parser.add_argument(
@@ -223,6 +230,11 @@ def create_parser() -> argparse.ArgumentParser:
         "--feedback",
         action="store_true",
         help="결과에 대한 피드백 남기기",
+    )
+    search_parser.add_argument(
+        "--interactive",
+        action="store_true",
+        help="대화형 모드로 연속 질의",
     )
     # Unified specific arguments
     mode_group = search_parser.add_mutually_exclusive_group()
@@ -415,16 +427,137 @@ def _decide_search_mode(args) -> str:
     return decide_search_mode(args.query, force_mode)
 
 
-def _perform_unified_search(args, force_mode: Optional[str] = None) -> int:
+def _format_toc(toc: list[str]) -> str:
+    if not toc:
+        return "목차 정보가 없습니다."
+    return "### 목차\n" + "\n".join([f"- {t}" for t in toc])
+
+
+def _print_markdown(title: str, text: str) -> None:
+    if RICH_AVAILABLE:
+        console.print()
+        console.print(Panel(Markdown(text), title=title, border_style="green"))
+    else:
+        print(f"\n=== {title} ===")
+        print(text)
+
+
+def _select_regulation(matches, interactive: bool):
+    if not matches:
+        return None
+    if len(matches) == 1:
+        return matches[0]
+
+    print_info("여러 규정이 매칭됩니다. 번호 또는 제목으로 선택해주세요.")
+    for i, match in enumerate(matches, 1):
+        print(f"{i}. {match.title}")
+
+    if not interactive:
+        return None
+
+    while True:
+        try:
+            choice = input("\n선택 (Enter로 취소): ").strip()
+        except (KeyboardInterrupt, EOFError):
+            print("\n취소합니다.")
+            return None
+
+        if not choice:
+            return None
+        if choice.isdigit():
+            idx = int(choice)
+            if 1 <= idx <= len(matches):
+                return matches[idx - 1]
+        for match in matches:
+            if match.title == choice:
+                return match
+        print("올바른 선택이 아닙니다.")
+
+
+def _perform_unified_search(
+    args,
+    force_mode: Optional[str] = None,
+    state: Optional[dict] = None,
+    interactive: bool = False,
+) -> int:
     """Core logic for unified search/ask."""
     from ..infrastructure.chroma_store import ChromaVectorStore
     from ..infrastructure.llm_adapter import LLMClientAdapter
     from ..application.search_usecase import SearchUseCase
+    from ..application.full_view_usecase import FullViewUseCase
+    from ..infrastructure.json_loader import JSONDocumentLoader
     from rich.panel import Panel
+
+    state = state or {}
+    query = (args.query or "").strip()
+    if interactive and query:
+        query = expand_followup_query(query, state.get("last_regulation"))
+    if not query:
+        print_error("검색어를 입력해주세요.")
+        return 1
+    args.query = query
 
     mode = force_mode or _decide_search_mode(args)
     if args.verbose:
         print_info(f"실행 모드: {mode.upper()} (쿼리: '{args.query}')")
+
+    attachment_request = parse_attachment_request(
+        args.query,
+        state.get("last_regulation") if interactive else None,
+    )
+    if attachment_request:
+        reg_query, table_no, label = attachment_request
+        full_view = FullViewUseCase(JSONDocumentLoader())
+        matches = full_view.find_matches(reg_query)
+        selected = _select_regulation(matches, interactive)
+        if not selected:
+            return 0
+
+        label_variants = attachment_label_variants(label)
+        tables = full_view.find_tables(selected.rule_code, table_no, label_variants)
+        if not tables:
+            print_info(f"{label}를 찾을 수 없습니다.")
+            return 0
+
+        label_text = label or "별표"
+        lines = []
+        for idx, table in enumerate(tables, 1):
+            path = clean_path_segments(table.path) if table.path else []
+            heading = " > ".join(path) if path else selected.title
+            table_label = f"{label_text} {table_no}" if table_no else label_text
+            lines.append(f"### [{idx}] {heading} ({table_label})")
+            if table.text:
+                lines.append(table.text)
+            lines.append(table.markdown.strip())
+        _print_markdown(f"{selected.title} {label_text}", "\n\n".join(lines))
+
+        state["last_regulation"] = selected.title
+        state["last_rule_code"] = selected.rule_code
+        return 0
+
+    if mode == "full_view":
+        full_view = FullViewUseCase(JSONDocumentLoader())
+        matches = full_view.find_matches(args.query)
+        selected = _select_regulation(matches, interactive)
+        if not selected:
+            return 0
+
+        view = full_view.get_full_view(selected.rule_code) or full_view.get_full_view(selected.title)
+        if not view:
+            print_error("규정 전문을 불러오지 못했습니다.")
+            return 1
+
+        toc_text = _format_toc(view.toc)
+        content_text = render_full_view_nodes(view.content)
+        addenda_text = render_full_view_nodes(view.addenda)
+        detail = f"{toc_text}\n\n### 본문\n\n{content_text or '본문이 없습니다.'}"
+        if addenda_text:
+            detail += f"\n\n### 부칙\n\n{addenda_text}"
+
+        _print_markdown(f"{view.title} 전문", detail)
+        state["last_regulation"] = view.title
+        state["last_rule_code"] = view.rule_code
+        return 0
 
     # Step 1: Check database
     store = ChromaVectorStore(persist_directory=args.db_path)
@@ -436,9 +569,6 @@ def _perform_unified_search(args, force_mode: Optional[str] = None) -> int:
 
     # Initialize LLM only if needed
     llm = None
-    if mode == "full_view":
-        print_info("전문 보기 모드는 웹 UI에서 제공됩니다.")
-        return 0
     if mode == "ask":
         if RICH_AVAILABLE:
             with console.status("[bold blue]⏳ LLM 클라이언트 초기화 중...[/bold blue]"):
@@ -527,6 +657,10 @@ def _perform_unified_search(args, force_mode: Optional[str] = None) -> int:
                 
         if args.feedback and results:
              _collect_cli_feedback(args.query, results[0].chunk.rule_code)
+        if results:
+            top = results[0]
+            state["last_regulation"] = top.chunk.parent_path[0] if top.chunk.parent_path else top.chunk.title
+            state["last_rule_code"] = top.chunk.rule_code
 
     else:
         # Ask (LLM Answer)
@@ -619,12 +753,18 @@ def _perform_unified_search(args, force_mode: Optional[str] = None) -> int:
 
         if args.feedback and answer.sources:
             _collect_cli_feedback(args.query, answer.sources[0].chunk.rule_code)
+        if answer.sources:
+            top = answer.sources[0].chunk
+            state["last_regulation"] = top.parent_path[0] if top.parent_path else top.title
+            state["last_rule_code"] = top.rule_code
 
     return 0
 
 
 def cmd_search(args) -> int:
     """Execute search command (Unified)."""
+    if getattr(args, "interactive", False):
+        return _run_interactive_session(args)
     return _perform_unified_search(args)
 
 
@@ -634,6 +774,45 @@ def cmd_ask(args) -> int:
     if hasattr(args, 'question'):
         args.query = args.question
     return _perform_unified_search(args, force_mode="ask")
+
+
+def _run_interactive_session(args) -> int:
+    """Run an interactive CLI session with conversational turns."""
+    state = {
+        "last_regulation": None,
+        "last_rule_code": None,
+    }
+
+    print_info("대화형 모드입니다. '/exit'로 종료, '/reset'으로 문맥 초기화.")
+
+    prompt = ">>> "
+    query = (args.query or "").strip()
+
+    while True:
+        if not query:
+            try:
+                query = input(prompt).strip()
+            except (KeyboardInterrupt, EOFError):
+                print("\n종료합니다.")
+                return 0
+
+        if query.lower() in ("/exit", "exit", "quit", "q"):
+            print("종료합니다.")
+            return 0
+        if query.lower() in ("/reset", "reset"):
+            state["last_regulation"] = None
+            state["last_rule_code"] = None
+            print_info("문맥을 초기화했습니다.")
+            query = ""
+            continue
+        if query.lower() in ("/help", "help"):
+            print("명령어: /exit, /reset, /help")
+            query = ""
+            continue
+
+        args.query = query
+        _perform_unified_search(args, state=state, interactive=True)
+        query = ""
 
 
 def _collect_cli_feedback(query: str, rule_code: str):

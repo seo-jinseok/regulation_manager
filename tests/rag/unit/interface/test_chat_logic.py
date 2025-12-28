@@ -1,4 +1,7 @@
 from src.rag.interface.chat_logic import (
+    attachment_label_variants,
+    extract_regulation_title,
+    parse_attachment_request,
     expand_followup_query,
     has_explicit_target,
     is_followup_message,
@@ -46,3 +49,23 @@ def test_expand_followup_query():
     assert expand_followup_query("전문 보여줘", context) == "교원인사규정 전문 보여줘"
     assert expand_followup_query("교원복무규정 전문", context) == "교원복무규정 전문"
     assert expand_followup_query("휴학 절차는?", context) == "휴학 절차는?"
+
+
+def test_extract_regulation_title():
+    assert extract_regulation_title("교원인사규정의 별첨 자료 1번") == "교원인사규정"
+    assert extract_regulation_title("중앙도서관자료제적에관한세칙 별표 1") == "중앙도서관자료제적에관한세칙"
+
+
+def test_parse_attachment_request_with_regulation():
+    result = parse_attachment_request("교원인사규정의 별첨 자료 1번", None)
+    assert result == ("교원인사규정", 1, "별첨")
+
+
+def test_parse_attachment_request_with_fallback():
+    result = parse_attachment_request("별표 2 보여줘", "교원인사규정")
+    assert result == ("교원인사규정", 2, "별표")
+
+
+def test_attachment_label_variants():
+    assert attachment_label_variants("별첨") == ["별첨", "별표"]
+    assert attachment_label_variants(None) == ["별표", "별첨", "별지"]
