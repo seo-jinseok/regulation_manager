@@ -341,21 +341,21 @@ def create_app(
     ):
         """Ask question and get LLM answer with progress updates."""
         if not question.strip():
-            yield "질문을 입력해주세요.", "", ""
+            yield "질문을 입력해주세요.", "", "", "", ""
             return
 
         # Step 1: Initialize
-        yield "⏳ 데이터베이스 연결 중...", "", ""
+        yield "⏳ 데이터베이스 연결 중...", "", "", "", ""
         
         db_path_value = target_db_path or db_path
         store_for_ask = ChromaVectorStore(persist_directory=db_path_value)
 
         if store_for_ask.count() == 0:
-            yield "데이터베이스가 비어 있습니다. CLI에서 'regulation-rag sync'를 실행하세요.", "", ""
+            yield "데이터베이스가 비어 있습니다. CLI에서 'regulation-rag sync'를 실행하세요.", "", "", "", ""
             return
 
         # Step 2: Initialize LLM
-        yield "⏳ LLM 클라이언트 초기화 중...", "", ""
+        yield "⏳ LLM 클라이언트 초기화 중...", "", "", "", ""
         
         if use_mock_llm:
             llm_client = MockLLMClient()
@@ -367,11 +367,11 @@ def create_app(
                     base_url=llm_base_url or None,
                 )
             except Exception as e:
-                yield f"LLM 초기화 실패: {e}", "", ""
+                yield f"LLM 초기화 실패: {e}", "", "", "", ""
                 return
 
         # Step 3: Search
-        yield "🔍 관련 규정 검색 중...", "", ""
+        yield "🔍 관련 규정 검색 중...", "", "", "", ""
         
         search_with_llm = SearchUseCase(store_for_ask, llm_client)
 
@@ -380,7 +380,7 @@ def create_app(
             filter = SearchFilter(status=RegulationStatus.ACTIVE)
 
         # Step 4: Generate answer
-        yield "🤖 AI 답변 생성 중... (10-30초 소요)", "", ""
+        yield "🤖 AI 답변 생성 중... (10-30초 소요)", "", "", "", ""
         
         answer = search_with_llm.ask(
             question,
