@@ -30,6 +30,7 @@ except ImportError:
     pass
 
 from ..config import get_config
+from .formatters import normalize_relevance_scores, filter_by_relevance
 
 # Initialize MCP server with metadata
 mcp = FastMCP(
@@ -178,24 +179,10 @@ def ask_regulations(
             "error": f"답변 생성 실패: {str(e)}"
         }, ensure_ascii=False)
     
-    # Format sources with relative normalization
+    # Format sources using shared formatters
     sources_list = answer.sources
-    if sources_list:
-        scores = [r.score for r in sources_list]
-        max_s, min_s = max(scores), min(scores)
-        if max_s == min_s:
-            norm_scores = {r.chunk.id: 1.0 for r in sources_list}
-        else:
-            norm_scores = {r.chunk.id: (r.score - min_s) / (max_s - min_s) for r in sources_list}
-    else:
-        norm_scores = {}
-    
-    # Filter out low relevance results (threshold: 10%)
-    MIN_RELEVANCE_THRESHOLD = 0.10
-    display_sources = [
-        r for r in sources_list 
-        if norm_scores.get(r.chunk.id, 0.0) >= MIN_RELEVANCE_THRESHOLD
-    ]
+    norm_scores = normalize_relevance_scores(sources_list) if sources_list else {}
+    display_sources = filter_by_relevance(sources_list, norm_scores) if sources_list else []
     
     sources = []
     for r in display_sources:
@@ -209,7 +196,7 @@ def ask_regulations(
             "rule_code": r.chunk.rule_code,
             "path": path,
             "text": r.chunk.text,
-            "relevance_pct": rel_pct,  # 정규화된 관련도 (%)
+            "relevance_pct": rel_pct,
         })
     
     return json.dumps({

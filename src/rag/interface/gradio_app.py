@@ -38,6 +38,12 @@ from ..application.sync_usecase import SyncUseCase
 from ..application.search_usecase import QueryRewriteInfo, SearchUseCase
 from ..domain.value_objects import SearchFilter
 from ..domain.entities import RegulationStatus
+from .formatters import (
+    normalize_relevance_scores,
+    filter_by_relevance,
+    get_relevance_label_combined,
+    get_confidence_info,
+)
 
 
 # Default paths
@@ -381,42 +387,19 @@ def create_app(
             include_abolished=include_abolished,
         )
 
-        # Format sources (CLI 수준)
-        # Relative normalization for display
+        # Format sources using shared formatters
         sources_list = answer.sources
-        if sources_list:
-            scores = [r.score for r in sources_list]
-            max_s, min_s = max(scores), min(scores)
-            if max_s == min_s:
-                norm_scores = {r.chunk.id: 1.0 for r in sources_list}
-            else:
-                norm_scores = {r.chunk.id: (r.score - min_s) / (max_s - min_s) for r in sources_list}
-        else:
-            norm_scores = {}
+        norm_scores = normalize_relevance_scores(sources_list) if sources_list else {}
+        display_sources = filter_by_relevance(sources_list, norm_scores) if sources_list else []
 
         sources_md = ["### 📚 참고 규정\n"]
-        
-        # Filter out low relevance results for display (threshold: 10%)
-        MIN_RELEVANCE_THRESHOLD = 0.10
-        display_sources = [
-            r for r in answer.sources 
-            if norm_scores.get(r.chunk.id, 0.0) >= MIN_RELEVANCE_THRESHOLD
-        ]
         
         for i, r in enumerate(display_sources, 1):
             reg_name = r.chunk.parent_path[0] if r.chunk.parent_path else r.chunk.title
             path = " > ".join(r.chunk.parent_path) if r.chunk.parent_path else r.chunk.title
             norm_score = norm_scores.get(r.chunk.id, 0.0)
             rel_pct = int(norm_score * 100)
-            
-            if rel_pct >= 80:
-                rel_label = "🟢 매우 높음"
-            elif rel_pct >= 50:
-                rel_label = "🟡 높음"
-            elif rel_pct >= 30:
-                rel_label = "🟠 보통"
-            else:
-                rel_label = "🔴 낮음"
+            rel_label = get_relevance_label_combined(rel_pct)
             
             # AI 신뢰도는 show_debug일 때만 표시
             score_info = f" | AI 신뢰도: {r.score:.3f}" if show_debug else ""
@@ -431,13 +414,14 @@ def create_app(
 ---
 """)
 
-        # Confidence description
+        # Confidence description using shared formatter
+        conf_icon, conf_label, _ = get_confidence_info(answer.confidence)
         if answer.confidence >= 0.7:
-            conf_desc = "🟢 답변 신뢰도 높음"
+            conf_desc = f"{conf_icon} 답변 신뢰도 {conf_label}"
         elif answer.confidence >= 0.4:
-            conf_desc = "🟡 답변 신뢰도 보통 - 원문 확인 권장"
+            conf_desc = f"{conf_icon} 답변 신뢰도 {conf_label} - 원문 확인 권장"
         else:
-            conf_desc = "🔴 답변 신뢰도 낮음 - 학교 행정실 문의 권장"
+            conf_desc = f"{conf_icon} 답변 신뢰도 {conf_label} - 학교 행정실 문의 권장"
 
         sources_text = "\n".join(sources_md) + f"\n**{conf_desc}** (신뢰도 {answer.confidence:.0%})"
 

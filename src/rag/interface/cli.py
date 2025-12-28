@@ -25,6 +25,17 @@ try:
 except ImportError:
     pass
 
+# Formatters for output formatting
+from .formatters import (
+    normalize_relevance_scores,
+    filter_by_relevance,
+    get_relevance_label_combined,
+    clean_path_segments,
+    extract_display_text,
+    build_display_path,
+    get_confidence_info,
+)
+
 # Rich for pretty output (optional)
 try:
     from rich.console import Console
@@ -528,93 +539,27 @@ def cmd_ask(args) -> int:
             console.print()
             console.print("[bold cyan]📚 참고 규정:[/bold cyan]")
             
-            # Relative normalization: min-max scaling within the batch
-            # This correctly represents the Reranker's relative ranking
-            def normalize_scores_relative(sources):
-                if not sources:
-                    return {}
-                scores = [r.score for r in sources]
-                max_s, min_s = max(scores), min(scores)
-                if max_s == min_s:
-                    return {r.chunk.id: 1.0 for r in sources}
-                return {r.chunk.id: (r.score - min_s) / (max_s - min_s) for r in sources}
-            
-            norm_scores = normalize_scores_relative(answer.sources)
-            
-            # Filter out low relevance results for display (threshold: 10%)
-            # Note: LLM context still uses all sources, only display is filtered
-            MIN_RELEVANCE_THRESHOLD = 0.10
-            display_sources = [
-                r for r in answer.sources 
-                if norm_scores.get(r.chunk.id, 0.0) >= MIN_RELEVANCE_THRESHOLD
-            ]
+            # Use shared formatters for score normalization and filtering
+            norm_scores = normalize_relevance_scores(answer.sources)
+            display_sources = filter_by_relevance(answer.sources, norm_scores)
             
             for i, result in enumerate(display_sources, 1):
                 chunk = result.chunk
                 # Show regulation name from parent_path[0] if available
                 reg_name = chunk.parent_path[0] if chunk.parent_path else chunk.title
                 
-                # Clean up duplicate path segments (e.g., "부칙 > 부 칙" -> "부칙")
-                def clean_path_segments(segments: list) -> list:
-                    if not segments:
-                        return segments
-                    cleaned = [segments[0]]
-                    for seg in segments[1:]:
-                        # Normalize by removing spaces for comparison
-                        prev_normalized = cleaned[-1].replace(" ", "").replace("　", "")
-                        curr_normalized = seg.replace(" ", "").replace("　", "")
-                        # Skip if same as previous (only whitespace differs)
-                        if prev_normalized != curr_normalized:
-                            cleaned.append(seg)
-                    return cleaned
-                
-                # Show full path with duplicates removed
-                cleaned_segments = clean_path_segments(chunk.parent_path) if chunk.parent_path else []
-                
-                # Extract more precise path from text if available
-                # Text format: "규정명 > 조항 > 호 > 목: 내용"
-                import re
-                text_path_match = re.match(r'^([^:]+):\s*', chunk.text)
-                if text_path_match:
-                    text_path = text_path_match.group(1).strip()
-                    text_segments = [s.strip() for s in text_path.split('>')]
-                    # Use text path if it's more detailed than parent_path
-                    if len(text_segments) > len(cleaned_segments):
-                        cleaned_segments = clean_path_segments(text_segments)
-                
-                # Ensure regulation name is at the beginning of the path
-                if cleaned_segments and reg_name and cleaned_segments[0] != reg_name:
-                    # Check if reg_name is not already in the path (normalized comparison)
-                    first_normalized = cleaned_segments[0].replace(" ", "")
-                    reg_normalized = reg_name.replace(" ", "")
-                    if first_normalized != reg_normalized:
-                        cleaned_segments = [reg_name] + cleaned_segments
-                
-                path = " > ".join(cleaned_segments) if cleaned_segments else chunk.title
+                # Use shared formatter for path building
+                path = build_display_path(chunk.parent_path, chunk.text, chunk.title)
                 
                 # Use relative normalization for display
                 norm_score = norm_scores.get(chunk.id, 0.0)
                 rel_score = int(norm_score * 100)
-                score_bar = "█" * (rel_score // 10) + "░" * (10 - rel_score // 10)
                 
-                # Relevance label for better understanding
-                if rel_score >= 80:
-                    rel_label = "🟢 매우 높음"
-                elif rel_score >= 50:
-                    rel_label = "🟡 높음"
-                elif rel_score >= 30:
-                    rel_label = "🟠 보통"
-                else:
-                    rel_label = "🔴 낮음"
+                # Use shared formatter for relevance label
+                rel_label = get_relevance_label_combined(rel_score)
                 
-                # Remove path prefix from text to avoid duplication
-                # Text format: "path: content" -> extract only content
-                import re
-                display_text = chunk.text
-                # Remove leading path pattern (e.g., "규정명 > 조항 > 항목: ")
-                display_text = re.sub(r'^[^:]+:\s*', '', display_text)
-                # Clean up remaining format (e.g., "1.:" -> "1.")
-                display_text = re.sub(r'(\d+)\.\s*:', r'\1.', display_text)
+                # Use shared formatter for display text
+                display_text = extract_display_text(chunk.text)
                 
                 # Format content with visual hierarchy
                 content_parts = [
@@ -634,15 +579,8 @@ def cmd_ask(args) -> int:
 
         # Print confidence with user-friendly description and explanation
         console.print()
-        if answer.confidence >= 0.7:
-            conf_desc = "🟢 높음"
-            conf_detail = "검색된 규정이 질문과 높은 관련성을 보입니다. 답변을 신뢰할 수 있습니다."
-        elif answer.confidence >= 0.4:
-            conf_desc = "🟡 보통"
-            conf_detail = "관련 규정을 찾았지만, 중요한 결정은 위 규정 원문을 직접 확인하세요."
-        else:
-            conf_desc = "🔴 낮음"
-            conf_detail = "관련 규정을 찾기 어렵습니다. 학교 행정실이나 규정집을 직접 확인하세요."
+        conf_icon, conf_label, conf_detail = get_confidence_info(answer.confidence)
+        conf_desc = f"{conf_icon} {conf_label}"
         
         console.print(Panel(
             f"[bold]{conf_desc}[/bold] (신뢰도 {answer.confidence:.0%})\n\n{conf_detail}",

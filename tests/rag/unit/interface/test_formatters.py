@@ -1,0 +1,308 @@
+"""
+Unit tests for formatters module.
+"""
+
+import pytest
+from dataclasses import dataclass
+from typing import List, Optional
+
+# Mock SearchResult and Chunk for testing
+@dataclass
+class MockChunk:
+    id: str
+    text: str = ""
+    title: str = ""
+    parent_path: Optional[List[str]] = None
+    rule_code: str = ""
+
+
+@dataclass
+class MockSearchResult:
+    chunk: MockChunk
+    score: float
+
+
+# Import after mocks are defined
+from src.rag.interface.formatters import (
+    normalize_relevance_scores,
+    filter_by_relevance,
+    get_relevance_label,
+    get_relevance_label_combined,
+    clean_path_segments,
+    extract_display_text,
+    get_confidence_info,
+    build_display_path,
+    DEFAULT_RELEVANCE_THRESHOLD,
+)
+
+
+# ============================================================================
+# normalize_relevance_scores tests
+# ============================================================================
+
+class TestNormalizeRelevanceScores:
+    def test_empty_list(self):
+        """Empty list should return empty dict."""
+        result = normalize_relevance_scores([])
+        assert result == {}
+
+    def test_single_item(self):
+        """Single item should return 1.0 (100% relevance)."""
+        sources = [MockSearchResult(chunk=MockChunk(id="1"), score=0.5)]
+        result = normalize_relevance_scores(sources)
+        assert result == {"1": 1.0}
+
+    def test_equal_scores(self):
+        """All equal scores should return 1.0 for each."""
+        sources = [
+            MockSearchResult(chunk=MockChunk(id="1"), score=0.5),
+            MockSearchResult(chunk=MockChunk(id="2"), score=0.5),
+            MockSearchResult(chunk=MockChunk(id="3"), score=0.5),
+        ]
+        result = normalize_relevance_scores(sources)
+        assert result == {"1": 1.0, "2": 1.0, "3": 1.0}
+
+    def test_multiple_different_scores(self):
+        """Different scores should be normalized to 0-1 range."""
+        sources = [
+            MockSearchResult(chunk=MockChunk(id="1"), score=0.9),  # highest -> 1.0
+            MockSearchResult(chunk=MockChunk(id="2"), score=0.5),  # middle -> 0.5
+            MockSearchResult(chunk=MockChunk(id="3"), score=0.1),  # lowest -> 0.0
+        ]
+        result = normalize_relevance_scores(sources)
+        
+        assert result["1"] == 1.0
+        assert result["3"] == 0.0
+        assert 0.4 < result["2"] < 0.6  # approximately 0.5
+
+    def test_preserves_order(self):
+        """Higher original scores should have higher normalized scores."""
+        sources = [
+            MockSearchResult(chunk=MockChunk(id="a"), score=0.2),
+            MockSearchResult(chunk=MockChunk(id="b"), score=0.8),
+            MockSearchResult(chunk=MockChunk(id="c"), score=0.5),
+        ]
+        result = normalize_relevance_scores(sources)
+        
+        assert result["b"] > result["c"] > result["a"]
+
+
+# ============================================================================
+# filter_by_relevance tests
+# ============================================================================
+
+class TestFilterByRelevance:
+    def test_empty_list(self):
+        """Empty list should return empty list."""
+        result = filter_by_relevance([], {})
+        assert result == []
+
+    def test_filters_below_threshold(self):
+        """Results below threshold should be filtered out."""
+        sources = [
+            MockSearchResult(chunk=MockChunk(id="1"), score=0.9),
+            MockSearchResult(chunk=MockChunk(id="2"), score=0.5),
+            MockSearchResult(chunk=MockChunk(id="3"), score=0.1),
+        ]
+        norm_scores = {"1": 1.0, "2": 0.5, "3": 0.05}  # "3" is below 10%
+        
+        result = filter_by_relevance(sources, norm_scores, threshold=0.10)
+        
+        assert len(result) == 2
+        assert result[0].chunk.id == "1"
+        assert result[1].chunk.id == "2"
+
+    def test_custom_threshold(self):
+        """Custom threshold should be respected."""
+        sources = [
+            MockSearchResult(chunk=MockChunk(id="1"), score=0.9),
+            MockSearchResult(chunk=MockChunk(id="2"), score=0.5),
+        ]
+        norm_scores = {"1": 1.0, "2": 0.4}
+        
+        # 50% threshold should filter out "2"
+        result = filter_by_relevance(sources, norm_scores, threshold=0.50)
+        
+        assert len(result) == 1
+        assert result[0].chunk.id == "1"
+
+    def test_default_threshold(self):
+        """Default threshold should be 0.10."""
+        assert DEFAULT_RELEVANCE_THRESHOLD == 0.10
+
+
+# ============================================================================
+# get_relevance_label tests
+# ============================================================================
+
+class TestGetRelevanceLabel:
+    def test_very_high(self):
+        """80%+ should be '매우 높음'."""
+        icon, label = get_relevance_label(80)
+        assert icon == "🟢"
+        assert label == "매우 높음"
+        
+        icon, label = get_relevance_label(100)
+        assert icon == "🟢"
+        assert label == "매우 높음"
+
+    def test_high(self):
+        """50-79% should be '높음'."""
+        icon, label = get_relevance_label(50)
+        assert icon == "🟡"
+        assert label == "높음"
+        
+        icon, label = get_relevance_label(79)
+        assert icon == "🟡"
+        assert label == "높음"
+
+    def test_medium(self):
+        """30-49% should be '보통'."""
+        icon, label = get_relevance_label(30)
+        assert icon == "🟠"
+        assert label == "보통"
+        
+        icon, label = get_relevance_label(49)
+        assert icon == "🟠"
+        assert label == "보통"
+
+    def test_low(self):
+        """Below 30% should be '낮음'."""
+        icon, label = get_relevance_label(29)
+        assert icon == "🔴"
+        assert label == "낮음"
+        
+        icon, label = get_relevance_label(0)
+        assert icon == "🔴"
+        assert label == "낮음"
+
+    def test_combined(self):
+        """Combined should return 'icon label' format."""
+        result = get_relevance_label_combined(85)
+        assert result == "🟢 매우 높음"
+
+
+# ============================================================================
+# clean_path_segments tests
+# ============================================================================
+
+class TestCleanPathSegments:
+    def test_empty_list(self):
+        """Empty list should return empty list."""
+        assert clean_path_segments([]) == []
+
+    def test_no_duplicates(self):
+        """List without duplicates should be unchanged."""
+        segments = ["규정명", "제1장", "제1조"]
+        assert clean_path_segments(segments) == segments
+
+    def test_removes_whitespace_duplicates(self):
+        """Duplicates differing only by whitespace should be removed."""
+        segments = ["부칙", "부 칙"]
+        result = clean_path_segments(segments)
+        assert result == ["부칙"]
+
+    def test_removes_fullwidth_space_duplicates(self):
+        """Duplicates with fullwidth spaces should be removed."""
+        segments = ["제1조", "제 1 조"]  # with fullwidth spaces
+        result = clean_path_segments(segments)
+        assert result == ["제1조"]
+
+    def test_preserves_different_segments(self):
+        """Different segments should be preserved."""
+        segments = ["규정명", "부칙", "부 칙", "제1조"]
+        result = clean_path_segments(segments)
+        assert result == ["규정명", "부칙", "제1조"]
+
+
+# ============================================================================
+# extract_display_text tests
+# ============================================================================
+
+class TestExtractDisplayText:
+    def test_with_path_prefix(self):
+        """Text with path prefix should have it removed."""
+        text = "규정명 > 제1조 > 제1항: 본문 내용입니다."
+        result = extract_display_text(text)
+        assert result == "본문 내용입니다."
+
+    def test_without_path_prefix(self):
+        """Text without path prefix should be unchanged."""
+        text = "본문 내용입니다."
+        result = extract_display_text(text)
+        assert result == "본문 내용입니다."
+
+    def test_cleans_number_colon_format(self):
+        """Number followed by colon should be cleaned."""
+        text = "1.: 첫 번째 항목"
+        result = extract_display_text(text)
+        assert "1.:" not in result
+
+
+# ============================================================================
+# get_confidence_info tests
+# ============================================================================
+
+class TestGetConfidenceInfo:
+    def test_high_confidence(self):
+        """70%+ should be '높음'."""
+        icon, label, desc = get_confidence_info(0.7)
+        assert icon == "🟢"
+        assert label == "높음"
+        assert "신뢰" in desc
+        
+        icon, label, desc = get_confidence_info(1.0)
+        assert icon == "🟢"
+
+    def test_medium_confidence(self):
+        """40-69% should be '보통'."""
+        icon, label, desc = get_confidence_info(0.4)
+        assert icon == "🟡"
+        assert label == "보통"
+        assert "확인" in desc
+        
+        icon, label, desc = get_confidence_info(0.69)
+        assert icon == "🟡"
+
+    def test_low_confidence(self):
+        """Below 40% should be '낮음'."""
+        icon, label, desc = get_confidence_info(0.39)
+        assert icon == "🔴"
+        assert label == "낮음"
+        assert "행정실" in desc
+        
+        icon, label, desc = get_confidence_info(0.0)
+        assert icon == "🔴"
+
+
+# ============================================================================
+# build_display_path tests
+# ============================================================================
+
+class TestBuildDisplayPath:
+    def test_simple_path(self):
+        """Simple parent path should be joined."""
+        result = build_display_path(
+            chunk_parent_path=["규정명", "제1장", "제1조"],
+            chunk_text="내용",
+            chunk_title="제목",
+        )
+        assert result == "규정명 > 제1장 > 제1조"
+
+    def test_empty_parent_path(self):
+        """Empty parent path should use title."""
+        result = build_display_path(
+            chunk_parent_path=[],
+            chunk_text="내용",
+            chunk_title="제목",
+        )
+        assert result == "제목"
+
+    def test_removes_duplicates(self):
+        """Duplicate segments should be removed."""
+        result = build_display_path(
+            chunk_parent_path=["규정명", "부칙", "부 칙"],
+            chunk_text="내용",
+            chunk_title="제목",
+        )
+        assert result == "규정명 > 부칙"
