@@ -3,12 +3,12 @@
 ## Web Flow A: "전문 보기"
 
 ### Entry Triggers
-- Query contains: "전문", "전체", "全文", "규정 전체"
+- Query contains: "전문", "원문", "전체", "全文", "규정 전체"
 - User clicks "전문 보기" on a regulation result
 
 ### Step-by-step
 1) 사용자 입력
-   - 예: "교원인사규정 전문"
+   - 예: "교원인사규정 전문", "교원인사규정 원문"
 2) 규정명 정합성 확인
    - 여러 규정이 매칭되면 후보 리스트 제시
 3) 전문 뷰 진입

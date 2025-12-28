@@ -12,7 +12,7 @@
 - "검색어 또는 질문"
 
 **Placeholder**
-- "예: 교원 연구년 자격은? / 교원인사규정 전문 / 제15조"
+- "예: 교원 연구년 자격은? / 교원인사규정 전문(원문) / 제15조"
 
 **Helper Text**
 - "질문은 자동으로 답변 모드로 전환됩니다."
@@ -50,7 +50,7 @@
 
 ### 4) Full View Entry
 **Trigger**
-- Query contains "전문", "전체", "全文"
+- Query contains "전문", "원문", "전체", "全文"
 - Or "전문 보기" button click
 
 **Entry Banner**

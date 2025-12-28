@@ -21,7 +21,7 @@ T-002 | SearchUseCase | Audience detection should influence ranking and filters 
 - 대상 불일치 시 안내 문구 반환
 | P0 | T-001
 
-T-003 | SearchUseCase | Add "full_view" mode when query intent is "전문/전체" |
+T-003 | SearchUseCase | Add "full_view" mode when query intent is "전문/원문/전체" |
 - 규정 단위 결과가 반환됨
 - "전문" 요청은 요약 대신 전문 모드로 전환
 | P0 | -

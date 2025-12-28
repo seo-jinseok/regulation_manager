@@ -45,6 +45,9 @@ uv run regulation search "연구년" -a   # 질문 모드 강제 (답변 생성)
 uv run regulation search "연구년" -q   # 검색 모드 강제 (빠른 검색)
 ```
 
+> **전문 보기(Full View)**는 웹 UI 또는 MCP에서 지원합니다.  
+> (예: `교원인사규정 전문` / `교원인사규정 원문`)
+
 ### 검색 및 질문 옵션
 
 | 옵션 | 설명 |
@@ -75,6 +78,10 @@ uv run regulation serve --web
 
 파일 업로드 → 변환 → DB 동기화 → 질문까지 한 화면에서 진행할 수 있습니다.
 
+**추가 기능**
+- **전문 보기**: "전문/원문/전체" 요청 시 규정 전체 뷰 제공
+- **대상 선택**: 교수/학생/직원 대상이 모호할 때 선택 UI 제공
+
 ### MCP 서버
 
 AI 에이전트(Claude, Cursor 등)에서 규정 검색 기능을 사용할 수 있는 MCP(Model Context Protocol) 서버를 제공합니다.
@@ -93,6 +100,11 @@ uv run regulation serve --mcp
 | `get_sync_status` | 동기화 상태 조회 |
 
 > DB 관리(sync, reset)는 CLI로 수행합니다.
+
+**특징**
+- `audience` 파라미터로 대상(교수/학생/직원) 지정 가능
+- 모호한 질의는 `type=clarification` 응답 반환
+- "전문/원문/전체" 요청은 `type=full_view` 응답 반환
 
 **클라이언트 연결 설정** (Claude Desktop 예시):
 
@@ -598,3 +610,16 @@ uv add <package>
 - Python 3.11+
 - `uv` 패키지 매니저
 - `hwp5` 라이브러리 + `hwp5html` CLI (HWP 파일 처리)
+
+---
+
+## 관련 문서
+
+- [QUICKSTART.md](./QUICKSTART.md) - 빠른 시작 가이드
+- [LLM_GUIDE.md](./LLM_GUIDE.md) - LLM 설정 가이드
+- [SCHEMA_REFERENCE.md](./SCHEMA_REFERENCE.md) - JSON 스키마 명세
+- [USAGE_SCENARIOS.md](./USAGE_SCENARIOS.md) - 실제 사용 시나리오
+- [PRODUCT_BACKLOG.md](./PRODUCT_BACKLOG.md) - 제품 수준 백로그
+- [UX_FLOWS.md](./UX_FLOWS.md) - 웹/MCP UX 플로우
+- [UX_COPY.md](./UX_COPY.md) - UX 카피/컴포넌트 문구
+- [TASKS_BACKLOG.md](./TASKS_BACKLOG.md) - 모듈별 액션 티켓
