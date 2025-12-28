@@ -68,35 +68,65 @@ def print_query_rewrite(search, original_query: str) -> None:
     if not info:
         return
 
+    if RICH_AVAILABLE:
+        console.print()
+        console.print("[bold cyan]🔄 쿼리 분석 결과[/bold cyan]")
+    else:
+        print("\n=== 쿼리 분석 결과 ===")
+
     if not info.used:
         print_info(f"쿼리 리라이팅: (적용 안됨) '{original_query}'")
         return
 
-    method_label = None
+    # 방법 표시
     if info.method == "llm":
-        method_label = "LLM"
+        method_label = "LLM 기반 리라이팅"
+        method_icon = "🤖"
     elif info.method == "rules":
-        method_label = "규칙"
+        method_label = "규칙 기반 확장"
+        method_icon = "📋"
+    else:
+        method_label = "알수없음"
+        method_icon = "❓"
 
+    # 추가 상태
     extras = []
     if info.from_cache:
-        extras.append("캐시")
+        extras.append("캐시 히트")
     if info.fallback:
-        extras.append("LLM 실패 폴백")
+        extras.append("LLM 실패→폴백")
     extra_text = f" ({', '.join(extras)})" if extras else ""
-    prefix = f"쿼리 리라이팅[{method_label}]{extra_text}" if method_label else "쿼리 리라이팅"
 
+    # 원본 → 변환 쿼리
     if info.original == info.rewritten:
-        print_info(f"{prefix}: (변경 없음) '{info.original}'")
+        print_info(f"{method_icon} {method_label}{extra_text}: 변경 없음")
+        print_info(f"   원본: '{info.original}'")
     else:
-        print_info(f"{prefix}: '{info.original}' -> '{info.rewritten}'")
+        print_info(f"{method_icon} {method_label}{extra_text}")
+        print_info(f"   원본: '{info.original}'")
+        print_info(f"   변환: '{info.rewritten}'")
 
+    # 동의어 사용 여부
     if info.used_synonyms is not None:
-        print_info(f"동의어 사전: {'사용' if info.used_synonyms else '미사용'}")
+        if info.used_synonyms:
+            print_info("📚 동의어 사전: ✅ 적용됨 (유사어로 확장)")
+        else:
+            print_info("📚 동의어 사전: ➖ 미적용")
+
+    # 인텐트 사용 여부
     if info.used_intent is not None:
-        print_info(f"의도 키워드: {'사용' if info.used_intent else '미사용'}")
-    if info.matched_intents:
-        print_info(f"매칭 의도: {', '.join(info.matched_intents)}")
+        if info.used_intent:
+            print_info("🎯 의도 인식: ✅ 매칭됨")
+            if info.matched_intents:
+                intents_str = ", ".join(info.matched_intents)
+                print_info(f"   매칭된 의도: [{intents_str}]")
+        else:
+           print_info("🎯 의도 인식: ➖ 미매칭")
+
+    if RICH_AVAILABLE:
+        console.print()
+
+
 
 
 def create_parser() -> argparse.ArgumentParser:

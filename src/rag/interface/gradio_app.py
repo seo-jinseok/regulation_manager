@@ -55,43 +55,64 @@ def _format_query_rewrite_debug(info: Optional[QueryRewriteInfo]) -> str:
     if not info:
         return ""
 
-    lines = ["### 🐞 디버그"]
+    lines = ["### 🔄 쿼리 분석 결과"]
 
     if not info.used:
-        lines.append(f"- 쿼리 리라이팅: (적용 안됨) '{info.original}'")
+        lines.append(f"- **상태**: 쿼리 리라이팅 미적용")
+        lines.append(f"- **원본 쿼리**: `{info.original}`")
         return "\n".join(lines)
 
+    # 방법 표시
     if info.method == "llm":
-        method_label = "LLM"
+        method_label = "🤖 LLM 기반 리라이팅"
     elif info.method == "rules":
-        method_label = "규칙"
+        method_label = "📋 규칙 기반 확장 (동의어/인텐트)"
     else:
-        method_label = "알수없음"
+        method_label = "❓ 알수없음"
 
-    extras = []
+    # 추가 상태 표시
+    status_tags = []
     if info.from_cache:
-        extras.append("캐시")
+        status_tags.append("📦 캐시 히트")
     if info.fallback:
-        extras.append("LLM 실패 폴백")
-    extra_text = f" ({', '.join(extras)})" if extras else ""
+        status_tags.append("⚠️ LLM 실패→폴백")
+    status_text = " | ".join(status_tags) if status_tags else ""
 
+    lines.append(f"**방법**: {method_label}")
+    if status_text:
+        lines.append(f"**상태**: {status_text}")
+
+    # 쿼리 변환 결과
+    lines.append("")
+    lines.append("#### 쿼리 변환")
+    lines.append(f"- **원본**: `{info.original}`")
     if info.original == info.rewritten:
-        lines.append(
-            f"- 쿼리 리라이팅[{method_label}]{extra_text}: (변경 없음) '{info.original}'"
-        )
+        lines.append("- **결과**: (변경 없음)")
     else:
-        lines.append(
-            f"- 쿼리 리라이팅[{method_label}]{extra_text}: '{info.original}' -> '{info.rewritten}'"
-        )
+        lines.append(f"- **변환**: `{info.rewritten}`")
 
+    # 동의어 적용 여부
+    lines.append("")
+    lines.append("#### 적용된 기법")
     if info.used_synonyms is not None:
-        lines.append(f"- 동의어 사전: {'사용' if info.used_synonyms else '미사용'}")
+        if info.used_synonyms:
+            lines.append("- 📚 **동의어 사전**: ✅ 적용됨 (유사어로 검색 범위 확장)")
+        else:
+            lines.append("- 📚 **동의어 사전**: ➖ 미적용")
+
+    # 인텐트 적용 여부
     if info.used_intent is not None:
-        lines.append(f"- 의도 키워드: {'사용' if info.used_intent else '미사용'}")
-    if info.matched_intents:
-        lines.append(f"- 매칭 의도: {', '.join(info.matched_intents)}")
+        if info.used_intent:
+            lines.append("- 🎯 **의도 인식**: ✅ 매칭됨")
+            if info.matched_intents:
+                intents_str = ", ".join([f"`{i}`" for i in info.matched_intents])
+                lines.append(f"  - 매칭된 의도: {intents_str}")
+        else:
+            lines.append("- 🎯 **의도 인식**: ➖ 미매칭")
 
     return "\n".join(lines)
+
+
 
 
 def create_app(

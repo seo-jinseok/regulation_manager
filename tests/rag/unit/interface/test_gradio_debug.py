@@ -22,7 +22,7 @@ def test_format_query_rewrite_debug_llm_cache():
     assert "원문" in output
     assert "재작성" in output
     assert "동의어 사전" in output
-    assert "매칭 의도" in output
+    # matched_intents는 있지만 used_intent=False이므로 의도 인식이 미매칭으로 표시됨
 
 
 def test_format_query_rewrite_debug_rules_fallback():
@@ -41,8 +41,9 @@ def test_format_query_rewrite_debug_rules_fallback():
     output = _format_query_rewrite_debug(info)
 
     assert "규칙" in output
-    assert "LLM 실패 폴백" in output
-    assert "의도 키워드" in output
+    assert "폴백" in output  # "LLM 실패→폴백" 형태로 표시
+    assert "의도 인식" in output
+    assert "근무 회피" in output
 
 
 def test_format_query_rewrite_debug_no_change():
@@ -78,4 +79,4 @@ def test_format_query_rewrite_debug_unused():
 
     output = _format_query_rewrite_debug(info)
 
-    assert "적용 안됨" in output
+    assert "미적용" in output  # "쿼리 리라이팅 미적용" 형태로 표시
