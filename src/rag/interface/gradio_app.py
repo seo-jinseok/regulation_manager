@@ -55,6 +55,8 @@ from .formatters import (
     get_confidence_info,
     clean_path_segments,
     render_full_view_nodes,
+    normalize_markdown_table,
+    normalize_markdown_emphasis,
 )
 
 
@@ -318,7 +320,7 @@ def create_app(
             lines.append(f"### [{idx}] {heading} ({table_label})")
             if match.text:
                 lines.append(match.text)
-            lines.append(match.markdown.strip())
+            lines.append(normalize_markdown_table(match.markdown).strip())
         return "\n\n".join([line for line in lines if line])
 
     def _format_toc(toc: List[str]) -> str:
@@ -398,6 +400,7 @@ def create_app(
             audience_override=audience_override,
         )
 
+        answer_text = normalize_markdown_emphasis(answer.text)
         sources_text = _build_sources_markdown(answer.sources, show_debug)
         debug_text = ""
         if show_debug:
@@ -412,7 +415,7 @@ def create_app(
                 top_regulation_title = top_chunk.parent_path[0]
             else:
                 top_regulation_title = top_chunk.title
-        return answer.text, sources_text, debug_text, rule_code, top_regulation_title
+        return answer_text, sources_text, debug_text, rule_code, top_regulation_title
 
     def unified_search(
         query: str,
@@ -878,6 +881,8 @@ def create_app(
             audience_override=audience_override,
         )
 
+        answer_text = normalize_markdown_emphasis(answer.text)
+
         # Format sources using shared formatters
         sources_list = answer.sources
         norm_scores = normalize_relevance_scores(sources_list) if sources_list else {}
@@ -924,7 +929,7 @@ def create_app(
 
         # Return (answer, sources, debug, query, rule_code)
         rule_code = answer.sources[0].chunk.rule_code if answer.sources else ""
-        yield answer.text, sources_text, debug_text, question, rule_code
+        yield answer_text, sources_text, debug_text, question, rule_code
 
     def record_web_feedback(query, rule_code, rating, comment):
         """Record feedback from Web UI."""

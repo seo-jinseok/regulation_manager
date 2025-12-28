@@ -156,10 +156,16 @@ class ChromaVectorStore(IVectorStore):
             List of SearchResult sorted by relevance.
         """
         where = self._build_where(query, filter)
+        query_text = query.text
+        if not isinstance(query_text, str):
+            if isinstance(query_text, (list, tuple)):
+                query_text = " ".join(str(part) for part in query_text)
+            else:
+                query_text = str(query_text)
 
         # Query ChromaDB
         results = self._collection.query(
-            query_texts=[query.text],
+            query_texts=[query_text],
             n_results=top_k,
             where=where,
             include=["documents", "metadatas", "distances"],

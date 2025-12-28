@@ -227,6 +227,63 @@ def extract_display_text(text: str) -> str:
 _INLINE_NODE_TYPES = {"paragraph", "item", "subitem", "addendum_item"}
 
 
+def normalize_markdown_table(markdown: str) -> str:
+    """Normalize markdown tables with blank header rows."""
+    if not markdown:
+        return markdown
+
+    lines = [line.rstrip() for line in markdown.strip().splitlines()]
+    if len(lines) < 2:
+        return markdown
+
+    if not _is_table_row(lines[0]) or not _is_table_separator_row(lines[1]):
+        return markdown
+
+    header_cells = _split_table_row(lines[0])
+    if not header_cells or any(cell.strip() for cell in header_cells):
+        return markdown
+
+    for idx in range(2, len(lines)):
+        if not _is_table_row(lines[idx]):
+            continue
+        data_cells = _split_table_row(lines[idx])
+        if not data_cells or not any(cell.strip() for cell in data_cells):
+            continue
+        lines[0] = _format_table_row(data_cells, len(header_cells))
+        del lines[idx]
+        break
+
+    return "\n".join(lines)
+
+
+def _is_table_row(line: str) -> bool:
+    return "|" in line
+
+
+def _is_table_separator_row(line: str) -> bool:
+    stripped = line.strip().strip("|").strip()
+    if not stripped:
+        return False
+    parts = [part.strip() for part in stripped.split("|")]
+    if not parts:
+        return False
+    return all(re.match(r"^:?-{3,}:?$", part) or part == "" for part in parts)
+
+
+def _split_table_row(line: str) -> List[str]:
+    stripped = line.strip().strip("|")
+    return [cell.strip() for cell in stripped.split("|")]
+
+
+def _format_table_row(cells: List[str], width: int) -> str:
+    padded = list(cells)
+    if width > len(padded):
+        padded.extend([""] * (width - len(padded)))
+    if width < len(padded):
+        padded = padded[:width]
+    return "| " + " | ".join(padded) + " |"
+
+
 def _inject_tables(text: str, metadata: Dict[str, object]) -> str:
     tables = metadata.get("tables") if isinstance(metadata, dict) else None
     if not text or not tables:
@@ -243,7 +300,8 @@ def _inject_tables(text: str, metadata: Dict[str, object]) -> str:
             markdown = None
         if not markdown:
             return match.group(0)
-        return f"\n\n{markdown.strip()}\n\n"
+        normalized = normalize_markdown_table(markdown)
+        return f"\n\n{normalized.strip()}\n\n"
 
     return re.sub(r"\[TABLE:(\d+)\]", replace, text)
 
@@ -282,6 +340,27 @@ def render_full_view_nodes(nodes: List[dict], depth: int = 0) -> str:
             lines.append(render_full_view_nodes(children, depth + 1))
 
     return "\n\n".join([line for line in lines if line])
+
+
+# ============================================================================
+# Markdown Normalization
+# ============================================================================
+
+def normalize_markdown_emphasis(text: str) -> str:
+    """Normalize emphasis to render bold correctly when wrapped in quotes."""
+    if not text:
+        return text
+
+    replacements = [
+        (r'\*\*"([^"]+)"\*\*', r'"**\1**"'),
+        (r"\*\*'([^']+)'\*\*", r"'**\1**'"),
+        (r"\*\*“([^”]+)”\*\*", r"“**\1**”"),
+        (r"\*\*‘([^’]+)’\*\*", r"‘**\1**’"),
+    ]
+    normalized = text
+    for pattern, repl in replacements:
+        normalized = re.sub(pattern, repl, normalized)
+    return normalized
 
 
 # ============================================================================

@@ -22,6 +22,7 @@ ARTICLE_PATTERN = re.compile(
     r"제\s*\d+\s*조(?:\s*의\s*\d+)?|제\s*\d+\s*항|제\s*\d+\s*호"
 )
 HEADING_ONLY_PATTERN = re.compile(r"^\([^)]*\)\s*$")
+RULE_CODE_PATTERN = re.compile(r"^\d+(?:-\d+){2,}$")
 
 
 def _normalize_article_token(token: str) -> str:
@@ -155,6 +156,27 @@ class SearchUseCase:
         Returns:
             List of SearchResult sorted by relevance.
         """
+        if not isinstance(query_text, str):
+            if isinstance(query_text, (list, tuple)):
+                query_text = " ".join(str(part) for part in query_text)
+            else:
+                query_text = str(query_text)
+        trimmed_query = query_text.strip()
+        if trimmed_query and RULE_CODE_PATTERN.match(trimmed_query):
+            self._last_query_rewrite = QueryRewriteInfo(
+                original=query_text,
+                rewritten=trimmed_query,
+                used=False,
+                method=None,
+                from_cache=False,
+                fallback=False,
+                used_synonyms=None,
+                used_intent=None,
+                matched_intents=None,
+            )
+            rule_filter = self._build_rule_code_filter(filter, trimmed_query)
+            query = Query(text="규정", include_abolished=include_abolished)
+            return self.store.search(query, rule_filter, top_k)
         query = Query(text=query_text, include_abolished=include_abolished)
         
         # Rewrite query using LLM if HybridSearcher is available (with LLM)
@@ -656,6 +678,7 @@ class SearchUseCase:
         self,
         rule_code: str,
         top_k: int = 50,
+        include_abolished: bool = True,
     ) -> List[SearchResult]:
         """
         Get all chunks for a specific rule code.
@@ -669,5 +692,20 @@ class SearchUseCase:
         """
         filter = SearchFilter(rule_codes=[rule_code])
         # Use a generic query to get all chunks
-        query = Query(text="규정", include_abolished=True)
+        query = Query(text="규정", include_abolished=include_abolished)
         return self.store.search(query, filter, top_k)
+
+    @staticmethod
+    def _build_rule_code_filter(
+        base_filter: Optional[SearchFilter],
+        rule_code: str,
+    ) -> SearchFilter:
+        if base_filter is None:
+            return SearchFilter(rule_codes=[rule_code])
+        return SearchFilter(
+            status=base_filter.status,
+            levels=base_filter.levels,
+            rule_codes=[rule_code],
+            effective_date_from=base_filter.effective_date_from,
+            effective_date_to=base_filter.effective_date_to,
+        )

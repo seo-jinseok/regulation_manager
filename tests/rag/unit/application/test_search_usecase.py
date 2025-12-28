@@ -1,6 +1,7 @@
 import pytest
 
 from src.rag.application.search_usecase import SearchUseCase
+from src.rag.domain.value_objects import SearchFilter
 from src.rag.domain.entities import (
     Chunk,
     ChunkLevel,
@@ -19,6 +20,22 @@ class FakeStore:
     
     def get_all_documents(self):
         """Return empty list - hybrid searcher will be skipped."""
+        return []
+
+
+class FakeStoreCapture:
+    def __init__(self):
+        self.last_query = None
+        self.last_filter = None
+        self.last_top_k = None
+
+    def search(self, query, filter=None, top_k: int = 10):
+        self.last_query = query
+        self.last_filter = filter
+        self.last_top_k = top_k
+        return []
+
+    def get_all_documents(self):
         return []
 
 
@@ -66,6 +83,29 @@ def test_keyword_bonus_applied():
 
     # 키워드 보너스: 0.05 (keyword_bonus = min(0.3, 1.0 * 0.05))
     assert results[0].score == pytest.approx(0.45)
+
+
+def test_search_coerces_non_string_query():
+    store = FakeStoreCapture()
+    usecase = SearchUseCase(store, use_reranker=False, use_hybrid=False)
+
+    usecase.search(["교원인사규정", "전문"], top_k=1)
+
+    assert store.last_query is not None
+    assert store.last_query.text == "교원인사규정 전문"
+
+
+def test_search_rule_code_filters_by_rule_code():
+    store = FakeStoreCapture()
+    usecase = SearchUseCase(store, use_reranker=False, use_hybrid=False)
+
+    usecase.search("3-1-5", top_k=7)
+
+    assert store.last_query is not None
+    assert store.last_query.text == "규정"
+    assert store.last_filter is not None
+    assert store.last_filter.rule_codes == ["3-1-5"]
+    assert store.last_top_k == 7
 
 
 def test_rerank_uses_rewritten_query(monkeypatch):

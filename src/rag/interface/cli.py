@@ -13,6 +13,7 @@ Usage:
 """
 
 import argparse
+import re
 import os
 import sys
 from pathlib import Path
@@ -35,6 +36,8 @@ from .formatters import (
     build_display_path,
     get_confidence_info,
     render_full_view_nodes,
+    normalize_markdown_table,
+    normalize_markdown_emphasis,
 )
 from .chat_logic import (
     attachment_label_variants,
@@ -442,6 +445,17 @@ def _print_markdown(title: str, text: str) -> None:
         print(text)
 
 
+_CONTROL_CHAR_PATTERN = re.compile(r"[\x00-\x1f\x7f]")
+
+
+def _sanitize_query_input(text: Optional[str]) -> str:
+    """Normalize user input by removing control characters and trimming."""
+    if text is None:
+        return ""
+    cleaned = _CONTROL_CHAR_PATTERN.sub("", str(text))
+    return cleaned.strip()
+
+
 def _select_regulation(matches, interactive: bool):
     if not matches:
         return None
@@ -489,10 +503,13 @@ def _perform_unified_search(
     from rich.panel import Panel
 
     state = state or {}
-    query = (args.query or "").strip()
+    query = _sanitize_query_input(args.query)
     if interactive and query:
         query = expand_followup_query(query, state.get("last_regulation"))
+    query = _sanitize_query_input(query)
     if not query:
+        if interactive:
+            return 0
         print_error("검색어를 입력해주세요.")
         return 1
     args.query = query
@@ -528,7 +545,7 @@ def _perform_unified_search(
             lines.append(f"### [{idx}] {heading} ({table_label})")
             if table.text:
                 lines.append(table.text)
-            lines.append(table.markdown.strip())
+            lines.append(normalize_markdown_table(table.markdown).strip())
         _print_markdown(f"{selected.title} {label_text}", "\n\n".join(lines))
 
         state["last_regulation"] = selected.title
@@ -688,11 +705,13 @@ def _perform_unified_search(
         if args.verbose or args.debug:
             print_query_rewrite(search, args.query)
 
+        answer_text = normalize_markdown_emphasis(answer.text)
+
         # Display Answer (Ask Style)
         if RICH_AVAILABLE:
             console.print()
             console.print(Panel(
-                Markdown(answer.text),
+                Markdown(answer_text),
                 title="🤖 AI 답변",
                 border_style="green",
             ))
@@ -740,7 +759,7 @@ def _perform_unified_search(
 
         else:
             print(f"\n=== AI 답변 ===")
-            print(answer.text)
+            print(answer_text)
             print(f"\n=== 참고 규정 ===")
             for i, result in enumerate(answer.sources, 1):
                 print(f"[{i}] {result.chunk.rule_code}: {result.chunk.text[:100]}...")

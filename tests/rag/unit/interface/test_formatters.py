@@ -33,6 +33,8 @@ from src.rag.interface.formatters import (
     get_confidence_info,
     build_display_path,
     render_full_view_nodes,
+    normalize_markdown_table,
+    normalize_markdown_emphasis,
     DEFAULT_RELEVANCE_THRESHOLD,
 )
 
@@ -335,6 +337,51 @@ class TestRenderFullViewNodes:
         ]
         rendered = render_full_view_nodes(nodes)
         assert "[TABLE:2]" in rendered
+
+
+class TestNormalizeMarkdownTable:
+    def test_promotes_first_data_row_when_header_blank(self):
+        markdown = (
+            "|  |  |  |  |\n"
+            "| --- | --- | --- | --- |\n"
+            "| 직 위 | 근무기간 | 교육업적 점수 | 연구업적 점수 |\n"
+            "| 조교수 | 3년 | 480점 이상 | 300점 이상 |\n"
+        )
+        normalized = normalize_markdown_table(markdown)
+        lines = normalized.splitlines()
+        assert lines[0] == "| 직 위 | 근무기간 | 교육업적 점수 | 연구업적 점수 |"
+        assert "조교수" in normalized
+
+    def test_keeps_existing_header(self):
+        markdown = (
+            "| 구분 | 값 |\n"
+            "| --- | --- |\n"
+            "| A | 1 |\n"
+        )
+        normalized = normalize_markdown_table(markdown)
+        assert normalized.strip() == markdown.strip()
+
+
+# ============================================================================
+# normalize_markdown_emphasis tests
+# ============================================================================
+
+class TestNormalizeMarkdownEmphasis:
+    def test_moves_double_quotes_outside_bold(self):
+        text = '**"교수님이 학교에 가기 싫어하는 상황"**'
+        assert normalize_markdown_emphasis(text) == '"**교수님이 학교에 가기 싫어하는 상황**"'
+
+    def test_moves_single_quotes_outside_bold(self):
+        text = "**'교원인사규정'**"
+        assert normalize_markdown_emphasis(text) == "'**교원인사규정**'"
+
+    def test_moves_curly_quotes_outside_bold(self):
+        text = "**“교원인사규정”**"
+        assert normalize_markdown_emphasis(text) == "“**교원인사규정**”"
+
+    def test_leaves_plain_bold_untouched(self):
+        text = "**교원인사규정**"
+        assert normalize_markdown_emphasis(text) == text
 
 
 # ============================================================================

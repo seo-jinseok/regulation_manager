@@ -68,3 +68,27 @@ def test_clear_all_reuses_embedding_function():
     store.clear_all()
 
     assert store._client.created["embedding_function"] is store._embedding_function
+
+
+def test_search_coerces_non_string_query_text():
+    class DummyCollection:
+        def __init__(self):
+            self.last_query_texts = None
+
+        def query(self, query_texts, n_results, where, include):
+            self.last_query_texts = query_texts
+            return {"ids": [[]], "documents": [[]], "metadatas": [[]], "distances": [[]]}
+
+    class DummyQuery:
+        def __init__(self, text):
+            self.text = text
+            self.include_abolished = False
+
+    store = ChromaVectorStore.__new__(ChromaVectorStore)
+    store._collection = DummyCollection()
+
+    query = DummyQuery(["휴학", "관련", "규정"])
+    results = store.search(query, None, 5)
+
+    assert results == []
+    assert store._collection.last_query_texts == ["휴학 관련 규정"]
