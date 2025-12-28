@@ -14,6 +14,7 @@ from ..domain.value_objects import Query, SearchFilter
 
 if TYPE_CHECKING:
     from ..infrastructure.hybrid_search import HybridSearcher
+    from ..infrastructure.hybrid_search import Audience
 
 
 # Regex for matching article/paragraph/item numbers (제N조, 제N항, 제N호)
@@ -139,6 +140,7 @@ class SearchUseCase:
         filter: Optional[SearchFilter] = None,
         top_k: int = 10,
         include_abolished: bool = False,
+        audience_override: Optional["Audience"] = None,
     ) -> List[SearchResult]:
         """
         Search for relevant regulation chunks.
@@ -148,6 +150,7 @@ class SearchUseCase:
             filter: Optional metadata filters.
             top_k: Maximum number of results.
             include_abolished: Whether to include abolished regulations.
+            audience_override: Optional audience override for ranking penalties.
 
         Returns:
             List of SearchResult sorted by relevance.
@@ -200,8 +203,8 @@ class SearchUseCase:
         scoring_query_text = self._select_scoring_query(query_text, rewritten_query_text)
 
         # Detect audience if HybridSearcher/QueryAnalyzer is available
-        audience = None
-        if self.hybrid_searcher:
+        audience = audience_override
+        if audience is None and self.hybrid_searcher:
             from ..infrastructure.hybrid_search import Audience
             audience = self.hybrid_searcher._query_analyzer.detect_audience(query_text)
             # Override audience if intentions/synonyms strongly suggest
@@ -420,6 +423,7 @@ class SearchUseCase:
         filter: Optional[SearchFilter] = None,
         top_k: int = 10,
         include_abolished: bool = False,
+        audience_override: Optional["Audience"] = None,
     ) -> List[SearchResult]:
         """
         Search with deduplication by rule_code.
@@ -431,6 +435,7 @@ class SearchUseCase:
             filter: Optional metadata filters.
             top_k: Maximum number of unique regulations.
             include_abolished: Whether to include abolished regulations.
+            audience_override: Optional audience override for ranking penalties.
 
         Returns:
             List of SearchResult with one chunk per regulation.
@@ -441,6 +446,7 @@ class SearchUseCase:
             filter=filter,
             top_k=top_k * 5,
             include_abolished=include_abolished,
+            audience_override=audience_override,
         )
 
         # Keep only the best result per rule_code
@@ -471,6 +477,7 @@ class SearchUseCase:
         filter: Optional[SearchFilter] = None,
         top_k: int = 5,
         include_abolished: bool = False,
+        audience_override: Optional["Audience"] = None,
     ) -> Answer:
         """
         Ask a question and get an LLM-generated answer.
@@ -480,6 +487,7 @@ class SearchUseCase:
             filter: Optional metadata filters.
             top_k: Number of chunks to use as context.
             include_abolished: Whether to include abolished regulations.
+            audience_override: Optional audience override for ranking penalties.
 
         Returns:
             Answer with generated text and sources.
@@ -496,6 +504,7 @@ class SearchUseCase:
             filter=filter,
             top_k=top_k * 3,
             include_abolished=include_abolished,
+            audience_override=audience_override,
         )
 
         if not results:

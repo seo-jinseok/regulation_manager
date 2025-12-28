@@ -105,6 +105,12 @@ class QueryAnalyzer:
     # Question markers indicating natural language queries
     QUESTION_MARKERS = ["어떻게", "무엇", "왜", "언제", "어디", "누가", "어떤", "할까", "인가", "?"]
 
+    # Audience keywords
+    FACULTY_KEYWORDS = ["교수", "교원", "강사", "전임", "안식년", "연구년", "책임시수", "업적평가"]
+    STUDENT_KEYWORDS = ["학생", "학부", "대학원", "수강", "성적", "졸업", "휴학", "복학", "장학", "등록금", "학점"]
+    STAFF_KEYWORDS = ["직원", "행정", "사무", "참사", "주사", "승진", "전보"]
+    AMBIGUOUS_AUDIENCE_KEYWORDS = ["징계", "처분", "위반", "제재", "윤리", "고충"]
+
     # Weight presets for each query type: (bm25_weight, dense_weight)
     WEIGHT_PRESETS: Dict[QueryType, Tuple[float, float]] = {
         QueryType.ARTICLE_REFERENCE: (0.6, 0.4),  # Favor exact keyword match
@@ -334,43 +340,35 @@ class QueryAnalyzer:
         Returns:
             Audience: Detected audience (STUDENT, FACULTY, STAFF, or ALL).
         """
-        query_lower = query.lower()
-        
-        # Keywords for Faculty (Stronger indicators first)
-        faculty_keywords = ["교수", "교원", "강사", "전임", "안식년", "연구년", "책임시수", "업적평가"]
-        if any(k in query_lower for k in faculty_keywords):
-            return Audience.FACULTY
-
-        # Keywords for Student
-        student_keywords = ["학생", "학부", "대학원", "수강", "성적", "졸업", "휴학", "복학", "장학", "등록금", "학점"]
-        if any(k in query_lower for k in student_keywords):
-            return Audience.STUDENT
-
-        # Keywords for Staff
-        staff_keywords = ["직원", "행정", "사무", "참사", "주사", "승진", "전보", "징계"]
-        # Note: '징계' is ambiguous without context, but often associated with staff/faculty in reg context unless '학생' is present.
-        # But '학생 징계' would be caught by student keywords if priority is handled or if we check conjunctions.
-        # Here we use a simple precedence: Faculty > Student > Staff for now, or check explicit combinations.
-        
-        # Refined logic:
-        pass
-        
-        # Let's use the precedence:
-        # If query has "학생" explicitly, it's likely student.
-        if any(k in query_lower for k in student_keywords):
-             # Exception: "Student guidance by Professor" -> Faculty? But usually user asks about "Student rights" -> Student.
-             return Audience.STUDENT
-             
-        if any(k in query_lower for k in faculty_keywords):
-            return Audience.FACULTY
-
-        if any(k in query_lower for k in staff_keywords):
-            # '징계' alone might be ambiguous. Let's be careful.
-            # If '징계' is the only keyword, it defaults to ALL? 
-            # If query is "직원 승진" -> Staff.
-            return Audience.STAFF
-            
+        candidates = self.detect_audience_candidates(query)
+        if len(candidates) == 1:
+            return candidates[0]
         return Audience.ALL
+
+    def detect_audience_candidates(self, query: str) -> List[Audience]:
+        """Return matching audiences for the query."""
+        query_lower = query.lower()
+        matches: List[Audience] = []
+
+        if any(k in query_lower for k in self.FACULTY_KEYWORDS):
+            matches.append(Audience.FACULTY)
+        if any(k in query_lower for k in self.STUDENT_KEYWORDS):
+            matches.append(Audience.STUDENT)
+        if any(k in query_lower for k in self.STAFF_KEYWORDS):
+            matches.append(Audience.STAFF)
+
+        if matches:
+            return matches
+
+        if any(k in query_lower for k in self.AMBIGUOUS_AUDIENCE_KEYWORDS):
+            return [Audience.STUDENT, Audience.FACULTY, Audience.STAFF]
+
+        return [Audience.ALL]
+
+    def is_audience_ambiguous(self, query: str) -> bool:
+        """Return True if multiple audiences match or intent is ambiguous."""
+        candidates = self.detect_audience_candidates(query)
+        return len(candidates) > 1
 
     def has_synonyms(self, query: str) -> bool:
         """Check if query contains any terms with synonyms."""

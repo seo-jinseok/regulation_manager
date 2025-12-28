@@ -436,6 +436,9 @@ def _perform_unified_search(args, force_mode: Optional[str] = None) -> int:
 
     # Initialize LLM only if needed
     llm = None
+    if mode == "full_view":
+        print_info("전문 보기 모드는 웹 UI에서 제공됩니다.")
+        return 0
     if mode == "ask":
         if RICH_AVAILABLE:
             with console.status("[bold blue]⏳ LLM 클라이언트 초기화 중...[/bold blue]"):

@@ -258,6 +258,16 @@ class TestQueryRewriting:
         assert info.used_llm is False
         assert info.method == "rules"
 
+
+class TestAudienceDetection:
+    def test_audience_ambiguous(self):
+        analyzer = QueryAnalyzer()
+        assert analyzer.is_audience_ambiguous("징계 기준") is True
+
+    def test_audience_single(self):
+        analyzer = QueryAnalyzer()
+        assert analyzer.is_audience_ambiguous("학생 휴학 절차") is False
+
     def test_rewrite_blank_llm_falls_back(self, mock_llm):
         """LLM이 빈 응답을 반환하면 규칙 기반으로 폴백."""
         mock_llm.generate.return_value = "   "

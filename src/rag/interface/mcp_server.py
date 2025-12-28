@@ -31,6 +31,10 @@ except ImportError:
 
 from ..config import get_config
 from .formatters import normalize_relevance_scores, filter_by_relevance, clean_path_segments
+from .common import decide_search_mode
+from ..application.full_view_usecase import FullViewUseCase
+from ..infrastructure.json_loader import JSONDocumentLoader
+from ..infrastructure.hybrid_search import QueryAnalyzer, Audience
 
 # Initialize MCP server with metadata
 mcp = FastMCP(
@@ -46,6 +50,19 @@ def _get_store():
     return ChromaVectorStore(persist_directory=config.db_path)
 
 
+def _parse_audience(value: Optional[str]) -> Optional[Audience]:
+    if not value:
+        return None
+    normalized = value.strip().lower()
+    if normalized in ("교수", "faculty"):
+        return Audience.FACULTY
+    if normalized in ("학생", "student"):
+        return Audience.STUDENT
+    if normalized in ("직원", "staff"):
+        return Audience.STAFF
+    return None
+
+
 # ============================================================================
 # MCP Tools
 # ============================================================================
@@ -56,6 +73,7 @@ def search_regulations(
     top_k: int = 5,
     include_abolished: bool = False,
     use_rerank: bool = True,
+    audience: Optional[str] = None,
 ) -> str:
     """
     규정을 검색합니다. Hybrid Search (BM25 + Dense) 및 BGE Reranking을 사용합니다.
@@ -65,11 +83,15 @@ def search_regulations(
         top_k: 반환할 결과 수 (기본: 5)
         include_abolished: 폐지된 규정 포함 여부 (기본: False)
         use_rerank: BGE Reranker 사용 여부 (기본: True)
+        audience: 대상 선택 (교수/학생/직원). 미지정 시 모호하면 재질문.
     
     Returns:
         검색 결과 목록 (JSON 형식)
     """
     from ..application.search_usecase import SearchUseCase
+    analyzer = QueryAnalyzer()
+    mode = decide_search_mode(query)
+    full_view_usecase = FullViewUseCase(JSONDocumentLoader())
     
     store = _get_store()
     
@@ -79,6 +101,47 @@ def search_regulations(
             "error": "데이터베이스가 비어 있습니다. CLI에서 'regulation-rag sync'를 실행하세요."
         }, ensure_ascii=False)
     
+    if mode == "full_view":
+        matches = full_view_usecase.find_matches(query)
+        if not matches:
+            return json.dumps({
+                "success": True,
+                "type": "full_view",
+                "results": [],
+                "message": "해당 규정을 찾을 수 없습니다."
+            }, ensure_ascii=False)
+        if len(matches) > 1:
+            return json.dumps({
+                "success": True,
+                "type": "clarification",
+                "reason": "regulation_ambiguous",
+                "options": [m.title for m in matches],
+            }, ensure_ascii=False)
+        view = full_view_usecase.get_full_view(matches[0].rule_code)
+        if not view:
+            return json.dumps({
+                "success": False,
+                "error": "규정 전문을 불러오지 못했습니다."
+            }, ensure_ascii=False)
+        return json.dumps({
+            "success": True,
+            "type": "full_view",
+            "regulation_name": view.title,
+            "rule_code": view.rule_code,
+            "toc": view.toc,
+            "content": view.content,
+            "addenda": view.addenda,
+        }, ensure_ascii=False)
+
+    audience_override = _parse_audience(audience)
+    if audience_override is None and analyzer.is_audience_ambiguous(query):
+        return json.dumps({
+            "success": True,
+            "type": "clarification",
+            "reason": "audience_ambiguous",
+            "options": ["교수", "학생", "직원"],
+        }, ensure_ascii=False)
+
     # SearchUseCase가 HybridSearcher를 자동 초기화
     search = SearchUseCase(store, use_reranker=use_rerank)
     
@@ -86,6 +149,7 @@ def search_regulations(
         query,
         top_k=top_k,
         include_abolished=include_abolished,
+        audience_override=audience_override,
     )
     
     if not results:
@@ -124,6 +188,7 @@ def ask_regulations(
     provider: Optional[str] = None,
     model: Optional[str] = None,
     base_url: Optional[str] = None,
+    audience: Optional[str] = None,
 ) -> str:
     """
     규정에 대해 질문하고 AI 답변을 받습니다.
@@ -134,12 +199,16 @@ def ask_regulations(
         provider: LLM 프로바이더 (lmstudio, ollama, openai, gemini, openrouter)
         model: 모델 이름 (기본: 프로바이더별 기본값)
         base_url: 로컬 서버 URL (lmstudio, ollama용)
+        audience: 대상 선택 (교수/학생/직원). 미지정 시 모호하면 재질문.
     
     Returns:
         AI 답변 및 참고 규정 (JSON 형식)
     """
     from ..infrastructure.llm_adapter import LLMClientAdapter
     from ..application.search_usecase import SearchUseCase
+    analyzer = QueryAnalyzer()
+    mode = decide_search_mode(question)
+    full_view_usecase = FullViewUseCase(JSONDocumentLoader())
     
     store = _get_store()
     config = get_config()
@@ -172,7 +241,7 @@ def ask_regulations(
     search = SearchUseCase(store, llm_client=llm, use_reranker=config.use_reranker)
     
     try:
-        answer = search.ask(question=question, top_k=top_k)
+        answer = search.ask(question=question, top_k=top_k, audience_override=audience_override)
     except Exception as e:
         return json.dumps({
             "success": False,
@@ -277,3 +346,43 @@ def main():
 
 if __name__ == "__main__":
     main()
+    if mode == "full_view":
+        matches = full_view_usecase.find_matches(question)
+        if not matches:
+            return json.dumps({
+                "success": True,
+                "type": "full_view",
+                "results": [],
+                "message": "해당 규정을 찾을 수 없습니다."
+            }, ensure_ascii=False)
+        if len(matches) > 1:
+            return json.dumps({
+                "success": True,
+                "type": "clarification",
+                "reason": "regulation_ambiguous",
+                "options": [m.title for m in matches],
+            }, ensure_ascii=False)
+        view = full_view_usecase.get_full_view(matches[0].rule_code)
+        if not view:
+            return json.dumps({
+                "success": False,
+                "error": "규정 전문을 불러오지 못했습니다."
+            }, ensure_ascii=False)
+        return json.dumps({
+            "success": True,
+            "type": "full_view",
+            "regulation_name": view.title,
+            "rule_code": view.rule_code,
+            "toc": view.toc,
+            "content": view.content,
+            "addenda": view.addenda,
+        }, ensure_ascii=False)
+
+    audience_override = _parse_audience(audience)
+    if audience_override is None and analyzer.is_audience_ambiguous(question):
+        return json.dumps({
+            "success": True,
+            "type": "clarification",
+            "reason": "audience_ambiguous",
+            "options": ["교수", "학생", "직원"],
+        }, ensure_ascii=False)

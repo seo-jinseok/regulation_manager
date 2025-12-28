@@ -194,8 +194,41 @@ class JSONDocumentLoader(IDocumentLoader):
         titles: Dict[str, str] = {}
 
         for doc in data.get("docs", []):
+            if doc.get("doc_type") != "regulation":
+                continue
             rule_code = self._extract_rule_code(doc)
             if rule_code:
                 titles[rule_code] = doc.get("title", "")
 
         return titles
+
+    def get_regulation_doc(self, json_path: str, identifier: str) -> Optional[Dict[str, Any]]:
+        """
+        Get a regulation document by rule_code or title.
+
+        Args:
+            json_path: Path to the regulation JSON file.
+            identifier: rule_code or title.
+
+        Returns:
+            Regulation document dict or None.
+        """
+        data = self._load_json(json_path)
+        target = self._normalize_title(identifier)
+
+        for doc in data.get("docs", []):
+            if doc.get("doc_type") != "regulation":
+                continue
+
+            rule_code = self._extract_rule_code(doc)
+            title = doc.get("title", "")
+            if rule_code and rule_code == identifier:
+                return doc
+            if target and self._normalize_title(title) == target:
+                return doc
+
+        return None
+
+    @staticmethod
+    def _normalize_title(title: str) -> str:
+        return "".join(str(title).split())

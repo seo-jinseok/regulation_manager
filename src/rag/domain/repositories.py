@@ -158,6 +158,33 @@ class IDocumentLoader(ABC):
         """
         pass
 
+    @abstractmethod
+    def get_regulation_titles(self, json_path: str) -> dict:
+        """
+        Get mapping of rule_code to regulation title.
+
+        Args:
+            json_path: Path to the regulation JSON file.
+
+        Returns:
+            Dict mapping rule_code to title.
+        """
+        pass
+
+    @abstractmethod
+    def get_regulation_doc(self, json_path: str, identifier: str) -> Optional[dict]:
+        """
+        Get a regulation document by rule_code or title.
+
+        Args:
+            json_path: Path to the regulation JSON file.
+            identifier: rule_code or title.
+
+        Returns:
+            Regulation document dict or None.
+        """
+        pass
+
 
 class ILLMClient(ABC):
     """

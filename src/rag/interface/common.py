@@ -16,6 +16,12 @@ def decide_search_mode(query: str, force_mode: Optional[str] = None) -> str:
         return force_mode.lower()
         
     query = query.strip()
+    query_lower = query.lower()
+
+    # 0. Full-view request signals
+    full_view_markers = ["전문", "전체", "원문", "全文", "full text", "fullview"]
+    if any(marker in query_lower for marker in full_view_markers):
+        return "full_view"
     
     # 1. Strong signals for Question
     if query.endswith("?"):

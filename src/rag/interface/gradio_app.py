@@ -34,8 +34,10 @@ from ..infrastructure.json_loader import JSONDocumentLoader
 from ...main import run_pipeline
 from ..infrastructure.llm_adapter import LLMClientAdapter
 from ..infrastructure.llm_client import MockLLMClient
+from ..infrastructure.hybrid_search import QueryAnalyzer, Audience
 from ..application.sync_usecase import SyncUseCase
 from ..application.search_usecase import QueryRewriteInfo, SearchUseCase
+from ..application.full_view_usecase import FullViewUseCase
 from ..domain.value_objects import SearchFilter
 from ..domain.entities import RegulationStatus
 from .formatters import (
@@ -132,6 +134,8 @@ def _decide_search_mode_ui(query: str, mode_selection: str) -> str:
         force_mode = "search"
     elif mode_selection == "질문 (Ask)":
         force_mode = "ask"
+    elif mode_selection == "전문 (Full View)":
+        force_mode = "full_view"
         
     return decide_search_mode(query, force_mode)
 
@@ -279,6 +283,40 @@ def create_app(
         if input_path.resolve() != target_path.resolve():
             shutil.copy2(input_path, target_path)
     # Unified Search Function
+    query_analyzer = QueryAnalyzer()
+    full_view_usecase = FullViewUseCase(JSONDocumentLoader())
+
+    def _parse_audience(selection: str) -> Optional[Audience]:
+        if selection == "교수":
+            return Audience.FACULTY
+        if selection == "학생":
+            return Audience.STUDENT
+        if selection == "직원":
+            return Audience.STAFF
+        return None
+
+    def _format_toc(toc: List[str]) -> str:
+        if not toc:
+            return "목차 정보가 없습니다."
+        return "### 목차\n" + "\n".join([f"- {t}" for t in toc])
+
+    def _render_nodes(nodes: List[dict], depth: int = 0) -> str:
+        lines = []
+        for node in nodes:
+            display_no = node.get("display_no", "")
+            title = node.get("title", "")
+            label = f"{display_no} {title}".strip() if display_no or title else ""
+            if label:
+                heading = "#" * min(6, depth + 3)
+                lines.append(f"{heading} {label}")
+            text = (node.get("text") or "").strip()
+            if text:
+                lines.append(text)
+            children = node.get("children", []) or []
+            if children:
+                lines.append(_render_nodes(children, depth + 1))
+        return "\n\n".join([l for l in lines if l])
+
     def unified_search(
         query: str,
         mode_selection: str,
@@ -288,6 +326,7 @@ def create_app(
         llm_model: str,
         llm_base_url: str,
         target_db_path: str,
+        target_audience: str,
         show_debug: bool,
     ):
         """Execute unified search/ask based on mode."""
@@ -296,12 +335,23 @@ def create_app(
             return
 
         mode = _decide_search_mode_ui(query, mode_selection)
-        
+        audience_override = _parse_audience(target_audience)
+        if mode in ("search", "ask") and audience_override is None:
+            if query_analyzer.is_audience_ambiguous(query):
+                msg = "대상이 모호합니다. 교수/학생/직원 중 하나를 선택해주세요."
+                yield msg, "", "", "", ""
+                return
+
+        if mode == "full_view":
+            table, detail, debug, q, code = full_view_regulations(query, show_debug)
+            yield table, detail, debug, q, code
+            return
+
         if mode == "search":
              # Search (Retrieval)
              # Reuse search_regulations logic but yield it as a generator to match interface
              table, detail, debug, q, code = search_regulations(
-                 query, top_k, include_abolished, show_debug
+                 query, top_k, include_abolished, audience_override, show_debug
              )
              yield table, detail, debug, q, code
         else:
@@ -310,7 +360,7 @@ def create_app(
             for result in ask_question(
                 query, top_k, include_abolished, 
                 llm_provider, llm_model, llm_base_url, 
-                target_db_path, show_debug
+                target_db_path, audience_override, show_debug
             ):
                 yield result
 
@@ -320,6 +370,7 @@ def create_app(
         query: str,
         top_k: int,
         include_abolished: bool,
+        audience_override: Optional[Audience],
         show_debug: bool,
     ) -> Tuple[str, str, str]:
         """Execute search and return formatted results."""
@@ -335,6 +386,7 @@ def create_app(
             query,
             top_k=top_k,
             include_abolished=include_abolished,
+            audience_override=audience_override,
         )
 
         if not results:
@@ -379,6 +431,33 @@ def create_app(
         top_rule_code = results[0].chunk.rule_code if results else ""
         return table, detail, debug_text, query, top_rule_code
 
+    def full_view_regulations(
+        query: str,
+        show_debug: bool,
+    ) -> Tuple[str, str, str, str, str]:
+        """Render regulation full view for '전문' requests."""
+        matches = full_view_usecase.find_matches(query)
+        if not matches:
+            return "해당 규정을 찾을 수 없습니다.", "", "", query, ""
+
+        if len(matches) > 1:
+            options = "\n".join([f"- {m.title}" for m in matches])
+            detail = f"다음 규정 중 하나를 선택해주세요:\n{options}"
+            return "규정 후보가 여러 개입니다.", detail, "", query, ""
+
+        match = matches[0]
+        view = full_view_usecase.get_full_view(match.rule_code) or full_view_usecase.get_full_view(match.title)
+        if not view:
+            return "규정 전문을 불러오지 못했습니다.", "", "", query, ""
+
+        toc_text = _format_toc(view.toc)
+        content_text = _render_nodes(view.content)
+        addenda_text = _render_nodes(view.addenda)
+        detail = "### 본문\n\n" + (content_text or "본문이 없습니다.")
+        if addenda_text:
+            detail += "\n\n### 부칙\n\n" + addenda_text
+        return toc_text, detail, "", query, view.rule_code
+
     # Ask function (with LLM) - Generator for streaming progress
     def ask_question(
         question: str,
@@ -388,6 +467,7 @@ def create_app(
         llm_model: str,
         llm_base_url: str,
         target_db_path: str,
+        audience_override: Optional[Audience],
         show_debug: bool,
     ):
         """Ask question and get LLM answer with progress updates."""
@@ -438,6 +518,7 @@ def create_app(
             filter=filter,
             top_k=top_k,
             include_abolished=include_abolished,
+            audience_override=audience_override,
         )
 
         # Format sources using shared formatters
@@ -613,7 +694,7 @@ def create_app(
                         )
                         with gr.Row():
                             uni_mode = gr.Radio(
-                                choices=["자동 (Auto)", "검색 (Search)", "질문 (Ask)"],
+                                choices=["자동 (Auto)", "검색 (Search)", "질문 (Ask)", "전문 (Full View)"],
                                 value="자동 (Auto)",
                                 label="검색 모드",
                                 scale=2,
@@ -624,6 +705,11 @@ def create_app(
                         uni_top_k = gr.Slider(minimum=1, maximum=20, value=5, step=1, label="결과 수")
                         uni_abolished = gr.Checkbox(label="폐지 규정 포함", value=False)
                         uni_debug = gr.Checkbox(label="디버그 출력", value=False)
+                        uni_target = gr.Radio(
+                            choices=["자동", "교수", "학생", "직원"],
+                            value="자동",
+                            label="대상 선택",
+                        )
 
                 with gr.Accordion("⚙️ LLM 설정 (질문 모드용)", open=False):
                     with gr.Row():
@@ -658,7 +744,7 @@ def create_app(
                     inputs=[
                         uni_query, uni_mode, uni_top_k, uni_abolished,
                         llm_p, llm_m, llm_b, 
-                        gr.State(db_path), uni_debug
+                        gr.State(db_path), uni_target, uni_debug
                     ],
                     outputs=[uni_main, uni_detail, uni_debug_out, uni_fb_query, uni_fb_rule],
                 )
