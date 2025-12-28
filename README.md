@@ -538,6 +538,8 @@ RAG_INTENTS_PATH=data/config/intents.json
 
 # 개발자 가이드
 
+> 상세한 개발 가이드, 코딩 규칙, Clean Architecture 원칙은 [AGENTS.md](./AGENTS.md)를 참고하세요.
+
 ## 프로젝트 구조
 
 ```
@@ -549,43 +551,16 @@ regulation_manager/
 │   ├── enhance_for_rag.py   # RAG 최적화 필드 추가
 │   ├── parsing/             # 파싱 모듈
 │   └── rag/                 # RAG 시스템 (Clean Architecture)
-│       ├── interface/       # CLI, Web UI
+│       ├── interface/       # CLI, Web UI, MCP Server
 │       ├── application/     # Use Cases
 │       ├── domain/          # 도메인 모델
 │       └── infrastructure/  # ChromaDB, Reranker, LLM
 ├── data/
 │   ├── input/               # HWP 파일 입력
 │   ├── output/              # JSON 출력
-│   └── chroma_db/           # 벡터 DB 저장소
+│   ├── chroma_db/           # 벡터 DB 저장소
+│   └── config/              # 동의어/인텐트 사전
 └── tests/                   # pytest 테스트
-```
-
-## RAG 아키텍처
-
-```
-[Query] → [Hybrid Search] → [BGE Reranker] → [LLM 답변 생성]
-                 ↓                  ↓
-         BM25 + Dense         Cross-Encoder
-        (RRF 융합)             Reranking
-```
-
-### 핵심 컴포넌트
-
-| 컴포넌트 | 파일 | 설명 |
-|----------|------|------|
-| 벡터 저장소 | `chroma_store.py` | ChromaDB 기반 임베딩 저장/검색 |
-| Reranker | `reranker.py` | BGE-reranker-v2-m3 Cross-encoder |
-| 검색 Use Case | `search_usecase.py` | 검색 로직 및 스코어링 |
-| JSON 로더 | `json_loader.py` | 규정 JSON 파싱 및 청크 추출 |
-
-### 임베딩 텍스트 구조
-
-```python
-# 기존 (순수 텍스트)
-embedding_text = "수업일수는 연간 16주 이상으로 한다."
-
-# 현재 (계층 맥락 포함)
-embedding_text = "제3장 학사 > 제1절 수업 > 제15조 수업일수: 수업일수는 연간 16주 이상으로 한다."
 ```
 
 ## 개발 명령어
@@ -593,9 +568,6 @@ embedding_text = "제3장 학사 > 제1절 수업 > 제15조 수업일수: 수�
 ```bash
 # 테스트 실행
 uv run pytest
-
-# 특정 테스트
-uv run pytest tests/test_enhance_for_rag.py -v
 
 # 의존성 추가
 uv add <package>

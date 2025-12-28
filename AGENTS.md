@@ -104,6 +104,13 @@ regulation_manager/
 │   ├── test_*.py               # 단위 테스트
 │   └── rag/                    # RAG 모듈 테스트
 └── data/
+    ├── input/                  # HWP 입력 파일
+    ├── output/                 # JSON 출력 파일
+    ├── chroma_db/              # ChromaDB 저장소 (gitignore)
+    ├── sync_state.json         # 동기화 상태 (gitignore)
+    └── config/                 # 설정 파일
+        ├── synonyms.json       # 동의어 사전 (167개 용어)
+        └── intents.json        # 인텐트 규칙 (51개 규칙)
 ```
 
 ---

@@ -247,3 +247,14 @@ uv run regulation serve --web
 | **macOS 최적화** | `mlx` | `gemma-2-9b-it-4bit` | Apple Silicon 활용 |
 | **고품질 답변** | `openai` | `gpt-4o` | 비용 발생 |
 | **오프라인 환경** | `lmstudio` | 사용자 선택 | GUI 기반 관리 |
+
+---
+
+## 관련 문서
+
+| 문서 | 설명 |
+|------|------|
+| [README.md](./README.md) | 시스템 개요 및 상세 기술 설명 |
+| [QUICKSTART.md](./QUICKSTART.md) | 빠른 시작 가이드 |
+| [SCHEMA_REFERENCE.md](./SCHEMA_REFERENCE.md) | JSON 스키마 명세 |
+| [AGENTS.md](./AGENTS.md) | 개발자 가이드 |
