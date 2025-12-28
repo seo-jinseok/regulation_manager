@@ -9,7 +9,7 @@ import hashlib
 import json
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Set
+from typing import Any, Dict, List, Optional, Set
 
 from ..domain.entities import Chunk, ChunkLevel
 from ..domain.repositories import IDocumentLoader
