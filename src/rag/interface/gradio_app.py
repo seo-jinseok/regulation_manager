@@ -123,22 +123,16 @@ def _format_query_rewrite_debug(info: Optional[QueryRewriteInfo]) -> str:
 
 
 def _decide_search_mode_ui(query: str, mode_selection: str) -> str:
-    """Decide search mode based on selection and query heuristic."""
+    """Wrapper for shared decide_search_mode in Gradio."""
+    from .common import decide_search_mode
+    
+    force_mode = None
     if mode_selection == "검색 (Search)":
-        return "search"
-    if mode_selection == "질문 (Ask)":
-        return "ask"
-    
-    # Auto mode heuristic
-    query = query.strip()
-    if query.endswith("?"):
-        return "ask"
-    
-    question_words = ["어떻게", "언제", "무엇", "누가", "어디서", "얼마나", "방법", "절차", "자격", "알려줘", "해줘"]
-    if any(word in query for word in question_words):
-        return "ask"
+        force_mode = "search"
+    elif mode_selection == "질문 (Ask)":
+        force_mode = "ask"
         
-    return "search"
+    return decide_search_mode(query, force_mode)
 
 
 def create_app(

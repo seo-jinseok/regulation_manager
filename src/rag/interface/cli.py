@@ -400,32 +400,19 @@ def cmd_sync(args) -> int:
     return 0
 
 
+
 def _decide_search_mode(args) -> str:
-    """
-    Decide whether to use 'search' (retrieval) or 'ask' (LLM answer) mode.
+    """Wrapper for shared decide_search_mode."""
+    from .common import decide_search_mode
     
-    Returns:
-        "ask" or "search"
-    """
-    # 1. Explicit Flags
+    # Check flags first
+    force_mode = None
     if hasattr(args, 'answer') and args.answer:
-        return "ask"
-    if hasattr(args, 'quick') and args.quick:
-        return "search"
+        force_mode = "ask"
+    elif hasattr(args, 'quick') and args.quick:
+        force_mode = "search"
         
-    # 2. Heuristic for "auto"
-    query = args.query.strip()
-    
-    # Heuristic A: Question mark
-    if query.endswith("?"):
-        return "ask"
-        
-    # Heuristic B: Question words
-    question_words = ["어떻게", "언제", "무엇", "누가", "어디서", "얼마나", "방법", "절차", "자격", "알려줘", "해줘"]
-    if any(word in query for word in question_words):
-        return "ask"
-        
-    return "search"
+    return decide_search_mode(args.query, force_mode)
 
 
 def _perform_unified_search(args, force_mode: Optional[str] = None) -> int:
