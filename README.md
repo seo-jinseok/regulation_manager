@@ -131,8 +131,12 @@ uv run regulation serve --mcp
 
 이 시스템은 **"대학 규정집 검색 도우미"**입니다. 복잡한 규정집에서 원하는 내용을 빠르게 찾아주고, AI가 질문에 대한 답변을 생성해줍니다.
 
-```
-📄 HWP 규정집 → 🗃️ 데이터베이스 저장 → 🔍 검색 → 🤖 AI 답변
+```mermaid
+flowchart LR
+    A["📄 HWP 규정집"] --> B["� JSON 변환"]
+    B --> C["�🗃️ 벡터 DB 저장"]
+    C --> D["🔍 검색"]
+    D --> E["🤖 AI 답변"]
 ```
 
 **작동 원리 (비유)**:
@@ -149,51 +153,39 @@ uv run regulation serve --mcp
 
 ### 🔬 전공자를 위한 기술 설명
 
-```
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              전체 처리 파이프라인                                │
-├─────────────────────────────────────────────────────────────────────────────────┤
-│                                                                                 │
-│  [1] HWP → JSON 변환                                                            │
-│  ┌────────┐    ┌─────────────┐    ┌────────────────┐    ┌──────────────────┐   │
-│  │  HWP   │ -> │  hwp5html   │ -> │ RegulationParser│ -> │ enhance_for_rag │   │
-│  │  File  │    │ (HTML 변환) │    │ (구조화 파싱)   │    │ (RAG 필드 추가) │   │
-│  └────────┘    └─────────────┘    └────────────────┘    └──────────────────┘   │
-│                                                                                 │
-│  [2] 벡터 DB 동기화                                                              │
-│  ┌──────────────┐    ┌─────────────────┐    ┌────────────────┐                  │
-│  │ JSONLoader   │ -> │ ChromaVectorStore│ -> │ BGE-M3 Embedding│                  │
-│  │ (청크 추출)   │    │ (증분 동기화)    │    │ (다국어 임베딩) │                  │
-│  └──────────────┘    └─────────────────┘    └────────────────┘                  │
-│                                                                                 │
-│  [3] 질문(Ask) 처리 파이프라인                                                    │
-│  ┌───────┐    ┌──────────────┐    ┌───────────────────────────────────┐        │
-│  │ Query │ -> │ QueryAnalyzer│ -> │        Hybrid Search              │        │
-│  └───────┘    │ • 유형 분석   │    │  ┌─────────┐    ┌─────────────┐  │        │
-│               │ • 동의어 확장 │    │  │  BM25   │ -> │             │  │        │
-│               │ • 불용어 제거 │    │  │(Sparse) │    │  RRF 융합   │  │        │
-│               └──────────────┘    │  └─────────┘    │  (k=60)     │  │        │
-│                                   │  ┌─────────┐    │             │  │        │
-│                                   │  │ Dense   │ -> │             │  │        │
-│                                   │  │(BGE-M3) │    └─────────────┘  │        │
-│                                   │  └─────────┘                     │        │
-│                                   └──────────────────────────────────┘        │
-│                                                   ↓                            │
-│  ┌────────────────────────┐    ┌──────────────────────────────────────┐       │
-│  │   BGE Reranker v2-m3   │ <- │ Top-K 후보 (BM25 60% + Dense 40%)    │       │
-│  │   (Cross-Encoder)      │    └──────────────────────────────────────┘       │
-│  │   • Query-Doc Pair Scoring                                         │       │
-│  │   • 조항 번호 매칭 보너스                                            │       │
-│  └────────────────────────┘                                                   │
-│                ↓                                                               │
-│  ┌──────────────────────────────────────────────────────────────────┐         │
-│  │                    LLM 답변 생성                                  │         │
-│  │  • Context: Top-N 재정렬 결과 (parent_path 포함)                  │         │
-│  │  • Confidence: Reranker Score 기반 신뢰도 계산                    │         │
-│  │  • Provider: ollama / lmstudio / openai / gemini                 │         │
-│  └──────────────────────────────────────────────────────────────────┘         │
-│                                                                                 │
-└─────────────────────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TB
+    subgraph CONVERT ["1️⃣ HWP → JSON 변환 (regulation convert)"]
+        direction LR
+        HWP["📄 HWP 파일"] --> hwp5html["hwp5html\n(HTML 변환)"]
+        hwp5html --> Parser["RegulationParser\n(구조화 파싱)"]
+        Parser --> Enhance["enhance_for_rag\n(RAG 필드 추가)"]
+        Enhance --> JSON["📋 JSON 출력"]
+    end
+
+    subgraph SYNC ["2️⃣ 벡터 DB 동기화 (regulation sync)"]
+        direction LR
+        JSON2["📋 JSON"] --> Loader["JSONLoader\n(청크 추출)"]
+        Loader --> Chroma[("ChromaDB\n(증분 동기화)")]
+        Chroma --> Embed["BGE-M3\n(1024차원 임베딩)"]
+    end
+
+    subgraph ASK ["3️⃣ 질문 처리 (regulation ask)"]
+        direction TB
+        Query["🔍 사용자 질문"] --> Analyzer["QueryAnalyzer\n• 유형 분석\n• 동의어 확장\n• 인텐트 매칭"]
+        
+        subgraph HYBRID ["Hybrid Search"]
+            direction LR
+            BM25["BM25\n(키워드 매칭)"] --> RRF["RRF 융합\n(k=60)"]
+            Dense["Dense Search\n(의미 유사도)"] --> RRF
+        end
+        
+        Analyzer --> HYBRID
+        RRF --> Reranker["BGE Reranker\n(Cross-Encoder)"]
+        Reranker --> LLM["🤖 LLM 답변 생성\n(ollama/openai/gemini)"]
+    end
+
+    JSON --> JSON2
 ```
 
 ---
@@ -300,15 +292,22 @@ query = "교원 연구년 신청 자격은 무엇인가요?"
 
 두 가지 검색 방식을 결합하여 정확도를 높입니다.
 
-```
-Query ──┬── [BM25 Sparse Search] ────────┬── [RRF Fusion] ── 후보 결과
-        │   • Okapi BM25 (k1=1.5, b=0.75)│   • k = 60
-        │   • TF-IDF 기반 키워드 매칭    │   • rank_score = Σ 1/(k + rank)
-        │                                │
-        └── [Dense Vector Search] ───────┘
-            • BGE-M3 Embedding (1024-dim)
-            • Cosine Similarity
-            • 의미적 유사도 기반
+```mermaid
+flowchart LR
+    Query["🔍 Query"] --> BM25
+    Query --> Dense
+    
+    subgraph SPARSE ["BM25 Sparse Search"]
+        BM25["Okapi BM25\nk1=1.5, b=0.75\nTF-IDF 키워드 매칭"]
+    end
+    
+    subgraph DENSE ["Dense Vector Search"]
+        Dense["BGE-M3\n1024차원 임베딩\nCosine Similarity"]
+    end
+    
+    BM25 --> RRF["RRF 융합\nk=60\nscore = Σ 1/(k+rank)"]
+    Dense --> RRF
+    RRF --> Result["📋 후보 결과"]
 ```
 
 **BM25 수식:**
@@ -332,13 +331,20 @@ Bi-Encoder 검색 결과를 Cross-Encoder로 재정렬합니다.
 
 **Bi-Encoder vs Cross-Encoder:**
 
-```
-[Bi-Encoder]                    [Cross-Encoder]
-Query  → Encoder → Vec_q        Query + Doc → Encoder → Score
-Doc    → Encoder → Vec_d              ↓
-         ↓                       더 정밀하지만 느림
-    cos(Vec_q, Vec_d)           (Top-K에만 적용)
-    빠르지만 덜 정밀
+```mermaid
+flowchart LR
+    subgraph BI ["Bi-Encoder (빠름, 덜 정밀)"]
+        direction TB
+        Q1["Query"] --> E1["Encoder"] --> V1["Vec_q"]
+        D1["Doc"] --> E2["Encoder"] --> V2["Vec_d"]
+        V1 --> COS["cos(Vec_q, Vec_d)"]
+        V2 --> COS
+    end
+    
+    subgraph CROSS ["Cross-Encoder (느림, 더 정밀)"]
+        direction TB
+        QD["Query + Doc"] --> E3["Encoder"] --> Score["Relevance Score"]
+    end
 ```
 
 **보너스 점수:**
