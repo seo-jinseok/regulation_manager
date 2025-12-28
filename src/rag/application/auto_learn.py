@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import List, Optional, Dict, Any, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .feedback import FeedbackCollector, FeedbackEntry
+    from ..infrastructure.feedback import FeedbackCollector, FeedbackEntry
     from ..domain.repositories import ILLMClient
 
 
