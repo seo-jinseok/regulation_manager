@@ -256,6 +256,8 @@ class QueryAnalyzer:
             )
             # Clean up response (remove extra whitespace, newlines)
             rewritten = response.strip().replace("\n", " ")
+            if not rewritten:
+                raise ValueError("LLM returned empty rewrite")
             if intent_keywords:
                 rewritten = self._merge_keywords(rewritten, intent_keywords)
             result = QueryRewriteResult(

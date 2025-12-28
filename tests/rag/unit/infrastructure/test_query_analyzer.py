@@ -258,6 +258,17 @@ class TestQueryRewriting:
         assert info.used_llm is False
         assert info.method == "rules"
 
+    def test_rewrite_blank_llm_falls_back(self, mock_llm):
+        """LLM이 빈 응답을 반환하면 규칙 기반으로 폴백."""
+        mock_llm.generate.return_value = "   "
+
+        analyzer = QueryAnalyzer(llm_client=mock_llm)
+        info = analyzer.rewrite_query_with_info("휴학")
+
+        assert info.method == "rules"
+        assert info.fallback is True
+        assert "휴학 신청" in info.rewritten
+
     def test_expand_query_adds_professor_synonyms(self):
         """교수 키워드는 교원/교직원으로 확장."""
         analyzer = QueryAnalyzer()

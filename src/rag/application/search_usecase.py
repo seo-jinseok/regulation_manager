@@ -217,6 +217,11 @@ class SearchUseCase:
             # Get BM25 sparse results (already uses expanded query internally)
             sparse_query_text = rewritten_query_text or query_text
             sparse_results = self.hybrid_searcher.search_sparse(sparse_query_text, top_k * 3)
+            sparse_results = self._filter_sparse_results(
+                sparse_results,
+                filter=filter,
+                include_abolished=include_abolished,
+            )
             # Convert dense results to ScoredDocument format for fusion
             dense_docs = [
                 ScoredDocument(
@@ -374,6 +379,40 @@ class SearchUseCase:
         if ARTICLE_PATTERN.search(original) and not ARTICLE_PATTERN.search(rewritten):
             return f"{original} {rewritten}"
         return rewritten
+
+    def _filter_sparse_results(
+        self,
+        results: List["ScoredDocument"],
+        filter: Optional[SearchFilter],
+        include_abolished: bool,
+    ) -> List["ScoredDocument"]:
+        """Filter BM25 results to match metadata filters/abolished policy."""
+        if not results:
+            return results
+
+        where_clauses = filter.to_metadata_filter() if filter else {}
+        if not include_abolished and "status" not in where_clauses:
+            where_clauses["status"] = "active"
+
+        if not where_clauses:
+            return results
+
+        return [
+            r for r in results
+            if self._metadata_matches(where_clauses, r.metadata)
+        ]
+
+    def _metadata_matches(self, filters: dict, metadata: dict) -> bool:
+        """Check if metadata satisfies simple filter clauses."""
+        for key, condition in filters.items():
+            value = metadata.get(key)
+            if isinstance(condition, dict) and "$in" in condition:
+                if value not in condition["$in"]:
+                    return False
+            else:
+                if value != condition:
+                    return False
+        return True
 
     def search_unique(
         self,
@@ -569,7 +608,7 @@ class SearchUseCase:
         Compute confidence score based on search results.
 
         Uses two metrics:
-        1. Absolute score: Reranker sigmoid scores (typically 0.001~0.02 range)
+        1. Absolute score: score magnitude (supports 0..1 and small-score regimes)
         2. Score spread: Difference between top and bottom scores (indicates clear ranking)
         
         Higher scores = more confident in the answer.
@@ -579,17 +618,23 @@ class SearchUseCase:
 
         scores = [r.score for r in results[:5]]
         avg_score = sum(scores) / len(scores)
-        
-        # Reranker sigmoid scores are typically 0.001 ~ 0.02 range
-        # A score of 0.005+ is considered good (50%+ confidence)
-        # A score of 0.01+ is considered excellent (100% confidence)
-        abs_confidence = min(1.0, avg_score / 0.01)
-        
+        max_score = max(scores)
+        min_score = min(scores)
+
+        # Normalize absolute confidence with a small-score fallback.
+        if max_score < 0.1:
+            abs_scale = 0.05
+            spread_scale = 0.01
+        else:
+            abs_scale = 1.0
+            spread_scale = 0.2
+
+        abs_confidence = min(1.0, avg_score / abs_scale)
+
         # Also consider score spread (clear differentiation = higher confidence)
         if len(scores) >= 2:
-            spread = max(scores) - min(scores)
-            # If top score is significantly higher than bottom, it's a good sign
-            spread_confidence = min(1.0, spread / 0.005) if spread > 0 else 0.5
+            spread = max_score - min_score
+            spread_confidence = min(1.0, spread / spread_scale) if spread > 0 else 0.5
         else:
             spread_confidence = 0.5
         

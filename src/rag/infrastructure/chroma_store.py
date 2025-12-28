@@ -53,6 +53,7 @@ class ChromaVectorStore(IVectorStore):
 
         self.persist_directory = persist_directory
         self.collection_name = collection_name
+        self._embedding_function = embedding_function
         
         # Create directory if needed
         os.makedirs(persist_directory, exist_ok=True)
@@ -66,7 +67,7 @@ class ChromaVectorStore(IVectorStore):
         # Get or create collection
         self._collection = self._client.get_or_create_collection(
             name=collection_name,
-            embedding_function=embedding_function,
+            embedding_function=self._embedding_function,
             metadata={"hnsw:space": "cosine"},
         )
 
@@ -177,14 +178,21 @@ class ChromaVectorStore(IVectorStore):
                 zip(ids, documents, metadatas, distances)
             ):
                 # Convert distance to similarity score (cosine)
-                # ChromaDB returns L2 distance by default, but we use cosine
-                score = 1.0 - dist if dist < 1.0 else 0.0
+                # ChromaDB returns distance; clamp to [0, 1]
+                score = self._distance_to_score(dist)
 
                 chunk = self._metadata_to_chunk(id_, doc, meta)
                 result = SearchResult(chunk=chunk, score=score, rank=i + 1)
                 search_results.append(result)
 
         return search_results
+
+    @staticmethod
+    def _distance_to_score(distance: float) -> float:
+        """Convert distance to similarity score with clamping."""
+        if distance is None:
+            return 0.0
+        return max(0.0, min(1.0, 1.0 - distance))
 
     @staticmethod
     def _build_where(query: Query, filter: Optional[SearchFilter]) -> Optional[dict]:
@@ -265,6 +273,7 @@ class ChromaVectorStore(IVectorStore):
         self._collection = self._client.create_collection(
             name=self.collection_name,
             metadata={"hnsw:space": "cosine"},
+            embedding_function=self._embedding_function,
         )
 
         return count

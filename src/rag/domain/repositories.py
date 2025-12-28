@@ -87,6 +87,16 @@ class IVectorStore(ABC):
         pass
 
     @abstractmethod
+    def get_all_documents(self) -> list:
+        """
+        Get all documents for sparse index building.
+
+        Returns:
+            List of (doc_id, text, metadata) tuples.
+        """
+        pass
+
+    @abstractmethod
     def clear_all(self) -> int:
         """
         Delete all chunks from the store.

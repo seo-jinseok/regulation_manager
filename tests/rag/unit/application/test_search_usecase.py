@@ -1,7 +1,13 @@
 import pytest
 
 from src.rag.application.search_usecase import SearchUseCase
-from src.rag.domain.entities import Chunk, ChunkLevel, Keyword, SearchResult
+from src.rag.domain.entities import (
+    Chunk,
+    ChunkLevel,
+    Keyword,
+    RegulationStatus,
+    SearchResult,
+)
 
 
 class FakeStore:
@@ -93,3 +99,101 @@ def test_rerank_uses_rewritten_query(monkeypatch):
 
     assert "휴직" in captured["query"]
     assert captured["query"] != "나는 교수인데 학교에 가기 싫어"
+
+
+def test_hybrid_filters_abolished_sparse_results():
+    """Hybrid 검색에서 BM25 결과도 폐지 규정 필터링됨."""
+    documents = [
+        (
+            "doc_active",
+            "휴학 절차 안내",
+            {
+                "rule_code": "1-1-1",
+                "level": "article",
+                "title": "휴학",
+                "parent_path": "학생규정",
+                "status": "active",
+            },
+        ),
+        (
+            "doc_abolished",
+            "휴학 절차 안내",
+            {
+                "rule_code": "1-1-2",
+                "level": "article",
+                "title": "휴학",
+                "parent_path": "학생규정",
+                "status": "abolished",
+            },
+        ),
+    ]
+    store = FakeStoreWithDocs(results=[], documents=documents)
+    usecase = SearchUseCase(store, use_reranker=False, use_hybrid=True)
+
+    results = usecase.search("휴학", top_k=5, include_abolished=False)
+
+    assert {r.chunk.id for r in results} == {"doc_active"}
+    assert all(r.chunk.status == RegulationStatus.ACTIVE for r in results)
+
+
+def test_confidence_uses_normalized_scores():
+    """Reranker 점수(0~1)를 과도하게 포화시키지 않음."""
+    store = FakeStore([])
+    usecase = SearchUseCase(store, use_reranker=False, use_hybrid=False)
+
+    chunk = make_chunk("내용")
+    results = [
+        SearchResult(chunk=chunk, score=0.8, rank=1),
+        SearchResult(chunk=chunk, score=0.6, rank=2),
+        SearchResult(chunk=chunk, score=0.4, rank=3),
+    ]
+
+    confidence = usecase._compute_confidence(results)
+
+    assert confidence == pytest.approx(0.72)
+
+
+def test_hybrid_filters_by_rule_code_and_level():
+    """Hybrid 검색에서 BM25 결과가 rule_code/level 필터를 만족해야 함."""
+    documents = [
+        (
+            "doc_allowed",
+            "휴학 절차 안내",
+            {
+                "rule_code": "A-1-1",
+                "level": "article",
+                "title": "휴학",
+                "parent_path": "학생규정",
+                "status": "active",
+            },
+        ),
+        (
+            "doc_wrong_level",
+            "휴학 절차 안내",
+            {
+                "rule_code": "A-1-1",
+                "level": "section",
+                "title": "휴학",
+                "parent_path": "학생규정",
+                "status": "active",
+            },
+        ),
+        (
+            "doc_wrong_rule",
+            "휴학 절차 안내",
+            {
+                "rule_code": "B-1-1",
+                "level": "article",
+                "title": "휴학",
+                "parent_path": "학생규정",
+                "status": "active",
+            },
+        ),
+    ]
+    store = FakeStoreWithDocs(results=[], documents=documents)
+    usecase = SearchUseCase(store, use_reranker=False, use_hybrid=True)
+
+    filter = SearchFilter(rule_codes=["A-1-1"], levels=[ChunkLevel.ARTICLE])
+    results = usecase.search("휴학", filter=filter, top_k=10, include_abolished=True)
+
+    assert {r.chunk.id for r in results} == {"doc_allowed"}
