@@ -6,7 +6,6 @@ Uses actual regulation JSON structure from the project.
 
 import json
 import tempfile
-from pathlib import Path
 
 import pytest
 
@@ -182,9 +181,7 @@ class TestJSONDocumentLoader:
     def test_load_chunks_by_rule_codes(self, temp_json_file):
         """Load only specific rule codes."""
         loader = JSONDocumentLoader()
-        chunks = loader.load_chunks_by_rule_codes(
-            temp_json_file, {"3-1-5"}
-        )
+        chunks = loader.load_chunks_by_rule_codes(temp_json_file, {"3-1-5"})
 
         # Only 교원인사규정 chunks
         assert all(c.rule_code == "3-1-5" for c in chunks)

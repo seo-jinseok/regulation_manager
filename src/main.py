@@ -1,24 +1,27 @@
 import os
+
 # Suppress Transformers/PyTorch warnings
 os.environ["TRANSFORMERS_NO_ADVISORY_WARNINGS"] = "true"
 import argparse
-import sys
 import json
+import shutil
+import sys
 import time
 from pathlib import Path
-from dotenv import load_dotenv
-import shutil
 
+from dotenv import load_dotenv
+
+from .cache_manager import CacheManager
 from .converter import HwpToMarkdownReader
-from .preprocessor import Preprocessor
+from .enhance_for_rag import enhance_json
 from .formatter import RegulationFormatter
 from .llm_client import LLMClient
 from .metadata_extractor import MetadataExtractor
-from .cache_manager import CacheManager
-from .enhance_for_rag import enhance_json
+from .preprocessor import Preprocessor
 
 PIPELINE_SIGNATURE_VERSION = "v4"
 OUTPUT_SCHEMA_VERSION = "v4"
+
 
 def _resolve_preprocessor_rules_path() -> Path:
     rules_path = os.getenv("PREPROCESSOR_RULES_PATH")
@@ -26,7 +29,10 @@ def _resolve_preprocessor_rules_path() -> Path:
         return Path(rules_path)
     return Path("data/config/preprocessor_rules.json")
 
-def _compute_rules_hash(path: Path, cache_manager: CacheManager, console=None, verbose: bool = False) -> str:
+
+def _compute_rules_hash(
+    path: Path, cache_manager: CacheManager, console=None, verbose: bool = False
+) -> str:
     if not path.exists():
         return "missing"
     try:
@@ -36,12 +42,15 @@ def _compute_rules_hash(path: Path, cache_manager: CacheManager, console=None, v
             console.print(f"[yellow]규칙 파일 해시 계산 실패: {e}[/yellow]")
         return "error"
 
+
 def _build_pipeline_signature(rules_hash: str, llm_signature: str) -> str:
     return f"{PIPELINE_SIGNATURE_VERSION}|rules:{rules_hash}|llm:{llm_signature}"
+
 
 def run_pipeline(args, console=None):
     if not console:
         from rich.console import Console
+
         console = Console()
 
     load_dotenv()
@@ -52,18 +61,20 @@ def run_pipeline(args, console=None):
 
     legacy_output = (Path.cwd() / "output").resolve()
     if output_dir.resolve() == legacy_output:
-        console.print("[yellow]경고: 'output/'은 레거시 경로입니다. 'data/output' 사용을 권장합니다.[/yellow]")
-    
+        console.print(
+            "[yellow]경고: 'output/'은 레거시 경로입니다. 'data/output' 사용을 권장합니다.[/yellow]"
+        )
+
     if not input_path.exists():
         console.print(f"[red]입력 경로가 존재하지 않습니다: {input_path}[/red]")
         return 1
-    
+
     files = []
     if input_path.is_file():
         files.append(input_path)
     elif input_path.is_dir():
         files.extend(sorted(input_path.rglob("*.hwp")))
-    
+
     if not files:
         console.print("[red]처리할 HWP 파일이 없습니다.[/red]")
         return 1
@@ -71,7 +82,9 @@ def run_pipeline(args, console=None):
     # Initialize components
     cache_manager = CacheManager(cache_dir=args.cache_dir)
     rules_path = _resolve_preprocessor_rules_path()
-    rules_hash = _compute_rules_hash(rules_path, cache_manager, console=console, verbose=args.verbose)
+    rules_hash = _compute_rules_hash(
+        rules_path, cache_manager, console=console, verbose=args.verbose
+    )
 
     llm_client = None
     llm_signature = "disabled"
@@ -86,7 +99,9 @@ def run_pipeline(args, console=None):
             llm_signature = llm_client.cache_namespace()
         except Exception as e:
             if args.allow_llm_fallback:
-                console.print(f"[yellow]LLM 초기화 실패: {e} - LLM 비활성화하고 계속 진행합니다.[/yellow]")
+                console.print(
+                    f"[yellow]LLM 초기화 실패: {e} - LLM 비활성화하고 계속 진행합니다.[/yellow]"
+                )
                 llm_client = None
                 llm_signature = "disabled"
             else:
@@ -99,22 +114,28 @@ def run_pipeline(args, console=None):
     formatter = RegulationFormatter()
     metadata_extractor = MetadataExtractor()
 
-    from rich.progress import Progress, SpinnerColumn, TimeElapsedColumn, BarColumn, TextColumn
-    
+    from rich.progress import (
+        BarColumn,
+        Progress,
+        SpinnerColumn,
+        TextColumn,
+        TimeElapsedColumn,
+    )
+
     console.rule("[bold blue]처리 시작[/bold blue]")
-    
+
     had_errors = False
     with Progress(
         SpinnerColumn(),
         TimeElapsedColumn(),
         BarColumn(),
         TextColumn("[progress.description]{task.description}"),
-        console=console
+        console=console,
     ) as progress:
         STEPS_PER_FILE = 5
         TOTAL_STEPS = len(files) * STEPS_PER_FILE
         total_task = progress.add_task("[green]전체 진행률[/green]", total=TOTAL_STEPS)
-        
+
         for file in files:
             try:
                 status_callback = console.print if args.verbose else None
@@ -131,12 +152,22 @@ def run_pipeline(args, console=None):
                 metadata_path = file_output_dir / f"{file.stem}_metadata.json"
                 html_content = None
 
-                file_state = cache_manager.get_file_state(str(file)) if cache_manager else None
+                file_state = (
+                    cache_manager.get_file_state(str(file)) if cache_manager else None
+                )
                 cached_hwp_hash = file_state.get("hwp_hash") if file_state else None
-                cached_raw_md_hash = file_state.get("raw_md_hash") if file_state else None
-                cached_pipeline_signature = file_state.get("pipeline_signature") if file_state else None
-                cached_final_json_hash = file_state.get("final_json_hash") if file_state else None
-                cached_metadata_hash = file_state.get("metadata_hash") if file_state else None
+                cached_raw_md_hash = (
+                    file_state.get("raw_md_hash") if file_state else None
+                )
+                cached_pipeline_signature = (
+                    file_state.get("pipeline_signature") if file_state else None
+                )
+                cached_final_json_hash = (
+                    file_state.get("final_json_hash") if file_state else None
+                )
+                cached_metadata_hash = (
+                    file_state.get("metadata_hash") if file_state else None
+                )
                 hwp_hash = None
                 raw_md_hash = None
                 cache_hit = False
@@ -157,7 +188,9 @@ def run_pipeline(args, console=None):
                         except Exception as e:
                             raw_md_cache_hit = False
                             if args.verbose:
-                                console.print(f"[yellow]RAW MD 해시 계산 실패: {e}[/yellow]")
+                                console.print(
+                                    f"[yellow]RAW MD 해시 계산 실패: {e}[/yellow]"
+                                )
 
                 def output_hash_matches(path: Path, cached_hash: str) -> bool:
                     if not cache_manager or not cached_hash or not path.exists():
@@ -173,7 +206,7 @@ def run_pipeline(args, console=None):
                     and json_path.exists()
                     and metadata_path.exists()
                 )
-                
+
                 full_cache_hit = (
                     not args.force
                     and required_files_exist
@@ -183,7 +216,7 @@ def run_pipeline(args, console=None):
                     and output_hash_matches(json_path, cached_final_json_hash)
                     and output_hash_matches(metadata_path, cached_metadata_hash)
                 )
-                
+
                 # Verbose logging for cache miss reasons
                 if args.verbose and not full_cache_hit and not args.force:
                     reasons = []
@@ -199,16 +232,22 @@ def run_pipeline(args, console=None):
                         reasons.append("raw_md 해시 불일치")
                     if cached_pipeline_signature != pipeline_signature:
                         reasons.append("파이프라인 시그니처 변경")
-                    if required_files_exist and not output_hash_matches(json_path, cached_final_json_hash):
+                    if required_files_exist and not output_hash_matches(
+                        json_path, cached_final_json_hash
+                    ):
                         reasons.append("json 해시 불일치")
-                    if required_files_exist and not output_hash_matches(metadata_path, cached_metadata_hash):
+                    if required_files_exist and not output_hash_matches(
+                        metadata_path, cached_metadata_hash
+                    ):
                         reasons.append("metadata 해시 불일치")
                     if reasons:
                         console.print(f"[dim]캐시 미스: {', '.join(reasons)}[/dim]")
-                
+
                 if full_cache_hit:
                     if args.verbose:
-                        console.print(f"[dim]캐시 적중: {file.name} (변환/전처리/포맷팅 생략)[/dim]")
+                        console.print(
+                            f"[dim]캐시 적중: {file.name} (변환/전처리/포맷팅 생략)[/dim]"
+                        )
                     progress.advance(total_task, STEPS_PER_FILE)
                     if cache_manager and hwp_hash:
                         cache_manager.update_file_state(
@@ -218,7 +257,7 @@ def run_pipeline(args, console=None):
                             pipeline_signature=pipeline_signature,
                         )
                     continue
-                
+
                 # 1. HWP -> MD
                 hwp5html_available = shutil.which("hwp5html") is not None
                 can_reuse_raw_md = (
@@ -234,7 +273,9 @@ def run_pipeline(args, console=None):
                         with open(raw_html_path, "r", encoding="utf-8") as f:
                             html_content = f.read()
                     if cache_manager and hwp_hash:
-                        cache_manager.update_file_state(str(file), hwp_hash=hwp_hash, raw_md_hash=raw_md_hash)
+                        cache_manager.update_file_state(
+                            str(file), hwp_hash=hwp_hash, raw_md_hash=raw_md_hash
+                        )
                 else:
                     if not hwp5html_available:
                         raise RuntimeError(
@@ -243,7 +284,9 @@ def run_pipeline(args, console=None):
                             "현재 HWP와 일치하는 캐시된 raw markdown이 필요합니다."
                         )
                     reader = HwpToMarkdownReader(keep_html=False)
-                    docs = reader.load_data(file, status_callback=status_callback, verbose=args.verbose)
+                    docs = reader.load_data(
+                        file, status_callback=status_callback, verbose=args.verbose
+                    )
                     raw_md = docs[0].text
                     html_content = docs[0].metadata.get("html_content")
                     with open(raw_md_path, "w", encoding="utf-8") as f:
@@ -258,20 +301,22 @@ def run_pipeline(args, console=None):
                             hwp_hash=hwp_hash,
                             raw_md_hash=raw_md_hash,
                         )
-                
+
                 progress.advance(total_task, 1)  # Step 1: HWP → MD
-                
+
                 # Preprocess
                 clean_md = preprocessor.clean(raw_md, verbose_callback=status_callback)
                 progress.advance(total_task, 1)  # Step 2: Preprocess
 
                 extracted_metadata = metadata_extractor.extract(clean_md)
                 metadata_payload = {"file_name": file.name, **extracted_metadata}
-                metadata_text = json.dumps(metadata_payload, ensure_ascii=False, indent=2)
+                metadata_text = json.dumps(
+                    metadata_payload, ensure_ascii=False, indent=2
+                )
                 with open(metadata_path, "w", encoding="utf-8") as f:
                     f.write(metadata_text)
                 progress.advance(total_task, 1)  # Step 3: Metadata extraction
-                
+
                 # Format
                 final_docs = formatter.parse(
                     clean_md,
@@ -280,7 +325,7 @@ def run_pipeline(args, console=None):
                     extracted_metadata=extracted_metadata,
                     source_file_name=file.name,
                 )
-                
+
                 # Backfill metadata
                 scan_date = time.strftime("%Y-%m-%d")
                 missing_rule_code = 0
@@ -301,24 +346,37 @@ def run_pipeline(args, console=None):
                         f"page_range {missing_page_range}/{len(final_docs)}[/dim]"
                     )
                 progress.advance(total_task, 1)  # Step 4: Formatting
-                
+
                 # Save
                 final_json = {
                     "schema_version": OUTPUT_SCHEMA_VERSION,
                     "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                     "pipeline_signature": pipeline_signature,
                     "file_name": file.name,
-                    "toc": (extracted_metadata.get("toc") if extracted_metadata else None) or [],
-                    "index_by_alpha": (extracted_metadata.get("index_by_alpha") if extracted_metadata else None) or [],
-                    "index_by_dept": (extracted_metadata.get("index_by_dept") if extracted_metadata else None) or {},
+                    "toc": (
+                        extracted_metadata.get("toc") if extracted_metadata else None
+                    )
+                    or [],
+                    "index_by_alpha": (
+                        extracted_metadata.get("index_by_alpha")
+                        if extracted_metadata
+                        else None
+                    )
+                    or [],
+                    "index_by_dept": (
+                        extracted_metadata.get("index_by_dept")
+                        if extracted_metadata
+                        else None
+                    )
+                    or {},
                     "docs": final_docs,
                 }
                 # RAG enhancement if requested
                 if args.enhance_rag:
                     final_json = enhance_json(final_json)
                     if args.verbose:
-                        console.print(f"[dim]RAG 최적화 적용 완료[/dim]")
-                
+                        console.print("[dim]RAG 최적화 적용 완료[/dim]")
+
                 final_json_text = json.dumps(final_json, ensure_ascii=False, indent=2)
                 with open(json_path, "w", encoding="utf-8") as f:
                     f.write(final_json_text)
@@ -331,12 +389,14 @@ def run_pipeline(args, console=None):
                         hwp_hash=hwp_hash,
                         raw_md_hash=raw_md_hash,
                         pipeline_signature=pipeline_signature,
-                        final_json_hash=cache_manager.compute_text_hash(final_json_text),
+                        final_json_hash=cache_manager.compute_text_hash(
+                            final_json_text
+                        ),
                         metadata_hash=cache_manager.compute_text_hash(metadata_text),
                     )
-                
+
                 progress.advance(total_task, 1)  # Step 5: Save JSON
-                
+
             except Exception as e:
                 console.print(f"[red]Error processing {file.name}: {e}[/red]")
                 # Advance remaining steps to keep progress consistent
@@ -353,6 +413,7 @@ def run_pipeline(args, console=None):
     console.rule("[bold blue]모든 작업 완료[/bold blue]")
     return 1 if had_errors else 0
 
+
 def main():
     load_dotenv()
 
@@ -364,7 +425,9 @@ def main():
     default_base_url = os.getenv("LLM_BASE_URL") or None
 
     parser = argparse.ArgumentParser(description="Regulation Management Pipeline")
-    parser.add_argument("input_path", type=str, help="Path to input HWP file or directory")
+    parser.add_argument(
+        "input_path", type=str, help="Path to input HWP file or directory"
+    )
     parser.add_argument("--output_dir", type=str, default="data/output")
     parser.add_argument("--use_llm", action="store_true")
     parser.add_argument(
@@ -390,13 +453,14 @@ def main():
         help="Disable RAG optimization (parent_path, full_text, keywords, etc.)",
     )
     parser.set_defaults(enhance_rag=True)
-    
+
     if len(sys.argv) == 1:
         from .interactive import run_interactive
+
         args = run_interactive()
     else:
         args = parser.parse_args()
-    
+
     try:
         status = run_pipeline(args)
         if status != 0:
@@ -404,6 +468,7 @@ def main():
     except KeyboardInterrupt:
         print("\nAborted.")
         sys.exit(130)
+
 
 if __name__ == "__main__":
     main()

@@ -9,11 +9,11 @@ import json
 from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List, Optional, Dict, Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 if TYPE_CHECKING:
-    from ..infrastructure.feedback import FeedbackCollector, FeedbackEntry
     from ..domain.repositories import ILLMClient
+    from ..infrastructure.feedback import FeedbackCollector, FeedbackEntry
 
 
 @dataclass
@@ -129,11 +129,9 @@ class AutoLearnUseCase:
         if self._llm_client and query_groups:
             # Sort queries by negative count
             top_problematic = sorted(
-                query_groups.items(),
-                key=lambda x: len(x[1]),
-                reverse=True
+                query_groups.items(), key=lambda x: len(x[1]), reverse=True
             )[:5]
-            
+
             for query, _ in top_problematic:
                 llm_sug = self.suggest_with_llm(query)
                 if llm_sug:
@@ -206,8 +204,7 @@ class AutoLearnUseCase:
         for query in query_groups.keys():
             query_lower = query.lower()
             covered = any(
-                trigger.lower() in query_lower
-                for trigger in existing_triggers
+                trigger.lower() in query_lower for trigger in existing_triggers
             )
             if not covered:
                 suggestions.append(
@@ -265,9 +262,7 @@ class AutoLearnUseCase:
                             "term": word,
                             "count": count,
                         },
-                        affected_queries=[
-                            q for q in query_groups.keys() if word in q
-                        ],
+                        affected_queries=[q for q in query_groups.keys() if word in q],
                     )
                 )
 
@@ -286,7 +281,7 @@ class AutoLearnUseCase:
         if not self._llm_client:
             return None
 
-        prompt = f"""다음 검색 쿼리에 대해 사용자가 부정적인 피드백을 남겼습니다. 
+        prompt = f"""다음 검색 쿼리에 대해 사용자가 부정적인 피드백을 남겼습니다.
 검색 품질을 높이기 위해 어떤 인텐트(Intent), 동의어(Synonym), 또는 리라이팅 규칙이 필요할까요?
 
 쿼리: "{query}"
@@ -307,6 +302,7 @@ class AutoLearnUseCase:
 
             # Parse JSON from response
             import re
+
             json_match = re.search(r"\{.*\}", response, re.DOTALL)
             if not json_match:
                 return ImprovementSuggestion(
@@ -316,10 +312,10 @@ class AutoLearnUseCase:
                     suggested_value={"llm_response": response},
                     affected_queries=[query],
                 )
-            
+
             data = json.loads(json_match.group())
             desc = f"LLM 제안 - {data.get('reason', '검색 품질 개선')}"
-            
+
             return ImprovementSuggestion(
                 type="llm_expert",
                 priority="high",

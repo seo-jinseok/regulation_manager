@@ -1,7 +1,9 @@
-import unittest
 import os
 import shutil
+import unittest
+
 from src.cache_manager import CacheManager
+
 
 class TestCacheManagerEdge(unittest.TestCase):
     def setUp(self):
@@ -15,7 +17,7 @@ class TestCacheManagerEdge(unittest.TestCase):
     def test_cache_save_load_empty(self):
         cache = CacheManager(cache_dir=self.test_dir)
         cache.save_all()
-        
+
         # New instance loading same dir
         cache2 = CacheManager(cache_dir=self.test_dir)
         self.assertEqual(cache2.llm_cache, {})
@@ -24,10 +26,13 @@ class TestCacheManagerEdge(unittest.TestCase):
         cache = CacheManager(cache_dir=self.test_dir)
         cache.cache_llm_response("input text", "output response")
         self.assertEqual(cache.get_cached_llm_response("input text"), "output response")
-        
+
         cache.save_all()
         cache3 = CacheManager(cache_dir=self.test_dir)
-        self.assertEqual(cache3.get_cached_llm_response("input text"), "output response")
+        self.assertEqual(
+            cache3.get_cached_llm_response("input text"), "output response"
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

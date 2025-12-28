@@ -10,7 +10,7 @@ import re
 from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Optional, Set
+from typing import Dict, List, Optional
 
 
 @dataclass
@@ -43,20 +43,69 @@ class KeywordExtractor:
 
     # Context detection patterns
     STUDENT_PATTERNS = [
-        r"학생", r"학칙", r"학사", r"등록", r"졸업", r"휴학", r"장학",
-        r"수강", r"성적", r"학위", r"입학", r"재학", r"학년",
+        r"학생",
+        r"학칙",
+        r"학사",
+        r"등록",
+        r"졸업",
+        r"휴학",
+        r"장학",
+        r"수강",
+        r"성적",
+        r"학위",
+        r"입학",
+        r"재학",
+        r"학년",
     ]
     EMPLOYEE_PATTERNS = [
-        r"교원", r"직원", r"인사", r"보수", r"급여", r"퇴직", r"복무",
-        r"연구년", r"승진", r"호봉", r"근로", r"노사",
+        r"교원",
+        r"직원",
+        r"인사",
+        r"보수",
+        r"급여",
+        r"퇴직",
+        r"복무",
+        r"연구년",
+        r"승진",
+        r"호봉",
+        r"근로",
+        r"노사",
     ]
 
     # Stopwords to exclude
     STOPWORDS = {
-        "제", "조", "항", "호", "목", "다음", "각", "해당", "경우",
-        "규정", "관한", "위한", "따른", "대한", "의한", "있는",
-        "하는", "되는", "한다", "있다", "된다", "수", "것", "등",
-        "및", "또는", "이", "그", "저", "위", "아래", "기타",
+        "제",
+        "조",
+        "항",
+        "호",
+        "목",
+        "다음",
+        "각",
+        "해당",
+        "경우",
+        "규정",
+        "관한",
+        "위한",
+        "따른",
+        "대한",
+        "의한",
+        "있는",
+        "하는",
+        "되는",
+        "한다",
+        "있다",
+        "된다",
+        "수",
+        "것",
+        "등",
+        "및",
+        "또는",
+        "이",
+        "그",
+        "저",
+        "위",
+        "아래",
+        "기타",
     }
 
     def __init__(
@@ -108,7 +157,9 @@ class KeywordExtractor:
         docs = data.get("docs", [])
 
         result = ExtractionResult(
-            total_regulations=len([d for d in docs if d.get("doc_type") == "regulation"]),
+            total_regulations=len(
+                [d for d in docs if d.get("doc_type") == "regulation"]
+            ),
             total_keywords=0,
         )
 
@@ -155,12 +206,12 @@ class KeywordExtractor:
                 node_title = node.get("title", "")
                 if node_title:
                     all_terms.extend(self._extract_nouns(node_title))
-                
+
                 # Also consider text if it's short (like a summary)
                 text = node.get("text", "")
                 if text and len(text) < 100:
                     all_terms.extend(self._extract_nouns(text))
-                
+
                 children = node.get("children", [])
                 if children:
                     extract_from_nodes(children)
@@ -171,7 +222,8 @@ class KeywordExtractor:
         # Count and filter
         counter = Counter(all_terms)
         keywords = [
-            term for term, count in counter.most_common(30)
+            term
+            for term, count in counter.most_common(30)
             if count >= 1 and len(term) >= 2
         ]
 
@@ -192,10 +244,7 @@ class KeywordExtractor:
         tokens = re.findall(r"[가-힣]+", text)
 
         # Filter stopwords and short tokens
-        filtered = [
-            t for t in tokens
-            if t not in self.STOPWORDS and len(t) >= 2
-        ]
+        filtered = [t for t in tokens if t not in self.STOPWORDS and len(t) >= 2]
 
         return filtered
 
@@ -204,12 +253,10 @@ class KeywordExtractor:
         text = name + " " + " ".join(keywords)
 
         student_score = sum(
-            1 for pattern in self.STUDENT_PATTERNS
-            if re.search(pattern, text)
+            1 for pattern in self.STUDENT_PATTERNS if re.search(pattern, text)
         )
         employee_score = sum(
-            1 for pattern in self.EMPLOYEE_PATTERNS
-            if re.search(pattern, text)
+            1 for pattern in self.EMPLOYEE_PATTERNS if re.search(pattern, text)
         )
 
         if student_score > employee_score:

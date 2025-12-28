@@ -1,5 +1,7 @@
 import unittest
-from src.refine_json import refine_doc, parse_articles_from_text
+
+from src.refine_json import parse_articles_from_text, refine_doc
+
 
 class TestRefine(unittest.TestCase):
     def test_parse_articles(self):
@@ -11,15 +13,11 @@ class TestRefine(unittest.TestCase):
         doc = {
             "title": "Old",
             "preamble": "Actual Title\nSome description",
-            "articles": [
-                {
-                    "article_no": "제1조",
-                    "content": ["(목적) 이 규정은..."]
-                }
-            ]
+            "articles": [{"article_no": "제1조", "content": ["(목적) 이 규정은..."]}],
         }
         refined = refine_doc(doc, 1)
-        self.assertEqual(refined['title'], "Actual Title")
+        self.assertEqual(refined["title"], "Actual Title")
+
 
 if __name__ == "__main__":
     unittest.main()

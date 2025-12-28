@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
-from ..domain.entities import Chunk, ChunkLevel
+from ..domain.entities import Chunk
 from ..domain.repositories import IDocumentLoader
 from ..domain.value_objects import SyncState
 
@@ -19,7 +19,7 @@ from ..domain.value_objects import SyncState
 class JSONDocumentLoader(IDocumentLoader):
     """
     Loads regulation chunks from JSON files.
-    
+
     Implements IDocumentLoader interface for the regulation JSON schema v2.0.
     """
 
@@ -140,19 +140,17 @@ class JSONDocumentLoader(IDocumentLoader):
         metadata = doc.get("metadata", {})
         if metadata.get("rule_code"):
             return metadata["rule_code"]
-        
+
         # Try content nodes for rule_code
         for node in doc.get("content", []):
             node_meta = node.get("metadata", {})
             if node_meta.get("rule_code"):
                 return node_meta["rule_code"]
-        
+
         return ""
 
     def _extract_chunks_recursive(
-        self, 
-        nodes: List[Dict[str, Any]], 
-        rule_code: str
+        self, nodes: List[Dict[str, Any]], rule_code: str
     ) -> List[Chunk]:
         """
         Recursively extract Chunk entities from nested nodes.
@@ -202,7 +200,9 @@ class JSONDocumentLoader(IDocumentLoader):
 
         return titles
 
-    def get_regulation_doc(self, json_path: str, identifier: str) -> Optional[Dict[str, Any]]:
+    def get_regulation_doc(
+        self, json_path: str, identifier: str
+    ) -> Optional[Dict[str, Any]]:
         """
         Get a regulation document by rule_code or title.
 

@@ -90,9 +90,7 @@ class Chunk:
         Returns:
             A Chunk instance.
         """
-        keywords = [
-            Keyword.from_dict(kw) for kw in node.get("keywords", [])
-        ]
+        keywords = [Keyword.from_dict(kw) for kw in node.get("keywords", [])]
 
         # Determine status from title
         title = node.get("title", "")

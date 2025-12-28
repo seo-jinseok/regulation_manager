@@ -6,8 +6,8 @@ intermediate format for further processing.
 """
 
 import re
-from typing import Dict, List, Any, Optional
 import uuid
+from typing import Any, Dict, List, Optional
 
 
 class RegulationParser:
@@ -148,9 +148,20 @@ class RegulationParser:
                         for i in range(len(current_data["appendices"]) - 1, -1, -1):
                             txt = current_data["appendices"][i].strip()
                             title_candidates = [
-                                "규정", "세칙", "지침", "요령", "강령",
-                                "내규", "학칙", "헌장", "기준", "수칙",
-                                "준칙", "요강", "운영", "정관",
+                                "규정",
+                                "세칙",
+                                "지침",
+                                "요령",
+                                "강령",
+                                "내규",
+                                "학칙",
+                                "헌장",
+                                "기준",
+                                "수칙",
+                                "준칙",
+                                "요강",
+                                "운영",
+                                "정관",
                             ]
                             is_candidate = False
                             if any(txt.endswith(c) for c in title_candidates):

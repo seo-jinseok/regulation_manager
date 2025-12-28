@@ -13,7 +13,7 @@ from ..domain.repositories import ILLMClient
 class LLMClientAdapter(ILLMClient):
     """
     Adapter that wraps the existing LLMClient to implement ILLMClient.
-    
+
     Supports:
     - Ollama (local)
     - LM Studio (local)
@@ -41,11 +41,11 @@ class LLMClientAdapter(ILLMClient):
         """
         # Lazy import to avoid circular dependencies
         from ...llm_client import LLMClient
-        
+
         self.provider = provider
         self.model = model
         self.base_url = base_url
-        
+
         self._client = LLMClient(
             provider=provider,
             model=model,
@@ -81,13 +81,13 @@ class LLMClientAdapter(ILLMClient):
 </user>
 
 <assistant>"""
-        
+
         return self._client.complete(full_prompt)
 
     def get_embedding(self, text: str) -> List[float]:
         """
         Get embedding vector for text.
-        
+
         Note: Not implemented as ChromaDB handles embeddings internally.
         """
         raise NotImplementedError(

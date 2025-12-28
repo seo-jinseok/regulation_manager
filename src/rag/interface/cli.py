@@ -13,7 +13,6 @@ Usage:
 """
 
 import argparse
-import re
 import os
 import sys
 from pathlib import Path
@@ -22,37 +21,39 @@ from typing import Optional
 # Load .env file
 try:
     from dotenv import load_dotenv
+
     load_dotenv()
 except ImportError:
     pass
 
 # Formatters for output formatting
-from .formatters import (
-    normalize_relevance_scores,
-    filter_by_relevance,
-    get_relevance_label_combined,
-    clean_path_segments,
-    extract_display_text,
-    build_display_path,
-    get_confidence_info,
-    render_full_view_nodes,
-    normalize_markdown_table,
-    normalize_markdown_emphasis,
-    strip_path_prefix,
-)
 from .chat_logic import (
     attachment_label_variants,
+    build_history_context,
     expand_followup_query,
     parse_attachment_request,
-    build_history_context,
+)
+from .formatters import (
+    build_display_path,
+    clean_path_segments,
+    extract_display_text,
+    filter_by_relevance,
+    get_confidence_info,
+    get_relevance_label_combined,
+    normalize_markdown_emphasis,
+    normalize_markdown_table,
+    normalize_relevance_scores,
+    render_full_view_nodes,
+    strip_path_prefix,
 )
 
 # Rich for pretty output (optional)
 try:
     from rich.console import Console
-    from rich.table import Table
-    from rich.panel import Panel
     from rich.markdown import Markdown
+    from rich.panel import Panel
+    from rich.table import Table
+
     RICH_AVAILABLE = True
     console = Console()
 except ImportError:
@@ -143,12 +144,10 @@ def print_query_rewrite(search, original_query: str) -> None:
                 intents_str = ", ".join(info.matched_intents)
                 print_info(f"   매칭된 의도: [{intents_str}]")
         else:
-           print_info("🎯 의도 인식: ➖ 미매칭")
+            print_info("🎯 의도 인식: ➖ 미매칭")
 
     if RICH_AVAILABLE:
         console.print()
-
-
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -191,7 +190,7 @@ def create_parser() -> argparse.ArgumentParser:
     search_parser = subparsers.add_parser(
         "search",
         help="규정 검색 (자동으로 답변 생성 또는 문서 검색)",
-        description="질문이면 AI 답변을, 키워드면 문서 검색 결과를 자동으로 보여줍니다. (혹은 -a/-q 옵션으로 강제)"
+        description="질문이면 AI 답변을, 키워드면 문서 검색 결과를 자동으로 보여줍니다. (혹은 -a/-q 옵션으로 강제)",
     )
     search_parser.add_argument(
         "query",
@@ -200,7 +199,8 @@ def create_parser() -> argparse.ArgumentParser:
         help="검색 쿼리 또는 질문",
     )
     search_parser.add_argument(
-        "-n", "--top-k",
+        "-n",
+        "--top-k",
         type=int,
         default=5,
         help="결과 개수 (기본: 5)",
@@ -222,7 +222,8 @@ def create_parser() -> argparse.ArgumentParser:
         help="BGE Reranker 비활성화",
     )
     search_parser.add_argument(
-        "-v", "--verbose",
+        "-v",
+        "--verbose",
         action="store_true",
         help="상세 정보 출력",
     )
@@ -244,12 +245,14 @@ def create_parser() -> argparse.ArgumentParser:
     # Unified specific arguments
     mode_group = search_parser.add_mutually_exclusive_group()
     mode_group.add_argument(
-        "-a", "--answer",
+        "-a",
+        "--answer",
         action="store_true",
         help="AI 답변 생성 강제 (Ask 모드)",
     )
     mode_group.add_argument(
-        "-q", "--quick",
+        "-q",
+        "--quick",
         action="store_true",
         help="문서 검색만 수행 (Search 모드)",
     )
@@ -290,7 +293,8 @@ def create_parser() -> argparse.ArgumentParser:
         help="질문",
     )
     ask_parser.add_argument(
-        "-n", "--top-k",
+        "-n",
+        "--top-k",
         type=int,
         default=5,
         help="참고 규정 수",
@@ -331,7 +335,8 @@ def create_parser() -> argparse.ArgumentParser:
         help="BGE Reranker 비활성화 (기본: reranking 사용)",
     )
     ask_parser.add_argument(
-        "-v", "--verbose",
+        "-v",
+        "--verbose",
         action="store_true",
         help="상세 정보 출력 (LLM 설정, 인덱스 구축 현황 등)",
     )
@@ -381,9 +386,9 @@ def create_parser() -> argparse.ArgumentParser:
 
 def cmd_sync(args) -> int:
     """Execute sync command."""
-    from ..infrastructure.json_loader import JSONDocumentLoader
-    from ..infrastructure.chroma_store import ChromaVectorStore
     from ..application.sync_usecase import SyncUseCase
+    from ..infrastructure.chroma_store import ChromaVectorStore
+    from ..infrastructure.json_loader import JSONDocumentLoader
 
     json_path = Path(args.json_path)
     if not json_path.exists():
@@ -417,18 +422,17 @@ def cmd_sync(args) -> int:
     return 0
 
 
-
 def _decide_search_mode(args) -> str:
     """Wrapper for shared decide_search_mode."""
     from .common import decide_search_mode
-    
+
     # Check flags first
     force_mode = None
-    if hasattr(args, 'answer') and args.answer:
+    if hasattr(args, "answer") and args.answer:
         force_mode = "ask"
-    elif hasattr(args, 'quick') and args.quick:
+    elif hasattr(args, "quick") and args.quick:
         force_mode = "search"
-        
+
     return decide_search_mode(args.query, force_mode)
 
 
@@ -519,12 +523,13 @@ def _perform_unified_search(
     interactive: bool = False,
 ) -> int:
     """Core logic for unified search/ask."""
-    from ..infrastructure.chroma_store import ChromaVectorStore
-    from ..infrastructure.llm_adapter import LLMClientAdapter
-    from ..application.search_usecase import SearchUseCase
-    from ..application.full_view_usecase import FullViewUseCase
-    from ..infrastructure.json_loader import JSONDocumentLoader
     from rich.panel import Panel
+
+    from ..application.full_view_usecase import FullViewUseCase
+    from ..application.search_usecase import SearchUseCase
+    from ..infrastructure.chroma_store import ChromaVectorStore
+    from ..infrastructure.json_loader import JSONDocumentLoader
+    from ..infrastructure.llm_adapter import LLMClientAdapter
 
     state = state or {}
     raw_query = _sanitize_query_input(args.query)
@@ -539,7 +544,9 @@ def _perform_unified_search(
         print_error("검색어를 입력해주세요.")
         return 1
     args.query = query
-    history_text = build_history_context(state.get("history", [])) if interactive else ""
+    history_text = (
+        build_history_context(state.get("history", [])) if interactive else ""
+    )
     if interactive:
         _append_history(state, "user", raw_query)
 
@@ -581,7 +588,11 @@ def _perform_unified_search(
         state["last_rule_code"] = selected.rule_code
         state["last_query"] = raw_query
         if interactive:
-            _append_history(state, "assistant", f"{selected.title} {label_text} 내용을 표시했습니다.")
+            _append_history(
+                state,
+                "assistant",
+                f"{selected.title} {label_text} 내용을 표시했습니다.",
+            )
         return 0
 
     if mode == "full_view":
@@ -591,7 +602,9 @@ def _perform_unified_search(
         if not selected:
             return 0
 
-        view = full_view.get_full_view(selected.rule_code) or full_view.get_full_view(selected.title)
+        view = full_view.get_full_view(selected.rule_code) or full_view.get_full_view(
+            selected.title
+        )
         if not view:
             print_error("규정 전문을 불러오지 못했습니다.")
             return 1
@@ -623,7 +636,9 @@ def _perform_unified_search(
     llm = None
     if mode == "ask":
         if RICH_AVAILABLE:
-            with console.status("[bold blue]⏳ LLM 클라이언트 초기화 중...[/bold blue]"):
+            with console.status(
+                "[bold blue]⏳ LLM 클라이언트 초기화 중...[/bold blue]"
+            ):
                 try:
                     llm = LLMClientAdapter(
                         provider=args.provider,
@@ -634,13 +649,13 @@ def _perform_unified_search(
                     print_error(f"LLM 초기화 실패: {e}")
                     return 1
         else:
-             try:
+            try:
                 llm = LLMClientAdapter(
                     provider=args.provider,
                     model=args.model,
                     base_url=args.base_url,
                 )
-             except Exception as e:
+            except Exception as e:
                 print_error(f"LLM 초기화 실패: {e}")
                 return 1
 
@@ -659,16 +674,18 @@ def _perform_unified_search(
         results = search.search_unique(
             args.query,
             top_k=args.top_k,
-            include_abolished=args.include_abolished if hasattr(args, 'include_abolished') else False,
+            include_abolished=args.include_abolished
+            if hasattr(args, "include_abolished")
+            else False,
         )
-        
+
         if args.verbose or args.debug:
             print_query_rewrite(search, args.query)
 
         if not results:
             print_info("검색 결과가 없습니다.")
             return 0
-            
+
         # Display Results (Search Style)
         if RICH_AVAILABLE:
             table = Table(title=f"검색 결과: '{args.query}'")
@@ -679,9 +696,15 @@ def _perform_unified_search(
             table.add_column("점수", justify="right", style="magenta")
 
             for i, r in enumerate(results, 1):
-                path_segments = clean_path_segments(r.chunk.parent_path) if r.chunk.parent_path else []
+                path_segments = (
+                    clean_path_segments(r.chunk.parent_path)
+                    if r.chunk.parent_path
+                    else []
+                )
                 path = " > ".join(path_segments[-2:]) if path_segments else ""
-                reg_title = r.chunk.parent_path[0] if r.chunk.parent_path else r.chunk.title
+                reg_title = (
+                    r.chunk.parent_path[0] if r.chunk.parent_path else r.chunk.title
+                )
                 table.add_row(
                     str(i),
                     str(reg_title or r.chunk.rule_code),
@@ -690,7 +713,7 @@ def _perform_unified_search(
                     f"{r.score:.2f}",
                 )
             console.print(table)
-            
+
             # Print first result detail
             if results:
                 top = results[0]
@@ -699,43 +722,57 @@ def _perform_unified_search(
                     top.chunk.text,
                     top.chunk.title,
                 )
-                display_text = strip_path_prefix(top.chunk.text, top.chunk.parent_path or [])
+                display_text = strip_path_prefix(
+                    top.chunk.text, top.chunk.parent_path or []
+                )
                 if display_text != top.chunk.text and display_path:
                     detail_text = f"{display_path}\n{display_text}"
                 else:
                     detail_text = display_text
                 if len(detail_text) > 500:
                     detail_text = detail_text[:500] + "..."
-                console.print(Panel(
-                    detail_text,
-                    title=f"[1위] {top.chunk.rule_code}",
-                    border_style="green",
-                ))
+                console.print(
+                    Panel(
+                        detail_text,
+                        title=f"[1위] {top.chunk.rule_code}",
+                        border_style="green",
+                    )
+                )
         else:
             print(f"\n검색 결과: '{args.query}'")
             print("-" * 60)
             for i, r in enumerate(results, 1):
-                reg_title = r.chunk.parent_path[0] if r.chunk.parent_path else r.chunk.title
-                display_text = strip_path_prefix(r.chunk.text, r.chunk.parent_path or [])
+                reg_title = (
+                    r.chunk.parent_path[0] if r.chunk.parent_path else r.chunk.title
+                )
+                display_text = strip_path_prefix(
+                    r.chunk.text, r.chunk.parent_path or []
+                )
                 print(f"{i}. {reg_title} [{r.chunk.rule_code}] (점수: {r.score:.2f})")
                 print(f"   {display_text[:100]}...")
-                
+
         if args.feedback and results:
-             _collect_cli_feedback(args.query, results[0].chunk.rule_code)
+            _collect_cli_feedback(args.query, results[0].chunk.rule_code)
         if results:
             top = results[0]
-            state["last_regulation"] = top.chunk.parent_path[0] if top.chunk.parent_path else top.chunk.title
+            state["last_regulation"] = (
+                top.chunk.parent_path[0] if top.chunk.parent_path else top.chunk.title
+            )
             state["last_rule_code"] = top.chunk.rule_code
             state["last_query"] = raw_query
             if interactive:
-                summary_text = strip_path_prefix(top.chunk.text, top.chunk.parent_path or [])
+                summary_text = strip_path_prefix(
+                    top.chunk.text, top.chunk.parent_path or []
+                )
                 summary = f"검색 결과 1위: {top.chunk.rule_code} {summary_text}".strip()
                 _append_history(state, "assistant", summary)
 
     else:
         # Ask (LLM Answer)
         if RICH_AVAILABLE:
-            with console.status("[bold green]🤖 AI 답변 생성 중... (10-30초 소요)[/bold green]"):
+            with console.status(
+                "[bold green]🤖 AI 답변 생성 중... (10-30초 소요)[/bold green]"
+            ):
                 try:
                     answer = search.ask(
                         question=raw_query,
@@ -767,62 +804,77 @@ def _perform_unified_search(
         # Display Answer (Ask Style)
         if RICH_AVAILABLE:
             console.print()
-            console.print(Panel(
-                Markdown(answer_text),
-                title="🤖 AI 답변",
-                border_style="green",
-            ))
-            
+            console.print(
+                Panel(
+                    Markdown(answer_text),
+                    title="🤖 AI 답변",
+                    border_style="green",
+                )
+            )
+
             if answer.sources:
                 console.print()
                 console.print("[bold cyan]📚 참고 규정:[/bold cyan]")
-                
+
                 # Shared formatting logic
                 norm_scores = normalize_relevance_scores(answer.sources)
                 display_sources = filter_by_relevance(answer.sources, norm_scores)
-                
+
                 for i, result in enumerate(display_sources, 1):
                     chunk = result.chunk
-                    reg_name = chunk.parent_path[0] if chunk.parent_path else chunk.title
-                    path = build_display_path(chunk.parent_path, chunk.text, chunk.title)
+                    reg_name = (
+                        chunk.parent_path[0] if chunk.parent_path else chunk.title
+                    )
+                    path = build_display_path(
+                        chunk.parent_path, chunk.text, chunk.title
+                    )
                     norm_score = norm_scores.get(chunk.id, 0.0)
                     rel_score = int(norm_score * 100)
                     rel_label = get_relevance_label_combined(rel_score)
                     display_text = extract_display_text(chunk.text)
-                    
+
                     content_parts = [
                         f"[bold blue]📖 {reg_name}[/bold blue]",
                         f"[dim]📍 {path}[/dim]",
                         "",
                         display_text,
                         "",
-                        f"[dim]📋 규정번호: {chunk.rule_code} | 관련도: {rel_score}% {rel_label}[/dim]" + (f" [dim]| AI 신뢰도: {result.score:.3f}[/dim]" if args.verbose else ""),
+                        f"[dim]📋 규정번호: {chunk.rule_code} | 관련도: {rel_score}% {rel_label}[/dim]"
+                        + (
+                            f" [dim]| AI 신뢰도: {result.score:.3f}[/dim]"
+                            if args.verbose
+                            else ""
+                        ),
                     ]
-                    
-                    console.print(Panel(
-                        "\n".join(content_parts),
-                        title=f"[{i}]",
-                        border_style="blue",
-                    ))
-            
+
+                    console.print(
+                        Panel(
+                            "\n".join(content_parts),
+                            title=f"[{i}]",
+                            border_style="blue",
+                        )
+                    )
+
             # Confidence Info
             console.print()
             conf_icon, conf_label, conf_detail = get_confidence_info(answer.confidence)
-            console.print(Panel(
-                f"[bold]{conf_icon} {conf_label}[/bold] (신뢰도 {answer.confidence:.0%})\n\n{conf_detail}",
-                title="📊 답변 신뢰도",
-                border_style="dim",
-            ))
+            console.print(
+                Panel(
+                    f"[bold]{conf_icon} {conf_label}[/bold] (신뢰도 {answer.confidence:.0%})\n\n{conf_detail}",
+                    title="📊 답변 신뢰도",
+                    border_style="dim",
+                )
+            )
 
         else:
-            print(f"\n=== AI 답변 ===")
+            print("\n=== AI 답변 ===")
             print(answer_text)
-            print(f"\n=== 참고 규정 ===")
+            print("\n=== 참고 규정 ===")
             for i, result in enumerate(answer.sources, 1):
                 print(f"[{i}] {result.chunk.rule_code}: {result.chunk.text[:100]}...")
-            
-            if getattr(args, 'show_sources', False):
-                print(f"\n=== 규정 전문 ===")
+
+            if getattr(args, "show_sources", False):
+                print("\n=== 규정 전문 ===")
                 for result in answer.sources:
                     print(f"\n--- {result.chunk.rule_code} ---")
                     print(result.chunk.text)
@@ -831,7 +883,9 @@ def _perform_unified_search(
             _collect_cli_feedback(args.query, answer.sources[0].chunk.rule_code)
         if answer.sources:
             top = answer.sources[0].chunk
-            state["last_regulation"] = top.parent_path[0] if top.parent_path else top.title
+            state["last_regulation"] = (
+                top.parent_path[0] if top.parent_path else top.title
+            )
             state["last_rule_code"] = top.rule_code
         state["last_query"] = raw_query
         if interactive:
@@ -850,7 +904,7 @@ def cmd_search(args) -> int:
 def cmd_ask(args) -> int:
     """Execute ask command (Legacy Wrapper)."""
     # Map 'question' arg to 'query' expected by unified logic
-    if hasattr(args, 'question'):
+    if hasattr(args, "question"):
         args.query = args.question
     return _perform_unified_search(args, force_mode="ask")
 
@@ -901,34 +955,34 @@ def _run_interactive_session(args) -> int:
 def _collect_cli_feedback(query: str, rule_code: str):
     """Interactively collect feedback from CLI."""
     from ..infrastructure.feedback import FeedbackCollector
-    
-    print("\n" + "="*30)
+
+    print("\n" + "=" * 30)
     print("📢 이 답변이 도움이 되었나요?")
     print("1: 👍 도움이 됨 (Positive)")
     print("2: 😐 보통 (Neutral)")
     print("3: 👎 도움이 안 됨 (Negative)")
     print("0: 건너뛰기")
-    
+
     try:
         choice = input("\n선택 (0-3): ").strip()
         if choice == "0" or not choice:
             return
-            
+
         rating_map = {"1": 1, "2": 0, "3": -1}
         if choice not in rating_map:
             print("올바른 선택이 아닙니다.")
             return
-            
+
         rating = rating_map[choice]
         comment = input("의견이 있다면 남겨주세요 (선택사항, Enter로 스킵): ").strip()
-        
+
         collector = FeedbackCollector()
         collector.record_feedback(
             query=query,
             rule_code=rule_code,
             rating=rating,
             comment=comment or None,
-            source="cli"
+            source="cli",
         )
         print("✅ 소중한 피드백 감사합니다!")
     except (KeyboardInterrupt, EOFError):
@@ -937,9 +991,9 @@ def _collect_cli_feedback(query: str, rule_code: str):
 
 def cmd_status(args) -> int:
     """Execute status command."""
+    from ..application.sync_usecase import SyncUseCase
     from ..infrastructure.chroma_store import ChromaVectorStore
     from ..infrastructure.json_loader import JSONDocumentLoader
-    from ..application.sync_usecase import SyncUseCase
 
     store = ChromaVectorStore(persist_directory=args.db_path)
     loader = JSONDocumentLoader()
@@ -970,8 +1024,8 @@ def cmd_status(args) -> int:
 
 def cmd_reset(args) -> int:
     """Execute reset command - delete all data."""
-    from ..infrastructure.chroma_store import ChromaVectorStore
     from ..application.sync_usecase import SyncUseCase
+    from ..infrastructure.chroma_store import ChromaVectorStore
     from ..infrastructure.json_loader import JSONDocumentLoader
 
     if not args.confirm:
@@ -984,7 +1038,7 @@ def cmd_reset(args) -> int:
 
     # Get current count
     chunk_count = store.count()
-    
+
     if chunk_count == 0:
         print_info("데이터베이스가 이미 비어 있습니다.")
         return 0
@@ -994,7 +1048,7 @@ def cmd_reset(args) -> int:
 
     # Clear vector store
     deleted = store.clear_all()
-    
+
     # Clear sync state
     sync.reset_state()
 

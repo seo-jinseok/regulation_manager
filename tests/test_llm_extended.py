@@ -1,46 +1,50 @@
-import unittest
-from unittest.mock import patch, MagicMock
 import os
 import sys
+import unittest
+from unittest.mock import MagicMock, patch
 
 # Add src to path
 sys.path.append(os.getcwd())
 
 from src.llm_client import LLMClient
 
+
 class TestLLMClientExtended(unittest.TestCase):
     def setUp(self):
-        self.env_patcher = patch.dict(os.environ, {
-            "OPENAI_API_KEY": "test",
-            "GEMINI_API_KEY": "test",
-            "OPENROUTER_API_KEY": "test"
-        })
+        self.env_patcher = patch.dict(
+            os.environ,
+            {
+                "OPENAI_API_KEY": "test",
+                "GEMINI_API_KEY": "test",
+                "OPENROUTER_API_KEY": "test",
+            },
+        )
         self.env_patcher.start()
 
     def tearDown(self):
         self.env_patcher.stop()
 
-    @patch('src.llm_client.Gemini')
+    @patch("src.llm_client.Gemini")
     def test_provider_gemini(self, mock_gemini):
         client = LLMClient(provider="gemini")
         self.assertEqual(client.provider, "gemini")
 
-    @patch('src.llm_client.OpenRouter')
+    @patch("src.llm_client.OpenRouter")
     def test_provider_openrouter(self, mock_or):
         client = LLMClient(provider="openrouter")
         self.assertEqual(client.provider, "openrouter")
 
-    @patch('src.llm_client.Ollama')
+    @patch("src.llm_client.Ollama")
     def test_provider_ollama(self, mock_ollama):
         client = LLMClient(provider="ollama", model="gemma2")
         self.assertEqual(client.provider, "ollama")
 
-    @patch('src.llm_client.OpenAILike')
+    @patch("src.llm_client.OpenAILike")
     def test_provider_lmstudio(self, mock_oa):
         client = LLMClient(provider="lmstudio", base_url="http://localhost:1234")
         self.assertEqual(client.provider, "lmstudio")
 
-    @patch('src.llm_client.OpenAILike')
+    @patch("src.llm_client.OpenAILike")
     def test_provider_mlx(self, mock_oa):
         client = LLMClient(provider="mlx", base_url="http://localhost:8080")
         self.assertEqual(client.provider, "mlx")
@@ -55,6 +59,7 @@ class TestLLMClientExtended(unittest.TestCase):
         client.llm = MagicMock()
         client.llm.complete.return_value = MagicMock(text="Response")
         self.assertEqual(client.complete("Hi"), "Response")
+
 
 if __name__ == "__main__":
     unittest.main()

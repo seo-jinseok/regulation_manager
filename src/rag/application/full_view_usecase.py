@@ -4,20 +4,26 @@ Full-view Use Case for Regulation RAG System.
 Provides regulation-level retrieval for "전문/전체" requests.
 """
 
-from dataclasses import dataclass
 import json
 import re
+from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional
 
 from ..config import get_config
 from ..domain.repositories import IDocumentLoader
 
-
 FULL_VIEW_MARKERS = ["전문", "전체", "원문", "全文", "full text", "fullview"]
 ATTACHMENT_MARKERS = ["별표", "별첨", "별지"]
 TOC_ALLOWED_TYPES = {"chapter", "section", "subsection", "article", "addendum"}
-TOC_SKIP_RECURSION_TYPES = {"paragraph", "item", "subitem", "text", "addendum_item", "addendum"}
+TOC_SKIP_RECURSION_TYPES = {
+    "paragraph",
+    "item",
+    "subitem",
+    "text",
+    "addendum_item",
+    "addendum",
+}
 
 
 @dataclass(frozen=True)
@@ -84,10 +90,14 @@ class FullViewUseCase:
                 score = 1
 
             if score > 0:
-                matches.append(RegulationMatch(title=title, rule_code=rule_code, score=score))
+                matches.append(
+                    RegulationMatch(title=title, rule_code=rule_code, score=score)
+                )
 
         if term_norm:
-            exact_matches = [m for m in matches if self._normalize(m.title) == term_norm]
+            exact_matches = [
+                m for m in matches if self._normalize(m.title) == term_norm
+            ]
             if exact_matches:
                 matches = exact_matches
 
@@ -106,7 +116,9 @@ class FullViewUseCase:
         if not doc:
             return None
 
-        rule_code = doc.get("metadata", {}).get("rule_code", "") or self._infer_rule_code(doc)
+        rule_code = doc.get("metadata", {}).get(
+            "rule_code", ""
+        ) or self._infer_rule_code(doc)
         title = doc.get("title", "")
         content = doc.get("content", []) or []
         addenda = doc.get("addenda", []) or []
@@ -184,7 +196,9 @@ class FullViewUseCase:
                             if table_no is None:
                                 placeholder_matches.append(match)
                             else:
-                                target_text = " ".join([display_no, title, text]).strip()
+                                target_text = " ".join(
+                                    [display_no, title, text]
+                                ).strip()
                                 if label_pattern and label_pattern.search(target_text):
                                     labeled_matches.append(match)
                                 elif index == table_no:
@@ -203,7 +217,9 @@ class FullViewUseCase:
         if table_no is None and variants:
             labeled = []
             for match in placeholder_matches:
-                target_text = " ".join([match.display_no, match.title, match.text]).strip()
+                target_text = " ".join(
+                    [match.display_no, match.title, match.text]
+                ).strip()
                 if any(variant in target_text for variant in variants):
                     labeled.append(match)
             if labeled:
@@ -214,7 +230,9 @@ class FullViewUseCase:
         cleaned = query
         for marker in FULL_VIEW_MARKERS:
             cleaned = cleaned.replace(marker, "")
-        attachment_pattern = "|".join(re.escape(marker) for marker in ATTACHMENT_MARKERS)
+        attachment_pattern = "|".join(
+            re.escape(marker) for marker in ATTACHMENT_MARKERS
+        )
         cleaned = re.sub(rf"(?:{attachment_pattern})\s*\d*\s*번?", "", cleaned)
         return cleaned.strip()
 
@@ -301,7 +319,8 @@ class FullViewUseCase:
         output_dir = Path("data/output")
         if output_dir.exists():
             json_files = [
-                p for p in output_dir.rglob("*.json")
+                p
+                for p in output_dir.rglob("*.json")
                 if not p.name.endswith("_metadata.json")
             ]
             if json_files:

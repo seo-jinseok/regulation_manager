@@ -2,9 +2,25 @@
 Unit tests for formatters module.
 """
 
-import pytest
 from dataclasses import dataclass
 from typing import List, Optional
+
+from src.rag.interface.formatters import (
+    DEFAULT_RELEVANCE_THRESHOLD,
+    build_display_path,
+    clean_path_segments,
+    extract_display_text,
+    filter_by_relevance,
+    get_confidence_info,
+    get_relevance_label,
+    get_relevance_label_combined,
+    normalize_markdown_emphasis,
+    normalize_markdown_table,
+    normalize_relevance_scores,
+    render_full_view_nodes,
+    strip_path_prefix,
+)
+
 
 # Mock SearchResult and Chunk for testing
 @dataclass
@@ -22,27 +38,10 @@ class MockSearchResult:
     score: float
 
 
-# Import after mocks are defined
-from src.rag.interface.formatters import (
-    normalize_relevance_scores,
-    filter_by_relevance,
-    get_relevance_label,
-    get_relevance_label_combined,
-    clean_path_segments,
-    extract_display_text,
-    get_confidence_info,
-    build_display_path,
-    render_full_view_nodes,
-    normalize_markdown_table,
-    normalize_markdown_emphasis,
-    strip_path_prefix,
-    DEFAULT_RELEVANCE_THRESHOLD,
-)
-
-
 # ============================================================================
 # normalize_relevance_scores tests
 # ============================================================================
+
 
 class TestNormalizeRelevanceScores:
     def test_empty_list(self):
@@ -74,7 +73,7 @@ class TestNormalizeRelevanceScores:
             MockSearchResult(chunk=MockChunk(id="3"), score=0.1),  # lowest -> 0.0
         ]
         result = normalize_relevance_scores(sources)
-        
+
         assert result["1"] == 1.0
         assert result["3"] == 0.0
         assert 0.4 < result["2"] < 0.6  # approximately 0.5
@@ -87,13 +86,14 @@ class TestNormalizeRelevanceScores:
             MockSearchResult(chunk=MockChunk(id="c"), score=0.5),
         ]
         result = normalize_relevance_scores(sources)
-        
+
         assert result["b"] > result["c"] > result["a"]
 
 
 # ============================================================================
 # filter_by_relevance tests
 # ============================================================================
+
 
 class TestFilterByRelevance:
     def test_empty_list(self):
@@ -109,9 +109,9 @@ class TestFilterByRelevance:
             MockSearchResult(chunk=MockChunk(id="3"), score=0.1),
         ]
         norm_scores = {"1": 1.0, "2": 0.5, "3": 0.05}  # "3" is below 10%
-        
+
         result = filter_by_relevance(sources, norm_scores, threshold=0.10)
-        
+
         assert len(result) == 2
         assert result[0].chunk.id == "1"
         assert result[1].chunk.id == "2"
@@ -123,10 +123,10 @@ class TestFilterByRelevance:
             MockSearchResult(chunk=MockChunk(id="2"), score=0.5),
         ]
         norm_scores = {"1": 1.0, "2": 0.4}
-        
+
         # 50% threshold should filter out "2"
         result = filter_by_relevance(sources, norm_scores, threshold=0.50)
-        
+
         assert len(result) == 1
         assert result[0].chunk.id == "1"
 
@@ -139,13 +139,14 @@ class TestFilterByRelevance:
 # get_relevance_label tests
 # ============================================================================
 
+
 class TestGetRelevanceLabel:
     def test_very_high(self):
         """80%+ should be '매우 높음'."""
         icon, label = get_relevance_label(80)
         assert icon == "🟢"
         assert label == "매우 높음"
-        
+
         icon, label = get_relevance_label(100)
         assert icon == "🟢"
         assert label == "매우 높음"
@@ -155,7 +156,7 @@ class TestGetRelevanceLabel:
         icon, label = get_relevance_label(50)
         assert icon == "🟡"
         assert label == "높음"
-        
+
         icon, label = get_relevance_label(79)
         assert icon == "🟡"
         assert label == "높음"
@@ -165,7 +166,7 @@ class TestGetRelevanceLabel:
         icon, label = get_relevance_label(30)
         assert icon == "🟠"
         assert label == "보통"
-        
+
         icon, label = get_relevance_label(49)
         assert icon == "🟠"
         assert label == "보통"
@@ -175,7 +176,7 @@ class TestGetRelevanceLabel:
         icon, label = get_relevance_label(29)
         assert icon == "🔴"
         assert label == "낮음"
-        
+
         icon, label = get_relevance_label(0)
         assert icon == "🔴"
         assert label == "낮음"
@@ -189,6 +190,7 @@ class TestGetRelevanceLabel:
 # ============================================================================
 # clean_path_segments tests
 # ============================================================================
+
 
 class TestCleanPathSegments:
     def test_empty_list(self):
@@ -222,6 +224,7 @@ class TestCleanPathSegments:
 # ============================================================================
 # extract_display_text tests
 # ============================================================================
+
 
 class TestExtractDisplayText:
     def test_with_path_prefix(self):
@@ -311,7 +314,10 @@ class TestRenderFullViewNodes:
                 "text": "기준은 다음과 같다.\n[TABLE:1]",
                 "metadata": {
                     "tables": [
-                        {"format": "markdown", "markdown": "| A | B |\n| --- | --- |\n| 1 | 2 |"},
+                        {
+                            "format": "markdown",
+                            "markdown": "| A | B |\n| --- | --- |\n| 1 | 2 |",
+                        },
                     ]
                 },
                 "children": [],
@@ -354,11 +360,7 @@ class TestNormalizeMarkdownTable:
         assert "조교수" in normalized
 
     def test_keeps_existing_header(self):
-        markdown = (
-            "| 구분 | 값 |\n"
-            "| --- | --- |\n"
-            "| A | 1 |\n"
-        )
+        markdown = "| 구분 | 값 |\n| --- | --- |\n| A | 1 |\n"
         normalized = normalize_markdown_table(markdown)
         assert normalized.strip() == markdown.strip()
 
@@ -367,10 +369,14 @@ class TestNormalizeMarkdownTable:
 # normalize_markdown_emphasis tests
 # ============================================================================
 
+
 class TestNormalizeMarkdownEmphasis:
     def test_moves_double_quotes_outside_bold(self):
         text = '**"교수님이 학교에 가기 싫어하는 상황"**'
-        assert normalize_markdown_emphasis(text) == '"**교수님이 학교에 가기 싫어하는 상황**"'
+        assert (
+            normalize_markdown_emphasis(text)
+            == '"**교수님이 학교에 가기 싫어하는 상황**"'
+        )
 
     def test_moves_single_quotes_outside_bold(self):
         text = "**'교원인사규정'**"
@@ -389,6 +395,7 @@ class TestNormalizeMarkdownEmphasis:
 # strip_path_prefix tests
 # ============================================================================
 
+
 class TestStripPathPrefix:
     def test_strips_parent_path_prefix(self):
         text = "교원인사규정 > 부칙 > 부 칙 > 2. 조교수로 재직중인 교원"
@@ -405,6 +412,7 @@ class TestStripPathPrefix:
 # get_confidence_info tests
 # ============================================================================
 
+
 class TestGetConfidenceInfo:
     def test_high_confidence(self):
         """70%+ should be '높음'."""
@@ -412,7 +420,7 @@ class TestGetConfidenceInfo:
         assert icon == "🟢"
         assert label == "높음"
         assert "신뢰" in desc
-        
+
         icon, label, desc = get_confidence_info(1.0)
         assert icon == "🟢"
 
@@ -422,7 +430,7 @@ class TestGetConfidenceInfo:
         assert icon == "🟡"
         assert label == "보통"
         assert "확인" in desc
-        
+
         icon, label, desc = get_confidence_info(0.69)
         assert icon == "🟡"
 
@@ -432,7 +440,7 @@ class TestGetConfidenceInfo:
         assert icon == "🔴"
         assert label == "낮음"
         assert "행정실" in desc
-        
+
         icon, label, desc = get_confidence_info(0.0)
         assert icon == "🔴"
 
@@ -440,6 +448,7 @@ class TestGetConfidenceInfo:
 # ============================================================================
 # build_display_path tests
 # ============================================================================
+
 
 class TestBuildDisplayPath:
     def test_simple_path(self):

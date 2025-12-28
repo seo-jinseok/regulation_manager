@@ -1,7 +1,7 @@
 import pytest
 
-from src.rag.domain.value_objects import Query, SearchFilter
 from src.rag.domain.entities import RegulationStatus
+from src.rag.domain.value_objects import Query, SearchFilter
 from src.rag.infrastructure.chroma_store import ChromaVectorStore
 
 
@@ -77,7 +77,12 @@ def test_search_coerces_non_string_query_text():
 
         def query(self, query_texts, n_results, where, include):
             self.last_query_texts = query_texts
-            return {"ids": [[]], "documents": [[]], "metadatas": [[]], "distances": [[]]}
+            return {
+                "ids": [[]],
+                "documents": [[]],
+                "metadatas": [[]],
+                "distances": [[]],
+            }
 
     class DummyQuery:
         def __init__(self, text):

@@ -1,7 +1,6 @@
 import pytest
 
 from src.rag.application.search_usecase import SearchUseCase
-from src.rag.domain.value_objects import SearchFilter
 from src.rag.domain.entities import (
     Chunk,
     ChunkLevel,
@@ -9,6 +8,7 @@ from src.rag.domain.entities import (
     RegulationStatus,
     SearchResult,
 )
+from src.rag.domain.value_objects import SearchFilter
 
 
 class FakeStore:
@@ -17,7 +17,7 @@ class FakeStore:
 
     def search(self, query, filter=None, top_k: int = 10):
         return self._results
-    
+
     def get_all_documents(self):
         """Return empty list - hybrid searcher will be skipped."""
         return []
@@ -52,7 +52,9 @@ class FakeStoreWithDocs:
 
 
 class FakeLLM:
-    def generate(self, system_prompt: str, user_message: str, temperature: float = 0.0) -> str:
+    def generate(
+        self, system_prompt: str, user_message: str, temperature: float = 0.0
+    ) -> str:
         return "휴직 휴가 연구년"
 
 
@@ -60,7 +62,9 @@ class FakeLLMCapture:
     def __init__(self):
         self.last_user_message = None
 
-    def generate(self, system_prompt: str, user_message: str, temperature: float = 0.0) -> str:
+    def generate(
+        self, system_prompt: str, user_message: str, temperature: float = 0.0
+    ) -> str:
         self.last_user_message = user_message
         return "ok"
 
@@ -126,7 +130,14 @@ def test_ask_includes_history_and_uses_search_query(monkeypatch):
 
     captured = {}
 
-    def fake_search(self, query_text, filter=None, top_k: int = 10, include_abolished: bool = False, audience_override=None):
+    def fake_search(
+        self,
+        query_text,
+        filter=None,
+        top_k: int = 10,
+        include_abolished: bool = False,
+        audience_override=None,
+    ):
         captured["query_text"] = query_text
         return results
 

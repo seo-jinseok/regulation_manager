@@ -8,9 +8,9 @@ Uses content-based hashing for cache keys.
 import hashlib
 import json
 import time
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Dict, Optional
-from dataclasses import dataclass, asdict
 
 
 @dataclass
@@ -104,7 +104,7 @@ class LLMResponseCache:
             Cached response or None if not found/expired.
         """
         query_hash = self._compute_hash(system_prompt, user_message, model)
-        
+
         if query_hash not in self._index:
             return None
 
@@ -194,9 +194,7 @@ class LLMResponseCache:
         """
         total = len(self._index)
         expired = sum(
-            1
-            for data in self._index.values()
-            if CacheEntry(**data).is_expired()
+            1 for data in self._index.values() if CacheEntry(**data).is_expired()
         )
         return {
             "total_entries": total,

@@ -83,7 +83,7 @@ class QueryAnalyzer:
     - Academic keywords: 휴학, 복학, 등록 등 → favor BM25
     - Natural questions: 어떻게, 무엇 → favor Dense
     - Intent expressions: ~하기 싫어, 그만두고 싶어 → favor Dense
-    
+
     Also provides query expansion with synonyms for better recall.
     """
 
@@ -97,25 +97,83 @@ class QueryAnalyzer:
 
     # Academic/procedural keywords that benefit from exact match
     ACADEMIC_KEYWORDS = [
-        "휴학", "복학", "제적", "자퇴", "전과", "편입", "졸업", "입학",
-        "등록", "수강", "장학", "학점", "성적", "시험", "출석", "학위",
-        "논문", "석사", "박사", "교원", "교수", "조교", "학생회",
+        "휴학",
+        "복학",
+        "제적",
+        "자퇴",
+        "전과",
+        "편입",
+        "졸업",
+        "입학",
+        "등록",
+        "수강",
+        "장학",
+        "학점",
+        "성적",
+        "시험",
+        "출석",
+        "학위",
+        "논문",
+        "석사",
+        "박사",
+        "교원",
+        "교수",
+        "조교",
+        "학생회",
     ]
 
     # Question markers indicating natural language queries
-    QUESTION_MARKERS = ["어떻게", "무엇", "왜", "언제", "어디", "누가", "어떤", "할까", "인가", "?"]
+    QUESTION_MARKERS = [
+        "어떻게",
+        "무엇",
+        "왜",
+        "언제",
+        "어디",
+        "누가",
+        "어떤",
+        "할까",
+        "인가",
+        "?",
+    ]
 
     # Audience keywords
-    FACULTY_KEYWORDS = ["교수", "교원", "강사", "전임", "안식년", "연구년", "책임시수", "업적평가"]
-    STUDENT_KEYWORDS = ["학생", "학부", "대학원", "수강", "성적", "졸업", "휴학", "복학", "장학", "등록금", "학점"]
+    FACULTY_KEYWORDS = [
+        "교수",
+        "교원",
+        "강사",
+        "전임",
+        "안식년",
+        "연구년",
+        "책임시수",
+        "업적평가",
+    ]
+    STUDENT_KEYWORDS = [
+        "학생",
+        "학부",
+        "대학원",
+        "수강",
+        "성적",
+        "졸업",
+        "휴학",
+        "복학",
+        "장학",
+        "등록금",
+        "학점",
+    ]
     STAFF_KEYWORDS = ["직원", "행정", "사무", "참사", "주사", "승진", "전보"]
     AMBIGUOUS_AUDIENCE_KEYWORDS = ["징계", "처분", "위반", "제재", "윤리", "고충"]
 
     # Weight presets for each query type: (bm25_weight, dense_weight)
     WEIGHT_PRESETS: Dict[QueryType, Tuple[float, float]] = {
         QueryType.ARTICLE_REFERENCE: (0.6, 0.4),  # Favor exact keyword match
-        QueryType.REGULATION_NAME: (0.5, 0.5),  # Balanced (also used for academic keywords)
-        QueryType.NATURAL_QUESTION: (0.4, 0.6),  # Slightly favor semantic, but still consider keywords
+        QueryType.REGULATION_NAME: (
+            0.5,
+            0.5,
+        ),  # Balanced (also used for academic keywords)
+        QueryType.NATURAL_QUESTION: (
+            0.4,
+            0.6,
+        ),  # Slightly favor semantic, but still consider keywords
         QueryType.INTENT: (0.35, 0.65),  # Intent-heavy queries lean semantic
         QueryType.GENERAL: (0.5, 0.5),  # Balanced default (increased BM25 from 0.3)
     }
@@ -138,8 +196,14 @@ class QueryAnalyzer:
     # Intent patterns for natural language queries (minimal seed).
     # Prefer external dictionaries via RAG_INTENTS_PATH for full coverage.
     INTENT_PATTERNS = [
-        (re.compile(r"(학교|출근|근무).*(가기|출근).*싫"), ["휴직", "휴가", "연구년", "안식년"]),
-        (re.compile(r"(그만두고\s*싶|그만\s*두고\s*싶|퇴직|사직)"), ["퇴직", "사직", "명예퇴직"]),
+        (
+            re.compile(r"(학교|출근|근무).*(가기|출근).*싫"),
+            ["휴직", "휴가", "연구년", "안식년"],
+        ),
+        (
+            re.compile(r"(그만두고\s*싶|그만\s*두고\s*싶|퇴직|사직)"),
+            ["퇴직", "사직", "명예퇴직"],
+        ),
         (re.compile(r"(수업|강의).*안.*하.*싶"), ["휴강", "보강", "강의"]),
     ]
     INTENT_MAX_MATCHES = 3
@@ -172,7 +236,6 @@ class QueryAnalyzer:
 ## 출력 형식
 키워드1 키워드2 키워드3"""
 
-
     def __init__(
         self,
         llm_client: Optional["ILLMClient"] = None,
@@ -181,7 +244,7 @@ class QueryAnalyzer:
     ):
         """
         Initialize QueryAnalyzer.
-        
+
         Args:
             llm_client: Optional LLM client for query rewriting.
                        If not provided, falls back to synonym-based expansion.
@@ -194,10 +257,10 @@ class QueryAnalyzer:
     def rewrite_query(self, query: str) -> str:
         """
         Rewrite natural language query to regulation search keywords using LLM.
-        
+
         Args:
             query: The original natural language query.
-        
+
         Returns:
             Rewritten query with search keywords.
             Falls back to expand_query() on LLM failure.
@@ -252,7 +315,7 @@ class QueryAnalyzer:
             )
             self._cache[query] = result
             return result
-        
+
         # Call LLM for rewriting
         try:
             response = self._llm_client.generate(
@@ -391,26 +454,56 @@ class QueryAnalyzer:
         """
         query_type = self.analyze(query)
         bm25_w, dense_w = self.WEIGHT_PRESETS[query_type]
-        
+
         # If query has synonyms, boost BM25 weight for better keyword matching
         if self.has_synonyms(query):
             # Shift weight towards BM25 (e.g., 0.5/0.5 -> 0.7/0.3)
             bm25_w = min(0.8, bm25_w + 0.2)
             dense_w = max(0.2, dense_w - 0.2)
-        
+
         return bm25_w, dense_w
 
     # Stopwords to remove from queries (너무 일반적인 단어들)
     STOPWORDS = [
         # 규정/법률 관련 일반어 (조사 포함 형태도)
-        "규정", "규정은", "규정이", "규정을", "규정에", "규정의",
-        "규칙", "조례", "법", "관련", "내용", "사항", "경우",
-        "대해", "대한", "대해서",
+        "규정",
+        "규정은",
+        "규정이",
+        "규정을",
+        "규정에",
+        "규정의",
+        "규칙",
+        "조례",
+        "법",
+        "관련",
+        "내용",
+        "사항",
+        "경우",
+        "대해",
+        "대한",
+        "대해서",
         # 질문 관련
-        "뭐", "뭔가", "무엇", "어떤", "어떻게", "왜", "언제", "어디",
-        "알려줘", "알려주세요", "설명해줘", "설명해주세요",
+        "뭐",
+        "뭔가",
+        "무엇",
+        "어떤",
+        "어떻게",
+        "왜",
+        "언제",
+        "어디",
+        "알려줘",
+        "알려주세요",
+        "설명해줘",
+        "설명해주세요",
         # 기타
-        "좀", "것", "수", "때", "중", "있나요", "있어요", "있습니까",
+        "좀",
+        "것",
+        "수",
+        "때",
+        "중",
+        "있나요",
+        "있어요",
+        "있습니까",
     ]
 
     def clean_query(self, query: str) -> str:
@@ -425,15 +518,15 @@ class QueryAnalyzer:
         """
         # Remove question mark and other punctuation
         cleaned = query.replace("?", "").replace("!", "").replace(".", "").strip()
-        
+
         # Remove stopwords (exact match)
         words = cleaned.split()
         filtered_words = [w for w in words if w not in self.STOPWORDS]
-        
+
         # If all words were filtered, return original (without punctuation)
         if not filtered_words:
             return cleaned
-        
+
         return " ".join(filtered_words)
 
     def expand_query(self, query: str) -> str:
@@ -481,7 +574,9 @@ class QueryAnalyzer:
             keywords = self._merge_token_list(keywords, match.keywords)
         return keywords
 
-    def _merge_token_list(self, base_tokens: List[str], extra_tokens: List[str]) -> List[str]:
+    def _merge_token_list(
+        self, base_tokens: List[str], extra_tokens: List[str]
+    ) -> List[str]:
         """Merge keyword lists while preserving order and uniqueness."""
         seen = set(base_tokens)
         merged = list(base_tokens)
@@ -536,9 +631,7 @@ class QueryAnalyzer:
                 continue
 
             cleaned = [
-                s.strip()
-                for s in synonyms_list
-                if isinstance(s, str) and s.strip()
+                s.strip() for s in synonyms_list if isinstance(s, str) and s.strip()
             ]
             if not cleaned:
                 continue
@@ -599,14 +692,10 @@ class QueryAnalyzer:
             raw_patterns = item.get("patterns") or []
 
             keywords = [
-                k.strip()
-                for k in raw_keywords
-                if isinstance(k, str) and k.strip()
+                k.strip() for k in raw_keywords if isinstance(k, str) and k.strip()
             ]
             triggers = [
-                t.strip()
-                for t in raw_triggers
-                if isinstance(t, str) and t.strip()
+                t.strip() for t in raw_triggers if isinstance(t, str) and t.strip()
             ]
 
             patterns: List[re.Pattern] = []
@@ -712,9 +801,7 @@ class BM25:
         tokens = re.findall(r"[가-힣]+|[a-z0-9]+", text)
         return tokens
 
-    def add_documents(
-        self, documents: List[Tuple[str, str, Dict]]
-    ) -> None:
+    def add_documents(self, documents: List[Tuple[str, str, Dict]]) -> None:
         """
         Add documents to the index.
 
@@ -848,12 +935,14 @@ class HybridSearcher:
         if synonyms_path is None:
             try:
                 from ..config import get_config
+
                 synonyms_path = get_config().synonyms_path
             except Exception:
                 synonyms_path = None
         if intents_path is None:
             try:
                 from ..config import get_config
+
                 intents_path = get_config().intents_path
             except Exception:
                 intents_path = None
@@ -865,7 +954,7 @@ class HybridSearcher:
     def set_llm_client(self, llm_client: Optional["ILLMClient"]) -> None:
         """
         Set LLM client for query rewriting.
-        
+
         Args:
             llm_client: LLM client to use for query rewriting.
         """
@@ -936,7 +1025,6 @@ class HybridSearcher:
             for doc_id, score in sorted_ids
             if doc_id in doc_data
         ]
-
 
     def search_sparse(self, query: str, top_k: int = 20) -> List[ScoredDocument]:
         """

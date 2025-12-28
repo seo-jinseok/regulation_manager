@@ -7,7 +7,6 @@ Supports both full sync and incremental sync.
 
 import json
 from pathlib import Path
-from typing import Optional
 
 from ..domain.repositories import IDocumentLoader, IVectorStore
 from ..domain.value_objects import SyncResult, SyncState
@@ -16,7 +15,7 @@ from ..domain.value_objects import SyncResult, SyncState
 class SyncUseCase:
     """
     Use case for synchronizing regulations with the vector store.
-    
+
     Supports:
     - Full sync: Reload all regulations from JSON
     - Incremental sync: Only update changed regulations
@@ -62,7 +61,7 @@ class SyncUseCase:
             chunks = self.loader.load_all_chunks(json_path)
 
             # Add to store
-            added = self.store.add_chunks(chunks)
+            self.store.add_chunks(chunks)
 
             # Compute and save state
             state = self.loader.compute_state(json_path)
@@ -119,7 +118,8 @@ class SyncUseCase:
 
             # Find modified regulations (hash changed)
             modified_codes = {
-                code for code in common_codes
+                code
+                for code in common_codes
                 if old_state.regulations[code] != new_state.regulations[code]
             }
 

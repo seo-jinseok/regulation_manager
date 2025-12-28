@@ -37,7 +37,9 @@ class FakeLoader:
             chunks.extend(items)
         return chunks
 
-    def load_chunks_by_rule_codes(self, json_path: str, rule_codes: Set[str]) -> List[Chunk]:
+    def load_chunks_by_rule_codes(
+        self, json_path: str, rule_codes: Set[str]
+    ) -> List[Chunk]:
         self.load_chunks_called_with = set(rule_codes)
         chunks: List[Chunk] = []
         for code in rule_codes:

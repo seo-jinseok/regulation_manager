@@ -19,27 +19,29 @@ from typing import List, Optional, Tuple
 
 try:
     from dotenv import load_dotenv
+
     load_dotenv()
 except ImportError:
     pass
 
 try:
     import gradio as gr
+
     GRADIO_AVAILABLE = True
 except ImportError:
     GRADIO_AVAILABLE = False
 
-from ..infrastructure.chroma_store import ChromaVectorStore
-from ..infrastructure.json_loader import JSONDocumentLoader
 from ...main import run_pipeline
+from ..application.full_view_usecase import FullViewUseCase, TableMatch
+from ..application.search_usecase import QueryRewriteInfo, SearchUseCase
+from ..application.sync_usecase import SyncUseCase
+from ..domain.entities import RegulationStatus
+from ..domain.value_objects import SearchFilter
+from ..infrastructure.chroma_store import ChromaVectorStore
+from ..infrastructure.hybrid_search import Audience, QueryAnalyzer
+from ..infrastructure.json_loader import JSONDocumentLoader
 from ..infrastructure.llm_adapter import LLMClientAdapter
 from ..infrastructure.llm_client import MockLLMClient
-from ..infrastructure.hybrid_search import QueryAnalyzer, Audience
-from ..application.sync_usecase import SyncUseCase
-from ..application.search_usecase import QueryRewriteInfo, SearchUseCase
-from ..application.full_view_usecase import FullViewUseCase, TableMatch
-from ..domain.value_objects import SearchFilter
-from ..domain.entities import RegulationStatus
 from .chat_logic import (
     attachment_label_variants,
     build_history_context,
@@ -50,17 +52,16 @@ from .chat_logic import (
     resolve_regulation_choice,
 )
 from .formatters import (
-    normalize_relevance_scores,
-    filter_by_relevance,
-    get_relevance_label_combined,
-    get_confidence_info,
     clean_path_segments,
-    render_full_view_nodes,
-    normalize_markdown_table,
+    filter_by_relevance,
+    get_confidence_info,
+    get_relevance_label_combined,
     normalize_markdown_emphasis,
+    normalize_markdown_table,
+    normalize_relevance_scores,
+    render_full_view_nodes,
     strip_path_prefix,
 )
-
 
 # Default paths
 DEFAULT_DB_PATH = "data/chroma_db"
@@ -80,7 +81,7 @@ def _format_query_rewrite_debug(info: Optional[QueryRewriteInfo]) -> str:
     lines = ["### 🔄 쿼리 분석 결과"]
 
     if not info.used:
-        lines.append(f"- **상태**: 쿼리 리라이팅 미적용")
+        lines.append("- **상태**: 쿼리 리라이팅 미적용")
         lines.append(f"- **원본 쿼리**: `{info.original}`")
         return "\n".join(lines)
 
@@ -135,13 +136,10 @@ def _format_query_rewrite_debug(info: Optional[QueryRewriteInfo]) -> str:
     return "\n".join(lines)
 
 
-
-
-
 def _decide_search_mode_ui(query: str, mode_selection: str) -> str:
     """Wrapper for shared decide_search_mode in Gradio."""
     from .common import decide_search_mode
-    
+
     force_mode = None
     if mode_selection == "검색 (Search)":
         force_mode = "search"
@@ -149,7 +147,7 @@ def _decide_search_mode_ui(query: str, mode_selection: str) -> str:
         force_mode = "ask"
     elif mode_selection == "전문 (Full View)":
         force_mode = "full_view"
-        
+
     return decide_search_mode(query, force_mode)
 
 
@@ -178,7 +176,6 @@ def create_app(
     if use_mock_llm:
         llm_status = "⚠️ Mock LLM (테스트 모드)"
 
-    search_usecase = SearchUseCase(store)  # use_reranker는 config 기본값 사용
     sync_usecase = SyncUseCase(loader, store)
 
     data_input_dir = Path("data/input")
@@ -188,7 +185,8 @@ def create_app(
 
     def _find_latest_json(output_dir: Path) -> Optional[Path]:
         json_files = [
-            p for p in output_dir.rglob("*.json")
+            p
+            for p in output_dir.rglob("*.json")
             if not p.name.endswith("_metadata.json")
         ]
         if not json_files:
@@ -198,7 +196,8 @@ def create_app(
     def _list_json_files(output_dir: Path) -> List[Path]:
         return sorted(
             [
-                p for p in output_dir.rglob("*.json")
+                p
+                for p in output_dir.rglob("*.json")
                 if not p.name.endswith("_metadata.json")
             ],
             key=lambda p: p.stat().st_mtime,
@@ -220,6 +219,7 @@ def create_app(
         if sync_state_path.exists():
             try:
                 import json
+
                 data = json.loads(sync_state_path.read_text(encoding="utf-8"))
                 last_synced = data.get("json_file")
             except Exception:
@@ -242,7 +242,9 @@ def create_app(
             lines.append("| 파일 | 수정 시각 | 크기 | 마지막 동기화 |")
             lines.append("|---|---|---|---|")
             for p in json_files:
-                mtime = datetime.fromtimestamp(p.stat().st_mtime).strftime("%Y-%m-%d %H:%M")
+                mtime = datetime.fromtimestamp(p.stat().st_mtime).strftime(
+                    "%Y-%m-%d %H:%M"
+                )
                 size_kb = f"{p.stat().st_size / 1024:.1f} KB"
                 is_synced = "✅" if last_synced and p.name == last_synced else ""
                 lines.append(f"| `{p.name}` | {mtime} | {size_kb} | {is_synced} |")
@@ -281,10 +283,10 @@ def create_app(
         status = sync_usecase.get_sync_status()
         auto_sync_note = f"\n- {auto_sync_message}" if auto_sync_message else ""
         return f"""**동기화 상태**
-- 마지막 동기화: {status['last_sync'] or '없음'}
-- JSON 파일: {status['json_file'] or '없음'}
-- 인덱싱된 규정: {status['store_regulations']}개
-- 청크 수: {status['store_chunks']}개
+- 마지막 동기화: {status["last_sync"] or "없음"}
+- JSON 파일: {status["json_file"] or "없음"}
+- 인덱싱된 규정: {status["store_regulations"]}개
+- 청크 수: {status["store_chunks"]}개
 - LLM: {llm_status}{auto_sync_note}
 """
 
@@ -295,6 +297,7 @@ def create_app(
         target_path = data_input_dir / input_path.name
         if input_path.resolve() != target_path.resolve():
             shutil.copy2(input_path, target_path)
+
     # Unified Search Function
     query_analyzer = QueryAnalyzer()
     full_view_usecase = FullViewUseCase(JSONDocumentLoader())
@@ -331,12 +334,19 @@ def create_app(
         return "### 목차\n" + "\n".join([f"- {t}" for t in toc])
 
     def _build_search_table(results) -> str:
-        table_rows = ["| # | 규정명 | 코드 | 조항 | 점수 |", "|---|------|------|------|------|"]
+        table_rows = [
+            "| # | 규정명 | 코드 | 조항 | 점수 |",
+            "|---|------|------|------|------|",
+        ]
         for i, r in enumerate(results, 1):
             reg_title = r.chunk.parent_path[0] if r.chunk.parent_path else r.chunk.title
-            path_segments = clean_path_segments(r.chunk.parent_path) if r.chunk.parent_path else []
+            path_segments = (
+                clean_path_segments(r.chunk.parent_path) if r.chunk.parent_path else []
+            )
             path = " > ".join(path_segments[-2:]) if path_segments else r.chunk.title
-            table_rows.append(f"| {i} | {reg_title} | {r.chunk.rule_code} | {path[:40]} | {r.score:.2f} |")
+            table_rows.append(
+                f"| {i} | {reg_title} | {r.chunk.rule_code} | {path[:40]} | {r.score:.2f} |"
+            )
         return "\n".join(table_rows)
 
     def _build_sources_markdown(results, show_debug: bool) -> str:
@@ -346,7 +356,11 @@ def create_app(
 
         for i, r in enumerate(display_sources, 1):
             reg_name = r.chunk.parent_path[0] if r.chunk.parent_path else r.chunk.title
-            path = " > ".join(clean_path_segments(r.chunk.parent_path)) if r.chunk.parent_path else r.chunk.title
+            path = (
+                " > ".join(clean_path_segments(r.chunk.parent_path))
+                if r.chunk.parent_path
+                else r.chunk.title
+            )
             norm_score = norm_scores.get(r.chunk.id, 0.0)
             rel_pct = int(norm_score * 100)
             rel_label = get_relevance_label_combined(rel_pct)
@@ -356,7 +370,7 @@ def create_app(
             sources_md.append(f"""#### [{i}] {reg_name}
 **경로:** {path}
 
-{snippet[:300]}{'...' if len(snippet) > 300 else ''}
+{snippet[:300]}{"..." if len(snippet) > 300 else ""}
 
 *규정번호: {r.chunk.rule_code} | 관련도: {rel_pct}% {rel_label}{score_info}*
 
@@ -381,7 +395,12 @@ def create_app(
         db_path_value = target_db_path or db_path
         store_for_ask = ChromaVectorStore(persist_directory=db_path_value)
         if store_for_ask.count() == 0:
-            return "데이터베이스가 비어 있습니다. CLI에서 'regulation-rag sync'를 실행하세요.", "", "", ""
+            return (
+                "데이터베이스가 비어 있습니다. CLI에서 'regulation-rag sync'를 실행하세요.",
+                "",
+                "",
+                "",
+            )
 
         if use_mock_llm:
             llm_client = MockLLMClient()
@@ -455,10 +474,18 @@ def create_app(
                 return
             match = matches[0]
             label_variants = attachment_label_variants(label)
-            tables = full_view_usecase.find_tables(match.rule_code, table_no, label_variants)
+            tables = full_view_usecase.find_tables(
+                match.rule_code, table_no, label_variants
+            )
             if not tables:
                 label_text = label or "별표"
-                yield f"{label_text}를 찾을 수 없습니다.", "", "", query, match.rule_code
+                yield (
+                    f"{label_text}를 찾을 수 없습니다.",
+                    "",
+                    "",
+                    query,
+                    match.rule_code,
+                )
                 return
             label_text = label or "별표"
             title_label = f"{match.title} {label_text}"
@@ -482,19 +509,25 @@ def create_app(
             return
 
         if mode == "search":
-             # Search (Retrieval)
-             # Reuse search_regulations logic but yield it as a generator to match interface
-             table, detail, debug, q, code = search_regulations(
-                 query, top_k, include_abolished, audience_override, show_debug
-             )
-             yield table, detail, debug, q, code
+            # Search (Retrieval)
+            # Reuse search_regulations logic but yield it as a generator to match interface
+            table, detail, debug, q, code = search_regulations(
+                query, top_k, include_abolished, audience_override, show_debug
+            )
+            yield table, detail, debug, q, code
         else:
             # Ask (LLM)
             # Delegate to ask_question generator
             for result in ask_question(
-                query, top_k, include_abolished, 
-                llm_provider, llm_model, llm_base_url, 
-                target_db_path, audience_override, show_debug
+                query,
+                top_k,
+                include_abolished,
+                llm_provider,
+                llm_model,
+                llm_base_url,
+                target_db_path,
+                audience_override,
+                show_debug,
             ):
                 yield result
 
@@ -607,7 +640,9 @@ def create_app(
         if attachment_requested:
             matches = full_view_usecase.find_matches(attachment_query or query)
             if not matches:
-                history.append({"role": "assistant", "content": "해당 규정을 찾을 수 없습니다."})
+                history.append(
+                    {"role": "assistant", "content": "해당 규정을 찾을 수 없습니다."}
+                )
                 return history, details, debug_text, state
             if len(matches) > 1:
                 options = [m.title for m in matches]
@@ -618,22 +653,39 @@ def create_app(
                     "table_no": attachment_no,
                     "label": attachment_label,
                 }
-                history.append({"role": "assistant", "content": format_clarification("regulation", options)})
+                history.append(
+                    {
+                        "role": "assistant",
+                        "content": format_clarification("regulation", options),
+                    }
+                )
                 return history, details, debug_text, state
 
             match = matches[0]
             label_variants = attachment_label_variants(attachment_label)
-            tables = full_view_usecase.find_tables(match.rule_code, attachment_no, label_variants)
+            tables = full_view_usecase.find_tables(
+                match.rule_code, attachment_no, label_variants
+            )
             if not tables:
                 label_text = attachment_label or "별표"
-                history.append({"role": "assistant", "content": f"{label_text}를 찾을 수 없습니다."})
+                history.append(
+                    {
+                        "role": "assistant",
+                        "content": f"{label_text}를 찾을 수 없습니다.",
+                    }
+                )
                 return history, details, debug_text, state
             label_text = attachment_label or "별표"
             details = _format_table_matches(tables, attachment_no, label_text)
             title_label = f"{match.title} {label_text}"
             if attachment_no:
                 title_label = f"{match.title} {label_text} {attachment_no}"
-            history.append({"role": "assistant", "content": f"**{title_label}** 내용을 표시합니다."})
+            history.append(
+                {
+                    "role": "assistant",
+                    "content": f"**{title_label}** 내용을 표시합니다.",
+                }
+            )
             state["last_query"] = query
             state["last_mode"] = "attachment"
             state["last_regulation"] = match.title
@@ -643,25 +695,45 @@ def create_app(
         if mode == "full_view":
             matches = full_view_usecase.find_matches(query)
             if not matches:
-                history.append({"role": "assistant", "content": "해당 규정을 찾을 수 없습니다."})
+                history.append(
+                    {"role": "assistant", "content": "해당 규정을 찾을 수 없습니다."}
+                )
                 return history, details, debug_text, state
             if len(matches) > 1:
                 options = [m.title for m in matches]
-                state["pending"] = {"type": "regulation", "options": options, "query": query, "mode": mode}
-                history.append({"role": "assistant", "content": format_clarification("regulation", options)})
+                state["pending"] = {
+                    "type": "regulation",
+                    "options": options,
+                    "query": query,
+                    "mode": mode,
+                }
+                history.append(
+                    {
+                        "role": "assistant",
+                        "content": format_clarification("regulation", options),
+                    }
+                )
                 return history, details, debug_text, state
-            view = full_view_usecase.get_full_view(matches[0].rule_code) or full_view_usecase.get_full_view(matches[0].title)
+            view = full_view_usecase.get_full_view(
+                matches[0].rule_code
+            ) or full_view_usecase.get_full_view(matches[0].title)
             if not view:
-                history.append({"role": "assistant", "content": "규정 전문을 불러오지 못했습니다."})
+                history.append(
+                    {"role": "assistant", "content": "규정 전문을 불러오지 못했습니다."}
+                )
                 return history, details, debug_text, state
 
             toc_text = _format_toc(view.toc)
             content_text = render_full_view_nodes(view.content)
             addenda_text = render_full_view_nodes(view.addenda)
-            details = toc_text + "\n\n### 본문\n\n" + (content_text or "본문이 없습니다.")
+            details = (
+                toc_text + "\n\n### 본문\n\n" + (content_text or "본문이 없습니다.")
+            )
             if addenda_text:
                 details += "\n\n### 부칙\n\n" + addenda_text
-            history.append({"role": "assistant", "content": f"**{view.title}** 전문을 표시합니다."})
+            history.append(
+                {"role": "assistant", "content": f"**{view.title}** 전문을 표시합니다."}
+            )
             state["last_query"] = query
             state["last_mode"] = "full_view"
             state["last_regulation"] = view.title
@@ -670,15 +742,30 @@ def create_app(
 
         if state.get("audience") is None and analyzer.is_audience_ambiguous(query):
             options = ["교수", "학생", "직원"]
-            state["pending"] = {"type": "audience", "options": options, "query": query, "mode": mode}
-            history.append({"role": "assistant", "content": format_clarification("audience", options)})
+            state["pending"] = {
+                "type": "audience",
+                "options": options,
+                "query": query,
+                "mode": mode,
+            }
+            history.append(
+                {
+                    "role": "assistant",
+                    "content": format_clarification("audience", options),
+                }
+            )
             return history, details, debug_text, state
 
         audience_override = _parse_audience(state.get("audience") or "")
 
         if mode == "search":
             if store.count() == 0:
-                history.append({"role": "assistant", "content": "데이터베이스가 비어 있습니다. CLI에서 'regulation-rag sync'를 실행하세요."})
+                history.append(
+                    {
+                        "role": "assistant",
+                        "content": "데이터베이스가 비어 있습니다. CLI에서 'regulation-rag sync'를 실행하세요.",
+                    }
+                )
                 return history, details, debug_text, state
             search_with_hybrid = SearchUseCase(store)
             results = search_with_hybrid.search_unique(
@@ -688,12 +775,22 @@ def create_app(
                 audience_override=audience_override,
             )
             if not results:
-                history.append({"role": "assistant", "content": "검색 결과가 없습니다."})
+                history.append(
+                    {"role": "assistant", "content": "검색 결과가 없습니다."}
+                )
             else:
-                history.append({"role": "assistant", "content": _build_search_table(results)})
+                history.append(
+                    {"role": "assistant", "content": _build_search_table(results)}
+                )
                 top = results[0]
-                full_path = " > ".join(clean_path_segments(top.chunk.parent_path)) if top.chunk.parent_path else top.chunk.title
-                top_text = strip_path_prefix(top.chunk.text, top.chunk.parent_path or [])
+                full_path = (
+                    " > ".join(clean_path_segments(top.chunk.parent_path))
+                    if top.chunk.parent_path
+                    else top.chunk.title
+                )
+                top_text = strip_path_prefix(
+                    top.chunk.text, top.chunk.parent_path or []
+                )
                 details = f"""### 🏆 1위 결과: {top.chunk.rule_code}
 
 **규정명:** {top.chunk.parent_path[0] if top.chunk.parent_path else top.chunk.title}
@@ -706,24 +803,32 @@ def create_app(
 """
                 state["last_query"] = query
                 state["last_mode"] = "search"
-                state["last_regulation"] = top.chunk.parent_path[0] if top.chunk.parent_path else top.chunk.title
+                state["last_regulation"] = (
+                    top.chunk.parent_path[0]
+                    if top.chunk.parent_path
+                    else top.chunk.title
+                )
                 state["last_rule_code"] = top.chunk.rule_code
             if show_debug:
-                debug_text = _format_query_rewrite_debug(search_with_hybrid.get_last_query_rewrite())
+                debug_text = _format_query_rewrite_debug(
+                    search_with_hybrid.get_last_query_rewrite()
+                )
             return history, details, debug_text, state
 
-        answer_text, sources_text, debug_text, rule_code, regulation_title = _run_ask_once(
-            message,
-            top_k,
-            include_abolished,
-            llm_provider,
-            llm_model,
-            llm_base_url,
-            target_db_path,
-            audience_override,
-            show_debug,
-            history_text=history_context or None,
-            search_query=query,
+        answer_text, sources_text, debug_text, rule_code, regulation_title = (
+            _run_ask_once(
+                message,
+                top_k,
+                include_abolished,
+                llm_provider,
+                llm_model,
+                llm_base_url,
+                target_db_path,
+                audience_override,
+                show_debug,
+                history_text=history_context or None,
+                search_query=query,
+            )
         )
         history.append({"role": "assistant", "content": answer_text})
         details = sources_text
@@ -734,7 +839,6 @@ def create_app(
         if rule_code:
             state["last_rule_code"] = rule_code
         return history, details, debug_text, state
-
 
     # Search function
     def search_regulations(
@@ -749,7 +853,11 @@ def create_app(
             return "검색어를 입력해주세요.", "", ""
 
         if store.count() == 0:
-            return "데이터베이스가 비어 있습니다. CLI에서 'regulation-rag sync'를 실행하세요.", "", ""
+            return (
+                "데이터베이스가 비어 있습니다. CLI에서 'regulation-rag sync'를 실행하세요.",
+                "",
+                "",
+            )
 
         # SearchUseCase가 HybridSearcher를 자동 초기화
         search_with_hybrid = SearchUseCase(store)
@@ -769,18 +877,29 @@ def create_app(
             return "검색 결과가 없습니다.", "", debug_text
 
         # Format results as markdown table (CLI 수준)
-        table_rows = ["| # | 규정명 | 코드 | 조항 | 점수 |", "|---|------|------|------|------|"]
+        table_rows = [
+            "| # | 규정명 | 코드 | 조항 | 점수 |",
+            "|---|------|------|------|------|",
+        ]
         for i, r in enumerate(results, 1):
             reg_title = r.chunk.parent_path[0] if r.chunk.parent_path else r.chunk.title
-            path_segments = clean_path_segments(r.chunk.parent_path) if r.chunk.parent_path else []
+            path_segments = (
+                clean_path_segments(r.chunk.parent_path) if r.chunk.parent_path else []
+            )
             path = " > ".join(path_segments[-2:]) if path_segments else r.chunk.title
-            table_rows.append(f"| {i} | {reg_title} | {r.chunk.rule_code} | {path[:40]} | {r.score:.2f} |")
+            table_rows.append(
+                f"| {i} | {reg_title} | {r.chunk.rule_code} | {path[:40]} | {r.score:.2f} |"
+            )
 
         table = "\n".join(table_rows)
 
         # Top result detail (CLI 수준)
         top = results[0]
-        full_path = " > ".join(clean_path_segments(top.chunk.parent_path)) if top.chunk.parent_path else top.chunk.title
+        full_path = (
+            " > ".join(clean_path_segments(top.chunk.parent_path))
+            if top.chunk.parent_path
+            else top.chunk.title
+        )
         detail = f"""### 🏆 1위 결과: {top.chunk.rule_code}
 
 **규정명:** {top.chunk.parent_path[0] if top.chunk.parent_path else top.chunk.title}
@@ -817,7 +936,9 @@ def create_app(
             return "규정 후보가 여러 개입니다.", detail, "", query, ""
 
         match = matches[0]
-        view = full_view_usecase.get_full_view(match.rule_code) or full_view_usecase.get_full_view(match.title)
+        view = full_view_usecase.get_full_view(
+            match.rule_code
+        ) or full_view_usecase.get_full_view(match.title)
         if not view:
             return "규정 전문을 불러오지 못했습니다.", "", "", query, ""
 
@@ -848,17 +969,23 @@ def create_app(
 
         # Step 1: Initialize
         yield "⏳ 데이터베이스 연결 중...", "", "", "", ""
-        
+
         db_path_value = target_db_path or db_path
         store_for_ask = ChromaVectorStore(persist_directory=db_path_value)
 
         if store_for_ask.count() == 0:
-            yield "데이터베이스가 비어 있습니다. CLI에서 'regulation-rag sync'를 실행하세요.", "", "", "", ""
+            yield (
+                "데이터베이스가 비어 있습니다. CLI에서 'regulation-rag sync'를 실행하세요.",
+                "",
+                "",
+                "",
+                "",
+            )
             return
 
         # Step 2: Initialize LLM
         yield "⏳ LLM 클라이언트 초기화 중...", "", "", "", ""
-        
+
         if use_mock_llm:
             llm_client = MockLLMClient()
         else:
@@ -874,7 +1001,7 @@ def create_app(
 
         # Step 3: Search
         yield "🔍 관련 규정 검색 중...", "", "", "", ""
-        
+
         search_with_llm = SearchUseCase(store_for_ask, llm_client)
 
         filter = None
@@ -883,7 +1010,7 @@ def create_app(
 
         # Step 4: Generate answer
         yield "🤖 AI 답변 생성 중... (10-30초 소요)", "", "", "", ""
-        
+
         answer = search_with_llm.ask(
             question,
             filter=filter,
@@ -897,25 +1024,31 @@ def create_app(
         # Format sources using shared formatters
         sources_list = answer.sources
         norm_scores = normalize_relevance_scores(sources_list) if sources_list else {}
-        display_sources = filter_by_relevance(sources_list, norm_scores) if sources_list else []
+        display_sources = (
+            filter_by_relevance(sources_list, norm_scores) if sources_list else []
+        )
 
         sources_md = ["### 📚 참고 규정\n"]
-        
+
         for i, r in enumerate(display_sources, 1):
             reg_name = r.chunk.parent_path[0] if r.chunk.parent_path else r.chunk.title
-            path = " > ".join(clean_path_segments(r.chunk.parent_path)) if r.chunk.parent_path else r.chunk.title
+            path = (
+                " > ".join(clean_path_segments(r.chunk.parent_path))
+                if r.chunk.parent_path
+                else r.chunk.title
+            )
             norm_score = norm_scores.get(r.chunk.id, 0.0)
             rel_pct = int(norm_score * 100)
             rel_label = get_relevance_label_combined(rel_pct)
-            
+
             # AI 신뢰도는 show_debug일 때만 표시
             score_info = f" | AI 신뢰도: {r.score:.3f}" if show_debug else ""
             snippet = strip_path_prefix(r.chunk.text, r.chunk.parent_path or [])
-            
+
             sources_md.append(f"""#### [{i}] {reg_name}
 **경로:** {path}
 
-{snippet[:300]}{'...' if len(snippet) > 300 else ''}
+{snippet[:300]}{"..." if len(snippet) > 300 else ""}
 
 *규정번호: {r.chunk.rule_code} | 관련도: {rel_pct}% {rel_label}{score_info}*
 
@@ -931,7 +1064,10 @@ def create_app(
         else:
             conf_desc = f"{conf_icon} 답변 신뢰도 {conf_label} - 학교 행정실 문의 권장"
 
-        sources_text = "\n".join(sources_md) + f"\n**{conf_desc}** (신뢰도 {answer.confidence:.0%})"
+        sources_text = (
+            "\n".join(sources_md)
+            + f"\n**{conf_desc}** (신뢰도 {answer.confidence:.0%})"
+        )
 
         debug_text = ""
         if show_debug:
@@ -947,15 +1083,16 @@ def create_app(
         """Record feedback from Web UI."""
         if not query or not rule_code:
             return gr.update(value="⚠️ 피드백을 남길 결과가 없습니다.", visible=True)
-            
+
         from ..infrastructure.feedback import FeedbackCollector
+
         collector = FeedbackCollector()
         collector.record_feedback(
             query=query,
             rule_code=rule_code,
             rating=rating,
             comment=comment or None,
-            source="web"
+            source="web",
         )
         return gr.update(value="✅ 피드백이 저장되었습니다. 감사합니다!", visible=True)
 
@@ -972,7 +1109,7 @@ def create_app(
                 result = sync_usecase.incremental_sync(json_path)
 
             if result.has_errors:
-                return f"❌ 오류 발생:\n" + "\n".join(result.errors)
+                return "❌ 오류 발생:\n" + "\n".join(result.errors)
 
             return f"""✅ 동기화 완료!
 - 추가: {result.added}개
@@ -1002,6 +1139,7 @@ def create_app(
 
         try:
             from dotenv import load_dotenv
+
             load_dotenv()
         except Exception:
             pass
@@ -1023,6 +1161,7 @@ def create_app(
         )
 
         from rich.console import Console
+
         console = Console(record=True)
         status = run_pipeline(args, console=console)
         log_text = console.export_text() or ""
@@ -1070,8 +1209,12 @@ def create_app(
                             chat_send = gr.Button("전송", variant="primary")
                             chat_clear = gr.Button("대화 초기화")
                     with gr.Column(scale=2):
-                        chat_top_k = gr.Slider(minimum=1, maximum=20, value=5, step=1, label="결과 수")
-                        chat_abolished = gr.Checkbox(label="폐지 규정 포함", value=False)
+                        chat_top_k = gr.Slider(
+                            minimum=1, maximum=20, value=5, step=1, label="결과 수"
+                        )
+                        chat_abolished = gr.Checkbox(
+                            label="폐지 규정 포함", value=False
+                        )
                         chat_target = gr.Radio(
                             choices=["자동", "교수", "학생", "직원"],
                             value="자동",
@@ -1080,9 +1223,17 @@ def create_app(
                         chat_context = gr.Checkbox(label="문맥 활용", value=True)
                         chat_debug = gr.Checkbox(label="디버그 출력", value=False)
                         with gr.Accordion("⚙️ LLM 설정 (질문 모드용)", open=False):
-                            chat_llm_p = gr.Dropdown(choices=LLM_PROVIDERS, value=DEFAULT_LLM_PROVIDER, label="Provider")
-                            chat_llm_m = gr.Textbox(value=DEFAULT_LLM_MODEL, label="Model")
-                            chat_llm_b = gr.Textbox(value=DEFAULT_LLM_BASE_URL, label="Base URL")
+                            chat_llm_p = gr.Dropdown(
+                                choices=LLM_PROVIDERS,
+                                value=DEFAULT_LLM_PROVIDER,
+                                label="Provider",
+                            )
+                            chat_llm_m = gr.Textbox(
+                                value=DEFAULT_LLM_MODEL, label="Model"
+                            )
+                            chat_llm_b = gr.Textbox(
+                                value=DEFAULT_LLM_BASE_URL, label="Base URL"
+                            )
                         chat_detail = gr.Markdown(label="상세 / 근거")
                         chat_debug_out = gr.Markdown(label="디버그")
 
@@ -1162,7 +1313,12 @@ def create_app(
                         )
                         with gr.Row():
                             uni_mode = gr.Radio(
-                                choices=["자동 (Auto)", "검색 (Search)", "질문 (Ask)", "전문 (Full View)"],
+                                choices=[
+                                    "자동 (Auto)",
+                                    "검색 (Search)",
+                                    "질문 (Ask)",
+                                    "전문 (Full View)",
+                                ],
                                 value="자동 (Auto)",
                                 label="검색 모드",
                                 scale=2,
@@ -1170,7 +1326,9 @@ def create_app(
                             uni_btn = gr.Button("🔍 실행", variant="primary", scale=1)
 
                     with gr.Column(scale=1):
-                        uni_top_k = gr.Slider(minimum=1, maximum=20, value=5, step=1, label="결과 수")
+                        uni_top_k = gr.Slider(
+                            minimum=1, maximum=20, value=5, step=1, label="결과 수"
+                        )
                         uni_abolished = gr.Checkbox(label="폐지 규정 포함", value=False)
                         uni_debug = gr.Checkbox(label="디버그 출력", value=False)
                         uni_target = gr.Radio(
@@ -1181,7 +1339,11 @@ def create_app(
 
                 with gr.Accordion("⚙️ LLM 설정 (질문 모드용)", open=False):
                     with gr.Row():
-                        llm_p = gr.Dropdown(choices=LLM_PROVIDERS, value=DEFAULT_LLM_PROVIDER, label="Provider")
+                        llm_p = gr.Dropdown(
+                            choices=LLM_PROVIDERS,
+                            value=DEFAULT_LLM_PROVIDER,
+                            label="Provider",
+                        )
                         llm_m = gr.Textbox(value=DEFAULT_LLM_MODEL, label="Model")
                         llm_b = gr.Textbox(value=DEFAULT_LLM_BASE_URL, label="Base URL")
 
@@ -1198,7 +1360,10 @@ def create_app(
                 # Feedback Row (Shared)
                 with gr.Row(visible=False) as uni_fb_row:
                     with gr.Column(scale=4):
-                        uni_fb_comment = gr.Textbox(label="피드백 의견 (선택)", placeholder="결과에 대한 의견을 남겨주세요.")
+                        uni_fb_comment = gr.Textbox(
+                            label="피드백 의견 (선택)",
+                            placeholder="결과에 대한 의견을 남겨주세요.",
+                        )
                     with gr.Column(scale=1):
                         with gr.Row():
                             uni_fb_up = gr.Button("👍", size="sm")
@@ -1210,11 +1375,24 @@ def create_app(
                 uni_btn.click(
                     fn=unified_search,
                     inputs=[
-                        uni_query, uni_mode, uni_top_k, uni_abolished,
-                        llm_p, llm_m, llm_b,
-                        gr.State(db_path), uni_target, uni_debug
+                        uni_query,
+                        uni_mode,
+                        uni_top_k,
+                        uni_abolished,
+                        llm_p,
+                        llm_m,
+                        llm_b,
+                        gr.State(db_path),
+                        uni_target,
+                        uni_debug,
                     ],
-                    outputs=[uni_main, uni_detail, uni_debug_out, uni_fb_query, uni_fb_rule],
+                    outputs=[
+                        uni_main,
+                        uni_detail,
+                        uni_debug_out,
+                        uni_fb_query,
+                        uni_fb_rule,
+                    ],
                 )
 
                 # Feedback Events
@@ -1225,12 +1403,14 @@ def create_app(
                     btn.click(
                         fn=lambda q, r, c, rt=rating: record_web_feedback(q, r, rt, c),
                         inputs=[uni_fb_query, uni_fb_rule, uni_fb_comment],
-                        outputs=[uni_fb_msg]
+                        outputs=[uni_fb_msg],
                     )
 
             # Tab 3: Status (Read-only)
             with gr.TabItem("📂 데이터 현황"):
-                gr.Markdown("> DB 관리(동기화, 초기화)는 CLI에서 수행합니다: `regulation-rag sync`, `regulation-rag reset`")
+                gr.Markdown(
+                    "> DB 관리(동기화, 초기화)는 CLI에서 수행합니다: `regulation-rag sync`, `regulation-rag reset`"
+                )
 
                 status_db_path = gr.Textbox(
                     value=db_path,

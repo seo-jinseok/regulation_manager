@@ -4,20 +4,21 @@ import os
 import tempfile
 import time
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
+
 
 class CacheManager:
     """
     Manages caching for file states and LLM responses to optimize processing.
     """
-    
+
     def __init__(self, cache_dir: str = ".cache"):
         self.cache_dir = Path(cache_dir)
         self.cache_dir.mkdir(parents=True, exist_ok=True)
-        
+
         self.file_state_path = self.cache_dir / "file_state_cache.json"
         self.llm_cache_path = self.cache_dir / "llm_response_cache.json"
-        
+
         self.file_states = self._load_json(self.file_state_path)
         self.llm_cache = self._load_json(self.llm_cache_path)
         self.llm_cache_ttl_days = self._get_env_int("LLM_CACHE_TTL_DAYS")
@@ -111,7 +112,10 @@ class CacheManager:
                 self.llm_cache.pop(key, None)
 
         # Size prune (oldest first)
-        if self.llm_cache_max_entries and len(self.llm_cache) > self.llm_cache_max_entries:
+        if (
+            self.llm_cache_max_entries
+            and len(self.llm_cache) > self.llm_cache_max_entries
+        ):
             entries = []
             for key, entry in self.llm_cache.items():
                 normalized = self._normalize_llm_entry(entry)
@@ -138,7 +142,7 @@ class CacheManager:
         key = str(file_path)
         if key not in self.file_states:
             self.file_states[key] = {}
-        
+
         if hwp_hash:
             self.file_states[key]["hwp_hash"] = hwp_hash
         if raw_md_hash:
@@ -152,7 +156,9 @@ class CacheManager:
 
     # --- LLM Cache Methods ---
 
-    def get_cached_llm_response(self, text_chunk: str, namespace: Optional[str] = None) -> Optional[str]:
+    def get_cached_llm_response(
+        self, text_chunk: str, namespace: Optional[str] = None
+    ) -> Optional[str]:
         chunk_hash = self._cache_key(text_chunk, namespace)
         entry = self.llm_cache.get(chunk_hash)
         if entry is None:
@@ -163,6 +169,8 @@ class CacheManager:
             return None
         return normalized.get("response")
 
-    def cache_llm_response(self, text_chunk: str, response: str, namespace: Optional[str] = None):
+    def cache_llm_response(
+        self, text_chunk: str, response: str, namespace: Optional[str] = None
+    ):
         chunk_hash = self._cache_key(text_chunk, namespace)
         self.llm_cache[chunk_hash] = {"response": response, "ts": int(time.time())}

@@ -1,7 +1,7 @@
 import json
 
-from src.rag.config import get_config, reset_config
 from src.rag.application.full_view_usecase import FullViewUseCase
+from src.rag.config import get_config, reset_config
 from src.rag.infrastructure.json_loader import JSONDocumentLoader
 
 
@@ -22,7 +22,13 @@ def _write_sample_json(path):
                     }
                 ],
                 "addenda": [
-                    {"type": "addendum", "display_no": "", "title": "부칙", "text": "부칙 내용", "children": []}
+                    {
+                        "type": "addendum",
+                        "display_no": "",
+                        "title": "부칙",
+                        "text": "부칙 내용",
+                        "children": [],
+                    }
                 ],
             },
             {
@@ -214,7 +220,10 @@ def test_find_tables_prefers_labeled_matches(tmp_path):
                         "text": "별표 1 기준은 다음과 같다.\n[TABLE:1]",
                         "metadata": {
                             "tables": [
-                                {"format": "markdown", "markdown": "| A | B |\\n| --- | --- |\\n| 1 | 2 |"}
+                                {
+                                    "format": "markdown",
+                                    "markdown": "| A | B |\\n| --- | --- |\\n| 1 | 2 |",
+                                }
                             ]
                         },
                         "children": [],
@@ -226,7 +235,10 @@ def test_find_tables_prefers_labeled_matches(tmp_path):
                         "text": "기타 기준.\n[TABLE:1]",
                         "metadata": {
                             "tables": [
-                                {"format": "markdown", "markdown": "| C | D |\\n| --- | --- |\\n| 3 | 4 |"}
+                                {
+                                    "format": "markdown",
+                                    "markdown": "| C | D |\\n| --- | --- |\\n| 3 | 4 |",
+                                }
                             ]
                         },
                         "children": [],
@@ -262,7 +274,10 @@ def test_find_tables_fallback_to_placeholder(tmp_path):
                         "text": "기준은 다음과 같다.\n[TABLE:1]",
                         "metadata": {
                             "tables": [
-                                {"format": "markdown", "markdown": "| A | B |\\n| --- | --- |\\n| 1 | 2 |"}
+                                {
+                                    "format": "markdown",
+                                    "markdown": "| A | B |\\n| --- | --- |\\n| 1 | 2 |",
+                                }
                             ]
                         },
                         "children": [],
@@ -298,7 +313,10 @@ def test_find_tables_matches_addendum_label(tmp_path):
                         "text": "별첨 1 기준은 다음과 같다.\n[TABLE:1]",
                         "metadata": {
                             "tables": [
-                                {"format": "markdown", "markdown": "| A | B |\\n| --- | --- |\\n| 1 | 2 |"}
+                                {
+                                    "format": "markdown",
+                                    "markdown": "| A | B |\\n| --- | --- |\\n| 1 | 2 |",
+                                }
                             ]
                         },
                         "children": [],

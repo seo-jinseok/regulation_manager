@@ -1,8 +1,12 @@
 import re
+
 from .llm_client import LLMClient
 
+
 class RegulationRepair:
-    def __init__(self, provider="openai", client=None, cache_manager=None, cache_namespace=None):
+    def __init__(
+        self, provider="openai", client=None, cache_manager=None, cache_namespace=None
+    ):
         self.cache_manager = cache_manager
         self.cache_namespace = cache_namespace
         if client:
@@ -13,7 +17,11 @@ class RegulationRepair:
             except Exception as e:
                 print(f"Warning: Failed to initialize LLMClient: {e}")
                 self.client = None
-        if not self.cache_namespace and self.client and hasattr(self.client, "cache_namespace"):
+        if (
+            not self.cache_namespace
+            and self.client
+            and hasattr(self.client, "cache_namespace")
+        ):
             self.cache_namespace = self.client.cache_namespace()
 
     def repair_broken_lines(self, text: str) -> str:
@@ -26,20 +34,22 @@ class RegulationRepair:
 
         units = self._split_into_logical_units(text)
         processed_units = []
-        
+
         for i, unit in enumerate(units):
             if not unit.strip():
                 processed_units.append(unit)
                 continue
-            
+
             # Skip very short units
             if len(unit.strip().splitlines()) <= 1:
                 processed_units.append(unit)
                 continue
 
             if self.cache_manager:
-                cached = self.cache_manager.get_cached_llm_response(unit, namespace=self.cache_namespace)
-                if cached: 
+                cached = self.cache_manager.get_cached_llm_response(
+                    unit, namespace=self.cache_namespace
+                )
+                if cached:
                     processed_units.append(cached)
                     continue
 
@@ -63,17 +73,21 @@ class RegulationRepair:
                 # Remove markdown code blocks if any
                 if cleaned.startswith("```"):
                     lines = cleaned.splitlines()
-                    if lines[0].startswith("```"): lines = lines[1:]
-                    if lines and lines[-1].startswith("```"): lines = lines[:-1]
+                    if lines[0].startswith("```"):
+                        lines = lines[1:]
+                    if lines and lines[-1].startswith("```"):
+                        lines = lines[:-1]
                     cleaned = "\n".join(lines)
-                
+
                 if self.cache_manager:
-                    self.cache_manager.cache_llm_response(unit, cleaned, namespace=self.cache_namespace)
+                    self.cache_manager.cache_llm_response(
+                        unit, cleaned, namespace=self.cache_namespace
+                    )
                 processed_units.append(cleaned)
             except Exception as e:
                 print(f"Warning: Repair failed for unit {i}: {e}")
                 processed_units.append(unit)
-                
+
         return "\n".join(processed_units)
 
     def _split_into_logical_units(self, text: str) -> list[str]:
@@ -81,7 +95,9 @@ class RegulationRepair:
         units = []
         current_unit = []
         for line in lines:
-            is_header = re.match(r'^제\s*\d+\s*조', line.strip()) or re.match(r'^부\s*칙', line.strip())
+            is_header = re.match(r"^제\s*\d+\s*조", line.strip()) or re.match(
+                r"^부\s*칙", line.strip()
+            )
             if is_header and current_unit:
                 units.append("\n".join(current_unit))
                 current_unit = []

@@ -1,5 +1,7 @@
 import unittest
+
 from src.formatter import RegulationFormatter
+
 
 class TestFormatterDeep(unittest.TestCase):
     def test_chapter_section_subsection_nesting(self):
@@ -11,30 +13,30 @@ class TestFormatterDeep(unittest.TestCase):
         """.strip()
         formatter = RegulationFormatter()
         docs = formatter.parse(text)
-        
+
         # In current implementation, hierarchy is nested
         # Doc -> Chapter -> Section -> Subsection -> Article
-        ch = docs[0]['content'][0]
-        self.assertEqual(ch['type'], 'chapter')
-        
-        sec = ch['children'][0]
-        self.assertEqual(sec['type'], 'section')
-        
-        subsec = sec['children'][0]
-        self.assertEqual(subsec['type'], 'subsection')
-        
-        art = subsec['children'][0]
-        self.assertEqual(art['type'], 'article')
+        ch = docs[0]["content"][0]
+        self.assertEqual(ch["type"], "chapter")
+
+        sec = ch["children"][0]
+        self.assertEqual(sec["type"], "section")
+
+        subsec = sec["children"][0]
+        self.assertEqual(subsec["type"], "subsection")
+
+        art = subsec["children"][0]
+        self.assertEqual(art["type"], "article")
 
     def test_item_subitem_nesting(self):
         text = "제1조(목적) ①항입니다.\n1. 호입니다.\n가. 목입니다."
         formatter = RegulationFormatter()
         docs = formatter.parse(text)
-        art = docs[0]['content'][0]
-        para = art['children'][0]
-        item = para['children'][0]
-        sub = item['children'][0]
-        self.assertEqual(sub['type'], 'subitem')
+        art = docs[0]["content"][0]
+        para = art["children"][0]
+        item = para["children"][0]
+        sub = item["children"][0]
+        self.assertEqual(sub["type"], "subitem")
 
     def test_toc_backfill_with_page_range(self):
         text = """
@@ -90,6 +92,7 @@ class TestFormatterDeep(unittest.TestCase):
         self.assertGreater(len(docs[2].get("content", [])), 0)
         # Noise docs without content should be dropped
         self.assertNotIn("제3편 행정", [doc.get("part") for doc in docs[:3]])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -6,13 +6,13 @@ as metadata for further processing.
 """
 
 import re
-from typing import List, Dict, Any, Tuple
+from typing import Any, Dict, List, Tuple
 
 
 class TableExtractor:
     """
     Extracts and structures markdown tables from regulation text.
-    
+
     Tables are extracted from text, replaced with placeholders,
     and stored as structured metadata.
     """
@@ -20,7 +20,7 @@ class TableExtractor:
     def extract_tables(self, docs: List[Dict[str, Any]]) -> None:
         """
         Extract tables from all documents.
-        
+
         Args:
             docs: List of document dictionaries to process.
         """
@@ -31,7 +31,7 @@ class TableExtractor:
     def _extract_tables_in_nodes(self, nodes: List[Dict[str, Any]]) -> None:
         """
         Recursively extract tables from nodes.
-        
+
         Args:
             nodes: List of node dictionaries.
         """
@@ -49,10 +49,10 @@ class TableExtractor:
     def split_markdown_tables(self, text: str) -> Tuple[str, List[str]]:
         """
         Split text into non-table content and table blocks.
-        
+
         Args:
             text: The text to process.
-            
+
         Returns:
             Tuple of (updated text with placeholders, list of table markdown).
         """
@@ -97,13 +97,13 @@ class TableExtractor:
         stripped = (line or "").strip()
         if not stripped.startswith("|") or "---" not in stripped:
             return False
-        
+
         core = stripped.strip("|").strip()
         if not core:
             return False
-        
+
         cells = [c.strip() for c in core.split("|") if c.strip()]
         if not cells:
             return False
-        
+
         return all(re.fullmatch(r":?-{3,}:?", cell) for cell in cells)

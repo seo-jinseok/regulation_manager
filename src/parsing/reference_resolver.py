@@ -6,13 +6,13 @@ target node IDs within the document structure.
 """
 
 import re
-from typing import Dict, List, Any, Optional
+from typing import Any, Dict, List, Optional
 
 
 class ReferenceResolver:
     """
     Resolves cross-references between regulation nodes.
-    
+
     Handles references like "제5조", "제10조제1항", "제3호" and
     links them to their corresponding node IDs.
     """
@@ -20,7 +20,7 @@ class ReferenceResolver:
     def resolve_all(self, docs: List[Dict[str, Any]]) -> None:
         """
         Resolve references in all documents.
-        
+
         Args:
             docs: List of document dictionaries to process.
         """
@@ -44,10 +44,10 @@ class ReferenceResolver:
     def extract_references(self, text: str) -> List[Dict[str, str]]:
         """
         Extract cross-references from text.
-        
+
         Args:
             text: The text to extract references from.
-            
+
         Returns:
             List of reference dictionaries with 'text' and 'target' keys.
         """

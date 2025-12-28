@@ -9,6 +9,7 @@ from typing import List, Optional
 
 try:
     from openai import OpenAI
+
     OPENAI_AVAILABLE = True
 except ImportError:
     OPENAI_AVAILABLE = False
@@ -19,7 +20,7 @@ from ..domain.repositories import ILLMClient
 class OpenAIClient(ILLMClient):
     """
     OpenAI API client for LLM operations.
-    
+
     Supports:
     - Chat completion (GPT-4o-mini, GPT-4o)
     - Embeddings (text-embedding-3-small)
@@ -40,9 +41,7 @@ class OpenAIClient(ILLMClient):
             embedding_model: Embedding model to use.
         """
         if not OPENAI_AVAILABLE:
-            raise ImportError(
-                "openai is required. Install with: uv add openai"
-            )
+            raise ImportError("openai is required. Install with: uv add openai")
 
         self.api_key = api_key or os.getenv("OPENAI_API_KEY")
         if not self.api_key:
@@ -119,6 +118,7 @@ class MockLLMClient(ILLMClient):
         """Return mock embedding."""
         # Simple hash-based mock embedding
         import hashlib
+
         hash_bytes = hashlib.sha256(text.encode()).digest()
         # Convert to 384-dim vector (text-embedding-3-small dimension)
         embedding = []

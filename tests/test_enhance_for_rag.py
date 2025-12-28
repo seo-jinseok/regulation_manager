@@ -2,21 +2,20 @@
 Unit tests for enhance_for_rag.py
 """
 
-import pytest
 from src.enhance_for_rag import (
-    extract_amendment_history,
-    extract_keywords,
-    extract_keywords_simple,
-    determine_status,
-    determine_chunk_level,
-    calculate_token_count,
-    is_node_searchable,
-    extract_effective_date,
-    build_path_label,
     build_full_text,
-    enhance_node,
+    build_path_label,
+    calculate_token_count,
+    determine_chunk_level,
+    determine_status,
     enhance_document,
     enhance_json,
+    enhance_node,
+    extract_amendment_history,
+    extract_effective_date,
+    extract_keywords,
+    extract_keywords_simple,
+    is_node_searchable,
 )
 
 
@@ -231,7 +230,7 @@ class TestEnhanceNode:
             "children": [],
         }
         enhance_node(node, [], "테스트규정")
-        
+
         assert "parent_path" in node
         assert node["parent_path"] == ["테스트규정"]
         assert "full_text" in node
@@ -268,7 +267,7 @@ class TestEnhanceNode:
             ],
         }
         enhance_node(node, [], "학칙")
-        
+
         child = node["children"][0]
         assert child["parent_path"] == ["학칙", "제1조 목적"]
 
@@ -325,8 +324,18 @@ class TestEnhanceJson:
         """Test that all documents are enhanced."""
         data = {
             "docs": [
-                {"title": "규정1", "doc_type": "regulation", "content": [], "addenda": []},
-                {"title": "규정2【폐지】", "doc_type": "regulation", "content": [], "addenda": []},
+                {
+                    "title": "규정1",
+                    "doc_type": "regulation",
+                    "content": [],
+                    "addenda": [],
+                },
+                {
+                    "title": "규정2【폐지】",
+                    "doc_type": "regulation",
+                    "content": [],
+                    "addenda": [],
+                },
             ]
         }
         result = enhance_json(data)
@@ -442,8 +451,13 @@ class TestBuildEmbeddingText:
     def test_includes_path_context(self):
         """Test that embedding text includes path context."""
         from src.enhance_for_rag import build_embedding_text
+
         parent_path = ["동의대학교학칙", "제3장 학사", "제1절 수업"]
-        node = {"text": "수업일수는 연간 16주 이상으로 한다.", "display_no": "제15조", "title": "수업일수"}
+        node = {
+            "text": "수업일수는 연간 16주 이상으로 한다.",
+            "display_no": "제15조",
+            "title": "수업일수",
+        }
         result = build_embedding_text(parent_path, node)
         assert "제3장 학사" in result
         assert "제1절 수업" in result
@@ -453,6 +467,7 @@ class TestBuildEmbeddingText:
     def test_truncates_long_path(self):
         """Test that only last 3 path segments are used."""
         from src.enhance_for_rag import build_embedding_text
+
         parent_path = ["규정", "제1편", "제1장", "제1절", "제1관"]
         node = {"text": "내용", "display_no": "제1조", "title": ""}
         result = build_embedding_text(parent_path, node)
@@ -466,12 +481,14 @@ class TestBuildEmbeddingText:
     def test_empty_text_returns_empty(self):
         """Test that empty text returns empty string."""
         from src.enhance_for_rag import build_embedding_text
+
         result = build_embedding_text(["path"], {"text": ""})
         assert result == ""
 
     def test_no_path_includes_label(self):
         """Test that label is included even without path."""
         from src.enhance_for_rag import build_embedding_text
+
         node = {"text": "내용", "display_no": "제1조", "title": "목적"}
         result = build_embedding_text([], node)
         assert "제1조 목적" in result
@@ -480,6 +497,7 @@ class TestBuildEmbeddingText:
     def test_dedupes_label_against_last_path_segment(self):
         """Whitespace-variant label duplicates should not repeat in embedding_text."""
         from src.enhance_for_rag import build_embedding_text
+
         parent_path = ["교원인사규정", "부칙"]
         node = {"text": "내용", "display_no": "", "title": "부 칙"}
         result = build_embedding_text(parent_path, node)

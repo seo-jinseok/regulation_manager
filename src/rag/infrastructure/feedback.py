@@ -6,10 +6,10 @@ to enable continuous improvement of the system.
 """
 
 import json
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import List, Optional, Dict, Any
+from typing import Any, Dict, List, Optional
 
 
 @dataclass
@@ -64,9 +64,7 @@ class FeedbackCollector:
     def _default_path(self) -> str:
         """Get default feedback log path."""
         return str(
-            Path(__file__).parent.parent.parent.parent
-            / "data"
-            / "feedback_log.jsonl"
+            Path(__file__).parent.parent.parent.parent / "data" / "feedback_log.jsonl"
         )
 
     def _ensure_file_exists(self):
@@ -175,9 +173,7 @@ class FeedbackCollector:
             query_counts[e.query] = query_counts.get(e.query, 0) + 1
             rule_code_counts[e.rule_code] = rule_code_counts.get(e.rule_code, 0) + 1
 
-        top_queries = sorted(
-            query_counts.items(), key=lambda x: x[1], reverse=True
-        )[:5]
+        top_queries = sorted(query_counts.items(), key=lambda x: x[1], reverse=True)[:5]
         top_rule_codes = sorted(
             rule_code_counts.items(), key=lambda x: x[1], reverse=True
         )[:5]
@@ -188,9 +184,7 @@ class FeedbackCollector:
             negative_count=len(negative),
             neutral_count=len(neutral),
             positive_rate=len(positive) / len(entries) if entries else 0.0,
-            top_negative_queries=[
-                {"query": q, "count": c} for q, c in top_queries
-            ],
+            top_negative_queries=[{"query": q, "count": c} for q, c in top_queries],
             top_negative_rule_codes=[
                 {"rule_code": r, "count": c} for r, c in top_rule_codes
             ],
@@ -220,7 +214,7 @@ class FeedbackCollector:
         if stats.top_negative_queries:
             lines.append("\n🔴 부정 피드백이 많은 쿼리:")
             for item in stats.top_negative_queries:
-                lines.append(f"  - \"{item['query']}\" ({item['count']}회)")
+                lines.append(f'  - "{item["query"]}" ({item["count"]}회)')
 
         if stats.top_negative_rule_codes:
             lines.append("\n🔴 부정 피드백이 많은 규정:")

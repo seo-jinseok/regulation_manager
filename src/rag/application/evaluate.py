@@ -7,7 +7,7 @@ Provides automated evaluation of search quality against a test dataset.
 import json
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List, Optional, Dict, Any, Set
+from typing import Any, List, Optional
 
 
 @dataclass
@@ -163,7 +163,9 @@ class EvaluationUseCase:
             )
 
             # Check keyword coverage
-            rewritten_query = rewrite_info.rewritten if rewrite_info else test_case.query
+            rewritten_query = (
+                rewrite_info.rewritten if rewrite_info else test_case.query
+            )
             found_keywords = self._find_keywords(
                 test_case.expected_keywords, rewritten_query
             )
@@ -213,9 +215,7 @@ class EvaluationUseCase:
                 error=str(e),
             )
 
-    def _check_intent_match(
-        self, expected: List[str], matched: List[str]
-    ) -> bool:
+    def _check_intent_match(self, expected: List[str], matched: List[str]) -> bool:
         """Check if any expected intent is in matched intents."""
         if not expected:
             return True
@@ -223,16 +223,12 @@ class EvaluationUseCase:
         matched_lower = {m.lower() for m in matched}
         return bool(expected_lower & matched_lower)
 
-    def _find_keywords(
-        self, expected: List[str], text: str
-    ) -> List[str]:
+    def _find_keywords(self, expected: List[str], text: str) -> List[str]:
         """Find which expected keywords appear in text."""
         text_lower = text.lower()
         return [kw for kw in expected if kw.lower() in text_lower]
 
-    def _check_rule_code_match(
-        self, expected: List[str], found: List[str]
-    ) -> bool:
+    def _check_rule_code_match(self, expected: List[str], found: List[str]) -> bool:
         """Check if any expected rule code is in found codes."""
         if not expected:
             return True
@@ -307,9 +303,15 @@ class EvaluationUseCase:
             status = "✅ PASS" if result.passed else "❌ FAIL"
             lines.append(f"\n[{i}] {result.test_case.id}: {status}")
             lines.append(f"    쿼리: {result.test_case.query}")
-            lines.append(f"    의도 매칭: {'✓' if result.intent_matched else '✗'} {result.matched_intents}")
-            lines.append(f"    키워드 커버리지: {result.keyword_coverage:.0%} {result.found_keywords}")
-            lines.append(f"    규정 코드: {'✓' if result.rule_code_matched else '✗'} {result.found_rule_codes}")
+            lines.append(
+                f"    의도 매칭: {'✓' if result.intent_matched else '✗'} {result.matched_intents}"
+            )
+            lines.append(
+                f"    키워드 커버리지: {result.keyword_coverage:.0%} {result.found_keywords}"
+            )
+            lines.append(
+                f"    규정 코드: {'✓' if result.rule_code_matched else '✗'} {result.found_rule_codes}"
+            )
             lines.append(f"    Top Score: {result.top_score:.3f}")
             if result.error:
                 lines.append(f"    에러: {result.error}")

@@ -1,30 +1,46 @@
 import re
 
+
 def _extract_clean_title(preamble_list):
     candidates = [line.strip() for line in preamble_list if line.strip()]
-    
+
     best_title = ""
-    start_debug = False
-    
-    suffixes = ("규정", "세칙", "지침", "요령", "강령", "내규", "학칙", "헌장", "기준", "수칙", "준칙", "요강", "운영", "정관")
+    suffixes = (
+        "규정",
+        "세칙",
+        "지침",
+        "요령",
+        "강령",
+        "내규",
+        "학칙",
+        "헌장",
+        "기준",
+        "수칙",
+        "준칙",
+        "요강",
+        "운영",
+        "정관",
+    )
 
     print(f"Total candidates: {len(candidates)}")
     for i, line in enumerate(reversed(candidates)):
         print(f"Check {i}: {line}")
-        
+
         # Skip if meta info
-        if (line.startswith('<') and line.endswith('>')) or (line.startswith('(') and line.endswith(')')):
+        if (line.startswith("<") and line.endswith(">")) or (
+            line.startswith("(") and line.endswith(")")
+        ):
             print("  -> Skip meta")
             continue
-        
+
         # Clean
-        cleaned = re.sub(r'\s*[<\[\(].*?[>\]\)]', '', line).strip()
-        cleaned = re.sub(r'\s*제\s*\d+\s*장.*', '', cleaned).strip()
-            
-        if not cleaned: 
+        cleaned = re.sub(r"\s*[<\[\(].*?[>\]\)]", "", line).strip()
+        cleaned = re.sub(r"\s*제\s*\d+\s*장.*", "", cleaned).strip()
+
+        if not cleaned:
             print("  -> Empty after clean")
             continue
-        
+
         # Verify if it looks like a title
         if cleaned.endswith(suffixes) or "규정" in cleaned:
             print(f"  -> MATCH: {cleaned}")
@@ -34,6 +50,7 @@ def _extract_clean_title(preamble_list):
             print(f"  -> No suffix match: {cleaned}")
 
     return best_title
+
 
 # Text from the JSON Preamble
 text = """「별표 양식 1」
@@ -64,5 +81,5 @@ text = """「별표 양식 1」
 | 학교법인 | | |
 학교법인동의학원정관"""
 
-preamble_list = text.split('\n')
+preamble_list = text.split("\n")
 print(f"Extracted Title: {_extract_clean_title(preamble_list)}")

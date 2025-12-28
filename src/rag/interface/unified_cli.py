@@ -20,12 +20,12 @@ Usage:
 import argparse
 import os
 import sys
-from pathlib import Path
 from typing import Optional
 
 # Load .env file
 try:
     from dotenv import load_dotenv
+
     load_dotenv()
 except ImportError:
     pass
@@ -44,7 +44,15 @@ def _get_default_llm_settings():
 
 def _add_convert_parser(subparsers):
     """Add convert subcommand parser."""
-    convert_providers = ["openai", "gemini", "openrouter", "ollama", "lmstudio", "local", "mlx"]
+    convert_providers = [
+        "openai",
+        "gemini",
+        "openrouter",
+        "ollama",
+        "lmstudio",
+        "local",
+        "mlx",
+    ]
     default_provider = os.getenv("LLM_PROVIDER") or "openai"
     if default_provider not in convert_providers:
         default_provider = "openai"
@@ -108,7 +116,8 @@ def _add_convert_parser(subparsers):
         help="캐시 디렉토리",
     )
     parser.add_argument(
-        "-v", "--verbose",
+        "-v",
+        "--verbose",
         action="store_true",
         help="상세 로그 출력",
     )
@@ -148,9 +157,11 @@ def _add_sync_parser(subparsers):
 
 def _add_search_parser(subparsers):
     """Add search subcommand parser."""
-    
+
     # Get default settings
-    providers, default_provider, default_model, default_base_url = _get_default_llm_settings()
+    providers, default_provider, default_model, default_base_url = (
+        _get_default_llm_settings()
+    )
 
     parser = subparsers.add_parser(
         "search",
@@ -164,7 +175,8 @@ def _add_search_parser(subparsers):
         help="검색 쿼리 또는 질문",
     )
     parser.add_argument(
-        "-n", "--top-k",
+        "-n",
+        "--top-k",
         type=int,
         default=5,
         help="결과 개수 (기본: 5)",
@@ -186,7 +198,8 @@ def _add_search_parser(subparsers):
         help="BGE Reranker 비활성화",
     )
     parser.add_argument(
-        "-v", "--verbose",
+        "-v",
+        "--verbose",
         action="store_true",
         help="상세 정보 출력",
     )
@@ -205,20 +218,22 @@ def _add_search_parser(subparsers):
         action="store_true",
         help="대화형 모드로 연속 질의",
     )
-    
+
     # Unified specific arguments
     mode_group = parser.add_mutually_exclusive_group()
     mode_group.add_argument(
-        "-a", "--answer",
+        "-a",
+        "--answer",
         action="store_true",
         help="AI 답변 생성 강제 (Ask 모드)",
     )
     mode_group.add_argument(
-        "-q", "--quick",
+        "-q",
+        "--quick",
         action="store_true",
         help="문서 검색만 수행 (Search 모드)",
     )
-    
+
     # LLM options (for answer mode)
     parser.add_argument(
         "--provider",
@@ -248,8 +263,10 @@ def _add_search_parser(subparsers):
 
 def _add_ask_parser(subparsers):
     """Add ask subcommand parser (Legacy Wrapper)."""
-    providers, default_provider, default_model, default_base_url = _get_default_llm_settings()
-    
+    providers, default_provider, default_model, default_base_url = (
+        _get_default_llm_settings()
+    )
+
     parser = subparsers.add_parser(
         "ask",
         help="규정 질문 (search -a와 동일)",
@@ -261,7 +278,8 @@ def _add_ask_parser(subparsers):
         help="질문",
     )
     parser.add_argument(
-        "-n", "--top-k",
+        "-n",
+        "--top-k",
         type=int,
         default=5,
         help="참고 규정 수",
@@ -302,7 +320,8 @@ def _add_ask_parser(subparsers):
         help="BGE Reranker 비활성화",
     )
     parser.add_argument(
-        "-v", "--verbose",
+        "-v",
+        "--verbose",
         action="store_true",
         help="상세 정보 출력",
     )
@@ -411,7 +430,8 @@ def _add_evaluate_parser(subparsers):
         help="특정 카테고리만 평가",
     )
     parser.add_argument(
-        "-n", "--top-k",
+        "-n",
+        "--top-k",
         type=int,
         default=5,
         help="검색 결과 수 (기본: 5)",
@@ -423,7 +443,8 @@ def _add_evaluate_parser(subparsers):
         help="ChromaDB 저장 경로",
     )
     parser.add_argument(
-        "-v", "--verbose",
+        "-v",
+        "--verbose",
         action="store_true",
         help="상세 결과 출력",
     )
@@ -454,7 +475,8 @@ def _add_extract_keywords_parser(subparsers):
         help="저장하지 않고 결과만 표시",
     )
     parser.add_argument(
-        "-v", "--verbose",
+        "-v",
+        "--verbose",
         action="store_true",
         help="상세 결과 출력",
     )
@@ -482,7 +504,8 @@ def _add_analyze_parser(subparsers):
         description="피드백을 분석하여 개선 사항을 제안합니다.",
     )
     parser.add_argument(
-        "-v", "--verbose",
+        "-v",
+        "--verbose",
         action="store_true",
         help="상세 결과 출력",
     )
@@ -537,55 +560,63 @@ def create_parser() -> argparse.ArgumentParser:
 # Command Handlers
 # =============================================================================
 
+
 def cmd_convert(args) -> int:
     """Execute convert command - HWP to JSON conversion."""
+
     # Convert argument names to match main.py expectations
     # (unified CLI uses kebab-case, main.py uses snake_case)
     class ConvertArgs:
         def __init__(self, args):
             self.input_path = args.input_path
-            self.output_dir = getattr(args, 'output_dir', 'data/output')
-            self.use_llm = getattr(args, 'use_llm', False)
-            self.provider = getattr(args, 'provider', 'openai')
-            self.model = getattr(args, 'model', None)
-            self.base_url = getattr(args, 'base_url', None)
-            self.allow_llm_fallback = getattr(args, 'allow_llm_fallback', False)
-            self.force = getattr(args, 'force', False)
-            self.cache_dir = getattr(args, 'cache_dir', '.cache')
-            self.verbose = getattr(args, 'verbose', False)
-            self.enhance_rag = getattr(args, 'enhance_rag', True)
-    
+            self.output_dir = getattr(args, "output_dir", "data/output")
+            self.use_llm = getattr(args, "use_llm", False)
+            self.provider = getattr(args, "provider", "openai")
+            self.model = getattr(args, "model", None)
+            self.base_url = getattr(args, "base_url", None)
+            self.allow_llm_fallback = getattr(args, "allow_llm_fallback", False)
+            self.force = getattr(args, "force", False)
+            self.cache_dir = getattr(args, "cache_dir", ".cache")
+            self.verbose = getattr(args, "verbose", False)
+            self.enhance_rag = getattr(args, "enhance_rag", True)
+
     from ...main import run_pipeline
+
     return run_pipeline(ConvertArgs(args))
 
 
 def cmd_sync(args) -> int:
     """Execute sync command."""
     from .cli import cmd_sync as _cmd_sync
+
     return _cmd_sync(args)
 
 
 def cmd_search(args) -> int:
     """Execute search command."""
     from .cli import cmd_search as _cmd_search
+
     return _cmd_search(args)
 
 
 def cmd_ask(args) -> int:
     """Execute ask command."""
     from .cli import cmd_ask as _cmd_ask
+
     return _cmd_ask(args)
 
 
 def cmd_status(args) -> int:
     """Execute status command."""
     from .cli import cmd_status as _cmd_status
+
     return _cmd_status(args)
 
 
 def cmd_reset(args) -> int:
     """Execute reset command."""
     from .cli import cmd_reset as _cmd_reset
+
     return _cmd_reset(args)
 
 
@@ -593,6 +624,7 @@ def cmd_serve(args) -> int:
     """Execute serve command - start Web UI or MCP Server."""
     if args.web:
         from .gradio_app import create_app
+
         app = create_app(db_path=args.db_path)
         app.launch(
             server_port=args.port,
@@ -601,6 +633,7 @@ def cmd_serve(args) -> int:
         return 0
     elif args.mcp:
         from .mcp_server import mcp
+
         mcp.run()
         return 0
     return 1
@@ -609,20 +642,20 @@ def cmd_serve(args) -> int:
 def cmd_evaluate(args) -> int:
     """Execute evaluate command - run quality evaluation."""
     from rich.console import Console
-    from ..infrastructure.chroma_store import ChromaVectorStore
+
+    from ..application.evaluate import EvaluationUseCase
+    from ..application.search_usecase import SearchUseCase
     from ..infrastructure.chroma_store import ChromaVectorStore
     from ..infrastructure.llm_adapter import LLMClientAdapter
-    from ..application.search_usecase import SearchUseCase
-    from ..application.evaluate import EvaluationUseCase
-    
+
     console = Console()
-    
+
     # Initialize components
     store = ChromaVectorStore(persist_directory=args.db_path)
-    
+
     # Get default settings for LLM
     _, provider, model, base_url = _get_default_llm_settings()
-    
+
     llm_client = LLMClientAdapter(
         provider=provider,
         model=model,
@@ -633,100 +666,104 @@ def cmd_evaluate(args) -> int:
         llm_client=llm_client,
         use_reranker=True,
     )
-    
+
     # Run evaluation
     eval_usecase = EvaluationUseCase(
         search_usecase=search_usecase,
         dataset_path=args.dataset,
     )
-    
+
     console.print("[bold]🔍 평가 데이터셋 로드 중...[/bold]")
     test_cases = eval_usecase.load_dataset()
     console.print(f"[dim]총 {len(test_cases)}개 테스트 케이스[/dim]\n")
-    
+
     console.print("[bold]🧪 평가 실행 중...[/bold]")
     summary = eval_usecase.run_evaluation(
         top_k=args.top_k,
         category=args.category,
     )
-    
+
     # Print results
     console.print(eval_usecase.format_summary(summary))
-    
+
     if args.verbose:
         console.print(eval_usecase.format_details(summary))
-    
+
     return 0 if summary.pass_rate >= 0.8 else 1
 
 
 def cmd_extract_keywords(args) -> int:
     """Execute extract-keywords command."""
     from rich.console import Console
+
     from ..infrastructure.keyword_extractor import KeywordExtractor
-    
+
     console = Console()
-    
+
     extractor = KeywordExtractor(
         json_path=args.json_path,
         output_path=args.output,
     )
-    
+
     console.print("[bold]📚 규정 키워드 추출 중...[/bold]")
     result = extractor.extract_keywords()
-    
+
     console.print(extractor.format_summary(result))
-    
+
     if args.verbose:
         console.print(extractor.format_details(result))
-    
+
     if not args.dry_run:
         output_path = extractor.save_keywords(result)
         console.print(f"\n[green]✅ 저장됨: {output_path}[/green]")
-    
+
     return 0
 
 
 def cmd_feedback(args) -> int:
     """Execute feedback command."""
     from rich.console import Console
+
     from ..infrastructure.feedback import FeedbackCollector
-    
+
     console = Console()
     collector = FeedbackCollector()
-    
+
     if args.clear:
         collector.clear_feedback()
         console.print("[yellow]🗑️ 모든 피드백이 삭제되었습니다.[/yellow]")
         return 0
-    
+
     stats = collector.get_statistics()
     console.print(collector.format_statistics(stats))
-    
+
     return 0
 
 
 def cmd_analyze(args) -> int:
     """Execute analyze command - analyze feedback for improvements."""
     from rich.console import Console
-    from ..infrastructure.feedback import FeedbackCollector
+
     from ..application.auto_learn import AutoLearnUseCase
-    
+    from ..infrastructure.feedback import FeedbackCollector
+
     console = Console()
-    
+
     collector = FeedbackCollector()
     auto_learn = AutoLearnUseCase(feedback_collector=collector)
-    
+
     console.print("[bold]🧠 피드백 분석 중...[/bold]")
     result = auto_learn.analyze_feedback()
-    
+
     console.print(auto_learn.format_suggestions(result))
-    
+
     return 0
 
 
 # =============================================================================
 # Entry Point
 # =============================================================================
+
 
 def main(argv: Optional[list] = None) -> int:
     """Main entry point for the unified CLI."""

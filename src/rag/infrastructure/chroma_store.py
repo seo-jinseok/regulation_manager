@@ -12,6 +12,7 @@ from typing import List, Optional, Set
 try:
     import chromadb
     from chromadb.config import Settings
+
     CHROMADB_AVAILABLE = True
 except ImportError:
     CHROMADB_AVAILABLE = False
@@ -24,7 +25,7 @@ from ..domain.value_objects import Query, SearchFilter
 class ChromaVectorStore(IVectorStore):
     """
     ChromaDB-based vector store implementation.
-    
+
     Supports:
     - Dense retrieval via embeddings
     - Metadata filtering
@@ -47,14 +48,12 @@ class ChromaVectorStore(IVectorStore):
                 If None, will need to be set before adding documents.
         """
         if not CHROMADB_AVAILABLE:
-            raise ImportError(
-                "chromadb is required. Install with: uv add chromadb"
-            )
+            raise ImportError("chromadb is required. Install with: uv add chromadb")
 
         self.persist_directory = persist_directory
         self.collection_name = collection_name
         self._embedding_function = embedding_function
-        
+
         # Create directory if needed
         os.makedirs(persist_directory, exist_ok=True)
 
@@ -100,7 +99,7 @@ class ChromaVectorStore(IVectorStore):
         total_added = 0
 
         for i in range(0, len(unique_chunks), BATCH_SIZE):
-            batch = unique_chunks[i:i + BATCH_SIZE]
+            batch = unique_chunks[i : i + BATCH_SIZE]
             ids = [c.id for c in batch]
             documents = [c.embedding_text for c in batch]
             metadatas = [c.to_metadata() for c in batch]
@@ -181,7 +180,7 @@ class ChromaVectorStore(IVectorStore):
             distances = results.get("distances", [[]])[0]
 
             for i, (id_, doc, meta, dist) in enumerate(
-                zip(ids, documents, metadatas, distances)
+                zip(ids, documents, metadatas, distances, strict=False)
             ):
                 # Convert distance to similarity score (cosine)
                 # ChromaDB returns distance; clamp to [0, 1]
@@ -250,16 +249,14 @@ class ChromaVectorStore(IVectorStore):
         Returns:
             List of (doc_id, text, metadata) tuples.
         """
-        results = self._collection.get(
-            include=["documents", "metadatas"]
-        )
+        results = self._collection.get(include=["documents", "metadatas"])
 
         documents = []
         ids = results.get("ids", [])
         docs = results.get("documents", [])
         metas = results.get("metadatas", [])
 
-        for doc_id, text, meta in zip(ids, docs, metas):
+        for doc_id, text, meta in zip(ids, docs, metas, strict=False):
             if text:  # Only include non-empty documents
                 documents.append((doc_id, text, meta or {}))
 
@@ -273,7 +270,7 @@ class ChromaVectorStore(IVectorStore):
             Number of chunks deleted.
         """
         count = self.count()
-        
+
         # Delete and recreate collection
         self._client.delete_collection(self.collection_name)
         self._collection = self._client.create_collection(
@@ -284,9 +281,7 @@ class ChromaVectorStore(IVectorStore):
 
         return count
 
-    def _metadata_to_chunk(
-        self, id_: str, document: str, metadata: dict
-    ) -> Chunk:
+    def _metadata_to_chunk(self, id_: str, document: str, metadata: dict) -> Chunk:
         """Convert stored metadata back to Chunk entity."""
         from ..domain.entities import ChunkLevel, Keyword, RegulationStatus
 

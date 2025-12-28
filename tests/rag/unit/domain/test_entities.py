@@ -148,14 +148,30 @@ class TestSearchResult:
     def test_sorting_by_score(self):
         """SearchResults sort by score descending."""
         chunk1 = Chunk(
-            id="1", rule_code="1", level=ChunkLevel.TEXT, title="", text="",
-            embedding_text="", full_text="", parent_path=[], token_count=0,
-            keywords=[], is_searchable=True,
+            id="1",
+            rule_code="1",
+            level=ChunkLevel.TEXT,
+            title="",
+            text="",
+            embedding_text="",
+            full_text="",
+            parent_path=[],
+            token_count=0,
+            keywords=[],
+            is_searchable=True,
         )
         chunk2 = Chunk(
-            id="2", rule_code="2", level=ChunkLevel.TEXT, title="", text="",
-            embedding_text="", full_text="", parent_path=[], token_count=0,
-            keywords=[], is_searchable=True,
+            id="2",
+            rule_code="2",
+            level=ChunkLevel.TEXT,
+            title="",
+            text="",
+            embedding_text="",
+            full_text="",
+            parent_path=[],
+            token_count=0,
+            keywords=[],
+            is_searchable=True,
         )
 
         result1 = SearchResult(chunk=chunk1, score=0.8)

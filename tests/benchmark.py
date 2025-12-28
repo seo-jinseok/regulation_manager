@@ -1,17 +1,16 @@
-import sys
 import os
+import sys
 import time
-import random
 from pathlib import Path
 
 # Add parent directory to path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from src.preprocessor import Preprocessor
 from src.cache_manager import CacheManager
-from src.llm_client import LLMClient
+from src.preprocessor import Preprocessor
 
-# Mock LLM to avoid actual API costs/latency for the benchmark, 
+
+# Mock LLM to avoid actual API costs/latency for the benchmark,
 # but simulate latency to make the speedup obvious.
 class SimulatedLLM:
     def __init__(self, latency=0.5):
@@ -20,13 +19,14 @@ class SimulatedLLM:
 
     def complete(self, prompt: str) -> str:
         self.call_count += 1
-        time.sleep(self.latency) # Simulate network/processing time
+        time.sleep(self.latency)  # Simulate network/processing time
         # Extract content to return valid-ish string
         try:
-            core_text = prompt.split('[텍스트 시작]')[1].split('[텍스트 끝]')[0].strip()
+            core_text = prompt.split("[텍스트 시작]")[1].split("[텍스트 끝]")[0].strip()
             return core_text
-        except:
+        except Exception:
             return "Processed Text"
+
 
 def run_benchmark():
     # 1. Load Real Data
@@ -34,7 +34,7 @@ def run_benchmark():
     if not raw_md_path.exists():
         # Fallback to the other file if this one doesn't exist
         raw_md_path = Path("data/output/규정집9-343(20250909)_raw.md")
-    
+
     if not raw_md_path.exists():
         print("Error: No raw markdown file found in data/output/")
         return
@@ -50,29 +50,32 @@ def run_benchmark():
     # Take ~50 chunks from the middle
     subset_chunks = ["제" + chunk for chunk in split_text[start_idx : start_idx + 50]]
     subset_text = "".join(subset_chunks)
-    
-    print(f"Extracted partial text: {len(subset_text)} chars ({len(subset_chunks)} potential articles)")
-    
+
+    print(
+        f"Extracted partial text: {len(subset_text)} chars ({len(subset_chunks)} potential articles)"
+    )
+
     # 3. Setup Components
     cache_dir = ".cache_benchmark"
     # Clean cache
     import shutil
+
     if os.path.exists(cache_dir):
         shutil.rmtree(cache_dir)
-    
+
     cache_manager = CacheManager(cache_dir=cache_dir)
     # Simulate 0.1s latency per call (fast LLM)
-    llm = SimulatedLLM(latency=0.1) 
+    llm = SimulatedLLM(latency=0.1)
     preprocessor = Preprocessor(llm_client=llm, cache_manager=cache_manager)
 
     # 4. Run 1: Cold Cache
     print("\n[Run 1] Initial Processing (Cold Cache)...")
     start_time = time.time()
-    result_v1 = preprocessor.clean(subset_text)
+    preprocessor.clean(subset_text)
     duration_v1 = time.time() - start_time
     calls_v1 = llm.call_count
     print(f"Done in {duration_v1:.2f}s. LLM Calls: {calls_v1}")
-    
+
     # Save cache so Run 2 can see it!
     cache_manager.save_all()
 
@@ -81,27 +84,29 @@ def run_benchmark():
     # Note: subset_chunks logic in this script (split by "제") implies imperfect articles,
     # but as long as the text string changes, the hash will change for *that* specific unit
     # detected by preprocessor.
-    
+
     # Let's just modify the subset_text directly to be sure
     # Find "제" and modify nearby
     modified_text = subset_text.replace("제5조", "제5조(수정됨)")
     if modified_text == subset_text:
         # Fallback if 제5조 not found
         modified_text = subset_text + " "
-    
+
     print(f"Text Modified? {modified_text != subset_text}")
 
     # 6. Run 2: Warm Cache
     print("\n[Run 2] Incremental Processing (Warm Cache)...")
-    llm.call_count = 0 # Reset
-    cache_manager = CacheManager(cache_dir=cache_dir) # Reload cache from disk to be sure
+    llm.call_count = 0  # Reset
+    cache_manager = CacheManager(
+        cache_dir=cache_dir
+    )  # Reload cache from disk to be sure
     preprocessor = Preprocessor(llm_client=llm, cache_manager=cache_manager)
-    
+
     start_time = time.time()
-    result_v2 = preprocessor.clean(modified_text)
+    preprocessor.clean(modified_text)
     duration_v2 = time.time() - start_time
     calls_v2 = llm.call_count
-    
+
     print(f"Done in {duration_v2:.2f}s. LLM Calls: {calls_v2}")
 
     # 7. Summary
@@ -112,11 +117,12 @@ def run_benchmark():
     if duration_v1 > 0:
         speedup = duration_v1 / duration_v2 if duration_v2 > 0 else 0
         print(f"Speedup: {speedup:.1f}x")
-    
+
     if calls_v1 > calls_v2 and calls_v2 <= 2:
         print("\nSUCCESS: Optimization verified. Only changed parts were re-processed.")
     else:
         print("\nWARNING: Optimization results unexpected. Check logic.")
+
 
 if __name__ == "__main__":
     run_benchmark()

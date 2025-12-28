@@ -9,7 +9,6 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-
 # Default log directory
 LOG_DIR = Path("logs")
 LOG_FILE = LOG_DIR / "rag.log"
@@ -26,52 +25,52 @@ def setup_logging(
 ) -> logging.Logger:
     """
     Configure logging for the RAG system.
-    
+
     Args:
         level: Logging level (default: INFO).
         log_file: Optional path to log file (default: logs/rag.log).
         console: Whether to log to console (default: True).
-        
+
     Returns:
         Root logger for the RAG system.
     """
     # Create logs directory if needed
     log_path = log_file or LOG_FILE
     log_path.parent.mkdir(parents=True, exist_ok=True)
-    
+
     # Get or create logger
     logger = logging.getLogger("rag")
     logger.setLevel(level)
-    
+
     # Clear existing handlers
     logger.handlers.clear()
-    
+
     # Formatter
     formatter = logging.Formatter(LOG_FORMAT, datefmt=LOG_DATE_FORMAT)
-    
+
     # File handler (always add)
     file_handler = logging.FileHandler(log_path, encoding="utf-8")
     file_handler.setLevel(level)
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
-    
+
     # Console handler (optional)
     if console:
         console_handler = logging.StreamHandler(sys.stderr)
         console_handler.setLevel(level)
         console_handler.setFormatter(formatter)
         logger.addHandler(console_handler)
-    
+
     return logger
 
 
 def get_logger(name: str = "rag") -> logging.Logger:
     """
     Get a logger instance.
-    
+
     Args:
         name: Logger name (will be prefixed with 'rag.').
-        
+
     Returns:
         Logger instance.
     """

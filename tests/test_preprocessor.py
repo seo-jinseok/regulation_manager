@@ -1,5 +1,7 @@
 import unittest
+
 from src.preprocessor import Preprocessor
+
 
 class TestPreprocessor(unittest.TestCase):
     def test_remove_artifacts(self):
@@ -25,6 +27,6 @@ class TestPreprocessor(unittest.TestCase):
         # Should not join Article header with content
         self.assertIn("제1조(목적)\n", cleaned)
 
+
 if __name__ == "__main__":
     unittest.main()
-

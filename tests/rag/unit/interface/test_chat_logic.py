@@ -1,11 +1,11 @@
 from src.rag.interface.chat_logic import (
     attachment_label_variants,
     build_history_context,
-    extract_regulation_title,
-    parse_attachment_request,
     expand_followup_query,
+    extract_regulation_title,
     has_explicit_target,
     is_followup_message,
+    parse_attachment_request,
     resolve_audience_choice,
     resolve_regulation_choice,
 )
@@ -55,7 +55,10 @@ def test_expand_followup_query():
 
 def test_extract_regulation_title():
     assert extract_regulation_title("교원인사규정의 별첨 자료 1번") == "교원인사규정"
-    assert extract_regulation_title("중앙도서관자료제적에관한세칙 별표 1") == "중앙도서관자료제적에관한세칙"
+    assert (
+        extract_regulation_title("중앙도서관자료제적에관한세칙 별표 1")
+        == "중앙도서관자료제적에관한세칙"
+    )
 
 
 def test_parse_attachment_request_with_regulation():

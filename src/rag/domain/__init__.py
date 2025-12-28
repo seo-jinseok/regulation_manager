@@ -5,8 +5,8 @@ This layer has no external dependencies.
 """
 
 from .entities import Chunk, ChunkLevel, Regulation, SearchResult
+from .repositories import IDocumentLoader, ILLMClient, IVectorStore
 from .value_objects import Query, SearchFilter, SyncResult
-from .repositories import IVectorStore, IDocumentLoader, ILLMClient
 
 __all__ = [
     "Chunk",

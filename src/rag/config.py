@@ -14,68 +14,76 @@ from typing import List, Optional
 @dataclass
 class RAGConfig:
     """Configuration for RAG system.
-    
+
     All paths are relative to project root unless absolute.
     Environment variables override defaults.
     """
-    
+
     # Database
     db_path: str = field(
         default_factory=lambda: os.getenv("RAG_DB_PATH", "data/chroma_db")
     )
-    
+
     # JSON data
     json_path: str = field(
-        default_factory=lambda: os.getenv("RAG_JSON_PATH", "data/output/규정집-test01.json")
+        default_factory=lambda: os.getenv(
+            "RAG_JSON_PATH", "data/output/규정집-test01.json"
+        )
     )
     sync_state_path: str = "data/sync_state.json"
-    
+
     # LLM settings
     llm_provider: str = field(
         default_factory=lambda: os.getenv("LLM_PROVIDER", "ollama")
     )
-    llm_model: Optional[str] = field(
-        default_factory=lambda: os.getenv("LLM_MODEL")
-    )
+    llm_model: Optional[str] = field(default_factory=lambda: os.getenv("LLM_MODEL"))
     llm_base_url: Optional[str] = field(
         default_factory=lambda: os.getenv("LLM_BASE_URL")
     )
-    
+
     # Search settings
     use_reranker: bool = True
     use_hybrid: bool = True
     default_top_k: int = 5
     synonyms_path: Optional[str] = field(
-        default_factory=lambda: os.getenv("RAG_SYNONYMS_PATH", "data/config/synonyms.json")
+        default_factory=lambda: os.getenv(
+            "RAG_SYNONYMS_PATH", "data/config/synonyms.json"
+        )
     )
     intents_path: Optional[str] = field(
-        default_factory=lambda: os.getenv("RAG_INTENTS_PATH", "data/config/intents.json")
+        default_factory=lambda: os.getenv(
+            "RAG_INTENTS_PATH", "data/config/intents.json"
+        )
     )
 
-    
     # Supported LLM providers
     llm_providers: List[str] = field(
         default_factory=lambda: [
-            "ollama", "lmstudio", "mlx", "local", 
-            "openai", "gemini", "openrouter"
+            "ollama",
+            "lmstudio",
+            "mlx",
+            "local",
+            "openai",
+            "gemini",
+            "openrouter",
         ]
     )
-    
+
     def __post_init__(self):
         """Validate configuration after initialization."""
         if self.llm_provider not in self.llm_providers:
             self.llm_provider = "ollama"
-    
+
     @property
     def db_path_resolved(self) -> Path:
         """Get absolute path to database directory."""
         return Path(self.db_path).resolve()
-    
+
     @property
     def json_path_resolved(self) -> Path:
         """Get absolute path to JSON file."""
         return Path(self.json_path).resolve()
-    
+
     @property
     def sync_state_path_resolved(self) -> Path:
         """Get absolute path to sync state file."""
@@ -103,7 +111,7 @@ _config: Optional[RAGConfig] = None
 def get_config() -> RAGConfig:
     """
     Get the global configuration instance.
-    
+
     Returns:
         RAGConfig instance with current settings.
     """

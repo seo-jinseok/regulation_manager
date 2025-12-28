@@ -22,7 +22,6 @@ from src.rag.infrastructure.hybrid_search import QueryAnalyzer
 from src.rag.infrastructure.json_loader import JSONDocumentLoader
 from src.rag.infrastructure.llm_adapter import LLMClientAdapter
 
-
 SYSTEM_PROMPT = """You are a lexicon generator for Korean university regulations.
 Given Korean regulatory terms, generate colloquial, misspelled, or simplified variants.
 
@@ -164,7 +163,9 @@ def _generate_with_llm(
     for batch in _chunked(terms, batch_size):
         prompt_lines = ["Terms:"]
         prompt_lines.extend(f"- {term}" for term in batch)
-        prompt_lines.append(f"\nReturn JSON mapping each term to up to {max_synonyms} variants.")
+        prompt_lines.append(
+            f"\nReturn JSON mapping each term to up to {max_synonyms} variants."
+        )
 
         response = llm.generate(
             system_prompt=SYSTEM_PROMPT,
@@ -187,7 +188,9 @@ def main() -> int:
     parser.add_argument("--model", default=None, help="LLM model name")
     parser.add_argument("--base-url", default=None, help="LLM base URL")
     parser.add_argument("--batch-size", type=int, default=20, help="LLM batch size")
-    parser.add_argument("--max-terms", type=int, default=300, help="Max terms to expand")
+    parser.add_argument(
+        "--max-terms", type=int, default=300, help="Max terms to expand"
+    )
     parser.add_argument("--min-length", type=int, default=2, help="Minimum term length")
     parser.add_argument(
         "--max-synonyms",
@@ -245,7 +248,9 @@ def main() -> int:
         "terms": synonyms,
     }
 
-    output_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    output_path.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
     print(f"[OK] Wrote {output_path} ({len(synonyms)} terms)")
     return 0
 

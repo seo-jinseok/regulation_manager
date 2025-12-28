@@ -8,7 +8,7 @@ Two value objects are equal if their attributes are equal.
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-from .entities import RegulationStatus, ChunkLevel
+from .entities import ChunkLevel, RegulationStatus
 
 
 @dataclass(frozen=True)

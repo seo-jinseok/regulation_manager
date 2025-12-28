@@ -8,8 +8,7 @@ consistent IDs across runs even when content is reprocessed.
 import hashlib
 import re
 import uuid
-from typing import Dict, List, Any, Optional
-
+from typing import Any, Dict, List, Optional
 
 # Namespace UUID for stable ID generation
 STABLE_ID_NAMESPACE = uuid.UUID("f24a86f2-2c2d-4a08-9cc4-6b51b0b4043a")
@@ -18,7 +17,7 @@ STABLE_ID_NAMESPACE = uuid.UUID("f24a86f2-2c2d-4a08-9cc4-6b51b0b4043a")
 class StableIdAssigner:
     """
     Assigns stable, deterministic IDs to regulation nodes.
-    
+
     Uses content hashing and path-based disambiguation to generate
     consistent UUIDs that remain stable across processing runs.
     """
@@ -28,7 +27,7 @@ class StableIdAssigner:
     ) -> None:
         """
         Assign stable IDs to all nodes in documents.
-        
+
         Args:
             docs: List of document dictionaries.
             source_file_name: Optional source file name for ID generation.
@@ -46,7 +45,7 @@ class StableIdAssigner:
         parts = []
         if source_file_name:
             parts.append(f"file:{source_file_name}")
-        
+
         doc_type = (doc.get("doc_type") or "").strip()
         if doc_type:
             parts.append(f"type:{doc_type}")
@@ -63,7 +62,7 @@ class StableIdAssigner:
             parts.append(f"part:{self._normalize_token(part)}")
         if title:
             parts.append(f"title:{self._normalize_token(title)}")
-        
+
         return "|".join(parts) or "doc:unknown"
 
     def _assign_ids_recursive(
@@ -85,7 +84,7 @@ class StableIdAssigner:
         for base in base_keys:
             base_counts[base] = base_counts.get(base, 0) + 1
 
-        for node, base in zip(nodes, base_keys):
+        for node, base in zip(nodes, base_keys, strict=False):
             if base_counts.get(base, 0) <= 1:
                 refined_keys.append(base)
                 continue
@@ -97,7 +96,7 @@ class StableIdAssigner:
             refined_counts[key] = refined_counts.get(key, 0) + 1
 
         refined_seen: Dict[str, int] = {}
-        for node, key in zip(nodes, refined_keys):
+        for node, key in zip(nodes, refined_keys, strict=False):
             if refined_counts.get(key, 0) > 1:
                 refined_seen[key] = refined_seen.get(key, 0) + 1
                 key = f"{key}|i:{refined_seen[key]}"

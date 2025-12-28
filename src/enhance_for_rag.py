@@ -13,7 +13,7 @@ Usage:
     # 모듈로 실행 (권장)
     uv run python -m src.enhance_for_rag data/output/규정집.json -o data/output/규정집_rag.json
     uv run python -m src.enhance_for_rag data/output/규정집.json --sample 3
-    
+
     # 스크립트로 직접 실행
     uv run python src/enhance_for_rag.py data/output/규정집.json -o data/output/규정집_rag.json
 """
@@ -23,7 +23,6 @@ import json
 import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
-
 
 # ============================================================================
 # Constants
@@ -99,16 +98,16 @@ def _dedupe_path_segments(segments: List[str]) -> List[str]:
 def extract_amendment_history(text: str) -> List[Dict[str, str]]:
     """
     Extract amendment history from text content.
-    
+
     Args:
         text: The text to extract amendment history from.
-        
+
     Returns:
         List of dicts with 'date' (YYYY-MM-DD) and 'type' keys.
     """
     history = []
     seen = set()
-    
+
     for pattern, amend_type in AMENDMENT_PATTERNS:
         for match in re.finditer(pattern, text):
             year, month, day = match.groups()
@@ -117,7 +116,7 @@ def extract_amendment_history(text: str) -> List[Dict[str, str]]:
             if key not in seen:
                 seen.add(key)
                 history.append({"date": date_str, "type": amend_type})
-    
+
     # Sort by date
     history.sort(key=lambda x: x["date"])
     return history
@@ -126,16 +125,16 @@ def extract_amendment_history(text: str) -> List[Dict[str, str]]:
 def extract_keywords(text: str) -> List[Dict[str, Any]]:
     """
     Extract keywords from regulation text using pattern matching with weights.
-    
+
     Args:
         text: The text to extract keywords from.
-        
+
     Returns:
         List of dicts with 'term' and 'weight' keys, sorted by weight descending.
     """
     if not text:
         return []
-    
+
     keywords = {}
     for pattern, weight in KEYWORD_PATTERNS:
         for match in re.finditer(pattern, text):
@@ -143,7 +142,7 @@ def extract_keywords(text: str) -> List[Dict[str, Any]]:
             # Keep highest weight if duplicate
             if term not in keywords or keywords[term] < weight:
                 keywords[term] = weight
-    
+
     # Sort by weight descending, then by term
     result = [{"term": k, "weight": v} for k, v in keywords.items()]
     result.sort(key=lambda x: (-x["weight"], x["term"]))
@@ -153,10 +152,10 @@ def extract_keywords(text: str) -> List[Dict[str, Any]]:
 def extract_keywords_simple(text: str) -> List[str]:
     """
     Extract keywords as simple list (for backward compatibility in tests).
-    
+
     Args:
         text: The text to extract keywords from.
-        
+
     Returns:
         List of unique keywords found in the text.
     """
@@ -167,10 +166,10 @@ def extract_keywords_simple(text: str) -> List[str]:
 def determine_chunk_level(node: Dict[str, Any]) -> str:
     """
     Determine the chunk level of a node based on its type.
-    
+
     Args:
         node: The node dictionary.
-        
+
     Returns:
         A string representing the chunk level.
     """
@@ -181,10 +180,10 @@ def determine_chunk_level(node: Dict[str, Any]) -> str:
 def calculate_token_count(text: str) -> int:
     """
     Calculate approximate token count for text.
-    
+
     Args:
         text: The text to count tokens for.
-        
+
     Returns:
         Approximate token count.
     """
@@ -196,12 +195,12 @@ def calculate_token_count(text: str) -> int:
 def is_node_searchable(node: Dict[str, Any]) -> bool:
     """
     Determine if a node should be included in search results.
-    
+
     A node is searchable if it has text content or is a leaf node.
-    
+
     Args:
         node: The node dictionary.
-        
+
     Returns:
         True if the node should be searchable.
     """
@@ -214,38 +213,38 @@ def is_node_searchable(node: Dict[str, Any]) -> bool:
 def extract_effective_date(text: str) -> Optional[str]:
     """
     Extract effective date (시행일) from addendum text.
-    
+
     Args:
         text: The addendum text to parse.
-        
+
     Returns:
         Date string in YYYY-MM-DD format, or None if not found.
     """
     if not text:
         return None
-    
+
     # Pattern: 이 규정은 YYYY년 MM월 DD일부터 시행한다
     patterns = [
         r"(\d{4})\s*[년\.]\s*(\d{1,2})\s*[월\.]\s*(\d{1,2})\s*일?\s*부터\s*시행",
         r"(\d{4})\s*[년\.]\s*(\d{1,2})\s*[월\.]\s*(\d{1,2})\s*\.?\s*[부로부터]*\s*시행",
     ]
-    
+
     for pattern in patterns:
         match = re.search(pattern, text)
         if match:
             year, month, day = match.groups()
             return f"{year}-{int(month):02d}-{int(day):02d}"
-    
+
     return None
 
 
 def determine_status(title: str) -> Tuple[str, Optional[str]]:
     """
     Determine regulation status based on title.
-    
+
     Args:
         title: The regulation or node title.
-        
+
     Returns:
         Tuple of (status, abolished_date). abolished_date is always None for now.
     """
@@ -257,31 +256,31 @@ def determine_status(title: str) -> Tuple[str, Optional[str]]:
 def build_path_label(node: Dict[str, Any]) -> str:
     """
     Build a human-readable label for a node in the path.
-    
+
     Args:
         node: The node dictionary.
-        
+
     Returns:
         A string label combining display_no and title (or text excerpt if title is empty).
     """
     display_no = node.get("display_no", "")
     title = node.get("title", "")
-    
+
     # If title is empty, use the first part of text (extract key phrase)
     if not title:
         text = node.get("text", "")
         if text:
             # Extract key phrase: up to verb pattern (~은/는/이란/란) or max 30 chars
             # Allow Korean text, parentheses, and common punctuation
-            match = re.match(r'^(.{1,30}?)(?:은|는|이란|란|의)\s', text)
+            match = re.match(r"^(.{1,30}?)(?:은|는|이란|란|의)\s", text)
             if match:
                 title = match.group(1).strip()
             else:
                 # Fallback: extract up to first major punctuation
-                match = re.match(r'^([^.。\n]{1,25})', text)
+                match = re.match(r"^([^.。\n]{1,25})", text)
                 if match:
                     title = match.group(1).strip()
-    
+
     if display_no and title:
         return f"{display_no} {title}"
     elif display_no:
@@ -294,24 +293,26 @@ def build_path_label(node: Dict[str, Any]) -> str:
 def build_full_text(parent_path: List[str], node: Dict[str, Any]) -> str:
     """
     Build self-contained full text for vector embedding.
-    
+
     Args:
         parent_path: List of path segments.
         node: The current node.
-        
+
     Returns:
         A string with path prefix and node text.
     """
     text = node.get("text", "")
     if not text:
         return ""
-    
+
     if parent_path:
         path_segments = _dedupe_path_segments(parent_path)
         path_str = " > ".join(path_segments)
         label = build_path_label(node)
         if label:
-            if path_segments and _normalize_path_segment(label) == _normalize_path_segment(path_segments[-1]):
+            if path_segments and _normalize_path_segment(
+                label
+            ) == _normalize_path_segment(path_segments[-1]):
                 return f"[{path_str}] {text}"
             return f"[{path_str} > {label}] {text}"
         return f"[{path_str}] {text}"
@@ -321,17 +322,17 @@ def build_full_text(parent_path: List[str], node: Dict[str, Any]) -> str:
 def build_embedding_text(parent_path: List[str], node: Dict[str, Any]) -> str:
     """
     Build context-aware embedding text for vector search.
-    
+
     Unlike full_text (for display), embedding_text includes path context
     to help the embedding model understand the hierarchical position.
-    
+
     Args:
         parent_path: List of path segments (최근 3단계만 사용).
         node: The current node.
-        
+
     Returns:
         A string with path context prefix and node text.
-        
+
     Example:
         Input: parent_path=["동의대학교학칙", "제3장 학사", "제1절 수업"]
                node={"display_no": "제15조", "title": "수업일수", "text": "..."}
@@ -340,7 +341,7 @@ def build_embedding_text(parent_path: List[str], node: Dict[str, Any]) -> str:
     text = node.get("text", "")
     if not text:
         return ""
-    
+
     # Use only the last 3 path segments for context (avoid too long prefix)
     if parent_path:
         recent_path = parent_path[-3:] if len(parent_path) > 3 else parent_path
@@ -348,11 +349,13 @@ def build_embedding_text(parent_path: List[str], node: Dict[str, Any]) -> str:
         path_str = " > ".join(path_segments)
         label = build_path_label(node)
         if label:
-            if path_segments and _normalize_path_segment(label) == _normalize_path_segment(path_segments[-1]):
+            if path_segments and _normalize_path_segment(
+                label
+            ) == _normalize_path_segment(path_segments[-1]):
                 return f"{path_str}: {text}"
             return f"{path_str} > {label}: {text}"
         return f"{path_str}: {text}"
-    
+
     # If no path, include label if available
     label = build_path_label(node)
     if label:
@@ -367,9 +370,9 @@ def enhance_node(
 ) -> None:
     """
     Recursively enhance a node with RAG optimization fields.
-    
+
     This function modifies the node in-place.
-    
+
     Args:
         node: The node to enhance.
         parent_path: List of ancestor path labels.
@@ -378,59 +381,59 @@ def enhance_node(
     # Build current path with doc title at root
     current_path = [doc_title] + parent_path if doc_title else parent_path.copy()
     current_path = _dedupe_path_segments(current_path)
-    
+
     # Add current node's label to path for children
     node_label = build_path_label(node)
     text = node.get("text", "")
-    
+
     # 1. parent_path
     node["parent_path"] = current_path.copy()
-    
+
     # 2. full_text (for display, includes path)
     embedding_text = ""
     if text:
         node["full_text"] = build_full_text(current_path, node)
-    
+
     # 3. embedding_text (for vector embedding, with path context)
     if text:
         embedding_text = build_embedding_text(current_path, node)
         if embedding_text:
             node["embedding_text"] = embedding_text
-    
+
     # 4. chunk_level
     node["chunk_level"] = determine_chunk_level(node)
-    
+
     # 5. is_searchable
     node["is_searchable"] = is_node_searchable(node)
-    
+
     # 6. token_count (based on embedding_text)
     if embedding_text:
         node["token_count"] = calculate_token_count(embedding_text)
-    
+
     # 7. keywords (combine title and text)
     combined_text = f"{node.get('title', '')} {text}"
     keywords = extract_keywords(combined_text)
     if keywords:
         node["keywords"] = keywords
-    
+
     # 8. amendment_history (from text only, not title)
     if text:
         history = extract_amendment_history(text)
         if history:
             node["amendment_history"] = history
-    
+
     # 9. effective_date (for addendum nodes)
     node_type = node.get("type", "")
     if node_type in ("addendum", "addendum_item") and text:
         effective_date = extract_effective_date(text)
         if effective_date:
             node["effective_date"] = effective_date
-    
+
     # Recursively process children
     children = node.get("children", [])
     child_parent_path = parent_path + [node_label] if node_label else parent_path
     child_parent_path = _dedupe_path_segments(child_parent_path)
-    
+
     for child in children:
         enhance_node(child, child_parent_path, doc_title)
 
@@ -438,30 +441,30 @@ def enhance_node(
 def enhance_document(doc: Dict[str, Any]) -> None:
     """
     Enhance a single document with RAG optimization fields.
-    
+
     This function modifies the document in-place.
-    
+
     Args:
         doc: The document to enhance.
     """
     doc_title = doc.get("title", "")
     doc_type = doc.get("doc_type", "")
-    
+
     # 1. status for document level
     status, abolished_date = determine_status(doc_title)
     doc["status"] = status
     if abolished_date:
         doc["abolished_date"] = abolished_date
-    
+
     # 2. is_index_duplicate flag
     if doc_type in ("toc", "index_alpha", "index_dept", "index"):
         doc["is_index_duplicate"] = True
-    
+
     # 3. Enhance content nodes
     content = doc.get("content", [])
     for node in content:
         enhance_node(node, [], doc_title)
-    
+
     # 4. Enhance addenda nodes
     addenda = doc.get("addenda", [])
     for node in addenda:
@@ -471,10 +474,10 @@ def enhance_document(doc: Dict[str, Any]) -> None:
 def enhance_json(data: Dict[str, Any]) -> Dict[str, Any]:
     """
     Enhance the entire JSON structure with RAG optimization fields.
-    
+
     Args:
         data: The parsed JSON data.
-        
+
     Returns:
         The enhanced JSON data (modified in-place and returned).
     """
@@ -482,11 +485,11 @@ def enhance_json(data: Dict[str, Any]) -> Dict[str, Any]:
     docs = data.get("docs", [])
     for doc in docs:
         enhance_document(doc)
-    
+
     # Add enhancement metadata
     data["rag_enhanced"] = True
     data["rag_schema_version"] = "2.0"
-    
+
     return data
 
 
@@ -498,27 +501,29 @@ def enhance_json(data: Dict[str, Any]) -> Dict[str, Any]:
 def print_sample(data: Dict[str, Any], count: int = 3) -> None:
     """
     Print sample enhanced nodes for verification.
-    
+
     Args:
         data: The enhanced JSON data.
         count: Number of samples to print.
     """
     samples_found = 0
     docs = data.get("docs", [])
-    
+
     for doc in docs:
         if samples_found >= count:
             break
-        
+
         doc_title = doc.get("title", "Unknown")
         doc_type = doc.get("doc_type", "unknown")
-        
+
         # Skip index documents for sampling
         if doc_type in ("toc", "index_alpha", "index_dept", "index"):
             continue
-        
+
         # Find a node with text content
-        def find_node_with_text(nodes: List[Dict[str, Any]], depth: int = 0) -> Optional[Dict[str, Any]]:
+        def find_node_with_text(
+            nodes: List[Dict[str, Any]], depth: int = 0
+        ) -> Optional[Dict[str, Any]]:
             for node in nodes:
                 if node.get("text") and node.get("full_text"):
                     return node
@@ -528,15 +533,15 @@ def print_sample(data: Dict[str, Any], count: int = 3) -> None:
                     if result:
                         return result
             return None
-        
+
         content = doc.get("content", [])
         sample_node = find_node_with_text(content)
-        
+
         if sample_node:
             samples_found += 1
-            print(f"\n{'='*60}")
+            print(f"\n{'=' * 60}")
             print(f"[Sample {samples_found}] Document: {doc_title}")
-            print(f"{'='*60}")
+            print(f"{'=' * 60}")
             print(f"  type: {sample_node.get('type')}")
             print(f"  display_no: {sample_node.get('display_no')}")
             print(f"  title: {sample_node.get('title')}")
@@ -545,7 +550,7 @@ def print_sample(data: Dict[str, Any], count: int = 3) -> None:
             print(f"  full_text: {sample_node.get('full_text', '')[:150]}...")
             print(f"  keywords: {sample_node.get('keywords', [])}")
             print(f"  amendment_history: {sample_node.get('amendment_history', [])}")
-    
+
     if samples_found == 0:
         print("[Warning] No suitable sample nodes found.")
 
@@ -560,7 +565,8 @@ def main():
         help="Path to input JSON file",
     )
     parser.add_argument(
-        "-o", "--output",
+        "-o",
+        "--output",
         type=Path,
         default=None,
         help="Path to output JSON file (default: input_rag.json)",
@@ -571,39 +577,38 @@ def main():
         default=0,
         help="Print N sample enhanced nodes instead of writing output",
     )
-    
+
     args = parser.parse_args()
-    
+
     # Read input
     print(f"[INFO] Reading {args.input_file}...")
     with open(args.input_file, "r", encoding="utf-8") as f:
         data = json.load(f)
-    
+
     # Enhance
     print("[INFO] Enhancing JSON for RAG...")
     enhanced_data = enhance_json(data)
-    
+
     # Sample mode
     if args.sample > 0:
         print_sample(enhanced_data, args.sample)
         return
-    
+
     # Determine output path
     output_path = args.output
     if output_path is None:
         stem = args.input_file.stem
         output_path = args.input_file.parent / f"{stem}_rag.json"
-    
+
     # Write output
     print(f"[INFO] Writing {output_path}...")
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(enhanced_data, f, ensure_ascii=False, indent=2)
-    
+
     # Summary
     doc_count = len(enhanced_data.get("docs", []))
     abolished_count = sum(
-        1 for d in enhanced_data.get("docs", [])
-        if d.get("status") == "abolished"
+        1 for d in enhanced_data.get("docs", []) if d.get("status") == "abolished"
     )
     print(f"[INFO] Done! Enhanced {doc_count} documents ({abolished_count} abolished).")
     print(f"[INFO] Output: {output_path}")

@@ -8,10 +8,10 @@ This package contains modules for:
 - id_assigner: Stable ID generation
 """
 
-from .regulation_parser import RegulationParser
-from .reference_resolver import ReferenceResolver
-from .table_extractor import TableExtractor
 from .id_assigner import StableIdAssigner
+from .reference_resolver import ReferenceResolver
+from .regulation_parser import RegulationParser
+from .table_extractor import TableExtractor
 
 __all__ = [
     "RegulationParser",

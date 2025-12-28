@@ -22,7 +22,6 @@ from src.rag.infrastructure.hybrid_search import QueryAnalyzer
 from src.rag.infrastructure.json_loader import JSONDocumentLoader
 from src.rag.infrastructure.llm_adapter import LLMClientAdapter
 
-
 SYSTEM_PROMPT = """You are a Korean intent lexicon generator for university regulations.
 Given canonical regulation terms, generate colloquial, mistyped, or simplified phrases
 that users may use to express the same intent.
@@ -220,7 +219,9 @@ def main() -> int:
     parser.add_argument("--model", default=None, help="LLM model name")
     parser.add_argument("--base-url", default=None, help="LLM base URL")
     parser.add_argument("--batch-size", type=int, default=20, help="LLM batch size")
-    parser.add_argument("--max-terms", type=int, default=200, help="Max terms to expand")
+    parser.add_argument(
+        "--max-terms", type=int, default=200, help="Max terms to expand"
+    )
     parser.add_argument("--min-length", type=int, default=2, help="Minimum term length")
     parser.add_argument(
         "--max-triggers",
@@ -280,7 +281,9 @@ def main() -> int:
         "intents": intents,
     }
 
-    output_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    output_path.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
     print(f"[OK] Wrote {output_path} ({len(intents)} intents)")
     return 0
 
