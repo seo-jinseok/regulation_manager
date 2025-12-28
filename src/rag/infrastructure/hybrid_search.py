@@ -105,41 +105,27 @@ class QueryAnalyzer:
         QueryType.GENERAL: (0.5, 0.5),  # Balanced default (increased BM25 from 0.3)
     }
 
-    # Synonym dictionary for query expansion (학사 용어)
+    # Synonym dictionary for query expansion (minimal seed).
+    # Prefer external dictionaries via RAG_SYNONYMS_PATH for full coverage.
     SYNONYMS: Dict[str, List[str]] = {
-        # 학과/전공 관련
-        "폐과": ["학과 폐지", "전공 폐지", "학부 폐지", "과 폐지"],
-        "모집정지": ["신입생 모집 정지", "학생 모집 중단", "모집 중단", "입학 정지"],
-        "정원": ["입학정원", "모집정원", "학생정원"],
-        # 학적 관련
-        "휴학": ["휴학원", "휴학 신청", "학업 중단"],
-        "복학": ["복학원", "복학 신청", "학업 복귀"],
-        "제적": ["학적 상실", "등록금 미납 제적"],
-        "자퇴": ["자퇴원", "자퇴 신청", "자진 퇴학"],
-        "전과": ["전과 신청", "학과 이동", "전공 변경"],
-        "편입": ["편입학", "편입 신청"],
-        # 등록/재정 관련
-        "등록금": ["수업료", "납입금"],
-        "장학금": ["장학", "학비 지원"],
-        "분납": ["등록금 분납", "분할 납부"],
-        # 학위/졸업 관련
-        "졸업": ["학위 수여", "졸업 요건"],
-        "학위": ["학사 학위", "석사 학위", "박사 학위"],
-        "논문": ["학위 논문", "졸업 논문"],
-        # 교원 관련
-        "교원": ["교수", "교직원", "전임 교원"],
+        "폐과": ["학과 폐지", "전공 폐지"],
+        "휴학": ["휴학원", "휴학 신청"],
+        "복학": ["복학원", "복학 신청"],
+        "제적": ["학적 상실"],
+        "자퇴": ["자퇴원", "자퇴 신청"],
+        "전과": ["전과 신청"],
+        "편입": ["편입학"],
+        "등록금": ["수업료"],
+        "장학금": ["장학"],
         "교수": ["교원", "교직원"],
-        "임용": ["교원 임용", "교수 채용"],
-        "재임용": ["계약 갱신", "임기 연장"],
-        "승진": ["교원 승진", "직급 상승"],
     }
 
-    # Intent patterns for natural language queries
+    # Intent patterns for natural language queries (minimal seed).
+    # Prefer external dictionaries via RAG_INTENTS_PATH for full coverage.
     INTENT_PATTERNS = [
         (re.compile(r"(학교|출근|근무).*(가기|출근).*싫"), ["휴직", "휴가", "연구년", "안식년"]),
-        (re.compile(r"(월급|급여|보수|연봉).*더.*받.*싶"), ["보수", "수당", "승급", "호봉"]),
         (re.compile(r"(그만두고\s*싶|그만\s*두고\s*싶|퇴직|사직)"), ["퇴직", "사직", "명예퇴직"]),
-        (re.compile(r"(수업|강의).*안.*하.*싶"), ["휴강", "보강", "강의", "면제"]),
+        (re.compile(r"(수업|강의).*안.*하.*싶"), ["휴강", "보강", "강의"]),
     ]
     INTENT_MAX_MATCHES = 3
 
