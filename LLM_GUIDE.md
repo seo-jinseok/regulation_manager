@@ -199,9 +199,9 @@ LLM_PROVIDER=ollama
 LLM_MODEL=gemma2
 LLM_BASE_URL=http://localhost:11434
 
-# (선택) 검색 사전
-RAG_SYNONYMS_PATH=data/synonyms.json
-RAG_INTENTS_PATH=data/intents.json
+# (선택) 검색 사전 (기본값 제공)
+RAG_SYNONYMS_PATH=data/config/synonyms.json
+RAG_INTENTS_PATH=data/config/intents.json
 ```
 
 `.env`는 실행 시 자동 로드되므로, 위 값이 코드 기본값(예: `regulation-manager`는 `openai`, `regulation-rag`/웹은 `ollama`)보다 우선 적용됩니다.

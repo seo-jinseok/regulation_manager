@@ -77,6 +77,21 @@ uv run regulation-rag search "장학금" -n 10
 
 # 폐지 규정 포함
 uv run regulation-rag search "학칙" --include-abolished
+
+# 쿼리 분석 과정 확인 (verbose 모드)
+uv run regulation-rag search "학교에 가기 싫어" -v
+```
+
+**Verbose 모드 출력 예시:**
+
+```
+🔄 쿼리 분석 결과
+ℹ 📋 규칙 기반 확장
+ℹ    원본: '학교에 가기 싫어'
+ℹ    변환: '학교에 가기 싫어 휴직 휴가 연구년 안식년'
+ℹ 📚 동의어 사전: ✅ 적용됨
+ℹ 🎯 의도 인식: ✅ 매칭됨
+ℹ    매칭된 의도: [휴직 / 휴가, 근무 회피]
 ```
 
 ---
@@ -89,8 +104,8 @@ LLM을 사용하여 자연어 답변을 생성합니다.
 # 기본 (Ollama)
 uv run regulation-rag ask "교원 연구년 신청 자격은?"
 
-# 상세 정보 출력 (LLM 설정, 인덱스 구축 현황 등)
-uv run regulation-rag ask "휴학 절차" --verbose
+# 상세 정보 출력 (쿼리 분석, LLM 설정 등)
+uv run regulation-rag ask "휴학 절차" -v
 
 # 다른 LLM 프로바이더 사용
 uv run regulation-rag ask "휴학 절차" --provider lmstudio --base-url http://localhost:1234
@@ -139,8 +154,8 @@ uv run regulation-mcp
 |------|--------|
 | 변환 | `regulation-manager "data/input/규정집.hwp"` |
 | 동기화 | `regulation-rag sync <json-path>` |
-| 검색 | `regulation-rag search "<쿼리>"` |
-| AI 질문 | `regulation-rag ask "<질문>"` |
+| 검색 | `regulation-rag search "<쿼리>" [-v]` |
+| AI 질문 | `regulation-rag ask "<질문>" [-v]` |
 | 상태 확인 | `regulation-rag status` |
 | DB 초기화 | `regulation-rag reset --confirm` |
 | MCP 서버 | `regulation-mcp` |

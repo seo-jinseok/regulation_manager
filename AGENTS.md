@@ -106,7 +106,10 @@ regulation_manager/
 │   ├── input/                  # HWP 입력 파일
 │   ├── output/                 # JSON 출력 파일
 │   ├── chroma_db/              # ChromaDB 저장소 (gitignore)
-│   └── sync_state.json         # 동기화 상태 (gitignore)
+│   ├── sync_state.json         # 동기화 상태 (gitignore)
+│   └── config/                 # 설정 파일
+│       ├── synonyms.json       # 동의어 사전 (167개 용어)
+│       └── intents.json        # 인텐트 규칙 (51개 규칙)
 └── docs/                       # 추가 문서
 ```
 
@@ -153,6 +156,13 @@ Query → QueryAnalyzer → Hybrid Search → BGE Reranker → LLM 답변
 - `application/search_usecase.py`: `search()`, `search_unique()`, `ask()`
 - `infrastructure/hybrid_search.py`: `HybridSearcher`, `QueryAnalyzer`
 - `infrastructure/reranker.py`: `BGEReranker`
+
+### 동의어/인텐트 데이터
+
+| 파일 | 설명 | 수량 |
+|------|------|------|
+| `data/config/synonyms.json` | 동의어 사전 ("폐과" → "학과 폐지") | 167개 |
+| `data/config/intents.json` | 인텐트 규칙 ("학교에 가기 싫어" → "휴직") | 51개 |
 
 ### 주요 데이터 구조
 
@@ -240,6 +250,10 @@ GEMINI_API_KEY=AIza...
 # 데이터 경로 (선택)
 RAG_DB_PATH=data/chroma_db
 RAG_JSON_PATH=data/output/규정집.json
+
+# 동의어/인텐트 사전 (기본값 제공, 수정 시 반영)
+RAG_SYNONYMS_PATH=data/config/synonyms.json
+RAG_INTENTS_PATH=data/config/intents.json
 ```
 
 ---

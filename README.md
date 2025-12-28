@@ -50,6 +50,7 @@ uv run regulation-rag ask "교원 연구년 신청 자격은?"
 | `-n 10` | 검색 결과 개수 지정 |
 | `--include-abolished` | 폐지된 규정 포함 |
 | `--no-rerank` | AI 재정렬 비활성화 (빠른 검색) |
+| `-v`, `--verbose` | 상세 정보 출력 (쿼리 분석 과정, 동의어/인텐트 적용 여부) |
 
 ### LLM 질문 옵션
 
@@ -57,7 +58,7 @@ uv run regulation-rag ask "교원 연구년 신청 자격은?"
 |------|------|
 | `--provider ollama` | LLM 프로바이더 (ollama, lmstudio, openai 등) |
 | `--model gemma2` | 사용할 모델명 |
-| `-v`, `--verbose` | 상세 정보 출력 (LLM 설정, 인덱스 구축 등) |
+| `-v`, `--verbose` | 상세 정보 출력 (쿼리 분석, LLM 설정 등) |
 | `--show-sources` | 참고 규정 전문 출력 |
 
 ### 웹 UI
@@ -295,8 +296,9 @@ query = "교원 연구년 신청 자격은 무엇인가요?"
 |-----------|----------|------|-------|
 | 조문 번호 | `"제15조"`, `"학칙 제3조"` | 0.6 | 0.4 |
 | 규정명 | `"장학금규정"`, `"휴학 학칙"` | 0.5 | 0.5 |
-| 자연어 질문 | `"어떻게 휴학하나요?"` | 0.2 | 0.8 |
-| 기본값 | 그 외 | 0.3 | 0.7 |
+| 자연어 질문 | `"어떻게 휴학하나요?"` | 0.4 | 0.6 |
+| 의도 표현 | `"학교에 가기 싫어"` | 0.35 | 0.65 |
+| 기본값 | 그 외 | 0.5 | 0.5 |
 
 #### Step 3-2: Hybrid Search
 
@@ -448,11 +450,9 @@ LLM_BASE_URL=http://localhost:11434
 OPENAI_API_KEY=sk-...
 GEMINI_API_KEY=AIza...
 
-# (선택) 검색 동의어 사전
-RAG_SYNONYMS_PATH=data/synonyms.json
-
-# (선택) 검색 의도 사전
-RAG_INTENTS_PATH=data/intents.json
+# 동의어/인텐트 사전 (기본 제공, 커스텀 시 경로 변경)
+RAG_SYNONYMS_PATH=data/config/synonyms.json
+RAG_INTENTS_PATH=data/config/intents.json
 ```
 
 실행 시 `.env`를 자동 로드하므로, 위 설정이 코드 기본값보다 우선 적용됩니다.
@@ -464,26 +464,49 @@ RAG_INTENTS_PATH=data/intents.json
 | `regulation-manager` | provider: `openai` (model: `gpt-4o`) |
 | `regulation-rag` / 웹 UI | provider: `ollama` (model: `gemma2`, base_url: `http://localhost:11434`) |
 
-### 검색 동의어 사전 생성 (선택)
+### 동의어 및 인텐트 사전
 
-규정 용어의 구어/오타 변형을 체계적으로 확장하려면 동의어 사전을 생성하세요.
+시스템은 검색 품질 향상을 위해 **동의어 사전**과 **인텐트 규칙**을 기본 제공합니다.
+
+**기본 제공 데이터:**
+
+| 항목 | 수량 | 파일 |
+|------|------|------|
+| 동의어 용어 | 167개 | `data/config/synonyms.json` |
+| 인텐트 규칙 | 51개 | `data/config/intents.json` |
+
+**동의어 사전 예시:**
+- `"폐과"` → `["학과 폐지", "전공 폐지"]`
+- `"교수"` → `["교원", "교직원", "전임교원"]`
+
+**인텐트 규칙 예시:**
+- `"학교에 가기 싫어"` → `["휴직", "휴가", "연구년", "안식년"]`
+- `"그만두고 싶어"` → `["퇴직", "사직", "명예퇴직"]`
+
+**Verbose 모드로 확인:**
 
 ```bash
-uv run python scripts/generate_synonyms.py \
-  --json-path data/output/regulations.json \
-  --output data/synonyms.json \
-  --provider lmstudio --model your-model --base-url http://localhost:1234
+# 쿼리 분석 과정 확인
+uv run regulation-rag search "학교에 가기 싫어" -v
+
+# 출력 예시:
+# 🔄 쿼리 분석 결과
+# ℹ 📋 규칙 기반 확장
+# ℹ    원본: '학교에 가기 싫어'
+# ℹ    변환: '학교에 가기 싫어 휴직 휴가 연구년 안식년 병가 연가'
+# ℹ 📚 동의어 사전: ✅ 적용됨
+# ℹ 🎯 의도 인식: ✅ 매칭됨
+# ℹ    매칭된 의도: [휴직 / 휴가, 근무 회피]
 ```
 
-### 검색 의도 사전 생성 (선택)
+**커스텀 사전 사용:**
 
-의도(구어/오타 표현)를 체계적으로 처리하려면 의도 사전을 생성하세요.
+환경변수로 다른 파일을 지정할 수 있습니다:
 
 ```bash
-uv run python scripts/generate_intents.py \
-  --json-path data/output/regulations.json \
-  --output data/intents.json \
-  --provider lmstudio --model your-model --base-url http://localhost:1234
+# .env 파일
+RAG_SYNONYMS_PATH=data/config/synonyms.json
+RAG_INTENTS_PATH=data/config/intents.json
 ```
 
 ---
