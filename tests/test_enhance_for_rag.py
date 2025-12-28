@@ -209,6 +209,14 @@ class TestBuildFullText:
         result = build_full_text(["Path"], node)
         assert result == ""
 
+    def test_dedupes_label_against_last_path_segment(self):
+        """Whitespace-variant label duplicates should not repeat in full_text."""
+        parent_path = ["교원인사규정", "부칙"]
+        node = {"display_no": "", "title": "부 칙", "text": "내용"}
+        result = build_full_text(parent_path, node)
+        assert "부칙 > 부 칙" not in result
+        assert "[교원인사규정 > 부칙]" in result
+
 
 class TestEnhanceNode:
     """Tests for enhance_node function."""
@@ -468,3 +476,12 @@ class TestBuildEmbeddingText:
         result = build_embedding_text([], node)
         assert "제1조 목적" in result
         assert "내용" in result
+
+    def test_dedupes_label_against_last_path_segment(self):
+        """Whitespace-variant label duplicates should not repeat in embedding_text."""
+        from src.enhance_for_rag import build_embedding_text
+        parent_path = ["교원인사규정", "부칙"]
+        node = {"text": "내용", "display_no": "", "title": "부 칙"}
+        result = build_embedding_text(parent_path, node)
+        assert "부칙 > 부 칙" not in result
+        assert "부칙: 내용" in result

@@ -79,6 +79,23 @@ CHARS_PER_TOKEN = 2.5
 # ============================================================================
 
 
+def _normalize_path_segment(segment: str) -> str:
+    return (segment or "").replace(" ", "").replace("　", "")
+
+
+def _dedupe_path_segments(segments: List[str]) -> List[str]:
+    if not segments:
+        return segments
+    deduped = [segments[0]]
+    prev_norm = _normalize_path_segment(segments[0])
+    for segment in segments[1:]:
+        current_norm = _normalize_path_segment(segment)
+        if current_norm != prev_norm:
+            deduped.append(segment)
+            prev_norm = current_norm
+    return deduped
+
+
 def extract_amendment_history(text: str) -> List[Dict[str, str]]:
     """
     Extract amendment history from text content.
@@ -290,9 +307,12 @@ def build_full_text(parent_path: List[str], node: Dict[str, Any]) -> str:
         return ""
     
     if parent_path:
-        path_str = " > ".join(parent_path)
+        path_segments = _dedupe_path_segments(parent_path)
+        path_str = " > ".join(path_segments)
         label = build_path_label(node)
         if label:
+            if path_segments and _normalize_path_segment(label) == _normalize_path_segment(path_segments[-1]):
+                return f"[{path_str}] {text}"
             return f"[{path_str} > {label}] {text}"
         return f"[{path_str}] {text}"
     return text
@@ -324,9 +344,12 @@ def build_embedding_text(parent_path: List[str], node: Dict[str, Any]) -> str:
     # Use only the last 3 path segments for context (avoid too long prefix)
     if parent_path:
         recent_path = parent_path[-3:] if len(parent_path) > 3 else parent_path
-        path_str = " > ".join(recent_path)
+        path_segments = _dedupe_path_segments(recent_path)
+        path_str = " > ".join(path_segments)
         label = build_path_label(node)
         if label:
+            if path_segments and _normalize_path_segment(label) == _normalize_path_segment(path_segments[-1]):
+                return f"{path_str}: {text}"
             return f"{path_str} > {label}: {text}"
         return f"{path_str}: {text}"
     
@@ -354,6 +377,7 @@ def enhance_node(
     """
     # Build current path with doc title at root
     current_path = [doc_title] + parent_path if doc_title else parent_path.copy()
+    current_path = _dedupe_path_segments(current_path)
     
     # Add current node's label to path for children
     node_label = build_path_label(node)
@@ -405,6 +429,7 @@ def enhance_node(
     # Recursively process children
     children = node.get("children", [])
     child_parent_path = parent_path + [node_label] if node_label else parent_path
+    child_parent_path = _dedupe_path_segments(child_parent_path)
     
     for child in children:
         enhance_node(child, child_parent_path, doc_title)
