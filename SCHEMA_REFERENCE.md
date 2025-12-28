@@ -8,7 +8,7 @@
 
 > 변환/동기화 명령은 [README.md](./README.md) 또는 [QUICKSTART.md](./QUICKSTART.md)를 참고하세요.
 
-> **전문 보기(Full View)** 및 **MCP 응답 스키마**는 본 문서 범위 밖입니다. 관련 흐름은 [UX_FLOWS.md](./UX_FLOWS.md)를 참고하세요.
+> **전문 보기(Full View)** 및 **MCP 응답 스키마**는 본 문서 범위 밖입니다.
 
 ---
 

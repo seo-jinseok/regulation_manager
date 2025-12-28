@@ -266,11 +266,6 @@ RAG_INTENTS_PATH=data/config/intents.json
 | [QUICKSTART.md](./QUICKSTART.md) | 빠른 시작 가이드 |
 | [SCHEMA_REFERENCE.md](./SCHEMA_REFERENCE.md) | JSON 스키마 명세 |
 | [LLM_GUIDE.md](./LLM_GUIDE.md) | LLM 설정 가이드 |
-| [USAGE_SCENARIOS.md](./USAGE_SCENARIOS.md) | 실제 사용 시나리오 |
-| [PRODUCT_BACKLOG.md](./PRODUCT_BACKLOG.md) | 제품 수준 백로그 |
-| [UX_FLOWS.md](./UX_FLOWS.md) | 웹/MCP UX 플로우 |
-| [UX_COPY.md](./UX_COPY.md) | UX 카피/컴포넌트 문구 |
-| [TASKS_BACKLOG.md](./TASKS_BACKLOG.md) | 모듈별 액션 티켓 |
 
 ---
 
