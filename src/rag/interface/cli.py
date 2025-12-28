@@ -44,6 +44,7 @@ from .chat_logic import (
     attachment_label_variants,
     expand_followup_query,
     parse_attachment_request,
+    build_history_context,
 )
 
 # Rich for pretty output (optional)
@@ -465,6 +466,20 @@ def _sanitize_query_input(text: Optional[str]) -> str:
     return "".join(buffer).strip()
 
 
+def _append_history(
+    state: Optional[dict],
+    role: str,
+    content: str,
+    max_messages: int = 20,
+) -> None:
+    if not state or not content:
+        return
+    history = state.setdefault("history", [])
+    history.append({"role": role, "content": content})
+    if len(history) > max_messages:
+        del history[:-max_messages]
+
+
 def _select_regulation(matches, interactive: bool):
     if not matches:
         return None
@@ -512,9 +527,11 @@ def _perform_unified_search(
     from rich.panel import Panel
 
     state = state or {}
-    query = _sanitize_query_input(args.query)
+    raw_query = _sanitize_query_input(args.query)
+    query = raw_query
     if interactive and query:
-        query = expand_followup_query(query, state.get("last_regulation"))
+        context_hint = state.get("last_regulation") or state.get("last_query")
+        query = expand_followup_query(query, context_hint)
     query = _sanitize_query_input(query)
     if not query:
         if interactive:
@@ -522,6 +539,9 @@ def _perform_unified_search(
         print_error("검색어를 입력해주세요.")
         return 1
     args.query = query
+    history_text = build_history_context(state.get("history", [])) if interactive else ""
+    if interactive:
+        _append_history(state, "user", raw_query)
 
     mode = force_mode or _decide_search_mode(args)
     if args.verbose:
@@ -559,6 +579,9 @@ def _perform_unified_search(
 
         state["last_regulation"] = selected.title
         state["last_rule_code"] = selected.rule_code
+        state["last_query"] = raw_query
+        if interactive:
+            _append_history(state, "assistant", f"{selected.title} {label_text} 내용을 표시했습니다.")
         return 0
 
     if mode == "full_view":
@@ -583,6 +606,9 @@ def _perform_unified_search(
         _print_markdown(f"{view.title} 전문", detail)
         state["last_regulation"] = view.title
         state["last_rule_code"] = view.rule_code
+        state["last_query"] = raw_query
+        if interactive:
+            _append_history(state, "assistant", f"{view.title} 전문을 표시했습니다.")
         return 0
 
     # Step 1: Check database
@@ -700,6 +726,11 @@ def _perform_unified_search(
             top = results[0]
             state["last_regulation"] = top.chunk.parent_path[0] if top.chunk.parent_path else top.chunk.title
             state["last_rule_code"] = top.chunk.rule_code
+            state["last_query"] = raw_query
+            if interactive:
+                summary_text = strip_path_prefix(top.chunk.text, top.chunk.parent_path or [])
+                summary = f"검색 결과 1위: {top.chunk.rule_code} {summary_text}".strip()
+                _append_history(state, "assistant", summary)
 
     else:
         # Ask (LLM Answer)
@@ -707,8 +738,10 @@ def _perform_unified_search(
             with console.status("[bold green]🤖 AI 답변 생성 중... (10-30초 소요)[/bold green]"):
                 try:
                     answer = search.ask(
-                        question=args.query,
+                        question=raw_query,
                         top_k=args.top_k,
+                        history_text=history_text or None,
+                        search_query=query,
                     )
                 except Exception as e:
                     print_error(f"답변 생성 실패: {e}")
@@ -717,8 +750,10 @@ def _perform_unified_search(
             print("AI 답변 생성 중...")
             try:
                 answer = search.ask(
-                    question=args.query,
+                    question=raw_query,
                     top_k=args.top_k,
+                    history_text=history_text or None,
+                    search_query=query,
                 )
             except Exception as e:
                 print_error(f"답변 생성 실패: {e}")
@@ -798,6 +833,9 @@ def _perform_unified_search(
             top = answer.sources[0].chunk
             state["last_regulation"] = top.parent_path[0] if top.parent_path else top.title
             state["last_rule_code"] = top.rule_code
+        state["last_query"] = raw_query
+        if interactive:
+            _append_history(state, "assistant", answer_text)
 
     return 0
 
@@ -822,6 +860,8 @@ def _run_interactive_session(args) -> int:
     state = {
         "last_regulation": None,
         "last_rule_code": None,
+        "last_query": None,
+        "history": [],
     }
 
     print_info("대화형 모드입니다. '/exit'로 종료, '/reset'으로 문맥 초기화.")
@@ -843,6 +883,8 @@ def _run_interactive_session(args) -> int:
         if query.lower() in ("/reset", "reset"):
             state["last_regulation"] = None
             state["last_rule_code"] = None
+            state["last_query"] = None
+            state["history"] = []
             print_info("문맥을 초기화했습니다.")
             query = ""
             continue

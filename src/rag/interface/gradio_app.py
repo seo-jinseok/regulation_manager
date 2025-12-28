@@ -42,6 +42,7 @@ from ..domain.value_objects import SearchFilter
 from ..domain.entities import RegulationStatus
 from .chat_logic import (
     attachment_label_variants,
+    build_history_context,
     expand_followup_query,
     format_clarification,
     parse_attachment_request,
@@ -374,6 +375,8 @@ def create_app(
         target_db_path: str,
         audience_override: Optional[Audience],
         show_debug: bool,
+        history_text: Optional[str] = None,
+        search_query: Optional[str] = None,
     ) -> Tuple[str, str, str, str, str]:
         db_path_value = target_db_path or db_path
         store_for_ask = ChromaVectorStore(persist_directory=db_path_value)
@@ -400,6 +403,8 @@ def create_app(
             top_k=top_k,
             include_abolished=include_abolished,
             audience_override=audience_override,
+            history_text=history_text,
+            search_query=search_query,
         )
 
         answer_text = normalize_markdown_emphasis(answer.text)
@@ -528,6 +533,7 @@ def create_app(
                 normalized.append({"role": "user", "content": user_text})
                 normalized.append({"role": "assistant", "content": assistant_text})
             history = normalized
+        history_context = build_history_context(history)
 
         history.append({"role": "user", "content": message})
 
@@ -707,7 +713,7 @@ def create_app(
             return history, details, debug_text, state
 
         answer_text, sources_text, debug_text, rule_code, regulation_title = _run_ask_once(
-            query,
+            message,
             top_k,
             include_abolished,
             llm_provider,
@@ -716,6 +722,8 @@ def create_app(
             target_db_path,
             audience_override,
             show_debug,
+            history_text=history_context or None,
+            search_query=query,
         )
         history.append({"role": "assistant", "content": answer_text})
         details = sources_text

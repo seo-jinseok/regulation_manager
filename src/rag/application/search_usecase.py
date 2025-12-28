@@ -508,6 +508,8 @@ class SearchUseCase:
         top_k: int = 5,
         include_abolished: bool = False,
         audience_override: Optional["Audience"] = None,
+        history_text: Optional[str] = None,
+        search_query: Optional[str] = None,
     ) -> Answer:
         """
         Ask a question and get an LLM-generated answer.
@@ -518,6 +520,8 @@ class SearchUseCase:
             top_k: Number of chunks to use as context.
             include_abolished: Whether to include abolished regulations.
             audience_override: Optional audience override for ranking penalties.
+            history_text: Optional conversation context for the LLM.
+            search_query: Optional override for retrieval query.
 
         Returns:
             Answer with generated text and sources.
@@ -529,8 +533,9 @@ class SearchUseCase:
             raise ValueError("LLM client not configured. Use search() instead.")
 
         # Get relevant chunks
+        retrieval_query = search_query or question
         results = self.search(
-            question,
+            retrieval_query,
             filter=filter,
             top_k=top_k * 3,
             include_abolished=include_abolished,
@@ -553,12 +558,7 @@ class SearchUseCase:
         context = self._build_context(filtered_results)
 
         # Generate answer
-        user_message = f"""질문: {question}
-
-참고 규정:
-{context}
-
-위 규정 내용을 바탕으로 질문에 답변해주세요."""
+        user_message = self._build_user_message(question, context, history_text)
 
         answer_text = self.llm.generate(
             system_prompt=REGULATION_QA_PROMPT,
@@ -574,6 +574,30 @@ class SearchUseCase:
             sources=filtered_results,
             confidence=confidence,
         )
+
+    def _build_user_message(
+        self,
+        question: str,
+        context: str,
+        history_text: Optional[str],
+    ) -> str:
+        if history_text:
+            return f"""대화 기록:
+{history_text}
+
+현재 질문: {question}
+
+참고 규정:
+{context}
+
+위 규정 내용을 바탕으로 질문에 답변해주세요."""
+
+        return f"""질문: {question}
+
+참고 규정:
+{context}
+
+위 규정 내용을 바탕으로 질문에 답변해주세요."""
 
     def _build_context(self, results: List[SearchResult]) -> str:
         """Build context string from search results."""

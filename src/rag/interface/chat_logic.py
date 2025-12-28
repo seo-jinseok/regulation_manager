@@ -104,7 +104,11 @@ def is_followup_message(text: str) -> bool:
         "방금",
         "앞서",
         "추가",
+        "추가로",
         "더",
+        "다른",
+        "또",
+        "나머지",
         "자세히",
         "계속",
         "다시",
@@ -129,6 +133,50 @@ def expand_followup_query(message: str, context: Optional[str]) -> str:
     if not is_followup_message(message):
         return message
     return f"{context} {message}".strip()
+
+
+def build_history_context(
+    history: List[dict],
+    max_turns: int = 6,
+    max_chars: int = 1200,
+) -> str:
+    if not history:
+        return ""
+
+    messages = []
+    for item in history:
+        if isinstance(item, dict):
+            role = item.get("role")
+            content = item.get("content")
+            if role in ("user", "assistant") and content:
+                messages.append({"role": role, "content": str(content)})
+            continue
+        if isinstance(item, (list, tuple)) and len(item) == 2:
+            user_text, assistant_text = item
+            if user_text:
+                messages.append({"role": "user", "content": str(user_text)})
+            if assistant_text:
+                messages.append({"role": "assistant", "content": str(assistant_text)})
+
+    if max_turns and max_turns > 0:
+        messages = messages[-max_turns * 2 :]
+
+    lines = []
+    for msg in messages:
+        label = "사용자" if msg["role"] == "user" else "어시스턴트"
+        snippet = re.sub(r"\s+", " ", msg["content"]).strip()
+        if len(snippet) > 300:
+            snippet = snippet[:300] + "..."
+        lines.append(f"{label}: {snippet}")
+
+    context = "\n".join(lines)
+    if max_chars and len(context) > max_chars:
+        context = context[-max_chars:]
+        cut = context.find("\n")
+        if cut != -1:
+            context = context[cut + 1 :]
+
+    return context
 
 
 def format_clarification(kind: str, options: List[str]) -> str:

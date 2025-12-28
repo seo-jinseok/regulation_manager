@@ -1,5 +1,6 @@
 from src.rag.interface.chat_logic import (
     attachment_label_variants,
+    build_history_context,
     extract_regulation_title,
     parse_attachment_request,
     expand_followup_query,
@@ -41,6 +42,7 @@ def test_has_explicit_target():
 def test_is_followup_message():
     assert is_followup_message("그럼?") is True
     assert is_followup_message("전문 보여줘") is True
+    assert is_followup_message("다른 부칙은?") is True
     assert is_followup_message("휴학 절차는?") is False
 
 
@@ -69,3 +71,14 @@ def test_parse_attachment_request_with_fallback():
 def test_attachment_label_variants():
     assert attachment_label_variants("별첨") == ["별첨", "별표"]
     assert attachment_label_variants(None) == ["별표", "별첨", "별지"]
+
+
+def test_build_history_context_limits_and_formats():
+    history = [
+        {"role": "user", "content": "교원인사규정"},
+        {"role": "assistant", "content": "교원인사규정 전문을 표시합니다."},
+        {"role": "user", "content": "다른 부칙은?"},
+    ]
+    context = build_history_context(history, max_turns=2, max_chars=200)
+    assert "사용자: 교원인사규정" in context
+    assert "어시스턴트: 교원인사규정 전문을 표시합니다." in context

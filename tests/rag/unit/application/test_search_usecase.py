@@ -56,6 +56,15 @@ class FakeLLM:
         return "휴직 휴가 연구년"
 
 
+class FakeLLMCapture:
+    def __init__(self):
+        self.last_user_message = None
+
+    def generate(self, system_prompt: str, user_message: str, temperature: float = 0.0) -> str:
+        self.last_user_message = user_message
+        return "ok"
+
+
 def make_chunk(text: str, keywords=None) -> Chunk:
     return Chunk(
         id="c1",
@@ -106,6 +115,34 @@ def test_search_rule_code_filters_by_rule_code():
     assert store.last_filter is not None
     assert store.last_filter.rule_codes == ["3-1-5"]
     assert store.last_top_k == 7
+
+
+def test_ask_includes_history_and_uses_search_query(monkeypatch):
+    chunk = make_chunk("본문")
+    results = [SearchResult(chunk=chunk, score=0.4, rank=1)]
+    store = FakeStore(results)
+    llm = FakeLLMCapture()
+    usecase = SearchUseCase(store, llm_client=llm, use_reranker=False, use_hybrid=False)
+
+    captured = {}
+
+    def fake_search(self, query_text, filter=None, top_k: int = 10, include_abolished: bool = False, audience_override=None):
+        captured["query_text"] = query_text
+        return results
+
+    monkeypatch.setattr(SearchUseCase, "search", fake_search)
+
+    usecase.ask(
+        question="다른 부칙은?",
+        search_query="교원인사규정 다른 부칙은?",
+        history_text="사용자: 교원인사규정\n어시스턴트: 부칙을 확인했습니다.",
+        top_k=1,
+    )
+
+    assert captured["query_text"] == "교원인사규정 다른 부칙은?"
+    assert llm.last_user_message is not None
+    assert "대화 기록" in llm.last_user_message
+    assert "현재 질문: 다른 부칙은?" in llm.last_user_message
 
 
 def test_rerank_uses_rewritten_query(monkeypatch):
