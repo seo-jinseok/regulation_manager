@@ -121,6 +121,26 @@ def _format_query_rewrite_debug(info: Optional[QueryRewriteInfo]) -> str:
 
 
 
+
+def _decide_search_mode_ui(query: str, mode_selection: str) -> str:
+    """Decide search mode based on selection and query heuristic."""
+    if mode_selection == "검색 (Search)":
+        return "search"
+    if mode_selection == "질문 (Ask)":
+        return "ask"
+    
+    # Auto mode heuristic
+    query = query.strip()
+    if query.endswith("?"):
+        return "ask"
+    
+    question_words = ["어떻게", "언제", "무엇", "누가", "어디서", "얼마나", "방법", "절차", "자격", "알려줘", "해줘"]
+    if any(word in query for word in question_words):
+        return "ask"
+        
+    return "search"
+
+
 def create_app(
     db_path: str = DEFAULT_DB_PATH,
     use_mock_llm: bool = False,
@@ -263,7 +283,42 @@ def create_app(
         target_path = data_input_dir / input_path.name
         if input_path.resolve() != target_path.resolve():
             shutil.copy2(input_path, target_path)
-        return target_path
+    # Unified Search Function
+    def unified_search(
+        query: str,
+        mode_selection: str,
+        top_k: int,
+        include_abolished: bool,
+        llm_provider: str,
+        llm_model: str,
+        llm_base_url: str,
+        target_db_path: str,
+        show_debug: bool,
+    ):
+        """Execute unified search/ask based on mode."""
+        if not query.strip():
+            yield "내용을 입력해주세요.", "", "", "", ""
+            return
+
+        mode = _decide_search_mode_ui(query, mode_selection)
+        
+        if mode == "search":
+             # Search (Retrieval)
+             # Reuse search_regulations logic but yield it as a generator to match interface
+             table, detail, debug, q, code = search_regulations(
+                 query, top_k, include_abolished, show_debug
+             )
+             yield table, detail, debug, q, code
+        else:
+            # Ask (LLM)
+            # Delegate to ask_question generator
+            for result in ask_question(
+                query, top_k, include_abolished, 
+                llm_provider, llm_model, llm_base_url, 
+                target_db_path, show_debug
+            ):
+                yield result
+
 
     # Search function
     def search_regulations(
@@ -552,168 +607,77 @@ def create_app(
 
         with gr.Tabs():
             # Tab 1: Search
-            with gr.TabItem("🔍 검색"):
+            # Tab 1: Unified Search
+            with gr.TabItem("🔎 통합 검색"):
                 with gr.Row():
-                    with gr.Column(scale=3):
-                        search_query = gr.Textbox(
-                            label="검색어",
-                            placeholder="예: 교원 연구년 자격",
-                            lines=1,
-                        )
-                    with gr.Column(scale=1):
-                        search_top_k = gr.Slider(
-                            minimum=1, maximum=20, value=5, step=1,
-                            label="결과 수",
-                        )
-                        search_abolished = gr.Checkbox(
-                            label="폐지 규정 포함",
-                            value=False,
-                        )
-                        search_debug_toggle = gr.Checkbox(
-                            label="디버그 출력",
-                            value=False,
-                        )
-
-                search_btn = gr.Button("검색", variant="primary")
-
-                search_results = gr.Markdown(label="검색 결과")
-                search_detail = gr.Markdown(label="상세 내용")
-                with gr.Accordion("디버그", open=False):
-                    search_debug = gr.Markdown()
-
-                search_fb_query = gr.State("")
-                search_fb_rule = gr.State("")
-
-                search_btn.click(
-                    fn=search_regulations,
-                    inputs=[search_query, search_top_k, search_abolished, search_debug_toggle],
-                    outputs=[search_results, search_detail, search_debug, search_fb_query, search_fb_rule],
-                )
-
-                # Feedback Row for Search
-                with gr.Row(visible=False) as search_fb_row:
                     with gr.Column(scale=4):
-                        search_fb_comment = gr.Textbox(label="피드백 의견 (선택)", placeholder="검색 결과에 대한 의견을 남겨주세요.")
-                    with gr.Column(scale=1):
-                        with gr.Row():
-                            search_fb_up = gr.Button("👍", size="sm")
-                            search_fb_neu = gr.Button("😐", size="sm")
-                            search_fb_down = gr.Button("👎", size="sm")
-                        search_fb_msg = gr.Markdown(visible=False)
-
-                search_query.change(lambda: gr.update(visible=False), None, search_fb_row)
-                search_btn.click(lambda: gr.update(visible=True), None, search_fb_row)
-
-                search_fb_up.click(
-                    fn=lambda q, r, c: record_web_feedback(q, r, 1, c),
-                    inputs=[search_fb_query, search_fb_rule, search_fb_comment],
-                    outputs=[search_fb_msg]
-                )
-                search_fb_neu.click(
-                    fn=lambda q, r, c: record_web_feedback(q, r, 0, c),
-                    inputs=[search_fb_query, search_fb_rule, search_fb_comment],
-                    outputs=[search_fb_msg]
-                )
-                search_fb_down.click(
-                    fn=lambda q, r, c: record_web_feedback(q, r, -1, c),
-                    inputs=[search_fb_query, search_fb_rule, search_fb_comment],
-                    outputs=[search_fb_msg]
-                )
-
-            # Tab 2: Ask (Q&A)
-            with gr.TabItem("💬 질문하기"):
-                with gr.Row():
-                    with gr.Column(scale=3):
-                        ask_question_input = gr.Textbox(
-                            label="질문",
-                            placeholder="예: 교원 연구년 신청 자격은 무엇인가요?",
+                        uni_query = gr.Textbox(
+                            label="검색어 또는 질문",
+                            placeholder="예: 교원 연구년 자격은? (질문) / 연구년 규정 (검색)",
                             lines=2,
                         )
+                        with gr.Row():
+                            uni_mode = gr.Radio(
+                                choices=["자동 (Auto)", "검색 (Search)", "질문 (Ask)"],
+                                value="자동 (Auto)",
+                                label="검색 모드",
+                                scale=2,
+                            )
+                            uni_btn = gr.Button("🔍 실행", variant="primary", scale=1)
+
                     with gr.Column(scale=1):
-                        ask_top_k = gr.Slider(
-                            minimum=1, maximum=10, value=5, step=1,
-                            label="참고 규정 수",
-                        )
-                        ask_abolished = gr.Checkbox(
-                            label="폐지 규정 포함",
-                            value=False,
-                        )
-                        ask_debug_toggle = gr.Checkbox(
-                            label="디버그 출력",
-                            value=False,
-                        )
+                        uni_top_k = gr.Slider(minimum=1, maximum=20, value=5, step=1, label="결과 수")
+                        uni_abolished = gr.Checkbox(label="폐지 규정 포함", value=False)
+                        uni_debug = gr.Checkbox(label="디버그 출력", value=False)
 
-                with gr.Accordion("LLM 설정", open=False):
+                with gr.Accordion("⚙️ LLM 설정 (질문 모드용)", open=False):
                     with gr.Row():
-                        llm_provider = gr.Dropdown(
-                            choices=LLM_PROVIDERS,
-                            value=DEFAULT_LLM_PROVIDER,
-                            label="프로바이더",
-                        )
-                        llm_model = gr.Textbox(
-                            value=DEFAULT_LLM_MODEL,
-                            label="모델 (선택)",
-                        )
-                        llm_base_url = gr.Textbox(
-                            value=DEFAULT_LLM_BASE_URL,
-                            label="Base URL (로컬용)",
-                            placeholder="예: http://127.0.0.1:11434",
-                        )
+                        llm_p = gr.Dropdown(choices=LLM_PROVIDERS, value=DEFAULT_LLM_PROVIDER, label="Provider")
+                        llm_m = gr.Textbox(value=DEFAULT_LLM_MODEL, label="Model")
+                        llm_b = gr.Textbox(value=DEFAULT_LLM_BASE_URL, label="Base URL")
 
-                ask_btn = gr.Button("질문하기", variant="primary")
+                uni_main = gr.Markdown(label="결과 / 답변")
+                uni_detail = gr.Markdown(label="상세 / 근거")
+                
+                with gr.Accordion("🔧 디버그 정보", open=False):
+                    uni_debug_out = gr.Markdown()
 
-                ask_answer = gr.Markdown(label="답변")
-                ask_sources = gr.Markdown(label="참고 규정")
-                with gr.Accordion("디버그", open=False):
-                    ask_debug = gr.Markdown()
+                # Feedback State
+                uni_fb_query = gr.State("")
+                uni_fb_rule = gr.State("")
 
-                ask_fb_query = gr.State("")
-                ask_fb_rule = gr.State("")
-
-                ask_btn.click(
-                    fn=ask_question,
-                    inputs=[
-                        ask_question_input,
-                        ask_top_k,
-                        ask_abolished,
-                        llm_provider,
-                        llm_model,
-                        llm_base_url,
-                        gr.State(db_path),
-                        ask_debug_toggle,
-                    ],
-                    outputs=[ask_answer, ask_sources, ask_debug, ask_fb_query, ask_fb_rule],
-                )
-
-                # Feedback Row for Ask
-                with gr.Row(visible=False) as ask_fb_row:
+                # Feedback Row (Shared)
+                with gr.Row(visible=False) as uni_fb_row:
                     with gr.Column(scale=4):
-                        ask_fb_comment = gr.Textbox(label="피드백 의견 (선택)", placeholder="답변에 대한 의견을 남겨주세요.")
+                        uni_fb_comment = gr.Textbox(label="피드백 의견 (선택)", placeholder="결과에 대한 의견을 남겨주세요.")
                     with gr.Column(scale=1):
                         with gr.Row():
-                            ask_fb_up = gr.Button("👍", size="sm")
-                            ask_fb_neu = gr.Button("😐", size="sm")
-                            ask_fb_down = gr.Button("👎", size="sm")
-                        ask_fb_msg = gr.Markdown(visible=False)
+                            uni_fb_up = gr.Button("👍", size="sm")
+                            uni_fb_neu = gr.Button("😐", size="sm")
+                            uni_fb_down = gr.Button("👎", size="sm")
+                        uni_fb_msg = gr.Markdown(visible=False)
 
-                ask_question_input.change(lambda: gr.update(visible=False), None, ask_fb_row)
-                ask_btn.click(lambda: gr.update(visible=True), None, ask_fb_row)
+                # Events
+                uni_btn.click(
+                    fn=unified_search,
+                    inputs=[
+                        uni_query, uni_mode, uni_top_k, uni_abolished,
+                        llm_p, llm_m, llm_b, 
+                        gr.State(db_path), uni_debug
+                    ],
+                    outputs=[uni_main, uni_detail, uni_debug_out, uni_fb_query, uni_fb_rule],
+                )
 
-                ask_fb_up.click(
-                    fn=lambda q, r, c: record_web_feedback(q, r, 1, c),
-                    inputs=[ask_fb_query, ask_fb_rule, ask_fb_comment],
-                    outputs=[ask_fb_msg]
-                )
-                ask_fb_neu.click(
-                    fn=lambda q, r, c: record_web_feedback(q, r, 0, c),
-                    inputs=[ask_fb_query, ask_fb_rule, ask_fb_comment],
-                    outputs=[ask_fb_msg]
-                )
-                ask_fb_down.click(
-                    fn=lambda q, r, c: record_web_feedback(q, r, -1, c),
-                    inputs=[ask_fb_query, ask_fb_rule, ask_fb_comment],
-                    outputs=[ask_fb_msg]
-                )
+                # Feedback Events
+                uni_query.change(lambda: gr.update(visible=False), None, uni_fb_row)
+                uni_btn.click(lambda: gr.update(visible=True), None, uni_fb_row)
+                
+                for btn, rating in [(uni_fb_up, 1), (uni_fb_neu, 0), (uni_fb_down, -1)]:
+                    btn.click(
+                        fn=lambda q, r, c, rt=rating: record_web_feedback(q, r, rt, c),
+                        inputs=[uni_fb_query, uni_fb_rule, uni_fb_comment],
+                        outputs=[uni_fb_msg]
+                    )
 
             # Tab 3: Status (Read-only)
             with gr.TabItem("📂 데이터 현황"):
