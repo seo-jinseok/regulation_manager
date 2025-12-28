@@ -581,6 +581,9 @@ def create_app(
                 with gr.Accordion("디버그", open=False):
                     search_debug = gr.Markdown()
 
+                search_fb_query = gr.State("")
+                search_fb_rule = gr.State("")
+
                 search_btn.click(
                     fn=search_regulations,
                     inputs=[search_query, search_top_k, search_abolished, search_debug_toggle],
@@ -597,9 +600,6 @@ def create_app(
                             search_fb_neu = gr.Button("😐", size="sm")
                             search_fb_down = gr.Button("👎", size="sm")
                         search_fb_msg = gr.Markdown(visible=False)
-                
-                search_fb_query = gr.State("")
-                search_fb_rule = gr.State("")
 
                 search_query.change(lambda: gr.update(visible=False), None, search_fb_row)
                 search_btn.click(lambda: gr.update(visible=True), None, search_fb_row)
@@ -667,6 +667,9 @@ def create_app(
                 with gr.Accordion("디버그", open=False):
                     ask_debug = gr.Markdown()
 
+                ask_fb_query = gr.State("")
+                ask_fb_rule = gr.State("")
+
                 ask_btn.click(
                     fn=ask_question,
                     inputs=[
@@ -692,9 +695,6 @@ def create_app(
                             ask_fb_neu = gr.Button("😐", size="sm")
                             ask_fb_down = gr.Button("👎", size="sm")
                         ask_fb_msg = gr.Markdown(visible=False)
-                
-                ask_fb_query = gr.State("")
-                ask_fb_rule = gr.State("")
 
                 ask_question_input.change(lambda: gr.update(visible=False), None, ask_fb_row)
                 ask_btn.click(lambda: gr.update(visible=True), None, ask_fb_row)
