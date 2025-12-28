@@ -43,6 +43,7 @@ from .formatters import (
     filter_by_relevance,
     get_relevance_label_combined,
     get_confidence_info,
+    clean_path_segments,
 )
 
 
@@ -348,14 +349,15 @@ def create_app(
         table_rows = ["| # | 규정명 | 코드 | 조항 | 점수 |", "|---|------|------|------|------|"]
         for i, r in enumerate(results, 1):
             reg_title = r.chunk.parent_path[0] if r.chunk.parent_path else r.chunk.title
-            path = " > ".join(r.chunk.parent_path[-2:]) if r.chunk.parent_path else r.chunk.title
+            path_segments = clean_path_segments(r.chunk.parent_path) if r.chunk.parent_path else []
+            path = " > ".join(path_segments[-2:]) if path_segments else r.chunk.title
             table_rows.append(f"| {i} | {reg_title} | {r.chunk.rule_code} | {path[:40]} | {r.score:.2f} |")
 
         table = "\n".join(table_rows)
 
         # Top result detail (CLI 수준)
         top = results[0]
-        full_path = ' > '.join(top.chunk.parent_path) if top.chunk.parent_path else top.chunk.title
+        full_path = " > ".join(clean_path_segments(top.chunk.parent_path)) if top.chunk.parent_path else top.chunk.title
         detail = f"""### 🏆 1위 결과: {top.chunk.rule_code}
 
 **규정명:** {top.chunk.parent_path[0] if top.chunk.parent_path else top.chunk.title}
@@ -447,7 +449,7 @@ def create_app(
         
         for i, r in enumerate(display_sources, 1):
             reg_name = r.chunk.parent_path[0] if r.chunk.parent_path else r.chunk.title
-            path = " > ".join(r.chunk.parent_path) if r.chunk.parent_path else r.chunk.title
+            path = " > ".join(clean_path_segments(r.chunk.parent_path)) if r.chunk.parent_path else r.chunk.title
             norm_score = norm_scores.get(r.chunk.id, 0.0)
             rel_pct = int(norm_score * 100)
             rel_label = get_relevance_label_combined(rel_pct)

@@ -494,7 +494,8 @@ def _perform_unified_search(args, force_mode: Optional[str] = None) -> int:
             table.add_column("점수", justify="right", style="magenta")
 
             for i, r in enumerate(results, 1):
-                path = " > ".join(r.chunk.parent_path[-2:]) if r.chunk.parent_path else ""
+                path_segments = clean_path_segments(r.chunk.parent_path) if r.chunk.parent_path else []
+                path = " > ".join(path_segments[-2:]) if path_segments else ""
                 reg_title = r.chunk.parent_path[0] if r.chunk.parent_path else r.chunk.title
                 table.add_row(
                     str(i),

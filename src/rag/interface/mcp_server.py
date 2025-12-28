@@ -30,7 +30,7 @@ except ImportError:
     pass
 
 from ..config import get_config
-from .formatters import normalize_relevance_scores, filter_by_relevance
+from .formatters import normalize_relevance_scores, filter_by_relevance, clean_path_segments
 
 # Initialize MCP server with metadata
 mcp = FastMCP(
@@ -99,7 +99,7 @@ def search_regulations(
     formatted_results = []
     for i, r in enumerate(results, 1):
         reg_name = r.chunk.parent_path[0] if r.chunk.parent_path else r.chunk.title
-        path = " > ".join(r.chunk.parent_path) if r.chunk.parent_path else r.chunk.title
+        path = " > ".join(clean_path_segments(r.chunk.parent_path)) if r.chunk.parent_path else r.chunk.title
         
         formatted_results.append({
             "rank": i,
@@ -187,7 +187,7 @@ def ask_regulations(
     sources = []
     for r in display_sources:
         reg_name = r.chunk.parent_path[0] if r.chunk.parent_path else r.chunk.title
-        path = " > ".join(r.chunk.parent_path) if r.chunk.parent_path else r.chunk.title
+        path = " > ".join(clean_path_segments(r.chunk.parent_path)) if r.chunk.parent_path else r.chunk.title
         norm_score = norm_scores.get(r.chunk.id, 0.0)
         rel_pct = int(norm_score * 100)
         
