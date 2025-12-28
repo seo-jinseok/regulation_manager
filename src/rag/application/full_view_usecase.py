@@ -5,7 +5,9 @@ Provides regulation-level retrieval for "전문/전체" requests.
 """
 
 from dataclasses import dataclass
+import json
 import re
+from pathlib import Path
 from typing import List, Optional
 
 from ..config import get_config
@@ -41,8 +43,11 @@ class FullViewUseCase:
 
     def find_matches(self, query: str) -> List[RegulationMatch]:
         """Find regulation matches for a query."""
+        json_path = self._resolve_json_path()
+        if not json_path:
+            return []
         try:
-            titles = self.loader.get_regulation_titles(self.json_path)
+            titles = self.loader.get_regulation_titles(json_path)
         except Exception:
             return []
         if not titles:
@@ -73,8 +78,11 @@ class FullViewUseCase:
 
     def get_full_view(self, identifier: str) -> Optional[RegulationView]:
         """Return regulation view by rule_code or title."""
+        json_path = self._resolve_json_path()
+        if not json_path:
+            return None
         try:
-            doc = self.loader.get_regulation_doc(self.json_path, identifier)
+            doc = self.loader.get_regulation_doc(json_path, identifier)
         except Exception:
             return None
         if not doc:
@@ -140,3 +148,50 @@ class FullViewUseCase:
             if isinstance(node_meta, dict) and node_meta.get("rule_code"):
                 return node_meta["rule_code"]
         return ""
+
+    def _resolve_json_path(self) -> Optional[str]:
+        config = get_config()
+        candidates = []
+        if self.json_path:
+            candidates.append(self.json_path)
+        if config.json_path and config.json_path not in candidates:
+            candidates.append(config.json_path)
+
+        for candidate in candidates:
+            if candidate and Path(candidate).exists():
+                self.json_path = candidate
+                return candidate
+
+        sync_path = Path(config.sync_state_path)
+        if sync_path.exists():
+            try:
+                data = json.loads(sync_path.read_text(encoding="utf-8"))
+                json_file = data.get("json_file", "")
+            except Exception:
+                json_file = ""
+
+            if json_file:
+                file_path = Path(json_file)
+                if file_path.is_absolute() and file_path.exists():
+                    self.json_path = str(file_path)
+                    return self.json_path
+                if file_path.exists():
+                    self.json_path = str(file_path)
+                    return self.json_path
+                output_candidate = sync_path.parent / "output" / json_file
+                if output_candidate.exists():
+                    self.json_path = str(output_candidate)
+                    return self.json_path
+
+        output_dir = Path("data/output")
+        if output_dir.exists():
+            json_files = [
+                p for p in output_dir.rglob("*.json")
+                if not p.name.endswith("_metadata.json")
+            ]
+            if json_files:
+                latest = max(json_files, key=lambda p: p.stat().st_mtime)
+                self.json_path = str(latest)
+                return self.json_path
+
+        return None

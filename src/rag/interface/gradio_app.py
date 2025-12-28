@@ -40,6 +40,12 @@ from ..application.search_usecase import QueryRewriteInfo, SearchUseCase
 from ..application.full_view_usecase import FullViewUseCase
 from ..domain.value_objects import SearchFilter
 from ..domain.entities import RegulationStatus
+from .chat_logic import (
+    expand_followup_query,
+    format_clarification,
+    resolve_audience_choice,
+    resolve_regulation_choice,
+)
 from .formatters import (
     normalize_relevance_scores,
     filter_by_relevance,
@@ -317,6 +323,94 @@ def create_app(
                 lines.append(_render_nodes(children, depth + 1))
         return "\n\n".join([l for l in lines if l])
 
+    def _build_search_table(results) -> str:
+        table_rows = ["| # | 규정명 | 코드 | 조항 | 점수 |", "|---|------|------|------|------|"]
+        for i, r in enumerate(results, 1):
+            reg_title = r.chunk.parent_path[0] if r.chunk.parent_path else r.chunk.title
+            path_segments = clean_path_segments(r.chunk.parent_path) if r.chunk.parent_path else []
+            path = " > ".join(path_segments[-2:]) if path_segments else r.chunk.title
+            table_rows.append(f"| {i} | {reg_title} | {r.chunk.rule_code} | {path[:40]} | {r.score:.2f} |")
+        return "\n".join(table_rows)
+
+    def _build_sources_markdown(results, show_debug: bool) -> str:
+        sources_md = ["### 📚 참고 규정\n"]
+        norm_scores = normalize_relevance_scores(results) if results else {}
+        display_sources = filter_by_relevance(results, norm_scores) if results else []
+
+        for i, r in enumerate(display_sources, 1):
+            reg_name = r.chunk.parent_path[0] if r.chunk.parent_path else r.chunk.title
+            path = " > ".join(clean_path_segments(r.chunk.parent_path)) if r.chunk.parent_path else r.chunk.title
+            norm_score = norm_scores.get(r.chunk.id, 0.0)
+            rel_pct = int(norm_score * 100)
+            rel_label = get_relevance_label_combined(rel_pct)
+            score_info = f" | AI 신뢰도: {r.score:.3f}" if show_debug else ""
+
+            sources_md.append(f"""#### [{i}] {reg_name}
+**경로:** {path}
+
+{r.chunk.text[:300]}{'...' if len(r.chunk.text) > 300 else ''}
+
+*규정번호: {r.chunk.rule_code} | 관련도: {rel_pct}% {rel_label}{score_info}*
+
+---
+""")
+
+        return "\n".join(sources_md)
+
+    def _run_ask_once(
+        question: str,
+        top_k: int,
+        include_abolished: bool,
+        llm_provider: str,
+        llm_model: str,
+        llm_base_url: str,
+        target_db_path: str,
+        audience_override: Optional[Audience],
+        show_debug: bool,
+    ) -> Tuple[str, str, str, str, str]:
+        db_path_value = target_db_path or db_path
+        store_for_ask = ChromaVectorStore(persist_directory=db_path_value)
+        if store_for_ask.count() == 0:
+            return "데이터베이스가 비어 있습니다. CLI에서 'regulation-rag sync'를 실행하세요.", "", "", ""
+
+        if use_mock_llm:
+            llm_client = MockLLMClient()
+        else:
+            llm_client = LLMClientAdapter(
+                provider=llm_provider,
+                model=llm_model or None,
+                base_url=llm_base_url or None,
+            )
+
+        search_with_llm = SearchUseCase(store_for_ask, llm_client)
+        filter = None
+        if not include_abolished:
+            filter = SearchFilter(status=RegulationStatus.ACTIVE)
+
+        answer = search_with_llm.ask(
+            question,
+            filter=filter,
+            top_k=top_k,
+            include_abolished=include_abolished,
+            audience_override=audience_override,
+        )
+
+        sources_text = _build_sources_markdown(answer.sources, show_debug)
+        debug_text = ""
+        if show_debug:
+            debug_text = _format_query_rewrite_debug(
+                search_with_llm.get_last_query_rewrite()
+            )
+        rule_code = answer.sources[0].chunk.rule_code if answer.sources else ""
+        top_regulation_title = ""
+        if answer.sources:
+            top_chunk = answer.sources[0].chunk
+            if top_chunk.parent_path:
+                top_regulation_title = top_chunk.parent_path[0]
+            else:
+                top_regulation_title = top_chunk.title
+        return answer.text, sources_text, debug_text, rule_code, top_regulation_title
+
     def unified_search(
         query: str,
         mode_selection: str,
@@ -363,6 +457,177 @@ def create_app(
                 target_db_path, audience_override, show_debug
             ):
                 yield result
+
+    # Chat Function (stateful)
+    def chat_respond(
+        message: str,
+        history: List[dict],
+        state: dict,
+        top_k: int,
+        include_abolished: bool,
+        llm_provider: str,
+        llm_model: str,
+        llm_base_url: str,
+        target_db_path: str,
+        target_audience: str,
+        use_context: bool,
+        show_debug: bool,
+    ):
+        history = history or []
+        state = state or {}
+        state.setdefault("audience", None)
+        state.setdefault("pending", None)
+        state.setdefault("last_query", None)
+        state.setdefault("last_mode", None)
+        state.setdefault("last_regulation", None)
+        state.setdefault("last_rule_code", None)
+        details = ""
+        debug_text = ""
+
+        history = history or []
+        if not message or not message.strip():
+            return history, details, debug_text, state
+        if history and isinstance(history[0], (list, tuple)):
+            normalized = []
+            for user_text, assistant_text in history:
+                normalized.append({"role": "user", "content": user_text})
+                normalized.append({"role": "assistant", "content": assistant_text})
+            history = normalized
+
+        history.append({"role": "user", "content": message})
+
+        audience_override = _parse_audience(target_audience)
+        explicit_audience = resolve_audience_choice(message)
+        if audience_override:
+            state["audience"] = target_audience
+        elif explicit_audience:
+            state["audience"] = explicit_audience
+
+        pending = state.get("pending")
+        if pending:
+            if pending["type"] == "audience":
+                choice = resolve_audience_choice(message) or state.get("audience")
+                if not choice:
+                    response = format_clarification("audience", pending["options"])
+                    history.append({"role": "assistant", "content": response})
+                    return history, details, debug_text, state
+                state["audience"] = choice
+                state["pending"] = None
+                query = pending["query"]
+                mode = pending["mode"]
+            elif pending["type"] == "regulation":
+                choice = resolve_regulation_choice(message, pending["options"])
+                if not choice:
+                    response = format_clarification("regulation", pending["options"])
+                    history.append({"role": "assistant", "content": response})
+                    return history, details, debug_text, state
+                state["pending"] = None
+                query = choice
+                mode = "full_view"
+            else:
+                state["pending"] = None
+                query = message
+                mode = _decide_search_mode_ui(message, "자동 (Auto)")
+        else:
+            context_hint = None
+            if use_context:
+                context_hint = state.get("last_regulation") or state.get("last_query")
+            query = expand_followup_query(message, context_hint)
+            mode = _decide_search_mode_ui(query, "자동 (Auto)")
+
+        analyzer = query_analyzer
+
+        if mode == "full_view":
+            matches = full_view_usecase.find_matches(query)
+            if not matches:
+                history.append({"role": "assistant", "content": "해당 규정을 찾을 수 없습니다."})
+                return history, details, debug_text, state
+            if len(matches) > 1:
+                options = [m.title for m in matches]
+                state["pending"] = {"type": "regulation", "options": options, "query": query, "mode": mode}
+                history.append({"role": "assistant", "content": format_clarification("regulation", options)})
+                return history, details, debug_text, state
+            view = full_view_usecase.get_full_view(matches[0].rule_code) or full_view_usecase.get_full_view(matches[0].title)
+            if not view:
+                history.append({"role": "assistant", "content": "규정 전문을 불러오지 못했습니다."})
+                return history, details, debug_text, state
+
+            toc_text = _format_toc(view.toc)
+            content_text = _render_nodes(view.content)
+            addenda_text = _render_nodes(view.addenda)
+            details = toc_text + "\n\n### 본문\n\n" + (content_text or "본문이 없습니다.")
+            if addenda_text:
+                details += "\n\n### 부칙\n\n" + addenda_text
+            history.append({"role": "assistant", "content": f"**{view.title}** 전문을 표시합니다."})
+            state["last_query"] = query
+            state["last_mode"] = "full_view"
+            state["last_regulation"] = view.title
+            state["last_rule_code"] = view.rule_code
+            return history, details, debug_text, state
+
+        if state.get("audience") is None and analyzer.is_audience_ambiguous(query):
+            options = ["교수", "학생", "직원"]
+            state["pending"] = {"type": "audience", "options": options, "query": query, "mode": mode}
+            history[-1][1] = format_clarification("audience", options)
+            return history, details, debug_text, state
+
+        audience_override = _parse_audience(state.get("audience") or "")
+
+        if mode == "search":
+            if store.count() == 0:
+                history.append({"role": "assistant", "content": "데이터베이스가 비어 있습니다. CLI에서 'regulation-rag sync'를 실행하세요."})
+                return history, details, debug_text, state
+            search_with_hybrid = SearchUseCase(store)
+            results = search_with_hybrid.search_unique(
+                query,
+                top_k=top_k,
+                include_abolished=include_abolished,
+                audience_override=audience_override,
+            )
+            if not results:
+                history.append({"role": "assistant", "content": "검색 결과가 없습니다."})
+            else:
+                history.append({"role": "assistant", "content": _build_search_table(results)})
+                top = results[0]
+                full_path = " > ".join(clean_path_segments(top.chunk.parent_path)) if top.chunk.parent_path else top.chunk.title
+                details = f"""### 🏆 1위 결과: {top.chunk.rule_code}
+
+**규정명:** {top.chunk.parent_path[0] if top.chunk.parent_path else top.chunk.title}
+
+**경로:** {full_path}
+
+---
+
+{top.chunk.text}
+"""
+                state["last_query"] = query
+                state["last_mode"] = "search"
+                state["last_regulation"] = top.chunk.parent_path[0] if top.chunk.parent_path else top.chunk.title
+                state["last_rule_code"] = top.chunk.rule_code
+            if show_debug:
+                debug_text = _format_query_rewrite_debug(search_with_hybrid.get_last_query_rewrite())
+            return history, details, debug_text, state
+
+        answer_text, sources_text, debug_text, rule_code, regulation_title = _run_ask_once(
+            query,
+            top_k,
+            include_abolished,
+            llm_provider,
+            llm_model,
+            llm_base_url,
+            target_db_path,
+            audience_override,
+            show_debug,
+        )
+        history.append({"role": "assistant", "content": answer_text})
+        details = sources_text
+        state["last_query"] = query
+        state["last_mode"] = "ask"
+        if regulation_title:
+            state["last_regulation"] = regulation_title
+        if rule_code:
+            state["last_rule_code"] = rule_code
+        return history, details, debug_text, state
 
 
     # Search function
@@ -682,7 +947,101 @@ def create_app(
         gr.Markdown("# 📚 대학 규정집 Q&A 시스템")
 
         with gr.Tabs():
-            # Tab 1: Search
+            # Tab 0: Chat
+            with gr.TabItem("💬 대화형"):
+                with gr.Row():
+                    with gr.Column(scale=3):
+                        chat_bot = gr.Chatbot(label="대화", height=420)
+                        chat_input = gr.Textbox(
+                            label="메시지 입력",
+                            placeholder="질문 또는 규정명을 입력하세요. 예: 교원인사규정 전문",
+                            lines=2,
+                        )
+                        with gr.Row():
+                            chat_send = gr.Button("전송", variant="primary")
+                            chat_clear = gr.Button("대화 초기화")
+                    with gr.Column(scale=2):
+                        chat_top_k = gr.Slider(minimum=1, maximum=20, value=5, step=1, label="결과 수")
+                        chat_abolished = gr.Checkbox(label="폐지 규정 포함", value=False)
+                        chat_target = gr.Radio(
+                            choices=["자동", "교수", "학생", "직원"],
+                            value="자동",
+                            label="대상 선택",
+                        )
+                        chat_context = gr.Checkbox(label="문맥 활용", value=True)
+                        chat_debug = gr.Checkbox(label="디버그 출력", value=False)
+                        with gr.Accordion("⚙️ LLM 설정 (질문 모드용)", open=False):
+                            chat_llm_p = gr.Dropdown(choices=LLM_PROVIDERS, value=DEFAULT_LLM_PROVIDER, label="Provider")
+                            chat_llm_m = gr.Textbox(value=DEFAULT_LLM_MODEL, label="Model")
+                            chat_llm_b = gr.Textbox(value=DEFAULT_LLM_BASE_URL, label="Base URL")
+                        chat_detail = gr.Markdown(label="상세 / 근거")
+                        chat_debug_out = gr.Markdown(label="디버그")
+
+                chat_state = gr.State(
+                    {
+                        "audience": None,
+                        "pending": None,
+                        "last_query": None,
+                        "last_mode": None,
+                        "last_regulation": None,
+                        "last_rule_code": None,
+                    }
+                )
+
+                chat_send.click(
+                    fn=chat_respond,
+                    inputs=[
+                        chat_input,
+                        chat_bot,
+                        chat_state,
+                        chat_top_k,
+                        chat_abolished,
+                        chat_llm_p,
+                        chat_llm_m,
+                        chat_llm_b,
+                        gr.State(db_path),
+                        chat_target,
+                        chat_context,
+                        chat_debug,
+                    ],
+                    outputs=[chat_bot, chat_detail, chat_debug_out, chat_state],
+                )
+                chat_input.submit(
+                    fn=chat_respond,
+                    inputs=[
+                        chat_input,
+                        chat_bot,
+                        chat_state,
+                        chat_top_k,
+                        chat_abolished,
+                        chat_llm_p,
+                        chat_llm_m,
+                        chat_llm_b,
+                        gr.State(db_path),
+                        chat_target,
+                        chat_context,
+                        chat_debug,
+                    ],
+                    outputs=[chat_bot, chat_detail, chat_debug_out, chat_state],
+                )
+                chat_clear.click(
+                    fn=lambda: (
+                        [],
+                        "",
+                        "",
+                        {
+                            "audience": None,
+                            "pending": None,
+                            "last_query": None,
+                            "last_mode": None,
+                            "last_regulation": None,
+                            "last_rule_code": None,
+                        },
+                    ),
+                    inputs=[],
+                    outputs=[chat_bot, chat_detail, chat_debug_out, chat_state],
+                )
+
             # Tab 1: Unified Search
             with gr.TabItem("🔎 통합 검색"):
                 with gr.Row():
@@ -719,7 +1078,7 @@ def create_app(
 
                 uni_main = gr.Markdown(label="결과 / 답변")
                 uni_detail = gr.Markdown(label="상세 / 근거")
-                
+
                 with gr.Accordion("🔧 디버그 정보", open=False):
                     uni_debug_out = gr.Markdown()
 
@@ -743,7 +1102,7 @@ def create_app(
                     fn=unified_search,
                     inputs=[
                         uni_query, uni_mode, uni_top_k, uni_abolished,
-                        llm_p, llm_m, llm_b, 
+                        llm_p, llm_m, llm_b,
                         gr.State(db_path), uni_target, uni_debug
                     ],
                     outputs=[uni_main, uni_detail, uni_debug_out, uni_fb_query, uni_fb_rule],
@@ -752,7 +1111,7 @@ def create_app(
                 # Feedback Events
                 uni_query.change(lambda: gr.update(visible=False), None, uni_fb_row)
                 uni_btn.click(lambda: gr.update(visible=True), None, uni_fb_row)
-                
+
                 for btn, rating in [(uni_fb_up, 1), (uni_fb_neu, 0), (uni_fb_down, -1)]:
                     btn.click(
                         fn=lambda q, r, c, rt=rating: record_web_feedback(q, r, rt, c),
@@ -763,7 +1122,7 @@ def create_app(
             # Tab 3: Status (Read-only)
             with gr.TabItem("📂 데이터 현황"):
                 gr.Markdown("> DB 관리(동기화, 초기화)는 CLI에서 수행합니다: `regulation-rag sync`, `regulation-rag reset`")
-                
+
                 status_db_path = gr.Textbox(
                     value=db_path,
                     label="DB 경로",

@@ -1,5 +1,6 @@
 import json
 
+from src.rag.config import get_config, reset_config
 from src.rag.application.full_view_usecase import FullViewUseCase
 from src.rag.infrastructure.json_loader import JSONDocumentLoader
 
@@ -71,3 +72,30 @@ def test_get_full_view_by_rule_code(tmp_path):
     assert view is not None
     assert view.title == "교원인사규정"
     assert "제1조 목적" in view.toc
+
+
+def test_find_matches_uses_sync_state(tmp_path):
+    output_dir = tmp_path / "output"
+    output_dir.mkdir()
+    json_path = output_dir / "reg.json"
+    _write_sample_json(json_path)
+
+    sync_state_path = tmp_path / "sync_state.json"
+    sync_state_path.write_text(
+        json.dumps({"json_file": json_path.name}, ensure_ascii=False),
+        encoding="utf-8",
+    )
+
+    reset_config()
+    config = get_config()
+    config.json_path = str(tmp_path / "missing.json")
+    config.sync_state_path = str(sync_state_path)
+
+    loader = JSONDocumentLoader()
+    usecase = FullViewUseCase(loader)
+    matches = usecase.find_matches("교원인사규정 전문")
+
+    reset_config()
+
+    assert matches
+    assert matches[0].title == "교원인사규정"
