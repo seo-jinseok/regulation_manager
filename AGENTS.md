@@ -148,13 +148,13 @@ regulation_manager/
 ```
 Query → QueryAnalyzer → Hybrid Search → BGE Reranker → LLM 답변
          ↓                ↓                ↓              ↓
-    유형 분석         BM25 + Dense     Cross-Encoder    Context 구성
-    동의어 확장        RRF 융합          재정렬          답변 생성
+    유형/대상 분석      BM25 + Dense    Penalize Mismatch  Cross-Encoder    Context 구성
+    동의어 확장        RRF 융합                            재정렬          답변 생성
 ```
 
 **핵심 파일**:
 - `application/search_usecase.py`: `search()`, `search_unique()`, `ask()`
-- `infrastructure/hybrid_search.py`: `HybridSearcher`, `QueryAnalyzer`
+- `infrastructure/hybrid_search.py`: `HybridSearcher`, `QueryAnalyzer`, `Audience`
 - `infrastructure/reranker.py`: `BGEReranker`
 
 ### 동의어/인텐트 데이터

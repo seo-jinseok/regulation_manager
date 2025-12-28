@@ -172,7 +172,7 @@ flowchart TB
 
     subgraph ASK ["3️⃣ 질문 처리 (regulation ask)"]
         direction TB
-        Query["🔍 사용자 질문"] --> Analyzer["QueryAnalyzer\n• 유형 분석\n• 동의어 확장\n• 인텐트 매칭"]
+        Query["🔍 사용자 질문"] --> Analyzer["QueryAnalyzer\n• 유형 분석\n• 동의어 확장\n• 인텐트 매칭\n• 대상 감지 (학생/교원/직원)"]
         
         subgraph HYBRID ["Hybrid Search"]
             direction LR
@@ -181,8 +181,9 @@ flowchart TB
         end
         
         Analyzer --> HYBRID
-        RRF --> Reranker["BGE Reranker\n(Cross-Encoder)"]
-        Reranker --> LLM["🤖 LLM 답변 생성\n(ollama/openai/gemini)"]
+        RRF --> Filter["Audience Filter\n(대상 불일치 감점)"]
+        Filter --> Reranker["BGE Reranker\n(Cross-Encoder)"]
+        Reranker --> LLM["🤖 LLM 답변 생성\n(대상 확인 및 환각 방지)"]
     end
 
     JSON --> JSON2
@@ -275,7 +276,15 @@ query = "교원 연구년 신청 자격은 무엇인가요?"
     "dense_weight": 0.7,                 # Dense 가중치
     "expanded_query": "교원 연구년 신청 자격 연구년제 자격요건",  # 동의어 확장
     "cleaned_query": "교원 연구년 신청 자격",  # 불용어 제거
+    "audience": "FACULTY",               # 감지된 대상 (STUDENT/FACULTY/STAFF/ALL)
 }
+```
+
+**대상 감지 (Audience Detection):**
+질문 키워드를 분석하여 적용 대상을 감지합니다.
+- `FACULTY`: 교수, 교원, 강사, 연구년 등
+- `STUDENT`: 학생, 학부, 수강, 성적, 장학 등
+- `STAFF`: 직원, 행정, 승진, 전보 등
 ```
 
 **쿼리 유형별 가중치:**
@@ -317,6 +326,11 @@ $$\text{BM25}(q, d) = \sum_{t \in q} \text{IDF}(t) \cdot \frac{f(t,d) \cdot (k_1
 **RRF 융합 수식:**
 
 $$\text{RRF}(d) = \sum_{r \in \text{ranklists}} \frac{1}{k + r(d)}$$
+
+**대상 필터링 (Audience Filter):**
+감지된 대상과 규정의 대상이 불일치하면 **페널티(0.5x 감점)**를 부여하여 하단으로 내립니다.
+- `FACULTY` 질문 (예: "교수 징계") → `학생` 관련 규정 감점
+- `STUDENT` 질문 (예: "장학금") → `교직원` 관련 규정 감점
 
 #### Step 3-3: Reranking (BGE Cross-Encoder)
 
