@@ -595,7 +595,6 @@ def create_app(
     # Build UI
     with gr.Blocks(
         title="📚 대학 규정집 Q&A",
-        theme=gr.themes.Soft(),
     ) as app:
         gr.Markdown("# 📚 대학 규정집 Q&A 시스템")
 
@@ -711,6 +710,7 @@ def main():
 
     app = create_app(db_path=args.db_path, use_mock_llm=args.mock_llm)
     app.launch(
+        theme=gr.themes.Soft(),
         server_port=args.port,
         share=args.share,
         show_error=True,
