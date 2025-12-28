@@ -665,6 +665,12 @@ class QueryAnalyzer:
                 )
 
         matches.sort(key=lambda m: (-m.score, m.intent_id))
+
+        # Refined Logic: If we have strong matches (score >= 2 from pattern/trigger),
+        # exclude weak matches (score < 2 from keywords only) to prevent query pollution.
+        if matches and matches[0].score >= 2:
+            matches = [m for m in matches if m.score >= 2]
+
         return matches[: self.INTENT_MAX_MATCHES]
 
 
