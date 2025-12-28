@@ -35,6 +35,7 @@ from src.rag.interface.formatters import (
     render_full_view_nodes,
     normalize_markdown_table,
     normalize_markdown_emphasis,
+    strip_path_prefix,
     DEFAULT_RELEVANCE_THRESHOLD,
 )
 
@@ -382,6 +383,22 @@ class TestNormalizeMarkdownEmphasis:
     def test_leaves_plain_bold_untouched(self):
         text = "**교원인사규정**"
         assert normalize_markdown_emphasis(text) == text
+
+
+# ============================================================================
+# strip_path_prefix tests
+# ============================================================================
+
+class TestStripPathPrefix:
+    def test_strips_parent_path_prefix(self):
+        text = "교원인사규정 > 부칙 > 부 칙 > 2. 조교수로 재직중인 교원"
+        parent_path = ["교원인사규정", "부칙", "부 칙"]
+        assert strip_path_prefix(text, parent_path) == "2. 조교수로 재직중인 교원"
+
+    def test_keeps_text_when_no_match(self):
+        text = "제1조 목적 이 규정은 목적을 규정한다."
+        parent_path = ["교원인사규정"]
+        assert strip_path_prefix(text, parent_path) == text
 
 
 # ============================================================================

@@ -220,6 +220,48 @@ def extract_display_text(text: str) -> str:
     return display_text
 
 
+def strip_path_prefix(text: str, parent_path: List[str]) -> str:
+    """
+    Strip a leading path prefix from text when it matches the parent path.
+
+    Handles cases like:
+    "규정명 > 부칙 > 부 칙 > 2. ..." -> "2. ..."
+    """
+    if not text or not parent_path:
+        return text
+    if ">" not in text:
+        return text
+
+    parts = [part.strip() for part in text.split(">")]
+    if len(parts) <= 1:
+        return text
+
+    def normalize(segment: str) -> str:
+        return segment.replace(" ", "").replace("　", "")
+
+    normalized_parts = [normalize(part) for part in parts]
+    candidates = [parent_path, clean_path_segments(parent_path)]
+    best_match = 0
+
+    for candidate in candidates:
+        if not candidate:
+            continue
+        normalized_candidate = [normalize(part) for part in candidate]
+        match_len = 0
+        for part, target in zip(normalized_parts, normalized_candidate):
+            if part == target:
+                match_len += 1
+            else:
+                break
+        best_match = max(best_match, match_len)
+
+    if best_match == 0:
+        return text
+
+    remainder = " > ".join(parts[best_match:]).strip()
+    return remainder or text
+
+
 # ============================================================================
 # Full View Rendering
 # ============================================================================

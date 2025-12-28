@@ -25,6 +25,14 @@ HEADING_ONLY_PATTERN = re.compile(r"^\([^)]*\)\s*$")
 RULE_CODE_PATTERN = re.compile(r"^\d+(?:-\d+){2,}$")
 
 
+def _coerce_query_text(value: object) -> str:
+    if isinstance(value, str):
+        return value
+    if isinstance(value, (list, tuple)):
+        return " ".join(str(part) for part in value)
+    return str(value)
+
+
 def _normalize_article_token(token: str) -> str:
     return re.sub(r"\s+", "", token)
 
@@ -156,12 +164,10 @@ class SearchUseCase:
         Returns:
             List of SearchResult sorted by relevance.
         """
-        if not isinstance(query_text, str):
-            if isinstance(query_text, (list, tuple)):
-                query_text = " ".join(str(part) for part in query_text)
-            else:
-                query_text = str(query_text)
-        trimmed_query = query_text.strip()
+        query_text = _coerce_query_text(query_text).strip()
+        if not query_text:
+            return []
+        trimmed_query = query_text
         if trimmed_query and RULE_CODE_PATTERN.match(trimmed_query):
             self._last_query_rewrite = QueryRewriteInfo(
                 original=query_text,
@@ -195,7 +201,9 @@ class SearchUseCase:
                 self.hybrid_searcher.set_llm_client(self.llm)
             # Rewrite query (uses LLM if available, otherwise expands with synonyms)
             rewrite_info = self.hybrid_searcher._query_analyzer.rewrite_query_with_info(query_text)
-            rewritten_query_text = rewrite_info.rewritten
+            rewritten_query_text = _coerce_query_text(rewrite_info.rewritten).strip()
+            if not rewritten_query_text:
+                rewritten_query_text = query_text
             rewrite_used = True
             rewrite_method = rewrite_info.method
             rewrite_from_cache = rewrite_info.from_cache

@@ -38,6 +38,7 @@ from .formatters import (
     render_full_view_nodes,
     normalize_markdown_table,
     normalize_markdown_emphasis,
+    strip_path_prefix,
 )
 from .chat_logic import (
     attachment_label_variants,
@@ -445,15 +446,23 @@ def _print_markdown(title: str, text: str) -> None:
         print(text)
 
 
-_CONTROL_CHAR_PATTERN = re.compile(r"[\x00-\x1f\x7f]")
+_BACKSPACE_CHARS = {"\b", "\x7f"}
 
 
 def _sanitize_query_input(text: Optional[str]) -> str:
-    """Normalize user input by removing control characters and trimming."""
+    """Normalize user input by applying backspaces and trimming."""
     if text is None:
         return ""
-    cleaned = _CONTROL_CHAR_PATTERN.sub("", str(text))
-    return cleaned.strip()
+    buffer = []
+    for char in str(text):
+        if char in _BACKSPACE_CHARS:
+            if buffer:
+                buffer.pop()
+            continue
+        if ord(char) < 32 or ord(char) == 127:
+            continue
+        buffer.append(char)
+    return "".join(buffer).strip()
 
 
 def _select_regulation(matches, interactive: bool):
@@ -659,8 +668,20 @@ def _perform_unified_search(
             # Print first result detail
             if results:
                 top = results[0]
+                display_path = build_display_path(
+                    top.chunk.parent_path or [],
+                    top.chunk.text,
+                    top.chunk.title,
+                )
+                display_text = strip_path_prefix(top.chunk.text, top.chunk.parent_path or [])
+                if display_text != top.chunk.text and display_path:
+                    detail_text = f"{display_path}\n{display_text}"
+                else:
+                    detail_text = display_text
+                if len(detail_text) > 500:
+                    detail_text = detail_text[:500] + "..."
                 console.print(Panel(
-                    top.chunk.text[:500] + "..." if len(top.chunk.text) > 500 else top.chunk.text,
+                    detail_text,
                     title=f"[1위] {top.chunk.rule_code}",
                     border_style="green",
                 ))
@@ -669,8 +690,9 @@ def _perform_unified_search(
             print("-" * 60)
             for i, r in enumerate(results, 1):
                 reg_title = r.chunk.parent_path[0] if r.chunk.parent_path else r.chunk.title
+                display_text = strip_path_prefix(r.chunk.text, r.chunk.parent_path or [])
                 print(f"{i}. {reg_title} [{r.chunk.rule_code}] (점수: {r.score:.2f})")
-                print(f"   {r.chunk.text[:100]}...")
+                print(f"   {display_text[:100]}...")
                 
         if args.feedback and results:
              _collect_cli_feedback(args.query, results[0].chunk.rule_code)

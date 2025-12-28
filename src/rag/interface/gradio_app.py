@@ -57,6 +57,7 @@ from .formatters import (
     render_full_view_nodes,
     normalize_markdown_table,
     normalize_markdown_emphasis,
+    strip_path_prefix,
 )
 
 
@@ -349,11 +350,12 @@ def create_app(
             rel_pct = int(norm_score * 100)
             rel_label = get_relevance_label_combined(rel_pct)
             score_info = f" | AI 신뢰도: {r.score:.3f}" if show_debug else ""
+            snippet = strip_path_prefix(r.chunk.text, r.chunk.parent_path or [])
 
             sources_md.append(f"""#### [{i}] {reg_name}
 **경로:** {path}
 
-{r.chunk.text[:300]}{'...' if len(r.chunk.text) > 300 else ''}
+{snippet[:300]}{'...' if len(snippet) > 300 else ''}
 
 *규정번호: {r.chunk.rule_code} | 관련도: {rel_pct}% {rel_label}{score_info}*
 
@@ -685,6 +687,7 @@ def create_app(
                 history.append({"role": "assistant", "content": _build_search_table(results)})
                 top = results[0]
                 full_path = " > ".join(clean_path_segments(top.chunk.parent_path)) if top.chunk.parent_path else top.chunk.title
+                top_text = strip_path_prefix(top.chunk.text, top.chunk.parent_path or [])
                 details = f"""### 🏆 1위 결과: {top.chunk.rule_code}
 
 **규정명:** {top.chunk.parent_path[0] if top.chunk.parent_path else top.chunk.title}
@@ -693,7 +696,7 @@ def create_app(
 
 ---
 
-{top.chunk.text}
+{top_text}
 """
                 state["last_query"] = query
                 state["last_mode"] = "search"
@@ -899,11 +902,12 @@ def create_app(
             
             # AI 신뢰도는 show_debug일 때만 표시
             score_info = f" | AI 신뢰도: {r.score:.3f}" if show_debug else ""
+            snippet = strip_path_prefix(r.chunk.text, r.chunk.parent_path or [])
             
             sources_md.append(f"""#### [{i}] {reg_name}
 **경로:** {path}
 
-{r.chunk.text[:300]}{'...' if len(r.chunk.text) > 300 else ''}
+{snippet[:300]}{'...' if len(snippet) > 300 else ''}
 
 *규정번호: {r.chunk.rule_code} | 관련도: {rel_pct}% {rel_label}{score_info}*
 
