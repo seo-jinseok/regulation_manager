@@ -324,7 +324,9 @@ def create_app(
                 search_with_hybrid.get_last_query_rewrite()
             )
 
-        return table, detail, debug_text
+        # Return (table, detail, debug, query, rule_code)
+        top_rule_code = results[0].chunk.rule_code if results else ""
+        return table, detail, debug_text, query, top_rule_code
 
     # Ask function (with LLM) - Generator for streaming progress
     def ask_question(
@@ -431,7 +433,25 @@ def create_app(
                 search_with_llm.get_last_query_rewrite()
             )
 
-        yield answer.text, sources_text, debug_text
+        # Return (answer, sources, debug, query, rule_code)
+        rule_code = answer.sources[0].chunk.rule_code if answer.sources else ""
+        yield answer.text, sources_text, debug_text, question, rule_code
+
+    def record_web_feedback(query, rule_code, rating, comment):
+        """Record feedback from Web UI."""
+        if not query or not rule_code:
+            return gr.update(value="⚠️ 피드백을 남길 결과가 없습니다.", visible=True)
+            
+        from ..infrastructure.feedback import FeedbackCollector
+        collector = FeedbackCollector()
+        collector.record_feedback(
+            query=query,
+            rule_code=rule_code,
+            rating=rating,
+            comment=comment or None,
+            source="web"
+        )
+        return gr.update(value="✅ 피드백이 저장되었습니다. 감사합니다!", visible=True)
 
     # Sync function
     def run_sync(json_path: str, full_sync: bool) -> str:
@@ -564,7 +584,40 @@ def create_app(
                 search_btn.click(
                     fn=search_regulations,
                     inputs=[search_query, search_top_k, search_abolished, search_debug_toggle],
-                    outputs=[search_results, search_detail, search_debug],
+                    outputs=[search_results, search_detail, search_debug, search_fb_query, search_fb_rule],
+                )
+
+                # Feedback Row for Search
+                with gr.Row(visible=False) as search_fb_row:
+                    with gr.Column(scale=4):
+                        search_fb_comment = gr.Textbox(label="피드백 의견 (선택)", placeholder="검색 결과에 대한 의견을 남겨주세요.")
+                    with gr.Column(scale=1):
+                        with gr.Row():
+                            search_fb_up = gr.Button("👍", size="sm")
+                            search_fb_neu = gr.Button("😐", size="sm")
+                            search_fb_down = gr.Button("👎", size="sm")
+                        search_fb_msg = gr.Markdown(visible=False)
+                
+                search_fb_query = gr.State("")
+                search_fb_rule = gr.State("")
+
+                search_query.change(lambda: gr.update(visible=False), None, search_fb_row)
+                search_btn.click(lambda: gr.update(visible=True), None, search_fb_row)
+
+                search_fb_up.click(
+                    fn=lambda q, r, c: record_web_feedback(q, r, 1, c),
+                    inputs=[search_fb_query, search_fb_rule, search_fb_comment],
+                    outputs=[search_fb_msg]
+                )
+                search_fb_neu.click(
+                    fn=lambda q, r, c: record_web_feedback(q, r, 0, c),
+                    inputs=[search_fb_query, search_fb_rule, search_fb_comment],
+                    outputs=[search_fb_msg]
+                )
+                search_fb_down.click(
+                    fn=lambda q, r, c: record_web_feedback(q, r, -1, c),
+                    inputs=[search_fb_query, search_fb_rule, search_fb_comment],
+                    outputs=[search_fb_msg]
                 )
 
             # Tab 2: Ask (Q&A)
@@ -626,7 +679,40 @@ def create_app(
                         gr.State(db_path),
                         ask_debug_toggle,
                     ],
-                    outputs=[ask_answer, ask_sources, ask_debug],
+                    outputs=[ask_answer, ask_sources, ask_debug, ask_fb_query, ask_fb_rule],
+                )
+
+                # Feedback Row for Ask
+                with gr.Row(visible=False) as ask_fb_row:
+                    with gr.Column(scale=4):
+                        ask_fb_comment = gr.Textbox(label="피드백 의견 (선택)", placeholder="답변에 대한 의견을 남겨주세요.")
+                    with gr.Column(scale=1):
+                        with gr.Row():
+                            ask_fb_up = gr.Button("👍", size="sm")
+                            ask_fb_neu = gr.Button("😐", size="sm")
+                            ask_fb_down = gr.Button("👎", size="sm")
+                        ask_fb_msg = gr.Markdown(visible=False)
+                
+                ask_fb_query = gr.State("")
+                ask_fb_rule = gr.State("")
+
+                ask_question_input.change(lambda: gr.update(visible=False), None, ask_fb_row)
+                ask_btn.click(lambda: gr.update(visible=True), None, ask_fb_row)
+
+                ask_fb_up.click(
+                    fn=lambda q, r, c: record_web_feedback(q, r, 1, c),
+                    inputs=[ask_fb_query, ask_fb_rule, ask_fb_comment],
+                    outputs=[ask_fb_msg]
+                )
+                ask_fb_neu.click(
+                    fn=lambda q, r, c: record_web_feedback(q, r, 0, c),
+                    inputs=[ask_fb_query, ask_fb_rule, ask_fb_comment],
+                    outputs=[ask_fb_msg]
+                )
+                ask_fb_down.click(
+                    fn=lambda q, r, c: record_web_feedback(q, r, -1, c),
+                    inputs=[ask_fb_query, ask_fb_rule, ask_fb_comment],
+                    outputs=[ask_fb_msg]
                 )
 
             # Tab 3: Status (Read-only)

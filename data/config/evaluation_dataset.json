@@ -1,0 +1,193 @@
+{
+    "version": "1.0.0",
+    "description": "RAG 시스템 품질 평가용 테스트 데이터셋",
+    "last_updated": "2025-12-28",
+    "test_cases": [
+        {
+            "id": "student_complaint_professor_01",
+            "category": "학생 고충",
+            "query": "교수님이 수업시간에 정치적인 발언을 하고 자주 화도 내고 그래",
+            "expected_intents": [
+                "교수 행동 불만 (학생)"
+            ],
+            "expected_keywords": [
+                "인권센터",
+                "학생고충",
+                "학생상담",
+                "학생권리"
+            ],
+            "expected_rule_codes": [
+                "5-1-38"
+            ],
+            "min_relevance_score": 0.5,
+            "notes": "수업시간 컨텍스트로 학생 관점 인식 필요"
+        },
+        {
+            "id": "student_complaint_professor_02",
+            "category": "학생 고충",
+            "query": "교수에게 부당한 대우를 받았어",
+            "expected_intents": [
+                "학생 권리 침해",
+                "교수 행동 불만 (학생)"
+            ],
+            "expected_keywords": [
+                "인권센터",
+                "학생권리",
+                "고충처리"
+            ],
+            "expected_rule_codes": [
+                "5-1-38"
+            ],
+            "min_relevance_score": 0.5
+        },
+        {
+            "id": "student_leave_01",
+            "category": "학적",
+            "query": "휴학하고 싶어",
+            "expected_intents": [
+                "휴학 관심"
+            ],
+            "expected_keywords": [
+                "휴학",
+                "휴학원",
+                "휴학 신청"
+            ],
+            "expected_rule_codes": [],
+            "min_relevance_score": 0.3
+        },
+        {
+            "id": "student_graduation_01",
+            "category": "졸업",
+            "query": "졸업 요건이 뭐야?",
+            "expected_intents": [
+                "졸업 관련"
+            ],
+            "expected_keywords": [
+                "졸업",
+                "졸업요건",
+                "학위"
+            ],
+            "expected_rule_codes": [],
+            "min_relevance_score": 0.3
+        },
+        {
+            "id": "employee_resignation_01",
+            "category": "인사",
+            "query": "그만두고 싶어",
+            "expected_intents": [
+                "퇴직 의향"
+            ],
+            "expected_keywords": [
+                "퇴직",
+                "사직",
+                "명예퇴직"
+            ],
+            "expected_rule_codes": [],
+            "min_relevance_score": 0.3
+        },
+        {
+            "id": "employee_sabbatical_01",
+            "category": "인사",
+            "query": "연구년 신청하고 싶어",
+            "expected_intents": [
+                "연구년 관심"
+            ],
+            "expected_keywords": [
+                "연구년",
+                "안식년",
+                "연구휴직"
+            ],
+            "expected_rule_codes": [],
+            "min_relevance_score": 0.3
+        },
+        {
+            "id": "article_reference_01",
+            "category": "조문 검색",
+            "query": "제15조",
+            "expected_intents": [],
+            "expected_keywords": [
+                "제15조"
+            ],
+            "expected_rule_codes": [],
+            "min_relevance_score": 0.3,
+            "notes": "조문 번호 직접 검색"
+        },
+        {
+            "id": "regulation_name_01",
+            "category": "규정 검색",
+            "query": "교원인사규정",
+            "expected_intents": [],
+            "expected_keywords": [
+                "교원인사",
+                "교원",
+                "인사"
+            ],
+            "expected_rule_codes": [
+                "3-1-5"
+            ],
+            "min_relevance_score": 0.5
+        },
+        {
+            "id": "scholarship_01",
+            "category": "장학",
+            "query": "장학금 받고 싶어",
+            "expected_intents": [
+                "장학금 관심"
+            ],
+            "expected_keywords": [
+                "장학금",
+                "장학",
+                "등록금"
+            ],
+            "expected_rule_codes": [],
+            "min_relevance_score": 0.3
+        },
+        {
+            "id": "harassment_01",
+            "category": "성희롱/성폭력",
+            "query": "성희롱 당했어",
+            "expected_intents": [
+                "성희롱/성폭력 신고"
+            ],
+            "expected_keywords": [
+                "성희롱",
+                "성폭력",
+                "신고",
+                "피해자보호"
+            ],
+            "expected_rule_codes": [],
+            "min_relevance_score": 0.5
+        },
+        {
+            "id": "ethics_violation_01",
+            "category": "윤리",
+            "query": "연구 부정행위 신고하고 싶어",
+            "expected_intents": [
+                "연구윤리 관련"
+            ],
+            "expected_keywords": [
+                "연구윤리",
+                "부정행위",
+                "신고"
+            ],
+            "expected_rule_codes": [],
+            "min_relevance_score": 0.3
+        },
+        {
+            "id": "bullying_01",
+            "category": "괴롭힘",
+            "query": "갑질당했어",
+            "expected_intents": [
+                "갑질/괴롭힘 신고"
+            ],
+            "expected_keywords": [
+                "갑질",
+                "괴롭힘",
+                "인권",
+                "고충처리"
+            ],
+            "expected_rule_codes": [],
+            "min_relevance_score": 0.3
+        }
+    ]
+}

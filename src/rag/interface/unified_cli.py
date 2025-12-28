@@ -190,6 +190,11 @@ def _add_search_parser(subparsers):
         action="store_true",
         help="디버그 정보 출력",
     )
+    parser.add_argument(
+        "--feedback",
+        action="store_true",
+        help="결과에 대한 피드백 남기기 (인터랙티브)",
+    )
 
 
 def _add_ask_parser(subparsers):
@@ -256,6 +261,11 @@ def _add_ask_parser(subparsers):
         "--debug",
         action="store_true",
         help="디버그 정보 출력",
+    )
+    parser.add_argument(
+        "--feedback",
+        action="store_true",
+        help="결과에 대한 피드백 남기기 (인터랙티브)",
     )
 
 
@@ -332,6 +342,103 @@ def _add_serve_parser(subparsers):
     )
 
 
+def _add_evaluate_parser(subparsers):
+    """Add evaluate subcommand parser."""
+    parser = subparsers.add_parser(
+        "evaluate",
+        help="RAG 시스템 품질 평가",
+        description="테스트 데이터셋으로 검색 품질을 평가합니다.",
+    )
+    parser.add_argument(
+        "--dataset",
+        type=str,
+        default="data/config/evaluation_dataset.json",
+        help="평가 데이터셋 경로",
+    )
+    parser.add_argument(
+        "--category",
+        type=str,
+        default=None,
+        help="특정 카테고리만 평가",
+    )
+    parser.add_argument(
+        "-n", "--top-k",
+        type=int,
+        default=5,
+        help="검색 결과 수 (기본: 5)",
+    )
+    parser.add_argument(
+        "--db-path",
+        type=str,
+        default="data/chroma_db",
+        help="ChromaDB 저장 경로",
+    )
+    parser.add_argument(
+        "-v", "--verbose",
+        action="store_true",
+        help="상세 결과 출력",
+    )
+
+
+def _add_extract_keywords_parser(subparsers):
+    """Add extract-keywords subcommand parser."""
+    parser = subparsers.add_parser(
+        "extract-keywords",
+        help="규정에서 키워드 추출",
+        description="규정 JSON에서 핵심 키워드를 자동으로 추출합니다.",
+    )
+    parser.add_argument(
+        "--json-path",
+        type=str,
+        default="data/output/규정집.json",
+        help="규정 JSON 파일 경로",
+    )
+    parser.add_argument(
+        "--output",
+        type=str,
+        default="data/config/regulation_keywords.json",
+        help="출력 파일 경로",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="저장하지 않고 결과만 표시",
+    )
+    parser.add_argument(
+        "-v", "--verbose",
+        action="store_true",
+        help="상세 결과 출력",
+    )
+
+
+def _add_feedback_parser(subparsers):
+    """Add feedback subcommand parser."""
+    parser = subparsers.add_parser(
+        "feedback",
+        help="피드백 통계 확인",
+        description="수집된 피드백 통계를 표시합니다.",
+    )
+    parser.add_argument(
+        "--clear",
+        action="store_true",
+        help="모든 피드백 삭제",
+    )
+
+
+def _add_analyze_parser(subparsers):
+    """Add analyze subcommand parser."""
+    parser = subparsers.add_parser(
+        "analyze",
+        help="피드백 기반 개선 제안",
+        description="피드백을 분석하여 개선 사항을 제안합니다.",
+    )
+    parser.add_argument(
+        "-v", "--verbose",
+        action="store_true",
+        help="상세 결과 출력",
+    )
+
+
 def create_parser() -> argparse.ArgumentParser:
     """Create main argument parser with all subcommands."""
     parser = argparse.ArgumentParser(
@@ -369,6 +476,10 @@ def create_parser() -> argparse.ArgumentParser:
     _add_status_parser(subparsers)
     _add_reset_parser(subparsers)
     _add_serve_parser(subparsers)
+    _add_evaluate_parser(subparsers)
+    _add_extract_keywords_parser(subparsers)
+    _add_feedback_parser(subparsers)
+    _add_analyze_parser(subparsers)
 
     return parser
 
@@ -446,6 +557,124 @@ def cmd_serve(args) -> int:
     return 1
 
 
+def cmd_evaluate(args) -> int:
+    """Execute evaluate command - run quality evaluation."""
+    from rich.console import Console
+    from ..infrastructure.chroma_store import ChromaVectorStore
+    from ..infrastructure.chroma_store import ChromaVectorStore
+    from ..infrastructure.llm_adapter import LLMClientAdapter
+    from ..application.search_usecase import SearchUseCase
+    from ..application.evaluate import EvaluationUseCase
+    
+    console = Console()
+    
+    # Initialize components
+    store = ChromaVectorStore(persist_directory=args.db_path)
+    
+    # Get default settings for LLM
+    _, provider, model, base_url = _get_default_llm_settings()
+    
+    llm_client = LLMClientAdapter(
+        provider=provider,
+        model=model,
+        base_url=base_url,
+    )
+    search_usecase = SearchUseCase(
+        store=store,
+        llm_client=llm_client,
+        use_reranker=True,
+    )
+    
+    # Run evaluation
+    eval_usecase = EvaluationUseCase(
+        search_usecase=search_usecase,
+        dataset_path=args.dataset,
+    )
+    
+    console.print("[bold]🔍 평가 데이터셋 로드 중...[/bold]")
+    test_cases = eval_usecase.load_dataset()
+    console.print(f"[dim]총 {len(test_cases)}개 테스트 케이스[/dim]\n")
+    
+    console.print("[bold]🧪 평가 실행 중...[/bold]")
+    summary = eval_usecase.run_evaluation(
+        top_k=args.top_k,
+        category=args.category,
+    )
+    
+    # Print results
+    console.print(eval_usecase.format_summary(summary))
+    
+    if args.verbose:
+        console.print(eval_usecase.format_details(summary))
+    
+    return 0 if summary.pass_rate >= 0.8 else 1
+
+
+def cmd_extract_keywords(args) -> int:
+    """Execute extract-keywords command."""
+    from rich.console import Console
+    from ..infrastructure.keyword_extractor import KeywordExtractor
+    
+    console = Console()
+    
+    extractor = KeywordExtractor(
+        json_path=args.json_path,
+        output_path=args.output,
+    )
+    
+    console.print("[bold]📚 규정 키워드 추출 중...[/bold]")
+    result = extractor.extract_keywords()
+    
+    console.print(extractor.format_summary(result))
+    
+    if args.verbose:
+        console.print(extractor.format_details(result))
+    
+    if not args.dry_run:
+        output_path = extractor.save_keywords(result)
+        console.print(f"\n[green]✅ 저장됨: {output_path}[/green]")
+    
+    return 0
+
+
+def cmd_feedback(args) -> int:
+    """Execute feedback command."""
+    from rich.console import Console
+    from ..infrastructure.feedback import FeedbackCollector
+    
+    console = Console()
+    collector = FeedbackCollector()
+    
+    if args.clear:
+        collector.clear_feedback()
+        console.print("[yellow]🗑️ 모든 피드백이 삭제되었습니다.[/yellow]")
+        return 0
+    
+    stats = collector.get_statistics()
+    console.print(collector.format_statistics(stats))
+    
+    return 0
+
+
+def cmd_analyze(args) -> int:
+    """Execute analyze command - analyze feedback for improvements."""
+    from rich.console import Console
+    from ..infrastructure.feedback import FeedbackCollector
+    from ..application.auto_learn import AutoLearnUseCase
+    
+    console = Console()
+    
+    collector = FeedbackCollector()
+    auto_learn = AutoLearnUseCase(feedback_collector=collector)
+    
+    console.print("[bold]🧠 피드백 분석 중...[/bold]")
+    result = auto_learn.analyze_feedback()
+    
+    console.print(auto_learn.format_suggestions(result))
+    
+    return 0
+
+
 # =============================================================================
 # Entry Point
 # =============================================================================
@@ -467,6 +696,10 @@ def main(argv: Optional[list] = None) -> int:
         "status": cmd_status,
         "reset": cmd_reset,
         "serve": cmd_serve,
+        "evaluate": cmd_evaluate,
+        "extract-keywords": cmd_extract_keywords,
+        "feedback": cmd_feedback,
+        "analyze": cmd_analyze,
     }
 
     if args.command in commands:

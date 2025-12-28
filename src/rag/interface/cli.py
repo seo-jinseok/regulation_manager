@@ -218,6 +218,11 @@ def create_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="디버그 정보 출력 (쿼리 리라이팅 등)",
     )
+    search_parser.add_argument(
+        "--feedback",
+        action="store_true",
+        help="결과에 대한 피드백 남기기 (인터랙티브)",
+    )
 
     # ask command
     ask_parser = subparsers.add_parser(
@@ -279,6 +284,11 @@ def create_parser() -> argparse.ArgumentParser:
         "--debug",
         action="store_true",
         help="디버그 정보 출력 (쿼리 리라이팅 등)",
+    )
+    ask_parser.add_argument(
+        "--feedback",
+        action="store_true",
+        help="결과에 대한 피드백 남기기 (인터랙티브)",
     )
 
     # status command
@@ -421,6 +431,9 @@ def cmd_search(args) -> int:
             reg_title = r.chunk.parent_path[0] if r.chunk.parent_path else r.chunk.title
             print(f"{i}. {reg_title} [{r.chunk.rule_code}] (점수: {r.score:.2f})")
             print(f"   {r.chunk.text[:100]}...")
+
+    if args.feedback and results:
+        _collect_cli_feedback(args.query, results[0].chunk.rule_code)
 
     return 0
 
@@ -599,7 +612,47 @@ def cmd_ask(args) -> int:
                 print(f"\n--- {result.chunk.rule_code} ---")
                 print(result.chunk.text)
 
+    if args.feedback and answer.sources:
+        _collect_cli_feedback(args.question, answer.sources[0].chunk.rule_code)
+
     return 0
+
+
+def _collect_cli_feedback(query: str, rule_code: str):
+    """Interactively collect feedback from CLI."""
+    from ..infrastructure.feedback import FeedbackCollector
+    
+    print("\n" + "="*30)
+    print("📢 이 답변이 도움이 되었나요?")
+    print("1: 👍 도움이 됨 (Positive)")
+    print("2: 😐 보통 (Neutral)")
+    print("3: 👎 도움이 안 됨 (Negative)")
+    print("0: 건너뛰기")
+    
+    try:
+        choice = input("\n선택 (0-3): ").strip()
+        if choice == "0" or not choice:
+            return
+            
+        rating_map = {"1": 1, "2": 0, "3": -1}
+        if choice not in rating_map:
+            print("올바른 선택이 아닙니다.")
+            return
+            
+        rating = rating_map[choice]
+        comment = input("의견이 있다면 남겨주세요 (선택사항, Enter로 스킵): ").strip()
+        
+        collector = FeedbackCollector()
+        collector.record_feedback(
+            query=query,
+            rule_code=rule_code,
+            rating=rating,
+            comment=comment or None,
+            source="cli"
+        )
+        print("✅ 소중한 피드백 감사합니다!")
+    except (KeyboardInterrupt, EOFError):
+        print("\n건너뜁니다.")
 
 
 def cmd_status(args) -> int:
