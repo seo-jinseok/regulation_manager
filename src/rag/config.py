@@ -46,11 +46,12 @@ class RAGConfig:
     use_hybrid: bool = True
     default_top_k: int = 5
     synonyms_path: Optional[str] = field(
-        default_factory=lambda: os.getenv("RAG_SYNONYMS_PATH")
+        default_factory=lambda: os.getenv("RAG_SYNONYMS_PATH", "data/config/synonyms.json")
     )
     intents_path: Optional[str] = field(
-        default_factory=lambda: os.getenv("RAG_INTENTS_PATH")
+        default_factory=lambda: os.getenv("RAG_INTENTS_PATH", "data/config/intents.json")
     )
+
     
     # Supported LLM providers
     llm_providers: List[str] = field(

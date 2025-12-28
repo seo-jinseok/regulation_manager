@@ -297,22 +297,25 @@ class TestQueryRewriting:
 
     def test_external_synonyms_loaded(self, tmp_path):
         """외부 동의어 파일을 로드해 확장에 반영."""
+        # 기존 내장 동의어가 없는 새로운 용어로 테스트
         data = {
             "terms": {
-                "복학": ["학교로 돌아가기", "복학 신청"],
+                "블라블라": ["첫번째동의어", "두번째동의어"],
             }
         }
         path = tmp_path / "synonyms.json"
         path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
 
         analyzer = QueryAnalyzer(synonyms_path=str(path))
-        result = analyzer.expand_query("복학")
+        result = analyzer.expand_query("블라블라")
 
-        assert "학교로 돌아가기" in result
-        assert "복학 신청" in result
+        assert "첫번째동의어" in result
+        assert "두번째동의어" in result
 
     def test_external_synonyms_merge_with_builtin(self, tmp_path):
-        """외부 동의어가 기본 사전과 병합됨."""
+        """외부 동의어가 기본 사전과 병합됨 (내장 동의어 우선)."""
+        # 외부 동의어는 내장 동의어 뒤에 병합되고, 처음 2개만 사용됨
+        # 내장: 교수 -> [교원, 교직원] 이므로 외부의 "교수님"은 3번째가 됨
         data = {
             "terms": {
                 "교수": ["교수님"],
@@ -322,10 +325,13 @@ class TestQueryRewriting:
         path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
 
         analyzer = QueryAnalyzer(synonyms_path=str(path))
+        # 내장 동의어 개수 확인 (병합 후 3개가 되어야 함)
+        assert len(analyzer._synonyms["교수"]) >= 3
+        assert "교수님" in analyzer._synonyms["교수"]
+        # expand_query는 처음 2개만 사용하므로 내장 동의어만 포함
         result = analyzer.expand_query("교수")
-
         assert "교원" in result
-        assert "교수님" in result
+        assert "교직원" in result
 
     def test_rewrite_fallback_on_llm_failure(self, mock_llm):
         """LLM 실패 시 기존 방식으로 폴백."""
