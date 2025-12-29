@@ -262,6 +262,24 @@ def strip_path_prefix(text: str, parent_path: List[str]) -> str:
     return remainder or text
 
 
+def infer_regulation_title_from_tables(
+    tables: List[object],
+    fallback: str,
+) -> str:
+    """Infer regulation title from table paths, falling back when missing."""
+    for table in tables or []:
+        path = None
+        if isinstance(table, dict):
+            path = table.get("path")
+        else:
+            path = getattr(table, "path", None)
+        if path:
+            title = str(path[0]).strip()
+            if title:
+                return title
+    return fallback
+
+
 # ============================================================================
 # Full View Rendering
 # ============================================================================

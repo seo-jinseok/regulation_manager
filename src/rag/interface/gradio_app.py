@@ -46,6 +46,7 @@ from .chat_logic import (
     attachment_label_variants,
     build_history_context,
     expand_followup_query,
+    extract_regulation_title,
     format_clarification,
     has_explicit_target,
     parse_attachment_request,
@@ -57,6 +58,7 @@ from .formatters import (
     filter_by_relevance,
     get_confidence_info,
     get_relevance_label_combined,
+    infer_regulation_title_from_tables,
     normalize_markdown_emphasis,
     normalize_markdown_table,
     normalize_relevance_scores,
@@ -488,10 +490,11 @@ def create_app(
                     match.rule_code,
                 )
                 return
+            display_title = infer_regulation_title_from_tables(tables, match.title)
             label_text = label or "별표"
-            title_label = f"{match.title} {label_text}"
+            title_label = f"{display_title} {label_text}"
             if table_no:
-                title_label = f"{match.title} {label_text} {table_no}"
+                title_label = f"{display_title} {label_text} {table_no}"
             detail = _format_table_matches(tables, table_no, label_text)
             yield title_label, detail, "", query, match.rule_code
             return
@@ -569,6 +572,7 @@ def create_app(
             history = normalized
         history_context = build_history_context(history)
         explicit_target = has_explicit_target(message)
+        explicit_regulation = extract_regulation_title(message)
 
         history.append({"role": "user", "content": message})
 
@@ -677,11 +681,12 @@ def create_app(
                     }
                 )
                 return history, details, debug_text, state
+            display_title = infer_regulation_title_from_tables(tables, match.title)
             label_text = attachment_label or "별표"
             details = _format_table_matches(tables, attachment_no, label_text)
-            title_label = f"{match.title} {label_text}"
+            title_label = f"{display_title} {label_text}"
             if attachment_no:
-                title_label = f"{match.title} {label_text} {attachment_no}"
+                title_label = f"{display_title} {label_text} {attachment_no}"
             history.append(
                 {
                     "role": "assistant",
@@ -690,7 +695,7 @@ def create_app(
             )
             state["last_query"] = query
             state["last_mode"] = "attachment"
-            state["last_regulation"] = match.title
+            state["last_regulation"] = display_title
             state["last_rule_code"] = match.rule_code
             return history, details, debug_text, state
 
@@ -810,7 +815,9 @@ def create_app(
                     if top.chunk.parent_path
                     else top.chunk.title
                 )
-                if explicit_target or not state.get("last_regulation"):
+                if explicit_regulation:
+                    state["last_regulation"] = explicit_regulation
+                elif explicit_target or not state.get("last_regulation"):
                     state["last_regulation"] = top_regulation
                 elif state.get("last_regulation") == top_regulation:
                     state["last_regulation"] = top_regulation
@@ -841,7 +848,9 @@ def create_app(
         state["last_query"] = query
         state["last_mode"] = "ask"
         if regulation_title:
-            if explicit_target or not state.get("last_regulation"):
+            if explicit_regulation:
+                state["last_regulation"] = explicit_regulation
+            elif explicit_target or not state.get("last_regulation"):
                 state["last_regulation"] = regulation_title
             elif state.get("last_regulation") == regulation_title:
                 state["last_regulation"] = regulation_title

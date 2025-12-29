@@ -202,7 +202,7 @@ _REGULATION_SUFFIXES = (
     "규정집",
 )
 _REGULATION_PATTERN = re.compile(
-    rf"([가-힣0-9·\s]+?(?:{'|'.join(_REGULATION_SUFFIXES)}))"
+    rf"([A-Za-z0-9가-힣·\s]+?(?:{'|'.join(_REGULATION_SUFFIXES)}))"
 )
 _ATTACHMENT_PATTERN = re.compile(r"(별표|별첨|별지)\s*(\d+)?")
 _TRAILING_PARTICLE_PATTERN = re.compile(r"(의|을|를|은|는|이|가|에|에서|으로|로)$")

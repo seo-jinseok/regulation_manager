@@ -31,6 +31,7 @@ from .chat_logic import (
     attachment_label_variants,
     build_history_context,
     expand_followup_query,
+    extract_regulation_title,
     has_explicit_target,
     parse_attachment_request,
 )
@@ -41,6 +42,7 @@ from .formatters import (
     filter_by_relevance,
     get_confidence_info,
     get_relevance_label_combined,
+    infer_regulation_title_from_tables,
     normalize_markdown_emphasis,
     normalize_markdown_table,
     normalize_relevance_scores,
@@ -552,6 +554,7 @@ def _perform_unified_search(
     if interactive:
         _append_history(state, "user", raw_query)
     explicit_target = has_explicit_target(raw_query)
+    explicit_regulation = extract_regulation_title(raw_query)
 
     mode = force_mode or _decide_search_mode(args)
     if args.verbose:
@@ -575,26 +578,27 @@ def _perform_unified_search(
             print_info(f"{label}를 찾을 수 없습니다.")
             return 0
 
+        display_title = infer_regulation_title_from_tables(tables, selected.title)
         label_text = label or "별표"
         lines = []
         for idx, table in enumerate(tables, 1):
             path = clean_path_segments(table.path) if table.path else []
-            heading = " > ".join(path) if path else selected.title
+            heading = " > ".join(path) if path else display_title
             table_label = f"{label_text} {table_no}" if table_no else label_text
             lines.append(f"### [{idx}] {heading} ({table_label})")
             if table.text:
                 lines.append(table.text)
             lines.append(normalize_markdown_table(table.markdown).strip())
-        _print_markdown(f"{selected.title} {label_text}", "\n\n".join(lines))
+        _print_markdown(f"{display_title} {label_text}", "\n\n".join(lines))
 
-        state["last_regulation"] = selected.title
+        state["last_regulation"] = display_title
         state["last_rule_code"] = selected.rule_code
         state["last_query"] = raw_query
         if interactive:
             _append_history(
                 state,
                 "assistant",
-                f"{selected.title} {label_text} 내용을 표시했습니다.",
+                f"{display_title} {label_text} 내용을 표시했습니다.",
             )
         return 0
 
@@ -761,7 +765,9 @@ def _perform_unified_search(
             top_regulation = (
                 top.chunk.parent_path[0] if top.chunk.parent_path else top.chunk.title
             )
-            if explicit_target or not state.get("last_regulation"):
+            if explicit_regulation:
+                state["last_regulation"] = explicit_regulation
+            elif explicit_target or not state.get("last_regulation"):
                 state["last_regulation"] = top_regulation
             elif state.get("last_regulation") == top_regulation:
                 state["last_regulation"] = top_regulation
@@ -891,7 +897,9 @@ def _perform_unified_search(
         if answer.sources:
             top = answer.sources[0].chunk
             top_regulation = top.parent_path[0] if top.parent_path else top.title
-            if explicit_target or not state.get("last_regulation"):
+            if explicit_regulation:
+                state["last_regulation"] = explicit_regulation
+            elif explicit_target or not state.get("last_regulation"):
                 state["last_regulation"] = top_regulation
             elif state.get("last_regulation") == top_regulation:
                 state["last_regulation"] = top_regulation

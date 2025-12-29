@@ -55,6 +55,7 @@ def test_expand_followup_query():
 
 def test_extract_regulation_title():
     assert extract_regulation_title("교원인사규정의 별첨 자료 1번") == "교원인사규정"
+    assert extract_regulation_title("JA교원인사규정 별첨") == "JA교원인사규정"
     assert (
         extract_regulation_title("중앙도서관자료제적에관한세칙 별표 1")
         == "중앙도서관자료제적에관한세칙"

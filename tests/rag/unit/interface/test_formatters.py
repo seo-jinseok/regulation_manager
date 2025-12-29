@@ -14,6 +14,7 @@ from src.rag.interface.formatters import (
     get_confidence_info,
     get_relevance_label,
     get_relevance_label_combined,
+    infer_regulation_title_from_tables,
     normalize_markdown_emphasis,
     normalize_markdown_table,
     normalize_relevance_scores,
@@ -36,6 +37,11 @@ class MockChunk:
 class MockSearchResult:
     chunk: MockChunk
     score: float
+
+
+@dataclass
+class MockTable:
+    path: Optional[List[str]] = None
 
 
 # ============================================================================
@@ -406,6 +412,34 @@ class TestStripPathPrefix:
         text = "제1조 목적 이 규정은 목적을 규정한다."
         parent_path = ["교원인사규정"]
         assert strip_path_prefix(text, parent_path) == text
+
+
+# ============================================================================
+# infer_regulation_title_from_tables tests
+# ============================================================================
+
+
+class TestInferRegulationTitleFromTables:
+    def test_uses_table_path_title_over_fallback(self):
+        tables = [{"path": ["교원인사규정", "부칙"]}]
+        assert (
+            infer_regulation_title_from_tables(tables, "JA교원인사규정")
+            == "교원인사규정"
+        )
+
+    def test_uses_object_path_when_present(self):
+        tables = [MockTable(path=None), MockTable(path=["교원인사규정", "별첨"])]
+        assert (
+            infer_regulation_title_from_tables(tables, "JA교원인사규정")
+            == "교원인사규정"
+        )
+
+    def test_returns_fallback_when_paths_missing(self):
+        tables = [MockTable(path=None), {"path": []}]
+        assert (
+            infer_regulation_title_from_tables(tables, "교원인사규정")
+            == "교원인사규정"
+        )
 
 
 # ============================================================================
