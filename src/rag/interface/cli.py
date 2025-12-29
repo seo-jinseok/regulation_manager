@@ -18,6 +18,12 @@ import sys
 from pathlib import Path
 from typing import Optional
 
+# Enable readline for better interactive input handling (backspace, arrow keys, etc.)
+try:
+    import readline  # noqa: F401 - imported for side effects
+except ImportError:
+    pass  # readline not available on some platforms
+
 # Load .env file
 try:
     from dotenv import load_dotenv

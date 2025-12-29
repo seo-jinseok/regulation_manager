@@ -28,6 +28,28 @@ REGULATION_ARTICLE_PATTERN = re.compile(
     r"([가-힣]+(?:규정|학칙|내규|세칙|지침|정관))\s*(제\s*\d+\s*조(?:\s*의\s*\d+)?(?:\s*제?\s*\d+\s*항)?(?:\s*제?\s*\d+\s*호)?)"
 )
 
+# Pattern for "규정명만" queries (e.g., "교원인사규정", "학칙")
+# Must be the entire query (with optional whitespace)
+REGULATION_ONLY_PATTERN = re.compile(
+    r"^\s*([가-힣]+(?:규정|학칙|내규|세칙|지침|정관))\s*$"
+)
+
+
+def _extract_regulation_only_query(query: str) -> Optional[str]:
+    """
+    Extract regulation name if query is ONLY a regulation name.
+
+    Args:
+        query: Search query like "교원인사규정" or "학칙"
+
+    Returns:
+        Regulation name if matched, None otherwise.
+    """
+    match = REGULATION_ONLY_PATTERN.match(query)
+    if match:
+        return match.group(1).strip()
+    return None
+
 
 def _extract_regulation_article_query(query: str) -> Optional[tuple]:
     """
@@ -52,6 +74,8 @@ def _extract_regulation_article_query(query: str) -> Optional[tuple]:
 
 
 def _coerce_query_text(value: object) -> str:
+    if value is None:
+        return ""
     if isinstance(value, str):
         return value
     if isinstance(value, (list, tuple)):
@@ -210,6 +234,65 @@ class SearchUseCase:
             rule_filter = self._build_rule_code_filter(filter, trimmed_query)
             query = Query(text="규정", include_abolished=include_abolished)
             return self.store.search(query, rule_filter, top_k)
+
+        # Handle "규정명만" pattern (e.g., "교원인사규정", "학칙")
+        # Returns all articles from the matched regulation
+        reg_only = _extract_regulation_only_query(query_text)
+        if reg_only:
+            self._last_query_rewrite = QueryRewriteInfo(
+                original=query_text,
+                rewritten=reg_only,
+                used=True,
+                method="regulation_only",
+                from_cache=False,
+                fallback=False,
+                used_synonyms=False,
+                used_intent=False,
+                matched_intents=None,
+            )
+
+            # Step 1: Find the regulation's rule_code
+            reg_query = Query(text=reg_only, include_abolished=include_abolished)
+            reg_results = self.store.search(reg_query, filter, 50)
+
+            target_rule_code = None
+            best_score = 0.0
+            for r in reg_results:
+                chunk_reg_name = (
+                    r.chunk.parent_path[0] if r.chunk.parent_path else r.chunk.title
+                ) or ""
+                # Check for match (exact or substring)
+                if reg_only in chunk_reg_name or chunk_reg_name in reg_only:
+                    match_score = 1.0 if chunk_reg_name == reg_only else 0.8
+                    # Also match if query is suffix (e.g., "인사규정" matches "교원인사규정")
+                    if chunk_reg_name.endswith(reg_only):
+                        match_score = 0.9
+                    if match_score > best_score:
+                        best_score = match_score
+                        target_rule_code = r.chunk.rule_code
+                        if match_score == 1.0:
+                            break
+
+            if not target_rule_code:
+                # Regulation not found, fall back to normal search
+                pass
+            else:
+                # Step 2: Get all articles from this regulation
+                # Use a generic query to retrieve more chunks from the filtered regulation
+                rule_filter = self._build_rule_code_filter(filter, target_rule_code)
+                all_chunks = self.store.search(
+                    Query(text="규정 조항", include_abolished=include_abolished),
+                    rule_filter,
+                    200  # Get many chunks to show regulation overview
+                )
+
+                # Return all chunks from this regulation, sorted by score
+                results = []
+                for i, r in enumerate(all_chunks[:top_k]):
+                    results.append(
+                        SearchResult(chunk=r.chunk, score=r.score, rank=i + 1)
+                    )
+                return results
 
         # Handle "규정명 + 조문번호" pattern (e.g., "교원인사규정 제8조")
         reg_article = _extract_regulation_article_query(query_text)
@@ -581,6 +664,8 @@ class SearchUseCase:
         Search with deduplication by rule_code.
 
         Returns only the top-scoring chunk from each regulation.
+        Exception: If query is a regulation name only, skip deduplication
+        and return all articles from that regulation.
 
         Args:
             query_text: The search query.
@@ -592,6 +677,20 @@ class SearchUseCase:
         Returns:
             List of SearchResult with one chunk per regulation.
         """
+        # Check if query is "regulation name only" pattern
+        # If so, return all articles without deduplication
+        reg_only = _extract_regulation_only_query(query_text)
+        if reg_only:
+            # Return search results directly (no deduplication)
+            results = self.search(
+                query_text,
+                filter=filter,
+                top_k=top_k,
+                include_abolished=include_abolished,
+                audience_override=audience_override,
+            )
+            return results
+
         # Get more results to ensure enough unique regulations
         results = self.search(
             query_text,

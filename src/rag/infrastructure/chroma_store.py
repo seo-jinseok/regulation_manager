@@ -159,8 +159,15 @@ class ChromaVectorStore(IVectorStore):
         if not isinstance(query_text, str):
             if isinstance(query_text, (list, tuple)):
                 query_text = " ".join(str(part) for part in query_text)
+            elif query_text is None:
+                query_text = ""
             else:
                 query_text = str(query_text)
+
+        # Ensure query_text is a non-empty string
+        query_text = query_text.strip()
+        if not query_text:
+            return []  # Return empty results for empty queries
 
         # Query ChromaDB
         results = self._collection.query(
