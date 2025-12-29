@@ -390,6 +390,47 @@ class RegulationFormatter:
             )
         return refs
 
+    def _infer_first_chapter(self, articles: List[Dict]) -> List[Dict]:
+        """
+        Infer Chapter 1 for articles that appear before any explicit chapter.
+
+        If articles start without a `chapter` field but a later article has
+        a chapter like "제2장", we assign "제1장 총칙" to the earlier articles.
+        """
+        if not articles:
+            return articles
+
+        # Find the first article that has an explicit chapter
+        first_chapter_idx = None
+        first_chapter_val = None
+        for i, art in enumerate(articles):
+            chapter = art.get("chapter")
+            if chapter:
+                first_chapter_idx = i
+                first_chapter_val = chapter
+                break
+
+        # No chapter found at all - nothing to infer
+        if first_chapter_idx is None:
+            return articles
+
+        # If the first article already has a chapter, no need to infer
+        if first_chapter_idx == 0:
+            return articles
+
+        # Check if the first explicit chapter is "제2장" or higher
+        # If so, infer "제1장 총칙" for articles before it
+        match = re.search(r"제\s*(\d+)\s*장", first_chapter_val)
+        if match:
+            chapter_num = int(match.group(1))
+            if chapter_num >= 2:
+                # Infer "제1장 총칙" for articles [0, first_chapter_idx)
+                for art in articles[:first_chapter_idx]:
+                    if not art.get("chapter"):
+                        art["chapter"] = "제1장 총칙"
+
+        return articles
+
     def _resolve_sort_no(self, display_no: str, node_type: str) -> Dict[str, int]:
         """
         Resolves a display string into a sorting key {main, sub}.
@@ -447,6 +488,11 @@ class RegulationFormatter:
         return {"main": main, "sub": sub}
 
     def _build_hierarchy(self, articles: List[Dict]) -> List[Dict]:
+        # Pre-process: Infer Chapter 1 for articles without chapter info
+        # If articles start without a chapter but later chapters appear (e.g., 제2장),
+        # assign "제1장 총칙" to the earlier articles.
+        articles = self._infer_first_chapter(articles)
+
         roots = []
         # State tracking for hierarchy
         current_nodes = {

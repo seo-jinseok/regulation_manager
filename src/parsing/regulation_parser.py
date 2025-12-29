@@ -102,9 +102,20 @@ class RegulationParser:
                 continue
 
             # Chapter
-            chapter_match = re.match(r"^(제\s*\d+\s*[장편])\s*(.*)", line)
+            # Pattern handles cases where page header is attached:
+            # e.g., "제1장  총  칙제3편  행정  3—1—1～"
+            # We extract just "제N장 TITLE" and ignore the trailing header
+            chapter_match = re.match(
+                r"^(제\s*\d+\s*[장편])\s*([^제]*?)(?:제\s*\d+\s*편|$)", line
+            )
+            if not chapter_match:
+                # Fallback to simpler pattern for clean lines
+                chapter_match = re.match(r"^(제\s*\d+\s*[장편])\s*(.*)", line)
             if chapter_match:
-                current_chapter = line
+                chapter_no = chapter_match.group(1).strip()
+                chapter_title = chapter_match.group(2).strip() if chapter_match.group(2) else ""
+                # Reconstruct clean chapter line
+                current_chapter = f"{chapter_no} {chapter_title}".strip()
                 current_section = None
                 current_subsection = None
                 continue
