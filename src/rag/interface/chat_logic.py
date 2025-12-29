@@ -128,10 +128,26 @@ def expand_followup_query(message: str, context: Optional[str]) -> str:
     """Expand follow-up queries with last context when safe."""
     if not context:
         return message
+
+    # If user explicitly names a regulation (e.g. "School Regulations Article 7"),
+    # we should NOT use the context (e.g. "Faculty Personnel Regulation").
+    # This is a context switch.
+    if extract_regulation_title(message):
+        return message
+
+    # If it's a simple article reference (e.g. "Article 7") without a regulation name,
+    # we should prepend the context.
+    # Note: re.search checks for "Article N" pattern
+    if re.search(r"제\s*\d+\s*조", message):
+        return f"{context} {message}".strip()
+
+    # For other patterns, rely on is_followup_message heuristic
     if has_explicit_target(message):
         return message
+
     if not is_followup_message(message):
         return message
+
     return f"{context} {message}".strip()
 
 
@@ -202,7 +218,7 @@ _REGULATION_SUFFIXES = (
     "규정집",
 )
 _REGULATION_PATTERN = re.compile(
-    rf"([A-Za-z0-9가-힣·\s]+?(?:{'|'.join(_REGULATION_SUFFIXES)}))"
+    rf"([A-Za-z0-9가-힣·\s]*?(?:{'|'.join(_REGULATION_SUFFIXES)}))"
 )
 _ATTACHMENT_PATTERN = re.compile(r"(별표|별첨|별지)\s*(\d+)?")
 _TRAILING_PARTICLE_PATTERN = re.compile(r"(의|을|를|은|는|이|가|에|에서|으로|로)$")
