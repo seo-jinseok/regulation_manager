@@ -133,6 +133,53 @@ class FullViewUseCase:
             addenda=addenda,
         )
 
+    def get_article_view(
+        self, identifier: str, article_no: int
+    ) -> Optional[dict]:
+        """Return specific article node by rule_code/title and article number."""
+        json_path = self._resolve_json_path()
+        if not json_path:
+            return None
+        try:
+            doc = self.loader.get_regulation_doc(json_path, identifier)
+        except Exception:
+            return None
+        if not doc:
+            return None
+
+        target_display_no = f"제{article_no}조"
+        
+        # Traverse content to find the article
+        found_node = None
+        
+        def find_recursive(nodes: List[dict]):
+            nonlocal found_node
+            if found_node:
+                return
+            for node in nodes:
+                if node.get("type") == "article":
+                    display_no = str(node.get("display_no", "")).replace(" ", "")
+                    # Match "제7조" exactly or roughly
+                    if display_no == target_display_no:
+                        found_node = node
+                        return
+                    # Also try parsing if display_no is like "제 7 조"
+                    if "".join(display_no.split()) == target_display_no:
+                        found_node = node
+                        return
+                
+                children = node.get("children", [])
+                if children:
+                    find_recursive(children)
+
+        find_recursive(doc.get("content", []) or [])
+        
+        # Also check addenda for articles
+        if not found_node:
+            find_recursive(doc.get("addenda", []) or [])
+            
+        return found_node
+
     def find_tables(
         self,
         identifier: str,

@@ -660,7 +660,43 @@ def _perform_unified_search(
                         f"{overview.title} 개요를 표시했습니다.",
                     )
                 return 0
+                return 0
             # If overview not found, fall through to normal search
+
+    # Check if query targets a specific article (e.g. "Regulation Article 7")
+    # This allows showing the full text of the article instead of just a search snippet
+    article_match = re.search(r"(?:제)?\s*(\d+)\s*조", query)
+    target_regulation = explicit_regulation or extract_regulation_title(query)
+
+    if target_regulation and article_match:
+        article_no = int(article_match.group(1))
+        full_view = FullViewUseCase(JSONDocumentLoader())
+        matches = full_view.find_matches(target_regulation)
+        selected = _select_regulation(matches, interactive)
+        
+        if selected:
+            if args.debug:
+                 print_info(f"DEBUG: Smart Full View - Selected: {selected.title}, Article: {article_no}")
+            
+            article_node = full_view.get_article_view(selected.rule_code, article_no)
+            
+            if not article_node and args.debug:
+                 print_info(f"DEBUG: Smart Full View - Node not found for rule_code={selected.rule_code}, article={article_no}")
+            
+            if article_node:
+                content_text = render_full_view_nodes([article_node])
+                _print_markdown(f"{selected.title} 제{article_no}조", content_text)
+                
+                state["last_regulation"] = selected.title
+                state["last_rule_code"] = selected.rule_code
+                state["last_query"] = raw_query
+                if interactive:
+                    _append_history(
+                        state,
+                        "assistant",
+                        f"{selected.title} 제{article_no}조 전문을 표시했습니다.",
+                    )
+                return 0
 
     attachment_request = parse_attachment_request(
         args.query,
