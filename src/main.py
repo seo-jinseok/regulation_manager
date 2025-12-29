@@ -17,9 +17,10 @@ from .enhance_for_rag import enhance_json
 from .formatter import RegulationFormatter
 from .llm_client import LLMClient
 from .metadata_extractor import MetadataExtractor
+from .parsing.html_table_converter import replace_markdown_tables_with_html
 from .preprocessor import Preprocessor
 
-PIPELINE_SIGNATURE_VERSION = "v4"
+PIPELINE_SIGNATURE_VERSION = "v5"
 OUTPUT_SCHEMA_VERSION = "v4"
 
 
@@ -318,6 +319,8 @@ def run_pipeline(args, console=None):
                 progress.advance(total_task, 1)  # Step 3: Metadata extraction
 
                 # Format
+                if html_content:
+                    clean_md = replace_markdown_tables_with_html(clean_md, html_content)
                 final_docs = formatter.parse(
                     clean_md,
                     html_content=html_content,
