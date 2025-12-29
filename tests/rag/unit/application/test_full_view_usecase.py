@@ -337,6 +337,51 @@ def test_find_tables_matches_label_in_path(tmp_path):
     assert "연구실적 인정기준 및 인정률" in tables[0].title
 
 
+def test_find_tables_prefers_attached_files_for_label(tmp_path):
+    json_path = tmp_path / "reg.json"
+    data = {
+        "docs": [
+            {
+                "doc_type": "regulation",
+                "title": "교원인사규정",
+                "metadata": {"rule_code": "3-1-5"},
+                "content": [
+                    {
+                        "type": "paragraph",
+                        "display_no": "",
+                        "title": "",
+                        "text": "별표 1 기준은 다음과 같다.\n[TABLE:1]",
+                        "metadata": {
+                            "tables": [
+                                {
+                                    "format": "markdown",
+                                    "markdown": "| BODY | TABLE |\\n| --- | --- |\\n| 1 | 2 |",
+                                }
+                            ]
+                        },
+                        "children": [],
+                    }
+                ],
+                "addenda": [],
+                "attached_files": [
+                    {
+                        "title": "[별표 1]",
+                        "text": "연구실적 인정기준 및 인정률\\n| ATTACHED | TABLE |\\n| --- | --- |\\n| 3 | 4 |",
+                    }
+                ],
+            }
+        ]
+    }
+    json_path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+    loader = JSONDocumentLoader()
+    usecase = FullViewUseCase(loader, str(json_path))
+
+    tables = usecase.find_tables("3-1-5", table_no=1, label_variants=["별표"])
+
+    assert len(tables) == 1
+    assert "ATTACHED" in tables[0].markdown
+
+
 def test_find_tables_matches_addendum_label(tmp_path):
     json_path = tmp_path / "reg.json"
     data = {

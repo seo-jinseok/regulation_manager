@@ -73,7 +73,7 @@ def test_parse_attachment_request_with_fallback():
 
 
 def test_attachment_label_variants():
-    assert attachment_label_variants("별첨") == ["별첨", "별표"]
+    assert attachment_label_variants("별첨") == ["별첨"]
     assert attachment_label_variants(None) == ["별표", "별첨", "별지"]
 
 

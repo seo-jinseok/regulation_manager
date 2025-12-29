@@ -8,13 +8,15 @@ import json
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 from ..config import get_config
 from ..domain.repositories import IDocumentLoader
 
 FULL_VIEW_MARKERS = ["전문", "전체", "원문", "全文", "full text", "fullview"]
 ATTACHMENT_MARKERS = ["별표", "별첨", "별지"]
+ATTACHMENT_LABELS = {"별표", "별지"}
+ATTACHMENT_LABEL_PATTERN = re.compile(r"(별표|별지)\s*(?:제\s*)?(\d+)")
 TOC_ALLOWED_TYPES = {"chapter", "section", "subsection", "article", "addendum"}
 TOC_SKIP_RECURSION_TYPES = {
     "paragraph",
@@ -152,6 +154,14 @@ class FullViewUseCase:
         placeholder_matches: List[TableMatch] = []
         label_pattern = None
         variants = [v for v in (label_variants or ["별표"]) if v]
+
+        if any(variant in ATTACHMENT_LABELS for variant in variants):
+            attachment_matches, has_label = self._find_attached_files(
+                doc, variants, table_no
+            )
+            if has_label:
+                return attachment_matches
+
         if table_no is not None:
             escaped = "|".join(re.escape(v) for v in variants)
             if escaped:
@@ -230,6 +240,86 @@ class FullViewUseCase:
             if labeled:
                 return labeled
         return placeholder_matches
+
+    def _find_attached_files(
+        self,
+        doc: dict,
+        variants: List[str],
+        table_no: Optional[int],
+    ) -> Tuple[List[TableMatch], bool]:
+        attached_files = doc.get("attached_files") or []
+        if not isinstance(attached_files, list):
+            return [], False
+
+        doc_title = str(doc.get("title") or "").strip()
+        matches: List[TableMatch] = []
+        has_label = False
+        for idx, attachment in enumerate(attached_files, 1):
+            if not isinstance(attachment, dict):
+                continue
+            raw_title = str(attachment.get("title") or "").strip()
+            cleaned_title = self._clean_attachment_title(raw_title)
+            label, number = self._extract_attachment_label(raw_title or cleaned_title)
+            if label:
+                if label not in variants:
+                    continue
+                has_label = True
+            if table_no is not None:
+                if number is None or number != table_no:
+                    continue
+
+            text = str(attachment.get("text") or "").strip()
+            html = attachment.get("html")
+            markdown = text or (str(html) if html else "")
+            if not markdown:
+                continue
+
+            path = [doc_title] if doc_title else []
+            if cleaned_title:
+                path.append(cleaned_title)
+            display_no = f"{label} {number}" if label and number else label
+            matches.append(
+                TableMatch(
+                    path=path,
+                    display_no=display_no or "",
+                    title=cleaned_title or raw_title or display_no or "",
+                    text="",
+                    markdown=markdown,
+                    table_index=number or idx,
+                )
+            )
+
+        return matches, has_label
+
+    @staticmethod
+    def _clean_attachment_title(title: str) -> str:
+        if not title:
+            return ""
+        return (
+            title.replace("[", "")
+            .replace("]", "")
+            .replace("<", "")
+            .replace(">", "")
+            .strip()
+        )
+
+    @staticmethod
+    def _extract_attachment_label(text: str) -> tuple[str, Optional[int]]:
+        if not text:
+            return "", None
+        cleaned = (
+            text.replace("[", "")
+            .replace("]", "")
+            .replace("<", "")
+            .replace(">", "")
+        )
+        match = ATTACHMENT_LABEL_PATTERN.search(cleaned)
+        if match:
+            return match.group(1), int(match.group(2))
+        label_match = re.search(r"(별표|별지)", cleaned)
+        if label_match:
+            return label_match.group(1), None
+        return "", None
 
     def _strip_full_view_markers(self, query: str) -> str:
         cleaned = query

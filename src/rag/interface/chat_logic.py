@@ -252,8 +252,5 @@ def parse_attachment_request(
 
 def attachment_label_variants(label: Optional[str]) -> List[str]:
     if label:
-        variants = [label]
-        if label != "별표":
-            variants.append("별표")
-        return variants
+        return [label]
     return ["별표", "별첨", "별지"]
