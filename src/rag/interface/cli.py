@@ -461,6 +461,72 @@ def _print_markdown(title: str, text: str) -> None:
         print(text)
 
 
+def _print_regulation_overview(overview) -> None:
+    """Print regulation overview in a nice format."""
+    from ..domain.entities import RegulationStatus
+
+    if RICH_AVAILABLE:
+        # Build content lines
+        lines = []
+
+        # Status info
+        status_label = "✅ 시행중" if overview.status == RegulationStatus.ACTIVE else "❌ 폐지"
+        lines.append(f"**상태**: {status_label} | **총 조항 수**: {overview.article_count}개")
+        lines.append("")
+
+        # Table of contents
+        if overview.chapters:
+            lines.append("## 📖 목차")
+            for ch in overview.chapters:
+                article_info = f" ({ch.article_range})" if ch.article_range else ""
+                lines.append(f"- **{ch.display_no}** {ch.title}{article_info}")
+        else:
+            lines.append("*(장 구조 없이 조항으로만 구성된 규정)*")
+
+        # Addenda info
+        if overview.has_addenda:
+            lines.append("")
+            lines.append("📎 **부칙** 있음")
+
+        # Next action hint
+        lines.append("")
+        lines.append("---")
+        lines.append(f"💡 특정 조항 검색: `{overview.title} 제N조` 또는 `{overview.rule_code} 제N조`")
+
+        content = "\n".join(lines)
+        console.print()
+        console.print(
+            Panel(
+                Markdown(content),
+                title=f"📋 {overview.title} ({overview.rule_code})",
+                border_style="cyan",
+            )
+        )
+    else:
+        print(f"\n=== {overview.title} ({overview.rule_code}) ===")
+        status_label = "시행중" if overview.status == RegulationStatus.ACTIVE else "폐지"
+        print(f"상태: {status_label} | 총 조항 수: {overview.article_count}개")
+        print("\n목차:")
+        for ch in overview.chapters:
+            article_info = f" ({ch.article_range})" if ch.article_range else ""
+            print(f"  - {ch.display_no} {ch.title}{article_info}")
+        if overview.has_addenda:
+            print("\n부칙 있음")
+
+
+def _find_json_path() -> Optional[str]:
+    """Find the regulation JSON file in data/output directory."""
+    output_dir = Path("data/output")
+    if not output_dir.exists():
+        return None
+    # Find the first JSON file that looks like a regulation file
+    for f in output_dir.iterdir():
+        if f.suffix == ".json" and not f.name.endswith("_metadata.json"):
+            if f.name != "dummy.json":
+                return str(f)
+    return None
+
+
 _BACKSPACE_CHARS = {"\b", "\x7f"}
 
 
@@ -566,6 +632,35 @@ def _perform_unified_search(
     mode = force_mode or _decide_search_mode(args)
     if args.verbose:
         print_info(f"실행 모드: {mode.upper()} (쿼리: '{args.query}')")
+
+    # Check if query is regulation name or code only -> show overview
+    import re
+    from ..application.search_usecase import REGULATION_ONLY_PATTERN, RULE_CODE_PATTERN
+
+    is_regulation_only = REGULATION_ONLY_PATTERN.match(query) is not None
+    is_rule_code_only = RULE_CODE_PATTERN.match(query) is not None
+
+    if is_regulation_only or is_rule_code_only:
+        from ..infrastructure.json_loader import JSONDocumentLoader
+
+        loader = JSONDocumentLoader()
+        json_path = os.getenv("RAG_JSON_PATH") or _find_json_path()
+
+        if json_path and Path(json_path).exists():
+            overview = loader.get_regulation_overview(json_path, query)
+            if overview:
+                _print_regulation_overview(overview)
+                state["last_regulation"] = overview.title
+                state["last_rule_code"] = overview.rule_code
+                state["last_query"] = raw_query
+                if interactive:
+                    _append_history(
+                        state,
+                        "assistant",
+                        f"{overview.title} 개요를 표시했습니다.",
+                    )
+                return 0
+            # If overview not found, fall through to normal search
 
     attachment_request = parse_attachment_request(
         args.query,

@@ -7,11 +7,12 @@ Supports incremental sync by computing content hashes.
 
 import hashlib
 import json
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
-from ..domain.entities import Chunk
+from ..domain.entities import ChapterInfo, Chunk, RegulationOverview, RegulationStatus
 from ..domain.repositories import IDocumentLoader
 from ..domain.value_objects import SyncState
 
@@ -232,3 +233,108 @@ class JSONDocumentLoader(IDocumentLoader):
     @staticmethod
     def _normalize_title(title: str) -> str:
         return "".join(str(title).split())
+
+    def get_regulation_overview(
+        self, json_path: str, identifier: str
+    ) -> Optional[RegulationOverview]:
+        """
+        Get regulation overview with table of contents.
+
+        Args:
+            json_path: Path to the regulation JSON file.
+            identifier: rule_code or regulation title.
+
+        Returns:
+            RegulationOverview or None if not found.
+        """
+        doc = self.get_regulation_doc(json_path, identifier)
+        if not doc:
+            return None
+
+        rule_code = self._extract_rule_code(doc)
+        title = doc.get("title", "")
+        status = (
+            RegulationStatus.ABOLISHED
+            if doc.get("status") == "abolished" or "폐지" in title
+            else RegulationStatus.ACTIVE
+        )
+
+        content = doc.get("content", [])
+        addenda = doc.get("addenda", [])
+
+        # Extract chapters and count articles
+        chapters = self._extract_chapters(content)
+        article_count = self._count_articles(content)
+        has_addenda = len(addenda) > 0
+
+        return RegulationOverview(
+            rule_code=rule_code,
+            title=title,
+            status=status,
+            article_count=article_count,
+            chapters=chapters,
+            has_addenda=has_addenda,
+        )
+
+    def _extract_chapters(self, nodes: List[Dict[str, Any]]) -> List[ChapterInfo]:
+        """Extract chapter information from content nodes."""
+        chapters: List[ChapterInfo] = []
+
+        for node in nodes:
+            node_type = node.get("type", "")
+            if node_type == "chapter":
+                display_no = node.get("display_no", "")
+                title = node.get("title", "")
+
+                # Get article range from children
+                children = node.get("children", [])
+                article_range = self._get_article_range(children)
+
+                chapters.append(
+                    ChapterInfo(
+                        display_no=display_no,
+                        title=title,
+                        article_range=article_range,
+                    )
+                )
+
+        return chapters
+
+    def _get_article_range(self, nodes: List[Dict[str, Any]]) -> str:
+        """Get article range string (e.g., '제1조~제5조') from nodes."""
+        articles: List[str] = []
+
+        def collect_articles(children: List[Dict[str, Any]]) -> None:
+            for node in children:
+                if node.get("type") == "article":
+                    display_no = node.get("display_no", "")
+                    if display_no:
+                        articles.append(display_no)
+                # Check children recursively (for nested structures)
+                child_nodes = node.get("children", [])
+                if child_nodes:
+                    collect_articles(child_nodes)
+
+        collect_articles(nodes)
+
+        if not articles:
+            return ""
+        if len(articles) == 1:
+            return articles[0]
+        return f"{articles[0]}~{articles[-1]}"
+
+    def _count_articles(self, nodes: List[Dict[str, Any]]) -> int:
+        """Count total number of articles in content."""
+        count = 0
+
+        def count_recursive(children: List[Dict[str, Any]]) -> None:
+            nonlocal count
+            for node in children:
+                if node.get("type") == "article":
+                    count += 1
+                child_nodes = node.get("children", [])
+                if child_nodes:
+                    count_recursive(child_nodes)
+
+        count_recursive(nodes)
+        return count

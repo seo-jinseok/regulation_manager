@@ -250,3 +250,28 @@ class Answer:
     text: str
     sources: List[SearchResult]
     confidence: float = 0.0
+
+
+@dataclass
+class ChapterInfo:
+    """Information about a chapter (장) in a regulation."""
+
+    display_no: str  # e.g., "제1장"
+    title: str  # e.g., "총칙"
+    article_range: str  # e.g., "제1조~제5조"
+
+
+@dataclass
+class RegulationOverview:
+    """
+    Overview information for a regulation.
+
+    Used when displaying regulation summary instead of search results.
+    """
+
+    rule_code: str
+    title: str
+    status: RegulationStatus
+    article_count: int
+    chapters: List[ChapterInfo] = field(default_factory=list)
+    has_addenda: bool = False

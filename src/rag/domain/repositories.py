@@ -9,7 +9,7 @@ interfaces, not on concrete implementations.
 from abc import ABC, abstractmethod
 from typing import List, Optional, Set
 
-from .entities import Chunk, SearchResult
+from .entities import Chunk, RegulationOverview, SearchResult
 from .value_objects import Query, SearchFilter, SyncState
 
 
@@ -185,6 +185,21 @@ class IDocumentLoader(ABC):
         """
         pass
 
+    @abstractmethod
+    def get_regulation_overview(
+        self, json_path: str, identifier: str
+    ) -> Optional[RegulationOverview]:
+        """
+        Get regulation overview with table of contents.
+
+        Args:
+            json_path: Path to the regulation JSON file.
+            identifier: rule_code or regulation title.
+
+        Returns:
+            RegulationOverview or None if not found.
+        """
+        pass
 
 class ILLMClient(ABC):
     """
