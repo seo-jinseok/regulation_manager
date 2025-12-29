@@ -58,6 +58,7 @@ from .formatters import (
     filter_by_relevance,
     get_confidence_info,
     get_relevance_label_combined,
+    infer_attachment_label,
     infer_regulation_title_from_tables,
     normalize_markdown_emphasis,
     normalize_markdown_table,
@@ -324,7 +325,10 @@ def create_app(
         for idx, match in enumerate(matches, 1):
             path = clean_path_segments(match.path) if match.path else []
             heading = " > ".join(path) if path else match.title or label_text
-            table_label = f"{label_text} {table_no}" if table_no else label_text
+            if table_no:
+                table_label = f"{label_text} {table_no}"
+            else:
+                table_label = infer_attachment_label(match, label_text)
             lines.append(f"### [{idx}] {heading} ({table_label})")
             if match.text:
                 lines.append(match.text)

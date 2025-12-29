@@ -297,6 +297,46 @@ def test_find_tables_fallback_to_placeholder(tmp_path):
     assert "| A | B |" in tables[0].markdown
 
 
+def test_find_tables_matches_label_in_path(tmp_path):
+    json_path = tmp_path / "reg.json"
+    data = {
+        "docs": [
+            {
+                "doc_type": "regulation",
+                "title": "교원인사규정",
+                "metadata": {"rule_code": "3-1-5"},
+                "content": [
+                    {
+                        "type": "paragraph",
+                        "display_no": "",
+                        "title": "연구실적 인정기준 및 인정률",
+                        "text": "[TABLE:1]",
+                        "parent_path": ["교원인사규정", "부칙", "별표 1"],
+                        "metadata": {
+                            "tables": [
+                                {
+                                    "format": "markdown",
+                                    "markdown": "| A | B |\\n| --- | --- |\\n| 1 | 2 |",
+                                }
+                            ]
+                        },
+                        "children": [],
+                    }
+                ],
+                "addenda": [],
+            }
+        ]
+    }
+    json_path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+    loader = JSONDocumentLoader()
+    usecase = FullViewUseCase(loader, str(json_path))
+
+    tables = usecase.find_tables("교원인사규정", table_no=1)
+
+    assert len(tables) == 1
+    assert "연구실적 인정기준 및 인정률" in tables[0].title
+
+
 def test_find_tables_matches_addendum_label(tmp_path):
     json_path = tmp_path / "reg.json"
     data = {

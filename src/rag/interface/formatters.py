@@ -280,6 +280,46 @@ def infer_regulation_title_from_tables(
     return fallback
 
 
+_ATTACHMENT_LABEL_PATTERN = re.compile(
+    r"(별표|별첨|별지)\s*(?:제\s*)?(\d+)\s*(?:호|번)?"
+)
+
+
+def infer_attachment_label(match: object, fallback_label: str) -> str:
+    """Infer attachment label with number from table metadata when available."""
+    candidates: List[str] = []
+
+    if isinstance(match, dict):
+        path = match.get("path") or []
+        candidates.append(" ".join(str(part) for part in path if part))
+        for key in ("display_no", "title", "text"):
+            value = match.get(key)
+            if value:
+                candidates.append(str(value))
+        table_index = match.get("table_index")
+    else:
+        path = getattr(match, "path", None) or []
+        candidates.append(" ".join(str(part) for part in path if part))
+        for attr in ("display_no", "title", "text"):
+            value = getattr(match, attr, None)
+            if value:
+                candidates.append(str(value))
+        table_index = getattr(match, "table_index", None)
+
+    for candidate in candidates:
+        if not candidate:
+            continue
+        found = _ATTACHMENT_LABEL_PATTERN.search(candidate)
+        if found:
+            label = found.group(1)
+            number = found.group(2)
+            return f"{label} {number}"
+
+    if isinstance(table_index, int) and table_index > 0:
+        return f"{fallback_label} {table_index}"
+    return fallback_label
+
+
 # ============================================================================
 # Full View Rendering
 # ============================================================================

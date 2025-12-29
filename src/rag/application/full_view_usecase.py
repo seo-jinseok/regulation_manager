@@ -155,7 +155,9 @@ class FullViewUseCase:
         if table_no is not None:
             escaped = "|".join(re.escape(v) for v in variants)
             if escaped:
-                label_pattern = re.compile(rf"(?:{escaped})\s*{table_no}")
+                label_pattern = re.compile(
+                    rf"(?:{escaped})\s*(?:제\s*)?{table_no}\s*(?:호|번)?"
+                )
 
         def walk(nodes: List[dict], path_stack: List[str]) -> None:
             for node in nodes:
@@ -196,8 +198,11 @@ class FullViewUseCase:
                             if table_no is None:
                                 placeholder_matches.append(match)
                             else:
+                                path_text = " ".join(
+                                    str(part) for part in current_path if part
+                                ).strip()
                                 target_text = " ".join(
-                                    [display_no, title, text]
+                                    [display_no, title, text, path_text]
                                 ).strip()
                                 if label_pattern and label_pattern.search(target_text):
                                     labeled_matches.append(match)

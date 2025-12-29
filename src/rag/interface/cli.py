@@ -42,6 +42,7 @@ from .formatters import (
     filter_by_relevance,
     get_confidence_info,
     get_relevance_label_combined,
+    infer_attachment_label,
     infer_regulation_title_from_tables,
     normalize_markdown_emphasis,
     normalize_markdown_table,
@@ -580,16 +581,22 @@ def _perform_unified_search(
 
         display_title = infer_regulation_title_from_tables(tables, selected.title)
         label_text = label or "별표"
+        title_label = f"{display_title} {label_text}"
+        if table_no:
+            title_label = f"{display_title} {label_text} {table_no}"
         lines = []
         for idx, table in enumerate(tables, 1):
             path = clean_path_segments(table.path) if table.path else []
             heading = " > ".join(path) if path else display_title
-            table_label = f"{label_text} {table_no}" if table_no else label_text
+            if table_no:
+                table_label = f"{label_text} {table_no}"
+            else:
+                table_label = infer_attachment_label(table, label_text)
             lines.append(f"### [{idx}] {heading} ({table_label})")
             if table.text:
                 lines.append(table.text)
             lines.append(normalize_markdown_table(table.markdown).strip())
-        _print_markdown(f"{display_title} {label_text}", "\n\n".join(lines))
+        _print_markdown(title_label, "\n\n".join(lines))
 
         state["last_regulation"] = display_title
         state["last_rule_code"] = selected.rule_code
@@ -598,7 +605,7 @@ def _perform_unified_search(
             _append_history(
                 state,
                 "assistant",
-                f"{display_title} {label_text} 내용을 표시했습니다.",
+                f"{title_label} 내용을 표시했습니다.",
             )
         return 0
 

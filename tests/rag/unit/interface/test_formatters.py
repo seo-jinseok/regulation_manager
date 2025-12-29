@@ -14,6 +14,7 @@ from src.rag.interface.formatters import (
     get_confidence_info,
     get_relevance_label,
     get_relevance_label_combined,
+    infer_attachment_label,
     infer_regulation_title_from_tables,
     normalize_markdown_emphasis,
     normalize_markdown_table,
@@ -42,6 +43,7 @@ class MockSearchResult:
 @dataclass
 class MockTable:
     path: Optional[List[str]] = None
+    table_index: Optional[int] = None
 
 
 # ============================================================================
@@ -440,6 +442,29 @@ class TestInferRegulationTitleFromTables:
             infer_regulation_title_from_tables(tables, "교원인사규정")
             == "교원인사규정"
         )
+
+
+# ============================================================================
+# infer_attachment_label tests
+# ============================================================================
+
+
+class TestInferAttachmentLabel:
+    def test_extracts_label_from_text(self):
+        table = {"text": "별표 1 연구실적 인정기준 및 인정률"}
+        assert infer_attachment_label(table, "별표") == "별표 1"
+
+    def test_extracts_label_from_path(self):
+        table = {"path": ["교원인사규정", "부칙", "별표 2"]}
+        assert infer_attachment_label(table, "별표") == "별표 2"
+
+    def test_falls_back_to_table_index(self):
+        table = MockTable(path=None, table_index=3)
+        assert infer_attachment_label(table, "별첨") == "별첨 3"
+
+    def test_returns_fallback_without_number(self):
+        table = MockTable(path=None)
+        assert infer_attachment_label(table, "별표") == "별표"
 
 
 # ============================================================================
