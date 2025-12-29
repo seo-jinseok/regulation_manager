@@ -23,6 +23,33 @@ ARTICLE_PATTERN = re.compile(
 HEADING_ONLY_PATTERN = re.compile(r"^\([^)]*\)\s*$")
 RULE_CODE_PATTERN = re.compile(r"^\d+(?:-\d+){2,}$")
 
+# Pattern for "규정명 + 조문번호" queries (e.g., "교원인사규정 제8조")
+REGULATION_ARTICLE_PATTERN = re.compile(
+    r"([가-힣]+(?:규정|학칙|내규|세칙|지침|정관))\s*(제\s*\d+\s*조(?:\s*의\s*\d+)?(?:\s*제?\s*\d+\s*항)?(?:\s*제?\s*\d+\s*호)?)"
+)
+
+
+def _extract_regulation_article_query(query: str) -> Optional[tuple]:
+    """
+    Extract regulation name and article number from combined query.
+
+    Args:
+        query: Search query like "교원인사규정 제8조" or "학칙 제15조제2항"
+
+    Returns:
+        Tuple of (regulation_name, article_ref) or None if not matched.
+        Example: ("교원인사규정", "제8조")
+    """
+    match = REGULATION_ARTICLE_PATTERN.search(query)
+    if match:
+        reg_name = match.group(1).strip()
+        article_ref = match.group(2).strip()
+        # Normalize article reference (remove spaces)
+        article_ref = re.sub(r"\s+", "", article_ref)
+        return (reg_name, article_ref)
+    return None
+
+
 
 def _coerce_query_text(value: object) -> str:
     if isinstance(value, str):
@@ -183,6 +210,82 @@ class SearchUseCase:
             rule_filter = self._build_rule_code_filter(filter, trimmed_query)
             query = Query(text="규정", include_abolished=include_abolished)
             return self.store.search(query, rule_filter, top_k)
+
+        # Handle "규정명 + 조문번호" pattern (e.g., "교원인사규정 제8조")
+        reg_article = _extract_regulation_article_query(query_text)
+        if reg_article:
+            reg_name, article_ref = reg_article
+            self._last_query_rewrite = QueryRewriteInfo(
+                original=query_text,
+                rewritten=f"{reg_name} {article_ref}",
+                used=True,
+                method="regulation_article",
+                from_cache=False,
+                fallback=False,
+                used_synonyms=False,
+                used_intent=False,
+                matched_intents=None,
+            )
+
+            # Step 1: Find the regulation's rule_code by searching with regulation name
+            reg_query = Query(text=reg_name, include_abolished=include_abolished)
+            reg_results = self.store.search(reg_query, filter, 50)  # Search more to find the right one
+
+            # Find best matching rule_code - prioritize exact match
+            target_rule_code = None
+            best_score = 0.0
+            for r in reg_results:
+                chunk_reg_name = (
+                    r.chunk.parent_path[0] if r.chunk.parent_path else r.chunk.title
+                ) or ""
+                # Check for match (substring in either direction)
+                if reg_name in chunk_reg_name or chunk_reg_name in reg_name:
+                    # Prefer exact or near-exact matches
+                    match_score = 1.0 if chunk_reg_name == reg_name else 0.5
+                    if match_score > best_score:
+                        best_score = match_score
+                        target_rule_code = r.chunk.rule_code
+                        if match_score == 1.0:
+                            break  # Exact match found
+
+            if not target_rule_code:
+                # Fallback: return empty if regulation not found
+                return []
+
+            # Step 2: Get chunks from this regulation that contain the article number
+            # Search with both regulation name and article reference for better recall
+            rule_filter = self._build_rule_code_filter(filter, target_rule_code)
+            all_chunks = self.store.search(
+                Query(text=f"{reg_name} {article_ref}", include_abolished=include_abolished),
+                rule_filter,
+                500  # Get many chunks to ensure we find the right article
+            )
+
+            # Step 3: Filter and score by article number match
+            normalized_article = _normalize_article_token(article_ref)
+            filtered_results = []
+            for r in all_chunks:
+                article_haystack = r.chunk.embedding_text or r.chunk.text
+                text_articles = {
+                    _normalize_article_token(t)
+                    for t in ARTICLE_PATTERN.findall(article_haystack)
+                }
+
+                if normalized_article in text_articles:
+                    # Exact article match - high score
+                    filtered_results.append(
+                        SearchResult(chunk=r.chunk, score=1.0, rank=len(filtered_results) + 1)
+                    )
+                elif any(normalized_article in ta for ta in text_articles):
+                    # Partial match (e.g., 제8조 in 제8조의2)
+                    filtered_results.append(
+                        SearchResult(chunk=r.chunk, score=0.8, rank=len(filtered_results) + 1)
+                    )
+
+            # Sort and return
+            filtered_results.sort(key=lambda x: -x.score)
+            return filtered_results[:top_k]
+
         query = Query(text=query_text, include_abolished=include_abolished)
 
         # Rewrite query using LLM if HybridSearcher is available (with LLM)

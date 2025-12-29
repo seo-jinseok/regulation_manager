@@ -971,7 +971,12 @@ def _run_interactive_session(args) -> int:
             query = ""
             continue
 
-        args.query = query
+        # Sanitize and validate query before passing to search
+        sanitized = _sanitize_query_input(query)
+        if not sanitized:
+            query = ""
+            continue
+        args.query = sanitized
         _perform_unified_search(args, state=state, interactive=True)
         query = ""
 
