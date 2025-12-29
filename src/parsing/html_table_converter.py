@@ -44,6 +44,12 @@ def replace_markdown_tables_with_html(markdown: str, html: str) -> str:
     if not markdown_tables:
         return markdown
 
+    if len(markdown_tables) != len(html_tables):
+        # Mismatch in table counts means we cannot safely map them by index.
+        # Fallback to original markdown tables to ensure content correctness.
+        # Ideally log this warning.
+        return markdown
+
     replacement_tables: List[str] = []
     for idx, original in enumerate(markdown_tables):
         if idx < len(html_tables):
