@@ -13,7 +13,7 @@ from typing import List, Optional, Tuple
 from ..config import get_config
 from ..domain.repositories import IDocumentLoader
 
-FULL_VIEW_MARKERS = ["전문", "전체", "원문", "全文", "full text", "fullview"]
+FULL_VIEW_MARKERS = ["전문", "전체", "원문", "全文", "full text", "fullview", "보기"]
 ATTACHMENT_MARKERS = ["별표", "별첨", "별지"]
 ATTACHMENT_LABELS = {"별표", "별지"}
 ATTACHMENT_LABEL_PATTERN = re.compile(r"(별표|별지)\s*(?:제\s*)?(\d+)")

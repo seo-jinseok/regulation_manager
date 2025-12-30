@@ -419,3 +419,15 @@ def test_find_tables_matches_addendum_label(tmp_path):
 
     assert len(tables) == 1
     assert "| A | B |" in tables[0].markdown
+
+def test_find_matches_strips_view_keyword(tmp_path):
+    json_path = tmp_path / "reg.json"
+    _write_sample_json(json_path)
+    loader = JSONDocumentLoader()
+    usecase = FullViewUseCase(loader, str(json_path))
+
+    # "교원인사규정 전문 보기" -> "교원인사규정"
+    matches = usecase.find_matches("교원인사규정 전문 보기")
+
+    assert len(matches) == 1
+    assert matches[0].title == "교원인사규정"
