@@ -43,9 +43,10 @@ class HwpToMarkdownReader(BaseReader):
         # Create a temp directory for HTML output
         with tempfile.TemporaryDirectory() as tmp_dir:
             try:
-                # Try using the 'hwp5html' executable directly, which is more reliable in uv/venv.
-                # If that fails, fallback to python module? No, just stick to executable if in venv.
-                cmd = ["hwp5html", "--output", tmp_dir, str(file)]
+                # Use --html flag to skip bindata (image) extraction, which significantly improves performance.
+                # When --html is used, the output should be a file path, not a directory.
+                html_path = Path(tmp_dir) / "index.xhtml"
+                cmd = ["hwp5html", "--html", "--output", str(html_path), str(file)]
 
                 if verbose:
                     try:
