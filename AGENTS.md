@@ -192,6 +192,9 @@ class SearchResult:
 uv venv && uv sync
 cp .env.example .env
 
+# 대화형 모드 (기본값)
+uv run regulation                 # 쿼리 예시 표시, 번호로 선택 가능
+
 # HWP 변환
 uv run regulation convert "data/input/규정집.hwp"
 uv run regulation convert "data/input/규정집.hwp" --use_llm  # LLM 전처리
@@ -203,10 +206,11 @@ uv run regulation sync data/output/규정집.json --full   # 전체 재동기화
 # 검색
 uv run regulation search "교원 연구년 자격" -n 5
 uv run regulation search "제15조" --no-rerank
+uv run regulation search "휴학" --interactive  # 대화형 모드
 
 # 질문
-uv run regulation ask "교원 연구년 신청 자격은?" --provider lmstudio
-uv run regulation ask "휴학 절차" --show-sources -v
+uv run regulation search "교원 연구년 신청 자격은?" -a
+uv run regulation search "휴학 절차" --show-sources -v
 
 # 상태/초기화
 uv run regulation status

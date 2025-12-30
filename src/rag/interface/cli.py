@@ -1072,6 +1072,13 @@ def cmd_ask(args) -> int:
 
 def _run_interactive_session(args) -> int:
     """Run an interactive CLI session with conversational turns."""
+    from .query_suggestions import (
+        format_examples_for_cli,
+        format_suggestions_for_cli,
+        get_followup_suggestions,
+        get_initial_examples,
+    )
+
     state = {
         "last_regulation": None,
         "last_rule_code": None,
@@ -1079,7 +1086,13 @@ def _run_interactive_session(args) -> int:
         "history": [],
     }
 
-    print_info("대화형 모드입니다. '/exit'로 종료, '/reset'으로 문맥 초기화.")
+    # 현재 선택 가능한 예시/제안 목록
+    current_suggestions = get_initial_examples()
+
+    # 시작 시 쿼리 예시 표시
+    print_info("대화형 모드입니다. 아래 예시 중 번호를 선택하거나 직접 질문하세요.\n")
+    print(format_examples_for_cli(current_suggestions))
+    print("\n  '/exit' 종료, '/reset' 문맥 초기화, '/help' 도움말\n")
 
     prompt = ">>> "
     query = (args.query or "").strip()
@@ -1092,6 +1105,17 @@ def _run_interactive_session(args) -> int:
                 print("\n종료합니다.")
                 return 0
 
+        # 번호 입력 처리
+        if query.isdigit():
+            idx = int(query) - 1
+            if 0 <= idx < len(current_suggestions):
+                query = current_suggestions[idx]
+                print(f"  → {query}")
+            else:
+                print_error(f"1~{len(current_suggestions)} 사이의 번호를 입력하세요.")
+                query = ""
+                continue
+
         if query.lower() in ("/exit", "exit", "quit", "q"):
             print("종료합니다.")
             return 0
@@ -1100,11 +1124,14 @@ def _run_interactive_session(args) -> int:
             state["last_rule_code"] = None
             state["last_query"] = None
             state["history"] = []
-            print_info("문맥을 초기화했습니다.")
+            current_suggestions = get_initial_examples()
+            print_info("문맥을 초기화했습니다.\n")
+            print(format_examples_for_cli(current_suggestions))
             query = ""
             continue
         if query.lower() in ("/help", "help"):
             print("명령어: /exit, /reset, /help")
+            print("번호를 입력하면 해당 예시/제안을 실행합니다.")
             query = ""
             continue
 
@@ -1115,6 +1142,19 @@ def _run_interactive_session(args) -> int:
             continue
         args.query = sanitized
         _perform_unified_search(args, state=state, interactive=True)
+
+        # 후속 쿼리 제안
+        followups = get_followup_suggestions(
+            sanitized,
+            regulation_title=state.get("last_regulation"),
+        )
+        if followups:
+            current_suggestions = followups
+            print(format_suggestions_for_cli(followups))
+        else:
+            # 제안이 없으면 기본 예시로 복귀
+            current_suggestions = get_initial_examples()
+
         query = ""
 
 

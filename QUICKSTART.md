@@ -68,14 +68,44 @@ uv run regulation sync data/output/규정집.json
 
 ## 4단계: 규정 검색 및 질문
 
-이제 `search` 명령어 하나로 검색과 질문 답변을 모두 수행할 수 있습니다.
+### 대화형 모드 (권장)
+
+가장 쉬운 방법은 `regulation` 명령만 실행하여 **대화형 모드**로 시작하는 것입니다.
 
 ```bash
-# 1. 문서 검색 (키워드)
-uv run regulation search "교원 연구년 신청 자격"
+uv run regulation
+```
 
-# 2. AI 질문 (자연어)
+**대화형 모드 특징:**
+- 시작 시 5개의 예시 쿼리 표시 (다양한 기능 소개)
+- 번호 입력으로 예시/제안 쿼리 실행
+- AI 답변 후 문맥 기반 후속 쿼리 제안
+- `/reset`으로 문맥 초기화, `/exit`로 종료
+
+```
+$ uv run regulation
+
+ℹ 대화형 모드입니다. 아래 예시 중 번호를 선택하거나 직접 질문하세요.
+
+  [1] 휴학 신청 절차가 어떻게 되나요?
+  [2] 교원 연구년
+  [3] 교원인사규정 전문
+  [4] 학칙 별표 1
+  [5] 학교 그만두고 싶어요
+
+>>> 1
+```
+
+### 직접 검색/질문
+
+대화형 모드 없이 직접 검색/질문할 수도 있습니다.
+
+```bash
+# 1. AI 질문 (자연어)
 uv run regulation search "교원 연구년 신청 자격은?"
+
+# 2. 문서 검색 (키워드)
+uv run regulation search "교원 연구년 신청 자격"
 
 # 3. 강제 모드 사용 (선택)
 uv run regulation search "연구년" -q  # 문서 검색 강제
@@ -89,6 +119,7 @@ uv run regulation search "연구년" -a  # AI 답변 강제
 
 | 옵션 | 설명 |
 |------|------|
+| `--interactive` | 대화형 모드 |
 | `-a`, `--answer` | AI 답변 생성 강제 |
 | `-q`, `--quick` | 문서 검색만 수행 |
 | `-n 10` | 검색 결과 개수 지정 |
@@ -145,9 +176,10 @@ uv run regulation serve --mcp
 
 | 작업 | 명령어 |
 |------|--------|
+| **대화형 모드** | `regulation` |
 | 변환 | `regulation convert "data/input/규정집.hwp"` |
 | 동기화 | `regulation sync <json-path>` |
-| **검색/질문** | `regulation search "<쿼리>" [-a/-q]` |
+| 검색/질문 | `regulation search "<쿼리>" [-a/-q]` |
 | 상태 확인 | `regulation status` |
 | DB 초기화 | `regulation reset --confirm` |
 | 웹 UI | `regulation serve --web` |

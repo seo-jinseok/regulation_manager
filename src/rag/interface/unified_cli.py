@@ -770,9 +770,28 @@ def main(argv: Optional[list] = None) -> int:
     parser = create_parser()
     args = parser.parse_args(argv)
 
+    # 커맨드 없이 실행하면 interactive 모드로 시작
     if not args.command:
-        parser.print_help()
-        return 0
+        # 기본값 설정
+        args.command = "search"
+        args.query = None
+        args.interactive = True
+        args.top_k = 5
+        args.include_abolished = False
+        args.db_path = "data/chroma_db"
+        args.no_rerank = False
+        args.verbose = False
+        args.debug = False
+        args.feedback = False
+        args.answer = False
+        args.quick = False
+        args.show_sources = False
+        # LLM 기본값
+        providers, provider, model, base_url = _get_default_llm_settings()
+        args.provider = provider
+        args.model = model
+        args.base_url = base_url
+        return cmd_search(args)
 
     commands = {
         "convert": cmd_convert,
