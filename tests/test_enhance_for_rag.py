@@ -503,3 +503,109 @@ class TestBuildEmbeddingText:
         result = build_embedding_text(parent_path, node)
         assert "부칙 > 부 칙" not in result
         assert "부칙: 내용" in result
+
+
+class TestExtractLastRevisionDate:
+    """Tests for extract_last_revision_date function."""
+
+    def test_single_addendum(self):
+        """Test with single addendum containing effective_date."""
+        from src.enhance_for_rag import extract_last_revision_date
+
+        doc = {
+            "addenda": [
+                {"effective_date": "2020-01-01", "children": []}
+            ]
+        }
+        assert extract_last_revision_date(doc) == "2020-01-01"
+
+    def test_multiple_addenda(self):
+        """Test with multiple addenda, returns the latest date."""
+        from src.enhance_for_rag import extract_last_revision_date
+
+        doc = {
+            "addenda": [
+                {"effective_date": "2018-03-01", "children": []},
+                {"effective_date": "2024-06-15", "children": []},
+                {"effective_date": "2020-01-01", "children": []},
+            ]
+        }
+        assert extract_last_revision_date(doc) == "2024-06-15"
+
+    def test_nested_effective_date(self):
+        """Test with effective_date in children nodes."""
+        from src.enhance_for_rag import extract_last_revision_date
+
+        doc = {
+            "addenda": [
+                {
+                    "children": [
+                        {"effective_date": "2023-05-01", "children": []}
+                    ]
+                }
+            ]
+        }
+        assert extract_last_revision_date(doc) == "2023-05-01"
+
+    def test_no_addenda(self):
+        """Test document with no addenda."""
+        from src.enhance_for_rag import extract_last_revision_date
+
+        doc = {"addenda": []}
+        assert extract_last_revision_date(doc) is None
+
+    def test_no_effective_date(self):
+        """Test addenda without effective_date."""
+        from src.enhance_for_rag import extract_last_revision_date
+
+        doc = {
+            "addenda": [
+                {"title": "부칙", "children": []}
+            ]
+        }
+        assert extract_last_revision_date(doc) is None
+
+
+class TestEnhanceDocumentLastRevisionDate:
+    """Tests for last_revision_date field in enhance_document."""
+
+    def test_populates_last_revision_date(self):
+        """Test that enhance_document populates last_revision_date in metadata."""
+        from src.enhance_for_rag import enhance_document
+
+        doc = {
+            "title": "테스트규정",
+            "doc_type": "regulation",
+            "metadata": {},
+            "content": [],
+            "addenda": [
+                {
+                    "type": "addendum_item",
+                    "text": "이 규정은 2024년 3월 1일부터 시행한다.",
+                    "children": [],
+                }
+            ],
+        }
+        enhance_document(doc)
+        assert doc["metadata"].get("last_revision_date") == "2024-03-01"
+
+    def test_no_metadata_creates_one(self):
+        """Test that metadata dict is created if missing."""
+        from src.enhance_for_rag import enhance_document
+
+        doc = {
+            "title": "테스트규정",
+            "doc_type": "regulation",
+            "content": [],
+            "addenda": [
+                {
+                    "type": "addendum_item",
+                    "text": "이 규정은 2023년 1월 1일부터 시행한다.",
+                    "children": [],
+                }
+            ],
+        }
+        enhance_document(doc)
+        assert "metadata" in doc
+        assert doc["metadata"].get("last_revision_date") == "2023-01-01"
+

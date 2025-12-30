@@ -438,6 +438,33 @@ def enhance_node(
         enhance_node(child, child_parent_path, doc_title)
 
 
+def extract_last_revision_date(doc: Dict[str, Any]) -> Optional[str]:
+    """
+    규정 문서의 부칙에서 가장 최근 시행일(effective_date)을 추출합니다.
+
+    부칙이 여러 개인 경우, 가장 마지막(최신) 날짜를 반환합니다.
+
+    Args:
+        doc: 규정 문서 딕셔너리
+
+    Returns:
+        YYYY-MM-DD 형식의 날짜 문자열, 또는 None
+    """
+    dates: List[str] = []
+
+    def collect_dates(nodes: List[Dict[str, Any]]) -> None:
+        for node in nodes:
+            if "effective_date" in node:
+                dates.append(node["effective_date"])
+            collect_dates(node.get("children", []))
+
+    collect_dates(doc.get("addenda", []))
+
+    if dates:
+        return max(dates)  # YYYY-MM-DD 형식이므로 문자열 비교로 최신 날짜 추출 가능
+    return None
+
+
 def enhance_document(doc: Dict[str, Any]) -> None:
     """
     Enhance a single document with RAG optimization fields.
@@ -469,6 +496,12 @@ def enhance_document(doc: Dict[str, Any]) -> None:
     addenda = doc.get("addenda", [])
     for node in addenda:
         enhance_node(node, ["부칙"], doc_title)
+
+    # 5. Extract last revision date from addenda
+    last_revision = extract_last_revision_date(doc)
+    if last_revision:
+        metadata = doc.setdefault("metadata", {})
+        metadata["last_revision_date"] = last_revision
 
 
 def enhance_json(data: Dict[str, Any]) -> Dict[str, Any]:

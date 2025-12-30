@@ -1,4 +1,5 @@
 import os
+import re
 
 # Suppress Transformers/PyTorch warnings
 os.environ["TRANSFORMERS_NO_ADVISORY_WARNINGS"] = "true"
@@ -8,6 +9,7 @@ import shutil
 import sys
 import time
 from pathlib import Path
+from typing import Dict, Optional
 
 from dotenv import load_dotenv
 
@@ -22,6 +24,35 @@ from .preprocessor import Preprocessor
 
 PIPELINE_SIGNATURE_VERSION = "v5"
 OUTPUT_SCHEMA_VERSION = "v4"
+
+
+def _extract_source_metadata(file_name: str) -> Dict[str, Optional[str]]:
+    """
+    파일명에서 규정집 일련번호와 발행일을 추출합니다.
+
+    예시: "규정집9-343(20250909).hwp"
+      -> {"source_serial": "9-343", "source_date": "2025-09-09"}
+
+    Args:
+        file_name: HWP 파일명
+
+    Returns:
+        source_serial과 source_date를 담은 딕셔너리
+    """
+    result: Dict[str, Optional[str]] = {"source_serial": None, "source_date": None}
+
+    # 일련번호: "규정집" 뒤의 "N-NNN" 패턴
+    serial_match = re.search(r"규정집(\d+-\d+)", file_name)
+    if serial_match:
+        result["source_serial"] = serial_match.group(1)
+
+    # 발행일: 괄호 안의 8자리 숫자 (YYYYMMDD)
+    date_match = re.search(r"\((\d{8})\)", file_name)
+    if date_match:
+        raw = date_match.group(1)
+        result["source_date"] = f"{raw[:4]}-{raw[4:6]}-{raw[6:8]}"
+
+    return result
 
 
 def _resolve_preprocessor_rules_path() -> Path:
@@ -351,11 +382,14 @@ def run_pipeline(args, console=None):
                 progress.advance(total_task, 1)  # Step 4: Formatting
 
                 # Save
+                source_meta = _extract_source_metadata(file.name)
                 final_json = {
                     "schema_version": OUTPUT_SCHEMA_VERSION,
                     "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                     "pipeline_signature": pipeline_signature,
                     "file_name": file.name,
+                    "source_serial": source_meta["source_serial"],
+                    "source_date": source_meta["source_date"],
                     "toc": (
                         extracted_metadata.get("toc") if extracted_metadata else None
                     )
