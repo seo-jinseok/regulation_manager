@@ -984,6 +984,7 @@ def _perform_unified_search(
                         top_k=args.top_k,
                         history_text=history_text or None,
                         search_query=query,
+                        debug=args.debug,
                     )
                 except Exception as e:
                     print_error(f"답변 생성 실패: {e}")
@@ -996,6 +997,7 @@ def _perform_unified_search(
                     top_k=args.top_k,
                     history_text=history_text or None,
                     search_query=query,
+                    debug=args.debug,
                 )
             except Exception as e:
                 print_error(f"답변 생성 실패: {e}")
