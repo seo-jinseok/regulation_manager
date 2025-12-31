@@ -10,7 +10,7 @@ import json
 import re
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from ..domain.entities import ChapterInfo, Chunk, RegulationOverview, RegulationStatus
 from ..domain.repositories import IDocumentLoader
@@ -200,6 +200,30 @@ class JSONDocumentLoader(IDocumentLoader):
                 titles[rule_code] = doc.get("title", "")
 
         return titles
+
+    def get_all_regulations(self, json_path: str) -> List[Tuple[str, str]]:
+        """
+        Get all regulation metadata (rule_code, title).
+        Handles cases where rule codes might be duplicated.
+
+        Args:
+            json_path: Path to the regulation JSON file.
+
+        Returns:
+            List of (rule_code, title) tuples.
+        """
+        data = self._load_json(json_path)
+        regulations: List[Tuple[str, str]] = []
+
+        for doc in data.get("docs", []):
+            if doc.get("doc_type") != "regulation":
+                continue
+            rule_code = self._extract_rule_code(doc)
+            title = doc.get("title", "")
+            if rule_code and title:
+                regulations.append((rule_code, title))
+        
+        return regulations
 
     def get_regulation_doc(
         self, json_path: str, identifier: str

@@ -172,6 +172,20 @@ class IDocumentLoader(ABC):
         pass
 
     @abstractmethod
+    def get_all_regulations(self, json_path: str) -> List[tuple]:
+        """
+        Get all regulation metadata (rule_code, title).
+        Handles cases where rule codes might be duplicated.
+
+        Args:
+            json_path: Path to the regulation JSON file.
+
+        Returns:
+            List of (rule_code, title) tuples.
+        """
+        pass
+
+    @abstractmethod
     def get_regulation_doc(self, json_path: str, identifier: str) -> Optional[dict]:
         """
         Get a regulation document by rule_code or title.

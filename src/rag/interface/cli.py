@@ -461,7 +461,7 @@ def _print_markdown(title: str, text: str) -> None:
         print(text)
 
 
-def _print_regulation_overview(overview) -> None:
+def _print_regulation_overview(overview, other_matches: Optional[list] = None) -> None:
     """Print regulation overview in a nice format."""
     from ..domain.entities import RegulationStatus
 
@@ -493,6 +493,12 @@ def _print_regulation_overview(overview) -> None:
         lines.append("---")
         lines.append(f"💡 특정 조항 검색: `{overview.title} 제N조` 또는 `{overview.rule_code} 제N조`")
 
+        if other_matches:
+            lines.append("")
+            lines.append("❓ **혹시 다음 규정을 찾으셨나요?**")
+            for m in other_matches:
+                lines.append(f"- {m}")
+
         content = "\n".join(lines)
         console.print()
         console.print(
@@ -512,6 +518,11 @@ def _print_regulation_overview(overview) -> None:
             print(f"  - {ch.display_no} {ch.title}{article_info}")
         if overview.has_addenda:
             print("\n부칙 있음")
+        
+        if other_matches:
+            print("\n❓ 혹시 다음 규정을 찾으셨나요?")
+            for m in other_matches:
+                print(f"  - {m}")
 
 
 def _find_json_path() -> Optional[str]:
@@ -648,8 +659,18 @@ def _perform_unified_search(
 
         if json_path and Path(json_path).exists():
             overview = loader.get_regulation_overview(json_path, query)
+
+            other_matches = []
+            if overview and is_regulation_only:
+                all_titles = loader.get_regulation_titles(json_path)
+                # Find other regulations containing the query string in their title
+                other_matches = sorted([
+                    t for t in all_titles.values()
+                    if query in t and t != overview.title
+                ])
+
             if overview:
-                _print_regulation_overview(overview)
+                _print_regulation_overview(overview, other_matches)
                 state["last_regulation"] = overview.title
                 state["last_rule_code"] = overview.rule_code
                 state["last_query"] = raw_query
@@ -666,6 +687,7 @@ def _perform_unified_search(
     # Check if query targets a specific article (e.g. "Regulation Article 7")
     # This allows showing the full text of the article instead of just a search snippet
     article_match = re.search(r"(?:제)?\s*(\d+)\s*조", query)
+    # Use 'query' here which may have been expanded with context (e.g. "교원인사규정 5장")
     target_regulation = explicit_regulation or extract_regulation_title(query)
 
     if target_regulation and article_match:
@@ -707,9 +729,6 @@ def _perform_unified_search(
         selected = _select_regulation(matches, interactive)
         
         if selected:
-            if args.debug:
-                 print_info(f"DEBUG: Smart Full View - Selected: {selected.title}, Chapter: {chapter_no}")
-            
             # Use get_regulation_doc from loader directly to pass doc to method
             json_path = full_view._resolve_json_path()
             if json_path:
@@ -724,8 +743,26 @@ def _perform_unified_search(
                     def collect_text(nodes):
                         texts = []
                         for node in nodes:
+                            text_part = ""
+                            # Prepend display_no and title for articles and paragraphs
+                            if node.get("type") in ("article", "paragraph", "item", "subitem"):
+                                display_no = node.get("display_no", "").strip()
+                                node_title = node.get("title", "").strip()
+                                parts = []
+                                if display_no:
+                                    parts.append(display_no)
+                                if node_title:
+                                    parts.append(node_title)
+                                header = " ".join(parts)
+                                if header:
+                                    text_part += f"{header}\n"
+
                             if node.get("text"):
-                                texts.append(node["text"])
+                                text_part += node["text"]
+                            
+                            if text_part:
+                                texts.append(text_part)
+
                             if node.get("children"):
                                 texts.extend(collect_text(node["children"]))
                         return texts

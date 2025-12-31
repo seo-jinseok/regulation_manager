@@ -68,10 +68,10 @@ class FullViewUseCase:
         if not json_path:
             return []
         try:
-            titles = self.loader.get_regulation_titles(json_path)
+            regulations = self.loader.get_all_regulations(json_path)
         except Exception:
             return []
-        if not titles:
+        if not regulations:
             return []
 
         term = self._strip_full_view_markers(query)
@@ -79,7 +79,7 @@ class FullViewUseCase:
         tokens = self._tokenize(term)
 
         matches: List[RegulationMatch] = []
-        for rule_code, title in titles.items():
+        for rule_code, title in regulations:
             title_norm = self._normalize(title)
             score = 0
             if term_norm and term_norm == title_norm:
