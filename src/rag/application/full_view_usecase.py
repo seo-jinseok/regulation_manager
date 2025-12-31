@@ -408,8 +408,8 @@ class FullViewUseCase:
             re.escape(marker) for marker in ATTACHMENT_MARKERS
         )
         cleaned = re.sub(rf"(?:{attachment_pattern})\s*\d*\s*번?", "", cleaned)
-        # Strip article/chapter references (e.g., 제8조, 제1장)
-        cleaned = re.sub(r"제\s*\d+\s*[조항장절]", "", cleaned)
+        # Strip article/chapter references (e.g., 제8조, 5장, 제1장)
+        cleaned = re.sub(r"(?:제)?\s*\d+\s*[조항장절]", "", cleaned)
         return cleaned.strip()
 
     @staticmethod

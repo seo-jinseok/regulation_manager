@@ -209,31 +209,14 @@ class QueryAnalyzer:
     INTENT_MAX_MATCHES = 3
 
     # LLM Query Rewriting prompt
-    QUERY_REWRITE_PROMPT = """당신은 대학 규정 검색 시스템의 쿼리 분석기입니다.
-사용자의 자연어 질문을 분석하여 규정 검색에 적합한 키워드를 추출하세요.
+    QUERY_REWRITE_PROMPT = """당신은 사용자의 질문을 검색용 키워드로 변환하는 도구입니다.
+지침:
+1. 오직 검색에 필요한 핵심 단어(키워드)만 출력하세요.
+2. 설명, 인사, 부연설명은 절대 하지 마세요.
+3. 결과는 공백으로 구분된 단어들의 목록이어야 합니다.
+4. 예: "학교 가기 싫어" -> "휴직 휴가 안식년"
 
-## 지침
-1. 사용자의 **실제 의도**를 파악하세요.
-2. 규정집에서 검색할 수 있는 **구체적인 키워드**로 변환하세요.
-3. 결과는 **키워드만** 공백으로 구분하여 출력하세요.
-4. 설명이나 부연 없이 키워드만 출력하세요.
-5. **감정적 표현**(싫다, 화난다, 짜증 등)은 관련 **규정 절차**로 해석하세요.
-6. **불만/고충**은 고충처리, 민원, 신고 절차로 연결하세요.
-7. **"화를 낸다"**는 "화재"가 아니라 "분노/감정적 행동"을 의미합니다.
-8. 교수/직원의 부적절한 행동 관련 질문은 **고충처리, 윤리, 징계** 키워드로 연결하세요.
-
-## 예시
-- "학교에 가기 싫어" → "휴직 휴가 연구년 안식년"
-- "월급 더 받고 싶어" → "보수 수당 승급 호봉"
-- "그만두고 싶어" → "퇴직 사직 명예퇴직"
-- "수업 안 하고 싶어" → "휴강 보강 강의 면제"
-- "교수가 정치적 발언을 해" → "교원윤리 고충처리 학생권리 신고"
-- "교수가 자주 화를 내" → "고충처리 민원 교원윤리 징계"
-- "교수님 태도가 이상해" → "고충처리 민원 교원윤리 학생권리"
-- "부당한 대우 받았어" → "고충처리 민원 이의신청 학생권리"
-- "신고하고 싶어" → "신고 고충처리 민원 징계"
-
-## 출력 형식
+출력 형식:
 키워드1 키워드2 키워드3"""
 
     def __init__(
@@ -253,6 +236,61 @@ class QueryAnalyzer:
         self._cache: Dict[str, QueryRewriteResult] = {}  # Query rewrite cache
         self._synonyms = self._load_synonyms(synonyms_path)
         self._intent_rules = self._load_intents(intents_path)
+
+    def _clean_llm_response(self, text: str) -> str:
+        """Clean chatty LLM response to extract just the keywords."""
+        # 0. Handle loops/hallucinations: if it contains tags like <user> or <assistant>
+        # Just take the part before the first tag if it exists.
+        if "<user>" in text:
+            text = text.split("<user>")[0]
+        if "<assistant>" in text:
+            text = text.split("<assistant>")[0]
+        if "---" in text:
+            text = text.split("---")[0]
+
+        # 1. Remove quotes if the entire string is quoted
+        text = text.strip()
+        if text.startswith('"') and text.endswith('"'):
+            text = text[1:-1]
+        elif text.startswith("'") and text.endswith("'"):
+            text = text[1:-1]
+
+        # 2. Split into lines and take the first non-empty line
+        # LLMs looping often start with the answer then loop.
+        lines = [line.strip() for line in text.split("\n") if line.strip()]
+        if not lines:
+            return ""
+        text = lines[0]
+
+        # 3. Remove known prefixes.
+        prefixes = [
+            "키워드:",
+            "keywords:",
+            "answer:",
+            "output:",
+            "답변:",
+            "추출된 키워드:",
+            "검색 키워드:",
+            "extracted keywords:",
+            "here are the keywords:",
+            "sure, here are",
+            "search keywords:",
+        ]
+        
+        lower_text = text.lower()
+        for prefix in prefixes:
+            if lower_text.startswith(prefix):
+                text = text[len(prefix):].strip()
+                lower_text = text.lower()
+        
+        # 4. If there are still colons, might be "Concept: Keyword", take the part after colon
+        if ":" in text:
+            parts = text.split(":")
+            # Only split if it's a short label followed by keywords
+            if len(parts[0]) < 20: 
+                text = parts[1].strip()
+
+        return text.strip()
 
     def rewrite_query(self, query: str) -> str:
         """
@@ -323,8 +361,19 @@ class QueryAnalyzer:
                 user_message=query,
                 temperature=0.0,
             )
-            # Clean up response (remove extra whitespace, newlines)
-            rewritten = response.strip().replace("\n", " ")
+            
+            # Post-process response
+            rewritten = self._clean_llm_response(response)
+            
+            # Robust length limit: Search keywords shouldn't be excessively long
+            # If the response is more than 200 chars or 30 words, it's likely a hallucination
+            if len(rewritten) > 200 or len(rewritten.split()) > 30:
+                # Take only the first few words as a safety measure
+                rewritten = " ".join(rewritten.split()[:10])
+
+            # Collapse multiple spaces
+            rewritten = " ".join(rewritten.split())
+
             if not rewritten:
                 raise ValueError("LLM returned empty rewrite")
             if intent_keywords:
