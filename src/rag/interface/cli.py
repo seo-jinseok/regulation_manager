@@ -698,6 +698,54 @@ def _perform_unified_search(
                     )
                 return 0
 
+    # Check if query targets a specific chapter (e.g. "Regulation Chapter 5")
+    chapter_match = re.search(r"(?:제)?\s*(\d+)\s*장", query)
+    if target_regulation and chapter_match:
+        chapter_no = int(chapter_match.group(1))
+        full_view = FullViewUseCase(JSONDocumentLoader())
+        matches = full_view.find_matches(target_regulation)
+        selected = _select_regulation(matches, interactive)
+        
+        if selected:
+            if args.debug:
+                 print_info(f"DEBUG: Smart Full View - Selected: {selected.title}, Chapter: {chapter_no}")
+            
+            # Use get_regulation_doc from loader directly to pass doc to method
+            json_path = full_view._resolve_json_path()
+            if json_path:
+                doc = full_view.loader.get_regulation_doc(json_path, selected.rule_code)
+                chapter_node = full_view.get_chapter_node(doc, chapter_no)
+                
+                if chapter_node:
+                    full_text = ""
+                    title = chapter_node.get("title", f"제{chapter_no}장")
+                    
+                    # Collect text from children articles
+                    def collect_text(nodes):
+                        texts = []
+                        for node in nodes:
+                            if node.get("text"):
+                                texts.append(node["text"])
+                            if node.get("children"):
+                                texts.extend(collect_text(node["children"]))
+                        return texts
+                    
+                    children_texts = collect_text(chapter_node.get("children", []))
+                    full_text = "\n\n".join(children_texts)
+
+                    _print_markdown(f"📖 {selected.title} {title}", full_text)
+                    
+                    state["last_regulation"] = selected.title
+                    state["last_rule_code"] = selected.rule_code
+                    state["last_query"] = raw_query
+                    if interactive:
+                        _append_history(
+                            state,
+                            "assistant",
+                            f"{selected.title} {title} 전문을 표시했습니다.",
+                        )
+                    return 0
+
     attachment_request = parse_attachment_request(
         args.query,
         state.get("last_regulation") if interactive else None,

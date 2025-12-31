@@ -431,3 +431,15 @@ def test_find_matches_strips_view_keyword(tmp_path):
 
     assert len(matches) == 1
     assert matches[0].title == "교원인사규정"
+
+def test_find_matches_strips_article_reference(tmp_path):
+    json_path = tmp_path / "reg.json"
+    _write_sample_json(json_path)
+    loader = JSONDocumentLoader()
+    usecase = FullViewUseCase(loader, str(json_path))
+
+    # "교원인사규정 제1조" -> "교원인사규정"
+    matches = usecase.find_matches("교원인사규정 제1조")
+
+    assert len(matches) == 1
+    assert matches[0].title == "교원인사규정"

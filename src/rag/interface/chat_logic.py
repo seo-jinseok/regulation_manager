@@ -140,7 +140,7 @@ def expand_followup_query(message: str, context: Optional[str]) -> str:
     # If it's a simple article reference (e.g. "Article 7") without a regulation name,
     # we should prepend the context.
     # Note: re.search checks for "Article N" pattern (allowing optional "제")
-    if re.search(r"(?:제)?\s*\d+\s*조", message):
+    if re.search(r"(?:제)?\s*\d+\s*[조항장절]", message):
         return f"{context} {message}".strip()
 
     # For other patterns, rely on is_followup_message heuristic

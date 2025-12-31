@@ -180,6 +180,38 @@ class FullViewUseCase:
             
         return found_node
 
+    def get_chapter_node(self, doc: dict, chapter_no: int) -> Optional[dict]:
+        """Get a specific chapter node from the regulation."""
+        if not doc:
+            return None
+        
+        target_display_no = f"제{chapter_no}장"
+        
+        found_node = None
+        
+        def find_recursive(nodes: List[dict]):
+            nonlocal found_node
+            if found_node:
+                return
+            for node in nodes:
+                # Check for chapter type
+                if node.get("type") == "chapter":
+                    display_no = str(node.get("display_no", "")).replace(" ", "")
+                    if display_no == target_display_no:
+                        found_node = node
+                        return
+                    # Handle "제 5 장" style
+                    if "".join(display_no.split()) == target_display_no:
+                        found_node = node
+                        return
+                
+                children = node.get("children", [])
+                if children:
+                    find_recursive(children)
+
+        find_recursive(doc.get("content", []) or [])
+        return found_node
+
     def find_tables(
         self,
         identifier: str,
@@ -376,6 +408,8 @@ class FullViewUseCase:
             re.escape(marker) for marker in ATTACHMENT_MARKERS
         )
         cleaned = re.sub(rf"(?:{attachment_pattern})\s*\d*\s*번?", "", cleaned)
+        # Strip article/chapter references (e.g., 제8조, 제1장)
+        cleaned = re.sub(r"제\s*\d+\s*[조항장절]", "", cleaned)
         return cleaned.strip()
 
     @staticmethod
