@@ -24,6 +24,12 @@ class JSONDocumentLoader(IDocumentLoader):
     Implements IDocumentLoader interface for the regulation JSON schema v2.0.
     """
 
+    _cache: Dict[str, Any] = {}
+
+    def clear_cache(self):
+        """Clear the internal JSON cache."""
+        self._cache.clear()
+
     def load_all_chunks(self, json_path: str) -> List[Chunk]:
         """
         Load all searchable chunks from a JSON file.
@@ -122,9 +128,14 @@ class JSONDocumentLoader(IDocumentLoader):
         )
 
     def _load_json(self, json_path: str) -> Dict[str, Any]:
-        """Load JSON file."""
+        """Load JSON file with caching."""
+        if json_path in self._cache:
+            return self._cache[json_path]
+            
         with open(json_path, "r", encoding="utf-8") as f:
-            return json.load(f)
+            data = json.load(f)
+            self._cache[json_path] = data
+            return data
 
     def _normalize_doc_for_hash(self, doc: Dict[str, Any]) -> Dict[str, Any]:
         """Remove volatile fields that should not affect incremental sync."""

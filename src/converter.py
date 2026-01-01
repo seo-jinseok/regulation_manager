@@ -192,8 +192,48 @@ class HwpToMarkdownReader(BaseReader):
 
                 # 3. Convert HTML to Markdown
                 if md:
-                    # Use markdownify to convert HTML to MD, preserving tables
-                    markdown_content = md(html_content, heading_style="ATX")
+                    try:
+                        from bs4 import BeautifulSoup
+                        from src.parsing.html_table_converter import convert_html_tables_to_markdown
+
+                        soup = BeautifulSoup(html_content, "html.parser")
+                        tables = soup.find_all("table")
+                        
+                        replaced_tables_map = {}
+                        
+                        # Replace tables with unique placeholders
+                        for idx, table in enumerate(tables):
+                            # Use a UUID-like placeholder intended to survive markdownify
+                            placeholder = f"__TABLE_PLACEHOLDER_{idx}__"
+                            # Convert this specific table to robust markdown (handles rowspan)
+                            # Note: convert_html_tables_to_markdown expects full HTML string but works with table string
+                            # It returns a list of tables found. We expect exactly 1.
+                            
+                            # We can just use the internal logic or pass the string representation of the table
+                            table_html = str(table)
+                            robust_md_list = convert_html_tables_to_markdown(table_html)
+                            
+                            if robust_md_list:
+                                robust_md = robust_md_list[0]
+                                replaced_tables_map[placeholder] = robust_md
+                                # Replace in DOM with pure text placeholder
+                                table.replace_with(soup.new_string(placeholder))
+                        
+                        # Convert the modified HTML (with placeholders) to Markdown
+                        # markdownify will treat placeholders as normal text
+                        modified_html = str(soup)
+                        markdown_content = md(modified_html, heading_style="ATX")
+                        
+                        # Restore placeholders with robust Markdown
+                        # Iterate by length desc to avoid partial matches (though unlikely with this placeholder)
+                        for ph, table_md in replaced_tables_map.items():
+                            markdown_content = markdown_content.replace(ph, table_md)
+                            
+                    except Exception as e:
+                        # Fallback to standard markdownify if anything fails (e.g. import error)
+                        if verbose:
+                            print(f"[yellow]Table robust conversion failed: {e}. Falling back to default.[/yellow]")
+                        markdown_content = md(html_content, heading_style="ATX")
                 else:
                     markdown_content = html_content  # Fallback
 

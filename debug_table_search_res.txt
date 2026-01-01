@@ -1,0 +1,184 @@
+Searching JSON for '산업체 경력 기준 임용'...
+
+FOUND AT: root.docs[4].attached_files[6].html
+Value Snippet: <html><head><style type="text/css">
+.Section-0 {
+  width: 210mm;
+}
+.Section-0 .HeaderPageFooter {
+  ...
+Parent Path: root.docs[4].attached_files[6]
+
+FOUND AT: root.docs[10].content[1].children[0].children[0].metadata.tables[0].markdown
+Value Snippet: |  |  |  |  |  |
+| --- | --- | --- | --- | --- |
+| 직 위 | 교육 및 연구경력 기준 임용 | | 산업체 경력 기준 임용 | |
+| 연구실적...
+Parent Path: root.docs[10].content[1].children[0].children[0].metadata.tables[0]
+
+FOUND AT: root.docs[10].content[1].children[0].children[6].text
+Value Snippet: 산업체 경력 기준 임용 시 산학협력실적이 없는 경우, 산업체경력 2년을 산학협력실적 100%로 대체가 가능하다. 즉, 조교수는 12년 이상, 부교수는 27년 이상, 교수는 34년 ...
+Parent Path: root.docs[10].content[1].children[0].children[6]
+
+FOUND AT: root.docs[10].content[1].children[0].children[6].full_text
+Value Snippet: [교원인사규정 > 제2장 신규임용 > 제8조 교원의 자격 > ⑦ 산업체 경력 기준 임용 시 산학협력실적이 없] 산업체 경력 기준 임용 시 산학협력실적이 없는 경우, 산업체경력 2년...
+Parent Path: root.docs[10].content[1].children[0].children[6]
+
+FOUND AT: root.docs[10].content[1].children[0].children[6].embedding_text
+Value Snippet: 교원인사규정 > 제2장 신규임용 > 제8조 교원의 자격 > ⑦ 산업체 경력 기준 임용 시 산학협력실적이 없: 산업체 경력 기준 임용 시 산학협력실적이 없는 경우, 산업체경력 2년을...
+Parent Path: root.docs[10].content[1].children[0].children[6]
+
+FOUND AT: root.docs[21].attached_files[1].html
+Value Snippet: <html><head><style type="text/css">
+.Section-0 {
+  width: 210mm;
+}
+.Section-0 .HeaderPageFooter {
+  ...
+Parent Path: root.docs[21].attached_files[1]
+
+FOUND AT: root.docs[23].attached_files[1].html
+Value Snippet: <html><head><style type="text/css">
+.Section-0 {
+  width: 210mm;
+}
+.Section-0 .HeaderPageFooter {
+  ...
+Parent Path: root.docs[23].attached_files[1]
+
+FOUND AT: root.docs[38].attached_files[1].html
+Value Snippet: <html><head><style type="text/css">
+.Section-0 {
+  width: 210mm;
+}
+.Section-0 .HeaderPageFooter {
+  ...
+Parent Path: root.docs[38].attached_files[1]
+
+FOUND AT: root.docs[39].attached_files[1].html
+Value Snippet: <html><head><style type="text/css">
+.Section-0 {
+  width: 210mm;
+}
+.Section-0 .HeaderPageFooter {
+  ...
+Parent Path: root.docs[39].attached_files[1]
+
+FOUND AT: root.docs[74].attached_files[1].html
+Value Snippet: <html><head><style type="text/css">
+.Section-0 {
+  width: 210mm;
+}
+.Section-0 .HeaderPageFooter {
+  ...
+Parent Path: root.docs[74].attached_files[1]
+
+FOUND AT: root.docs[116].attached_files[1].html
+Value Snippet: <html><head><style type="text/css">
+.Section-0 {
+  width: 210mm;
+}
+.Section-0 .HeaderPageFooter {
+  ...
+Parent Path: root.docs[116].attached_files[1]
+
+FOUND AT: root.docs[123].attached_files[1].html
+Value Snippet: <html><head><style type="text/css">
+.Section-0 {
+  width: 210mm;
+}
+.Section-0 .HeaderPageFooter {
+  ...
+Parent Path: root.docs[123].attached_files[1]
+Searching JSON for '산업체 경력 기준 임용'...
+
+FOUND AT: root.docs[4].attached_files[6].html
+Value Snippet: <html><head><style type="text/css">
+.Section-0 {
+  width: 210mm;
+}
+.Section-0 .HeaderPageFooter {
+  ...
+Parent Path: root.docs[4].attached_files[6]
+
+FOUND AT: root.docs[10].content[1].children[0].children[0].metadata.tables[0].markdown
+Value Snippet: |  |  |  |  |  |
+| --- | --- | --- | --- | --- |
+| 직 위 | 교육 및 연구경력 기준 임용 | | 산업체 경력 기준 임용 | |
+| 연구실적...
+Parent Path: root.docs[10].content[1].children[0].children[0].metadata.tables[0]
+
+FOUND AT: root.docs[10].content[1].children[0].children[6].text
+Value Snippet: 산업체 경력 기준 임용 시 산학협력실적이 없는 경우, 산업체경력 2년을 산학협력실적 100%로 대체가 가능하다. 즉, 조교수는 12년 이상, 부교수는 27년 이상, 교수는 34년 ...
+Parent Path: root.docs[10].content[1].children[0].children[6]
+
+FOUND AT: root.docs[10].content[1].children[0].children[6].full_text
+Value Snippet: [교원인사규정 > 제2장 신규임용 > 제8조 교원의 자격 > ⑦ 산업체 경력 기준 임용 시 산학협력실적이 없] 산업체 경력 기준 임용 시 산학협력실적이 없는 경우, 산업체경력 2년...
+Parent Path: root.docs[10].content[1].children[0].children[6]
+
+FOUND AT: root.docs[10].content[1].children[0].children[6].embedding_text
+Value Snippet: 교원인사규정 > 제2장 신규임용 > 제8조 교원의 자격 > ⑦ 산업체 경력 기준 임용 시 산학협력실적이 없: 산업체 경력 기준 임용 시 산학협력실적이 없는 경우, 산업체경력 2년을...
+Parent Path: root.docs[10].content[1].children[0].children[6]
+
+FOUND AT: root.docs[21].attached_files[1].html
+Value Snippet: <html><head><style type="text/css">
+.Section-0 {
+  width: 210mm;
+}
+.Section-0 .HeaderPageFooter {
+  ...
+Parent Path: root.docs[21].attached_files[1]
+
+FOUND AT: root.docs[23].attached_files[1].html
+Value Snippet: <html><head><style type="text/css">
+.Section-0 {
+  width: 210mm;
+}
+.Section-0 .HeaderPageFooter {
+  ...
+Parent Path: root.docs[23].attached_files[1]
+
+FOUND AT: root.docs[38].attached_files[1].html
+Value Snippet: <html><head><style type="text/css">
+.Section-0 {
+  width: 210mm;
+}
+.Section-0 .HeaderPageFooter {
+  ...
+Parent Path: root.docs[38].attached_files[1]
+
+FOUND AT: root.docs[39].attached_files[1].html
+Value Snippet: <html><head><style type="text/css">
+.Section-0 {
+  width: 210mm;
+}
+.Section-0 .HeaderPageFooter {
+  ...
+Parent Path: root.docs[39].attached_files[1]
+
+FOUND AT: root.docs[74].attached_files[1].html
+Value Snippet: <html><head><style type="text/css">
+.Section-0 {
+  width: 210mm;
+}
+.Section-0 .HeaderPageFooter {
+  ...
+Parent Path: root.docs[74].attached_files[1]
+
+FOUND AT: root.docs[116].attached_files[1].html
+Value Snippet: <html><head><style type="text/css">
+.Section-0 {
+  width: 210mm;
+}
+.Section-0 .HeaderPageFooter {
+  ...
+Parent Path: root.docs[116].attached_files[1]
+
+FOUND AT: root.docs[123].attached_files[1].html
+Value Snippet: <html><head><style type="text/css">
+.Section-0 {
+  width: 210mm;
+}
+.Section-0 .HeaderPageFooter {
+  ...
+Parent Path: root.docs[123].attached_files[1]

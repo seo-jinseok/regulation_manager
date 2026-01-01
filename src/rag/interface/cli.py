@@ -736,41 +736,51 @@ def _perform_unified_search(
                 chapter_node = full_view.get_chapter_node(doc, chapter_no)
                 
                 if chapter_node:
-                    full_text = ""
-                    title = chapter_node.get("title", f"제{chapter_no}장")
+                    chapter_title = chapter_node.get("title", "").strip()
+                    chapter_disp = chapter_node.get("display_no", f"제{chapter_no}장").strip()
                     
-                    # Collect text from children articles
-                    def collect_text(nodes):
-                        texts = []
-                        for node in nodes:
-                            text_part = ""
-                            # Prepend display_no and title for articles and paragraphs
-                            if node.get("type") in ("article", "paragraph", "item", "subitem"):
-                                display_no = node.get("display_no", "").strip()
-                                node_title = node.get("title", "").strip()
-                                parts = []
-                                if display_no:
-                                    parts.append(display_no)
-                                if node_title:
-                                    parts.append(node_title)
-                                header = " ".join(parts)
-                                if header:
-                                    text_part += f"{header}\n"
+                    # Format: "교원인사규정 제5장 정년보장임용"
+                    full_title = f"{selected.title} {chapter_disp} {chapter_title}".strip()
 
-                            if node.get("text"):
-                                text_part += node["text"]
-                            
-                            if text_part:
-                                texts.append(text_part)
+                    def render_nodes(nodes):
+                        lines = []
+                        for node in nodes:
+                            type_ = node.get("type")
+                            display_no = node.get("display_no", "").strip()
+                            title = node.get("title", "").strip()
+                            text = node.get("text", "").strip()
+
+                            if type_ == "article":
+                                header = display_no
+                                if title:
+                                    header += f" ({title})"
+                                # Use bold for article header
+                                lines.append(f"**{header}**")
+                                if text:
+                                    lines.append(text)
+                            elif type_ == "item":
+                                # Ensure dot for numeric items (e.g. "1" -> "1.")
+                                if display_no.isdigit():
+                                    display_no += "."
+                                # Use indentation (non-breaking space or markdown quote could be used, but spaces work with rich panel usually)
+                                lines.append(f"&nbsp;&nbsp;{display_no} {text}")
+                            elif type_ == "subitem":
+                                lines.append(f"&nbsp;&nbsp;&nbsp;&nbsp;{display_no} {text}")
+                            elif type_ == "paragraph":
+                                prefix = f"{display_no} " if display_no else ""
+                                lines.append(f"{prefix}{text}")
+                            else:
+                                if text:
+                                    lines.append(text)
 
                             if node.get("children"):
-                                texts.extend(collect_text(node["children"]))
-                        return texts
-                    
-                    children_texts = collect_text(chapter_node.get("children", []))
-                    full_text = "\n\n".join(children_texts)
+                                lines.extend(render_nodes(node["children"]))
+                        return lines
 
-                    _print_markdown(f"📖 {selected.title} {title}", full_text)
+                    # Join with double newline for Markdown paragraph separation
+                    full_text = "\n\n".join(render_nodes(chapter_node.get("children", [])))
+                    
+                    _print_markdown(f"📖 {full_title}", full_text)
                     
                     state["last_regulation"] = selected.title
                     state["last_rule_code"] = selected.rule_code
@@ -779,7 +789,7 @@ def _perform_unified_search(
                         _append_history(
                             state,
                             "assistant",
-                            f"{selected.title} {title} 전문을 표시했습니다.",
+                            f"{full_title} 전문을 표시했습니다.",
                         )
                     return 0
 
