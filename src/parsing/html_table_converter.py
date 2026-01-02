@@ -92,9 +92,9 @@ def _table_to_grid(table) -> Tuple[List[List[str]], bool]:
                 if len(target_row) < col_index + colspan:
                     target_row.extend([None] * (col_index + colspan - len(target_row)))
                 for c_offset in range(colspan):
-                    # For colspan > 1, only put text in the first column
-                    # For rowspan > 1, text is repeated in each row (markdown limitation)
-                    if c_offset == 0:
+                    # Only put text in the first row AND first column of the span
+                    # All other cells in the span should be empty
+                    if r_offset == 0 and c_offset == 0:
                         target_row[col_index + c_offset] = text
                     else:
                         target_row[col_index + c_offset] = ""
