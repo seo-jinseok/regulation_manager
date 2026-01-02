@@ -228,6 +228,9 @@ class HwpToMarkdownReader(BaseReader):
                         # Iterate by length desc to avoid partial matches (though unlikely with this placeholder)
                         for ph, table_md in replaced_tables_map.items():
                             markdown_content = markdown_content.replace(ph, table_md)
+                            # Also replace escaped version (markdownify escapes underscores as \_)
+                            escaped_ph = ph.replace("_", "\\_")
+                            markdown_content = markdown_content.replace(escaped_ph, table_md)
                             
                     except Exception as e:
                         # Fallback to standard markdownify if anything fails (e.g. import error)
