@@ -56,6 +56,7 @@ from .formatters import (
     render_full_view_nodes,
     strip_path_prefix,
 )
+from .query_handler import QueryContext, QueryHandler, QueryOptions, QueryResult, QueryType
 
 # Rich for pretty output (optional)
 try:
@@ -461,6 +462,48 @@ def _print_markdown(title: str, text: str) -> None:
         print(text)
 
 
+def _print_query_result(result: QueryResult, verbose: bool = False) -> None:
+    """Print QueryHandler result to CLI."""
+    if not result.success:
+        print_error(result.content)
+        return
+    
+    if result.type == QueryType.ERROR:
+        print_error(result.content)
+        return
+    
+    if result.type == QueryType.CLARIFICATION:
+        # Handle clarification requests
+        if result.clarification_type == "audience":
+            print("대상을 선택해주세요:")
+            for opt in result.clarification_options:
+                print(f"  - {opt}")
+        elif result.clarification_type == "regulation":
+            print("여러 규정이 매칭됩니다. 선택해주세요:")
+            for i, opt in enumerate(result.clarification_options, 1):
+                print(f"  {i}. {opt}")
+        return
+    
+    # Map result types to titles
+    title_map = {
+        QueryType.OVERVIEW: "📋 규정 개요",
+        QueryType.ARTICLE: "📌 조항 전문",
+        QueryType.CHAPTER: "📑 장 전문",
+        QueryType.ATTACHMENT: "📋 별표/서식",
+        QueryType.FULL_VIEW: "📖 규정 전문",
+        QueryType.SEARCH: "🔍 검색 결과",
+        QueryType.ASK: "💬 AI 답변",
+    }
+    
+    title = title_map.get(result.type, "결과")
+    
+    # Add regulation info to title if available
+    if result.data.get("regulation_title") or result.data.get("title"):
+        reg_title = result.data.get("regulation_title") or result.data.get("title")
+        title = f"{title} - {reg_title}"
+    
+    _print_markdown(title, result.content)
+
 def _print_regulation_overview(overview, other_matches: Optional[list] = None) -> None:
     """Print regulation overview in a nice format."""
     from ..domain.entities import RegulationStatus
@@ -652,37 +695,24 @@ def _perform_unified_search(
     is_rule_code_only = RULE_CODE_PATTERN.match(query) is not None
 
     if is_regulation_only or is_rule_code_only:
-        from ..infrastructure.json_loader import JSONDocumentLoader
-
-        loader = JSONDocumentLoader()
-        json_path = os.getenv("RAG_JSON_PATH") or _find_json_path()
-
-        if json_path and Path(json_path).exists():
-            overview = loader.get_regulation_overview(json_path, query)
-
-            other_matches = []
-            if overview and is_regulation_only:
-                all_titles = loader.get_regulation_titles(json_path)
-                # Find other regulations containing the query string in their title
-                other_matches = sorted([
-                    t for t in all_titles.values()
-                    if query in t and t != overview.title
-                ])
-
-            if overview:
-                _print_regulation_overview(overview, other_matches)
-                state["last_regulation"] = overview.title
-                state["last_rule_code"] = overview.rule_code
-                state["last_query"] = raw_query
-                if interactive:
-                    _append_history(
-                        state,
-                        "assistant",
-                        f"{overview.title} 개요를 표시했습니다.",
-                    )
-                return 0
-                return 0
-            # If overview not found, fall through to normal search
+        # Use QueryHandler for overview
+        handler = QueryHandler()
+        result = handler.get_regulation_overview(query)
+        
+        if result.success:
+            _print_query_result(result, args.verbose)
+            state["last_regulation"] = result.state_update.get("last_regulation")
+            state["last_rule_code"] = result.state_update.get("last_rule_code")
+            state["last_query"] = raw_query
+            if interactive:
+                reg_title = result.data.get("title", query)
+                _append_history(
+                    state,
+                    "assistant",
+                    f"{reg_title} 개요를 표시했습니다.",
+                )
+            return 0
+        # If overview not found, fall through to normal search
 
     # Check if query targets a specific article (e.g. "Regulation Article 7")
     # This allows showing the full text of the article instead of just a search snippet
@@ -692,106 +722,58 @@ def _perform_unified_search(
 
     if target_regulation and article_match:
         article_no = int(article_match.group(1))
-        full_view = FullViewUseCase(JSONDocumentLoader())
-        matches = full_view.find_matches(target_regulation)
-        selected = _select_regulation(matches, interactive)
+        handler = QueryHandler()
+        result = handler.get_article_view(target_regulation, article_no)
         
-        if selected:
-            if args.debug:
-                 print_info(f"DEBUG: Smart Full View - Selected: {selected.title}, Article: {article_no}")
-            
-            article_node = full_view.get_article_view(selected.rule_code, article_no)
-            
-            if not article_node and args.debug:
-                 print_info(f"DEBUG: Smart Full View - Node not found for rule_code={selected.rule_code}, article={article_no}")
-            
-            if article_node:
-                content_text = render_full_view_nodes([article_node])
-                _print_markdown(f"{selected.title} 제{article_no}조", content_text)
-                
-                state["last_regulation"] = selected.title
-                state["last_rule_code"] = selected.rule_code
-                state["last_query"] = raw_query
-                if interactive:
-                    _append_history(
-                        state,
-                        "assistant",
-                        f"{selected.title} 제{article_no}조 전문을 표시했습니다.",
-                    )
-                return 0
+        if result.type == QueryType.CLARIFICATION:
+            # Need user to select regulation
+            print("여러 규정이 매칭됩니다. 선택해주세요:")
+            for i, opt in enumerate(result.clarification_options, 1):
+                print(f"  {i}. {opt}")
+            return 0
+        
+        if result.success:
+            _print_query_result(result, args.verbose)
+            state["last_regulation"] = result.state_update.get("last_regulation")
+            state["last_rule_code"] = result.state_update.get("last_rule_code")
+            state["last_query"] = raw_query
+            if interactive:
+                reg_title = result.data.get("regulation_title", target_regulation)
+                _append_history(
+                    state,
+                    "assistant",
+                    f"{reg_title} 제{article_no}조 전문을 표시했습니다.",
+                )
+            return 0
 
     # Check if query targets a specific chapter (e.g. "Regulation Chapter 5")
     chapter_match = re.search(r"(?:제)?\s*(\d+)\s*장", query)
     if target_regulation and chapter_match:
         chapter_no = int(chapter_match.group(1))
-        full_view = FullViewUseCase(JSONDocumentLoader())
-        matches = full_view.find_matches(target_regulation)
-        selected = _select_regulation(matches, interactive)
+        handler = QueryHandler()
+        result = handler.get_chapter_view(target_regulation, chapter_no)
         
-        if selected:
-            # Use get_regulation_doc from loader directly to pass doc to method
-            json_path = full_view._resolve_json_path()
-            if json_path:
-                doc = full_view.loader.get_regulation_doc(json_path, selected.rule_code)
-                chapter_node = full_view.get_chapter_node(doc, chapter_no)
-                
-                if chapter_node:
-                    chapter_title = chapter_node.get("title", "").strip()
-                    chapter_disp = chapter_node.get("display_no", f"제{chapter_no}장").strip()
-                    
-                    # Format: "교원인사규정 제5장 정년보장임용"
-                    full_title = f"{selected.title} {chapter_disp} {chapter_title}".strip()
-
-                    def render_nodes(nodes):
-                        lines = []
-                        for node in nodes:
-                            type_ = node.get("type")
-                            display_no = node.get("display_no", "").strip()
-                            title = node.get("title", "").strip()
-                            text = node.get("text", "").strip()
-
-                            if type_ == "article":
-                                header = display_no
-                                if title:
-                                    header += f" ({title})"
-                                # Use bold for article header
-                                lines.append(f"**{header}**")
-                                if text:
-                                    lines.append(text)
-                            elif type_ == "item":
-                                # Ensure dot for numeric items (e.g. "1" -> "1.")
-                                if display_no.isdigit():
-                                    display_no += "."
-                                # Use indentation (non-breaking space or markdown quote could be used, but spaces work with rich panel usually)
-                                lines.append(f"&nbsp;&nbsp;{display_no} {text}")
-                            elif type_ == "subitem":
-                                lines.append(f"&nbsp;&nbsp;&nbsp;&nbsp;{display_no} {text}")
-                            elif type_ == "paragraph":
-                                prefix = f"{display_no} " if display_no else ""
-                                lines.append(f"{prefix}{text}")
-                            else:
-                                if text:
-                                    lines.append(text)
-
-                            if node.get("children"):
-                                lines.extend(render_nodes(node["children"]))
-                        return lines
-
-                    # Join with double newline for Markdown paragraph separation
-                    full_text = "\n\n".join(render_nodes(chapter_node.get("children", [])))
-                    
-                    _print_markdown(f"📖 {full_title}", full_text)
-                    
-                    state["last_regulation"] = selected.title
-                    state["last_rule_code"] = selected.rule_code
-                    state["last_query"] = raw_query
-                    if interactive:
-                        _append_history(
-                            state,
-                            "assistant",
-                            f"{full_title} 전문을 표시했습니다.",
-                        )
-                    return 0
+        if result.type == QueryType.CLARIFICATION:
+            print("여러 규정이 매칭됩니다. 선택해주세요:")
+            for i, opt in enumerate(result.clarification_options, 1):
+                print(f"  {i}. {opt}")
+            return 0
+        
+        if result.success:
+            _print_query_result(result, args.verbose)
+            state["last_regulation"] = result.state_update.get("last_regulation")
+            state["last_rule_code"] = result.state_update.get("last_rule_code")
+            state["last_query"] = raw_query
+            if interactive:
+                reg_title = result.data.get("regulation_title", target_regulation)
+                chapter_title = result.data.get("chapter_title", "")
+                full_title = f"{reg_title} 제{chapter_no}장 {chapter_title}".strip()
+                _append_history(
+                    state,
+                    "assistant",
+                    f"{full_title} 전문을 표시했습니다.",
+                )
+            return 0
 
     attachment_request = parse_attachment_request(
         args.query,
@@ -799,45 +781,30 @@ def _perform_unified_search(
     )
     if attachment_request:
         reg_query, table_no, label = attachment_request
-        full_view = FullViewUseCase(JSONDocumentLoader())
-        matches = full_view.find_matches(reg_query)
-        selected = _select_regulation(matches, interactive)
-        if not selected:
+        handler = QueryHandler()
+        result = handler.get_attachment_view(reg_query, label, table_no)
+        
+        if result.type == QueryType.CLARIFICATION:
+            print("여러 규정이 매칭됩니다. 선택해주세요:")
+            for i, opt in enumerate(result.clarification_options, 1):
+                print(f"  {i}. {opt}")
             return 0
-
-        label_variants = attachment_label_variants(label)
-        tables = full_view.find_tables(selected.rule_code, table_no, label_variants)
-        if not tables:
-            print_info(f"{label}를 찾을 수 없습니다.")
+        
+        if not result.success:
+            print_info(result.content)
             return 0
-
-        display_title = infer_regulation_title_from_tables(tables, selected.title)
-        label_text = label or "별표"
-        title_label = f"{display_title} {label_text}"
-        if table_no:
-            title_label = f"{display_title} {label_text} {table_no}"
-        lines = []
-        for idx, table in enumerate(tables, 1):
-            path = clean_path_segments(table.path) if table.path else []
-            heading = " > ".join(path) if path else display_title
-            if table_no:
-                table_label = f"{label_text} {table_no}"
-            else:
-                table_label = infer_attachment_label(table, label_text)
-            lines.append(f"### [{idx}] {heading} ({table_label})")
-            if table.text:
-                lines.append(table.text)
-            lines.append(normalize_markdown_table(table.markdown).strip())
-        _print_markdown(title_label, "\n\n".join(lines))
-
-        state["last_regulation"] = display_title
-        state["last_rule_code"] = selected.rule_code
+        
+        _print_query_result(result, args.verbose)
+        state["last_regulation"] = result.state_update.get("last_regulation")
+        state["last_rule_code"] = result.state_update.get("last_rule_code")
         state["last_query"] = raw_query
         if interactive:
+            label_text = result.data.get("label", "별표")
+            reg_title = result.data.get("regulation_title", reg_query)
             _append_history(
                 state,
                 "assistant",
-                f"{title_label} 내용을 표시했습니다.",
+                f"{reg_title} {label_text} 내용을 표시했습니다.",
             )
         return 0
 
