@@ -893,12 +893,6 @@ def create_app(
     # Build UI
     with gr.Blocks(
         title="📚 대학 규정집 Q&A",
-        css=CUSTOM_CSS,
-        theme=gr.themes.Soft(
-            primary_hue="emerald",
-            secondary_hue="purple",
-            neutral_hue="slate",
-        ),
     ) as app:
         # Header
         gr.HTML("""
@@ -924,8 +918,6 @@ def create_app(
                             label="",
                             height=500,
                             show_label=False,
-                            bubble_full_width=False,
-                            avatar_images=(None, "https://api.dicebear.com/7.x/bottts/svg?seed=claude"),
                             type="messages",
                         )
                         
@@ -1127,6 +1119,12 @@ def main():
         server_port=args.port,
         share=args.share,
         show_error=True,
+        css=CUSTOM_CSS,
+        theme=gr.themes.Soft(
+            primary_hue="emerald",
+            secondary_hue="purple",
+            neutral_hue="slate",
+        ),
     )
 
 
