@@ -132,6 +132,16 @@ uv run regulation serve --mcp
 | `search_regulations` | 규정 검색 (Hybrid + Rerank) |
 | `ask_regulations` | AI 질문-답변 |
 | `get_sync_status` | 동기화 상태 조회 |
+| `get_regulation_overview` | 규정 개요(목차, 구조) 조회 |
+| `view_article` | 특정 조항 전문 조회 (예: 제8조) |
+| `view_chapter` | 특정 장 전문 조회 (예: 제3장) |
+
+**리소스 (Resources)**:
+
+| Resource | 설명 |
+|----------|------|
+| `status://sync` | 동기화 상태 정보 |
+| `list://regulations` | 등록된 규정 목록 |
 
 > DB 관리(sync, reset)는 CLI로 수행합니다.
 
@@ -646,10 +656,3 @@ uv add <package>
 - `uv` 패키지 매니저
 - `hwp5` 라이브러리 + `hwp5html` CLI (HWP 파일 처리)
 
----
-
-## 관련 문서
-
-- [QUICKSTART.md](./QUICKSTART.md) - 빠른 시작 가이드
-- [LLM_GUIDE.md](./LLM_GUIDE.md) - LLM 설정 가이드
-- [SCHEMA_REFERENCE.md](./SCHEMA_REFERENCE.md) - JSON 스키마 명세

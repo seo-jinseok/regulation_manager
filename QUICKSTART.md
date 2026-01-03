@@ -169,6 +169,7 @@ uv run regulation serve --mcp
 - `audience` 파라미터로 대상(교수/학생/직원) 지정 가능
 - 모호한 질의는 `type=clarification` 응답 반환
 - "전문/원문/전체" 요청은 `type=full_view` 응답 반환
+- `get_regulation_overview`, `view_article`, `view_chapter` 도구로 규정 구조 탐색 가능
 
 ---
 
