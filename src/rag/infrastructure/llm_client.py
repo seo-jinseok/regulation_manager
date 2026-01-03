@@ -45,9 +45,8 @@ class OpenAIClient(ILLMClient):
 
         self.api_key = api_key or os.getenv("OPENAI_API_KEY")
         if not self.api_key:
-            raise ValueError(
-                "OpenAI API key required. Set OPENAI_API_KEY environment variable."
-            )
+            from ..exceptions import MissingAPIKeyError
+            raise MissingAPIKeyError("OPENAI_API_KEY")
 
         self._client = OpenAI(api_key=self.api_key)
         self.model = model

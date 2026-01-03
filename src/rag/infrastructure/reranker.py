@@ -8,6 +8,8 @@ Uses BAAI/bge-reranker-v2-m3 for multilingual support (including Korean).
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, List, Optional, Tuple
 
+from ..domain.repositories import IReranker
+
 if TYPE_CHECKING:
     from ..domain.entities import SearchResult
 
@@ -172,3 +174,46 @@ def clear_reranker():
     """Release the reranker model from memory."""
     global _reranker
     _reranker = None
+
+
+class BGEReranker(IReranker):
+    """
+    BGE cross-encoder reranker implementation.
+
+    Implements IReranker interface for dependency injection.
+    """
+
+    def __init__(self, model_name: Optional[str] = None):
+        """
+        Initialize BGE reranker.
+
+        Args:
+            model_name: Optional model name. Defaults to bge-reranker-v2-m3.
+        """
+        self._model_name = model_name
+
+    def rerank(
+        self,
+        query: str,
+        documents: List[Tuple[str, str, dict]],
+        top_k: int = 10,
+    ) -> List[tuple]:
+        """
+        Rerank documents using BGE cross-encoder.
+
+        Args:
+            query: The search query.
+            documents: List of (doc_id, content, metadata) tuples.
+            top_k: Maximum number of results to return.
+
+        Returns:
+            List of (doc_id, content, score, metadata) tuples sorted by relevance.
+        """
+        if not documents:
+            return []
+
+        results = rerank(query, documents, top_k)
+        return [
+            (r.doc_id, r.content, r.score, r.metadata)
+            for r in results
+        ]

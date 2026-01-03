@@ -9,7 +9,10 @@ import shutil
 import sys
 import time
 from pathlib import Path
-from typing import Dict, Optional
+from typing import TYPE_CHECKING, Dict, Optional
+
+if TYPE_CHECKING:
+    from rich.console import Console
 
 from dotenv import load_dotenv
 
@@ -79,7 +82,16 @@ def _build_pipeline_signature(rules_hash: str, llm_signature: str) -> str:
     return f"{PIPELINE_SIGNATURE_VERSION}|rules:{rules_hash}|llm:{llm_signature}"
 
 
-def run_pipeline(args, console=None):
+def run_pipeline(args: argparse.Namespace, console: Optional["Console"] = None) -> int:
+    """Run the HWP to JSON conversion pipeline.
+
+    Args:
+        args: Command line arguments namespace.
+        console: Optional Rich console for output.
+
+    Returns:
+        Exit code (0 for success, 1 for errors).
+    """
     if not console:
         from rich.console import Console
 

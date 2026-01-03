@@ -14,6 +14,9 @@ from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
+from ..domain.repositories import IHybridSearcher
+from .patterns import ARTICLE_PATTERN
+
 if TYPE_CHECKING:
     from ..domain.repositories import ILLMClient
 
@@ -86,11 +89,6 @@ class QueryAnalyzer:
 
     Also provides query expansion with synonyms for better recall.
     """
-
-    # Pattern for article/paragraph/item numbers
-    ARTICLE_PATTERN = re.compile(
-        r"제\s*\d+\s*조(?:\s*의\s*\d+)?|제\s*\d+\s*항|제\s*\d+\s*호"
-    )
 
     # Pattern for regulation names
     REGULATION_PATTERN = re.compile(r"[가-힣]*(?:규정|학칙|내규|세칙|지침)")
@@ -375,7 +373,8 @@ class QueryAnalyzer:
             rewritten = " ".join(rewritten.split())
 
             if not rewritten:
-                raise ValueError("LLM returned empty rewrite")
+                from ..exceptions import HybridSearchError
+                raise HybridSearchError("LLM returned empty rewrite")
             if intent_keywords:
                 rewritten = self._merge_keywords(rewritten, intent_keywords)
             result = QueryRewriteResult(
@@ -421,7 +420,7 @@ class QueryAnalyzer:
             QueryType indicating the detected query pattern.
         """
         # Check for article references (highest priority for exact match)
-        if self.ARTICLE_PATTERN.search(query):
+        if ARTICLE_PATTERN.search(query):
             return QueryType.ARTICLE_REFERENCE
 
         # Check for intent expressions before academic keywords
@@ -948,7 +947,7 @@ class BM25:
         self.doc_count = 0
 
 
-class HybridSearcher:
+class HybridSearcher(IHybridSearcher):
     """
     Combines BM25 and dense retrieval for hybrid search.
 

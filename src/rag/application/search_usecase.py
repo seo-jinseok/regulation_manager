@@ -9,30 +9,20 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, List, Optional
 
 from ..domain.entities import Answer, Chunk, SearchResult
-from ..domain.repositories import ILLMClient, IVectorStore
+from ..domain.repositories import IHybridSearcher, ILLMClient, IReranker, IVectorStore
 from ..domain.value_objects import Query, SearchFilter
+from ..infrastructure.patterns import (
+    ARTICLE_PATTERN,
+    HEADING_ONLY_PATTERN,
+    REGULATION_ARTICLE_PATTERN,
+    REGULATION_ONLY_PATTERN,
+    RULE_CODE_PATTERN,
+    normalize_article_token,
+)
 
+# Forward references for type hints
 if TYPE_CHECKING:
-    from ..infrastructure.hybrid_search import Audience, HybridSearcher, ScoredDocument
-
-
-# Regex for matching article/paragraph/item numbers (제N조, 제N항, 제N호)
-ARTICLE_PATTERN = re.compile(
-    r"제\s*\d+\s*조(?:\s*의\s*\d+)?|제\s*\d+\s*항|제\s*\d+\s*호"
-)
-HEADING_ONLY_PATTERN = re.compile(r"^\([^)]*\)\s*$")
-RULE_CODE_PATTERN = re.compile(r"^\d+(?:-\d+){2,}$")
-
-# Pattern for "규정명 + 조문번호" queries (e.g., "교원인사규정 제8조")
-REGULATION_ARTICLE_PATTERN = re.compile(
-    r"([가-힣]+(?:규정|학칙|내규|세칙|지침|정관))\s*(제\s*\d+\s*조(?:\s*의\s*\d+)?(?:\s*제?\s*\d+\s*항)?(?:\s*제?\s*\d+\s*호)?)"
-)
-
-# Pattern for "규정명만" queries (e.g., "교원인사규정", "학칙")
-# Must be the entire query (with optional whitespace)
-REGULATION_ONLY_PATTERN = re.compile(
-    r"^\s*([가-힣]+(?:규정|학칙|내규|세칙|지침|정관))\s*$"
-)
+    from ..infrastructure.hybrid_search import Audience, ScoredDocument
 
 
 def _extract_regulation_only_query(query: str) -> Optional[str]:
@@ -81,10 +71,6 @@ def _coerce_query_text(value: object) -> str:
     if isinstance(value, (list, tuple)):
         return " ".join(str(part) for part in value)
     return str(value)
-
-
-def _normalize_article_token(token: str) -> str:
-    return re.sub(r"\s+", "", token)
 
 
 # System prompt for regulation Q&A
@@ -141,8 +127,9 @@ class SearchUseCase:
         store: IVectorStore,
         llm_client: Optional[ILLMClient] = None,
         use_reranker: Optional[bool] = None,
-        hybrid_searcher: Optional["HybridSearcher"] = None,
+        hybrid_searcher: Optional[IHybridSearcher] = None,
         use_hybrid: Optional[bool] = None,
+        reranker: Optional[IReranker] = None,
     ):
         """
         Initialize search use case.
@@ -153,6 +140,7 @@ class SearchUseCase:
             use_reranker: Whether to use BGE reranker (default: from config).
             hybrid_searcher: Optional HybridSearcher (auto-created if None and use_hybrid=True).
             use_hybrid: Whether to use hybrid search (default: from config).
+            reranker: Optional reranker implementation (auto-created if None and use_reranker=True).
         """
         # Use config defaults if not explicitly specified
         from ..config import get_config
@@ -168,9 +156,11 @@ class SearchUseCase:
         self._use_hybrid = use_hybrid if use_hybrid is not None else config.use_hybrid
         self._hybrid_initialized = hybrid_searcher is not None
         self._last_query_rewrite: Optional[QueryRewriteInfo] = None
+        self._reranker = reranker
+        self._reranker_initialized = reranker is not None
 
     @property
-    def hybrid_searcher(self) -> Optional["HybridSearcher"]:
+    def hybrid_searcher(self) -> Optional[IHybridSearcher]:
         """Lazy-initialize HybridSearcher on first access."""
         if self._use_hybrid and not self._hybrid_initialized:
             self._ensure_hybrid_searcher()
@@ -345,12 +335,12 @@ class SearchUseCase:
             )
 
             # Step 3: Filter and score by article number match
-            normalized_article = _normalize_article_token(article_ref)
+            normalized_article = normalize_article_token(article_ref)
             filtered_results = []
             for r in all_chunks:
                 article_haystack = r.chunk.embedding_text or r.chunk.text
                 text_articles = {
-                    _normalize_article_token(t)
+                    normalize_article_token(t)
                     for t in ARTICLE_PATTERN.findall(article_haystack)
                 }
 
@@ -524,12 +514,12 @@ class SearchUseCase:
             # Article number exact match bonus (제N조, 제N항, 제N호)
             article_bonus = 0.0
             query_articles = {
-                _normalize_article_token(t) for t in ARTICLE_PATTERN.findall(query_text)
+                normalize_article_token(t) for t in ARTICLE_PATTERN.findall(query_text)
             }
             if query_articles:
                 article_haystack = r.chunk.embedding_text or r.chunk.text
                 text_articles = {
-                    _normalize_article_token(t)
+                    normalize_article_token(t)
                     for t in ARTICLE_PATTERN.findall(article_haystack)
                 }
                 if query_articles & text_articles:
@@ -581,25 +571,30 @@ class SearchUseCase:
 
         # Apply reranker if enabled
         if self.use_reranker and boosted_results:
-            from ..infrastructure.reranker import rerank
+            # Lazy-initialize reranker if not provided via DI
+            if not self._reranker_initialized:
+                from ..infrastructure.reranker import BGEReranker
+                self._reranker = BGEReranker()
+                self._reranker_initialized = True
 
             # Prepare documents for reranking (use top candidates)
             candidates = boosted_results[: top_k * 2]
             documents = [(r.chunk.id, r.chunk.text, {}) for r in candidates]
 
-            # Rerank using BGE cross-encoder
-            reranked = rerank(scoring_query_text, documents, top_k=top_k)
+            # Rerank using cross-encoder
+            reranked = self._reranker.rerank(scoring_query_text, documents, top_k=top_k)
 
             # Map back to SearchResult
             id_to_result = {r.chunk.id: r for r in candidates}
             final_results = []
             for i, rr in enumerate(reranked):
-                original = id_to_result.get(rr.doc_id)
+                doc_id, content, score, metadata = rr
+                original = id_to_result.get(doc_id)
                 if original:
                     final_results.append(
                         SearchResult(
                             chunk=original.chunk,
-                            score=rr.score,
+                            score=score,
                             rank=i + 1,
                         )
                     )
@@ -750,10 +745,11 @@ class SearchUseCase:
             Answer with generated text and sources.
 
         Raises:
-            ValueError: If LLM client is not configured.
+            ConfigurationError: If LLM client is not configured.
         """
         if not self.llm:
-            raise ValueError("LLM client not configured. Use search() instead.")
+            from ..exceptions import ConfigurationError
+            raise ConfigurationError("LLM client not configured. Use search() instead.")
 
         # Get relevant chunks
         retrieval_query = search_query or question

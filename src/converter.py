@@ -2,7 +2,7 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
-from typing import List, Optional
+from typing import Callable, List, Optional
 
 from llama_index.core.readers.base import BaseReader
 from llama_index.core.schema import Document
@@ -27,12 +27,20 @@ class HwpToMarkdownReader(BaseReader):
         self,
         file: Path,
         extra_info: Optional[dict] = None,
-        status_callback=None,
+        status_callback: Optional[Callable[[str], None]] = None,
         verbose: bool = False,
     ) -> List[Document]:
         """
         Load data from HWP file.
-        status_callback: Optional function that receives a string status update (e.g. log line).
+
+        Args:
+            file: Path to the HWP file.
+            extra_info: Optional extra metadata to include.
+            status_callback: Optional function that receives status updates.
+            verbose: Whether to print verbose output.
+
+        Returns:
+            List of Document objects containing the converted content.
         """
         if not file.exists():
             raise FileNotFoundError(f"File not found: {file}")

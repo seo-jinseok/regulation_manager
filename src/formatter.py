@@ -488,12 +488,18 @@ class RegulationFormatter:
         return {"main": main, "sub": sub}
 
     def _build_hierarchy(self, articles: List[Dict]) -> List[Dict]:
+        """Build hierarchical tree from flat articles list.
+
+        Args:
+            articles: Flat list of article dictionaries.
+
+        Returns:
+            List of root nodes with nested children.
+        """
         # Pre-process: Infer Chapter 1 for articles without chapter info
-        # If articles start without a chapter but later chapters appear (e.g., 제2장),
-        # assign "제1장 총칙" to the earlier articles.
         articles = self._infer_first_chapter(articles)
 
-        roots = []
+        roots: List[Dict] = []
         # State tracking for hierarchy
         current_nodes = {
             "chapter": {"name": None, "node": None},
@@ -501,182 +507,250 @@ class RegulationFormatter:
             "subsection": {"name": None, "node": None},
         }
 
-        def get_parent_list(level):
-            # Determine where to append the new node
-            if level == "chapter":
-                return roots
-            if level == "section":
-                if current_nodes["chapter"]["node"]:
-                    return current_nodes["chapter"]["node"]["children"]
-                return roots  # Fallback
-            if level == "subsection":
-                if current_nodes["section"]["node"]:
-                    return current_nodes["section"]["node"]["children"]
-                if current_nodes["chapter"]["node"]:
-                    return current_nodes["chapter"]["node"]["children"]
-                return roots
-            if level == "article":
-                if current_nodes["subsection"]["node"]:
-                    return current_nodes["subsection"]["node"]["children"]
-                if current_nodes["section"]["node"]:
-                    return current_nodes["section"]["node"]["children"]
-                if current_nodes["chapter"]["node"]:
-                    return current_nodes["chapter"]["node"]["children"]
-                return roots
-            return roots
-
         for art in articles:
-            # Hierarchy Levels to check in order
-            levels = [
-                ("chapter", r"^(제\s*(\d+)\s*[장편])\s*(.*)"),
-                ("section", r"^(제\s*(\d+)\s*절)\s*(.*)"),
-                ("subsection", r"^(제\s*(\d+)\s*관)\s*(.*)"),
-            ]
+            # 1. Update Hierarchy Nodes (chapter, section, subsection)
+            self._update_hierarchy_nodes(art, current_nodes, roots)
 
-            # 1. Update Hierarchy Nodes
-            for lvl, regex in levels:
-                raw_val = art.get(lvl)
-                if raw_val != current_nodes[lvl]["name"]:
-                    current_nodes[lvl]["name"] = raw_val
-                    # Reset lower levels
-                    if lvl == "chapter":
-                        current_nodes["section"] = {"name": None, "node": None}
-                        current_nodes["subsection"] = {"name": None, "node": None}
-                    elif lvl == "section":
-                        current_nodes["subsection"] = {"name": None, "node": None}
+            # 2. Create Article Node with paragraphs and items
+            art_node = self._build_article_node(art)
 
-                    if raw_val:
-                        if not isinstance(raw_val, str):
-                            raw_val = str(raw_val)
-
-                        match = re.match(regex, raw_val.strip())
-                        if match:
-                            display_no = match.group(1)  # "제1장"
-                            # num = match.group(2) # "1" (Unused now, we resolve sort_no)
-                            title = match.group(3)
-                            sort_no = self._resolve_sort_no(display_no, lvl)
-                            node = self._create_node(
-                                lvl,
-                                display_no,
-                                title,
-                                None,
-                                sort_no,
-                                confidence_score=1.0,
-                            )
-                        else:
-                            # Fallback if regex fails but value exists
-                            node = self._create_node(
-                                lvl, raw_val, raw_val, None, confidence_score=0.5
-                            )
-
-                        current_nodes[lvl]["node"] = node
-                        get_parent_list(lvl).append(node)
-                    else:
-                        current_nodes[lvl]["node"] = None
-
-            # 2. Create Article Node
-            art_text = "\n".join(art.get("content", []))
-            art_display_no = art.get("article_no", "")
-            art_sort_no = self._resolve_sort_no(art_display_no, "article")
-            art_refs = self._extract_references(art_text)
-            art_node = self._create_node(
-                "article",
-                art_display_no,
-                art.get("title"),
-                art_text,
-                art_sort_no,
-                references=art_refs,
-            )
-
-            # Paragraphs & Items
-            for para in art.get("paragraphs", []):
-                para_num = (para.get("paragraph_no", "") or "").strip()
-                para_text = (para.get("content") or "").strip()
-                items = para.get("items", []) or []
-
-                # Items can appear directly under an article without an explicit paragraph marker.
-                # Avoid emitting empty paragraph container nodes; attach items directly under the article.
-                if not para_num and not para_text:
-                    for item in items:
-                        item_num = item.get("item_no", "")
-                        item_content = item.get("content")
-                        item_sort = self._resolve_sort_no(item_num, "item")
-                        item_refs = self._extract_references(item_content)
-                        item_node = self._create_node(
-                            "item",
-                            item_num,
-                            None,
-                            item_content,
-                            item_sort,
-                            references=item_refs,
-                        )
-
-                        for sub in item.get("subitems", []):
-                            sub_num = sub.get("subitem_no", "")
-                            sub_sort = self._resolve_sort_no(sub_num, "subitem")
-                            sub_content = sub.get("content", "")
-                            sub_refs = self._extract_references(sub_content)
-                            sub_node = self._create_node(
-                                "subitem",
-                                sub_num,
-                                None,
-                                sub_content,
-                                sub_sort,
-                                references=sub_refs,
-                            )
-                            item_node["children"].append(sub_node)
-
-                        art_node["children"].append(item_node)
-                    continue
-
-                para_sort = self._resolve_sort_no(para_num, "paragraph")
-                para_refs = self._extract_references(para_text)
-                para_node = self._create_node(
-                    "paragraph",
-                    para_num,
-                    None,
-                    para_text,
-                    para_sort,
-                    references=para_refs,
-                )
-
-                for item in items:
-                    item_num = item.get("item_no", "")
-                    item_content = item.get("content")
-                    item_sort = self._resolve_sort_no(item_num, "item")
-                    item_refs = self._extract_references(item_content)
-                    item_node = self._create_node(
-                        "item",
-                        item_num,
-                        None,
-                        item_content,
-                        item_sort,
-                        references=item_refs,
-                    )
-
-                    for sub in item.get("subitems", []):
-                        sub_num = sub.get("subitem_no", "")
-                        sub_sort = self._resolve_sort_no(sub_num, "subitem")
-                        sub_content = sub.get("content", "")
-                        sub_refs = self._extract_references(sub_content)
-                        sub_node = self._create_node(
-                            "subitem",
-                            sub_num,
-                            None,
-                            sub_content,
-                            sub_sort,
-                            references=sub_refs,
-                        )
-                        item_node["children"].append(sub_node)
-
-                    para_node["children"].append(item_node)
-
-                art_node["children"].append(para_node)
-
-            # Append Article to lowest active parent
-            get_parent_list("article").append(art_node)
+            # 3. Append Article to appropriate parent
+            parent_list = self._get_parent_list("article", current_nodes, roots)
+            parent_list.append(art_node)
 
         return roots
+
+    def _get_parent_list(
+        self,
+        level: str,
+        current_nodes: Dict,
+        roots: List[Dict],
+    ) -> List[Dict]:
+        """Determine where to append a new node based on its level.
+
+        Args:
+            level: Node level (chapter, section, subsection, article).
+            current_nodes: Current hierarchy state.
+            roots: Root node list.
+
+        Returns:
+            The list to append the node to.
+        """
+        if level == "chapter":
+            return roots
+        if level == "section":
+            if current_nodes["chapter"]["node"]:
+                return current_nodes["chapter"]["node"]["children"]
+            return roots
+        if level == "subsection":
+            if current_nodes["section"]["node"]:
+                return current_nodes["section"]["node"]["children"]
+            if current_nodes["chapter"]["node"]:
+                return current_nodes["chapter"]["node"]["children"]
+            return roots
+        if level == "article":
+            if current_nodes["subsection"]["node"]:
+                return current_nodes["subsection"]["node"]["children"]
+            if current_nodes["section"]["node"]:
+                return current_nodes["section"]["node"]["children"]
+            if current_nodes["chapter"]["node"]:
+                return current_nodes["chapter"]["node"]["children"]
+            return roots
+        return roots
+
+    def _update_hierarchy_nodes(
+        self,
+        art: Dict,
+        current_nodes: Dict,
+        roots: List[Dict],
+    ) -> None:
+        """Update hierarchy nodes (chapter, section, subsection) based on article.
+
+        Args:
+            art: Article dictionary.
+            current_nodes: Current hierarchy state (mutated in-place).
+            roots: Root node list.
+        """
+        # Hierarchy Levels to check in order
+        levels = [
+            ("chapter", r"^(제\s*(\d+)\s*[장편])\s*(.*)"),
+            ("section", r"^(제\s*(\d+)\s*절)\s*(.*)"),
+            ("subsection", r"^(제\s*(\d+)\s*관)\s*(.*)"),
+        ]
+
+        for lvl, regex in levels:
+            raw_val = art.get(lvl)
+            if raw_val != current_nodes[lvl]["name"]:
+                current_nodes[lvl]["name"] = raw_val
+                # Reset lower levels
+                if lvl == "chapter":
+                    current_nodes["section"] = {"name": None, "node": None}
+                    current_nodes["subsection"] = {"name": None, "node": None}
+                elif lvl == "section":
+                    current_nodes["subsection"] = {"name": None, "node": None}
+
+                if raw_val:
+                    node = self._create_hierarchy_node(raw_val, lvl, regex)
+                    current_nodes[lvl]["node"] = node
+                    parent_list = self._get_parent_list(lvl, current_nodes, roots)
+                    parent_list.append(node)
+                else:
+                    current_nodes[lvl]["node"] = None
+
+    def _create_hierarchy_node(
+        self,
+        raw_val: Any,
+        lvl: str,
+        regex: str,
+    ) -> Dict:
+        """Create a hierarchy node (chapter, section, subsection).
+
+        Args:
+            raw_val: Raw value from article dictionary.
+            lvl: Level type (chapter, section, subsection).
+            regex: Regex pattern to parse the value.
+
+        Returns:
+            Node dictionary.
+        """
+        if not isinstance(raw_val, str):
+            raw_val = str(raw_val)
+
+        match = re.match(regex, raw_val.strip())
+        if match:
+            display_no = match.group(1)  # "제1장"
+            title = match.group(3)
+            sort_no = self._resolve_sort_no(display_no, lvl)
+            return self._create_node(
+                lvl,
+                display_no,
+                title,
+                None,
+                sort_no,
+                confidence_score=1.0,
+            )
+        else:
+            # Fallback if regex fails but value exists
+            return self._create_node(
+                lvl, raw_val, raw_val, None, confidence_score=0.5
+            )
+
+    def _build_article_node(self, art: Dict) -> Dict:
+        """Build article node with paragraphs, items, and subitems.
+
+        Args:
+            art: Article dictionary.
+
+        Returns:
+            Article node with nested children.
+        """
+        art_text = "\n".join(art.get("content", []))
+        art_display_no = art.get("article_no", "")
+        art_sort_no = self._resolve_sort_no(art_display_no, "article")
+        art_refs = self._extract_references(art_text)
+        art_node = self._create_node(
+            "article",
+            art_display_no,
+            art.get("title"),
+            art_text,
+            art_sort_no,
+            references=art_refs,
+        )
+
+        # Build paragraphs and items
+        for para in art.get("paragraphs", []):
+            self._add_paragraph_to_article(para, art_node)
+
+        return art_node
+
+    def _add_paragraph_to_article(self, para: Dict, art_node: Dict) -> None:
+        """Add paragraph (with items) to article node.
+
+        Args:
+            para: Paragraph dictionary.
+            art_node: Article node to add paragraph to.
+        """
+        para_num = (para.get("paragraph_no", "") or "").strip()
+        para_text = (para.get("content") or "").strip()
+        items = para.get("items", []) or []
+
+        # Items can appear directly under article without explicit paragraph marker
+        if not para_num and not para_text:
+            # Attach items directly under article
+            for item in items:
+                item_node = self._build_item_node(item)
+                art_node["children"].append(item_node)
+            return
+
+        # Create paragraph node
+        para_sort = self._resolve_sort_no(para_num, "paragraph")
+        para_refs = self._extract_references(para_text)
+        para_node = self._create_node(
+            "paragraph",
+            para_num,
+            None,
+            para_text,
+            para_sort,
+            references=para_refs,
+        )
+
+        # Add items to paragraph
+        for item in items:
+            item_node = self._build_item_node(item)
+            para_node["children"].append(item_node)
+
+        art_node["children"].append(para_node)
+
+    def _build_item_node(self, item: Dict) -> Dict:
+        """Build item node with subitems.
+
+        Args:
+            item: Item dictionary.
+
+        Returns:
+            Item node with nested subitems.
+        """
+        item_num = item.get("item_no", "")
+        item_content = item.get("content")
+        item_sort = self._resolve_sort_no(item_num, "item")
+        item_refs = self._extract_references(item_content)
+        item_node = self._create_node(
+            "item",
+            item_num,
+            None,
+            item_content,
+            item_sort,
+            references=item_refs,
+        )
+
+        # Add subitems
+        for sub in item.get("subitems", []):
+            sub_node = self._build_subitem_node(sub)
+            item_node["children"].append(sub_node)
+
+        return item_node
+
+    def _build_subitem_node(self, sub: Dict) -> Dict:
+        """Build subitem node.
+
+        Args:
+            sub: Subitem dictionary.
+
+        Returns:
+            Subitem node dictionary.
+        """
+        sub_num = sub.get("subitem_no", "")
+        sub_sort = self._resolve_sort_no(sub_num, "subitem")
+        sub_content = sub.get("content", "")
+        sub_refs = self._extract_references(sub_content)
+        return self._create_node(
+            "subitem",
+            sub_num,
+            None,
+            sub_content,
+            sub_sort,
+            references=sub_refs,
+        )
 
     def _parse_appendices(
         self, appendix_lines_or_str, html_content: Optional[str] = None

@@ -254,3 +254,109 @@ class ILLMClient(ABC):
             Embedding vector.
         """
         pass
+
+
+class IReranker(ABC):
+    """
+    Abstract interface for reranking search results.
+
+    Implementations may use BGE, Cohere, etc.
+    """
+
+    @abstractmethod
+    def rerank(
+        self,
+        query: str,
+        documents: List[tuple],
+        top_k: int = 10,
+    ) -> List[tuple]:
+        """
+        Rerank documents using cross-encoder.
+
+        Args:
+            query: The search query.
+            documents: List of (doc_id, content, metadata) tuples.
+            top_k: Maximum number of results to return.
+
+        Returns:
+            List of (doc_id, content, score, metadata) tuples sorted by relevance.
+        """
+        pass
+
+
+class IHybridSearcher(ABC):
+    """
+    Abstract interface for hybrid search (dense + sparse).
+
+    Combines BM25 sparse search with dense vector search
+    using Reciprocal Rank Fusion (RRF).
+    """
+
+    @abstractmethod
+    def add_documents(self, documents: List[tuple]) -> None:
+        """
+        Add documents to the sparse index.
+
+        Args:
+            documents: List of (doc_id, text, metadata) tuples.
+        """
+        pass
+
+    @abstractmethod
+    def search_sparse(self, query: str, top_k: int = 10) -> List:
+        """
+        Perform sparse (BM25) search.
+
+        Args:
+            query: The search query.
+            top_k: Maximum number of results.
+
+        Returns:
+            List of ScoredDocument objects.
+        """
+        pass
+
+    @abstractmethod
+    def fuse_results(
+        self,
+        sparse_results: List,
+        dense_results: List,
+        top_k: int = 10,
+        query_text: Optional[str] = None,
+    ) -> List:
+        """
+        Fuse sparse and dense results using RRF.
+
+        Args:
+            sparse_results: Results from sparse search.
+            dense_results: Results from dense search.
+            top_k: Maximum number of results.
+            query_text: Original query for context.
+
+        Returns:
+            Fused and sorted results.
+        """
+        pass
+
+    @abstractmethod
+    def set_llm_client(self, llm_client: "ILLMClient") -> None:
+        """
+        Set LLM client for query rewriting.
+
+        Args:
+            llm_client: LLM client implementation.
+        """
+        pass
+
+    @abstractmethod
+    def expand_query(self, query: str) -> str:
+        """
+        Expand query with synonyms.
+
+        Args:
+            query: Original query.
+
+        Returns:
+            Expanded query string.
+        """
+        pass
