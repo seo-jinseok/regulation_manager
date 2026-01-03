@@ -359,6 +359,57 @@ def create_app(
     query_analyzer = QueryAnalyzer()
     full_view_usecase = FullViewUseCase(JSONDocumentLoader())
 
+    def _process_with_handler(
+        query: str,
+        top_k: int,
+        include_abolished: bool,
+        llm_provider: str,
+        llm_model: str,
+        llm_base_url: str,
+        target_db_path: str,
+        audience_override: Optional[Audience],
+        history: List[dict],
+        state: dict,
+    ) -> QueryResult:
+        """Process query using QueryHandler."""
+        db_path_value = target_db_path or db_path
+        store_for_query = ChromaVectorStore(persist_directory=db_path_value)
+        
+        # Initialize LLM client
+        llm_client = None
+        if not use_mock_llm:
+            try:
+                llm_client = LLMClientAdapter(
+                    provider=llm_provider,
+                    model=llm_model or None,
+                    base_url=llm_base_url or None,
+                )
+            except Exception:
+                pass  # Will use search only if LLM fails
+        else:
+            llm_client = MockLLMClient()
+        
+        handler = QueryHandler(
+            store=store_for_query,
+            llm_client=llm_client,
+        )
+        
+        context = QueryContext(
+            state=state,
+            history=history,
+            interactive=True,
+            last_regulation=state.get("last_regulation"),
+            last_rule_code=state.get("last_rule_code"),
+        )
+        
+        options = QueryOptions(
+            top_k=top_k,
+            include_abolished=include_abolished,
+            audience_override=audience_override,
+        )
+        
+        return handler.process_query(query, context, options)
+
     def _parse_audience(selection: str) -> Optional[Audience]:
         if selection == "교수":
             return Audience.FACULTY
