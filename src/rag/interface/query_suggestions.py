@@ -93,6 +93,21 @@ def get_followup_suggestions(
         최대 3개의 후속 쿼리 제안
     """
     suggestions: List[str] = []
+    
+    # 현재 쿼리 정규화 (공백 정리, 소문자)
+    normalized_query = query.lower().strip()
+
+    def is_similar_to_query(suggestion: str) -> bool:
+        """현재 쿼리와 동일하거나 유사한지 확인."""
+        normalized_suggestion = suggestion.lower().strip()
+        # 완전 일치
+        if normalized_suggestion == normalized_query:
+            return True
+        # 핵심 키워드가 동일한 경우 (예: "전문 보기" vs "전문")
+        # 쿼리가 제안에 포함되거나 제안이 쿼리에 포함되는 경우
+        if normalized_suggestion in normalized_query or normalized_query in normalized_suggestion:
+            return True
+        return False
 
     # 1. 키워드 매칭
     search_text = f"{query} {answer_text or ''}"
@@ -100,7 +115,7 @@ def get_followup_suggestions(
         if keyword in search_text:
             # 해당 키워드에서 최대 2개 추가
             for followup in followups[:2]:
-                if followup not in suggestions:
+                if followup not in suggestions and not is_similar_to_query(followup):
                     suggestions.append(followup)
             if len(suggestions) >= 2:
                 break
@@ -111,7 +126,7 @@ def get_followup_suggestions(
             if len(suggestions) >= 3:
                 break
             suggestion = template.format(regulation=regulation_title)
-            if suggestion not in suggestions:
+            if suggestion not in suggestions and not is_similar_to_query(suggestion):
                 suggestions.append(suggestion)
 
     return suggestions[:3]
