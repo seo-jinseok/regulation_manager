@@ -135,7 +135,10 @@ class RegulationFormatter:
                 from .metadata_extractor import MetadataExtractor
 
                 extracted_metadata = MetadataExtractor().extract(text)
-            except Exception:
+            except (ValueError, KeyError, AttributeError) as e:
+                # Metadata extraction is optional; log and continue
+                import logging
+                logging.getLogger(__name__).debug(f"Metadata extraction failed: {e}")
                 extracted_metadata = None
 
         if extracted_metadata:

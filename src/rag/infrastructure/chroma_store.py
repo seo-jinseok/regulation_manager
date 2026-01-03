@@ -289,41 +289,8 @@ class ChromaVectorStore(IVectorStore):
         return count
 
     def _metadata_to_chunk(self, id_: str, document: str, metadata: dict) -> Chunk:
-        """Convert stored metadata back to Chunk entity."""
-        from ..domain.entities import ChunkLevel, Keyword, RegulationStatus
-
-        # Parse parent_path from string
-        parent_path_str = metadata.get("parent_path", "")
-        parent_path = parent_path_str.split(" > ") if parent_path_str else []
-
-        keywords = []
-        raw_keywords = metadata.get("keywords")
-        if raw_keywords:
-            try:
-                if isinstance(raw_keywords, str):
-                    parsed = json.loads(raw_keywords)
-                elif isinstance(raw_keywords, list):
-                    parsed = raw_keywords
-                else:
-                    parsed = []
-                for item in parsed:
-                    if isinstance(item, dict) and "term" in item and "weight" in item:
-                        keywords.append(Keyword.from_dict(item))
-            except json.JSONDecodeError:
-                pass
-
-        return Chunk(
-            id=id_,
-            rule_code=metadata.get("rule_code", ""),
-            level=ChunkLevel.from_string(metadata.get("level", "text")),
-            title=metadata.get("title", ""),
-            text=document,
-            embedding_text=document,
-            full_text="",  # Not stored
-            parent_path=parent_path,
-            token_count=metadata.get("token_count", 0),
-            keywords=keywords,
-            is_searchable=metadata.get("is_searchable", True),
-            effective_date=metadata.get("effective_date") or None,
-            status=RegulationStatus(metadata.get("status", "active")),
-        )
+        """Convert stored metadata back to Chunk entity.
+        
+        Delegates to Chunk.from_metadata() to avoid code duplication.
+        """
+        return Chunk.from_metadata(id_, document, metadata)

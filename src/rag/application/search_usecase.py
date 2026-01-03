@@ -208,161 +208,236 @@ class SearchUseCase:
         query_text = _coerce_query_text(query_text).strip()
         if not query_text:
             return []
-        trimmed_query = query_text
-        if trimmed_query and RULE_CODE_PATTERN.match(trimmed_query):
-            self._last_query_rewrite = QueryRewriteInfo(
-                original=query_text,
-                rewritten=trimmed_query,
-                used=False,
-                method=None,
-                from_cache=False,
-                fallback=False,
-                used_synonyms=None,
-                used_intent=None,
-                matched_intents=None,
-            )
-            rule_filter = self._build_rule_code_filter(filter, trimmed_query)
-            query = Query(text="규정", include_abolished=include_abolished)
-            return self.store.search(query, rule_filter, top_k)
 
-        # Handle "규정명만" pattern (e.g., "교원인사규정", "학칙")
-        # Returns all articles from the matched regulation
+        # 1. Rule code pattern (e.g., "3-1-24")
+        if RULE_CODE_PATTERN.match(query_text):
+            return self._search_by_rule_code_pattern(
+                query_text, filter, top_k, include_abolished
+            )
+
+        # 2. Regulation name only (e.g., "교원인사규정")
         reg_only = _extract_regulation_only_query(query_text)
         if reg_only:
-            self._last_query_rewrite = QueryRewriteInfo(
-                original=query_text,
-                rewritten=reg_only,
-                used=True,
-                method="regulation_only",
-                from_cache=False,
-                fallback=False,
-                used_synonyms=False,
-                used_intent=False,
-                matched_intents=None,
+            result = self._search_by_regulation_only(
+                query_text, reg_only, filter, top_k, include_abolished
             )
+            if result is not None:
+                return result
 
-            # Step 1: Find the regulation's rule_code
-            reg_query = Query(text=reg_only, include_abolished=include_abolished)
-            reg_results = self.store.search(reg_query, filter, 50)
-
-            target_rule_code = None
-            best_score = 0.0
-            for r in reg_results:
-                chunk_reg_name = (
-                    r.chunk.parent_path[0] if r.chunk.parent_path else r.chunk.title
-                ) or ""
-                # Check for match (exact or substring)
-                if reg_only in chunk_reg_name or chunk_reg_name in reg_only:
-                    match_score = 1.0 if chunk_reg_name == reg_only else 0.8
-                    # Also match if query is suffix (e.g., "인사규정" matches "교원인사규정")
-                    if chunk_reg_name.endswith(reg_only):
-                        match_score = 0.9
-                    if match_score > best_score:
-                        best_score = match_score
-                        target_rule_code = r.chunk.rule_code
-                        if match_score == 1.0:
-                            break
-
-            if not target_rule_code:
-                # Regulation not found, fall back to normal search
-                pass
-            else:
-                # Step 2: Get all articles from this regulation
-                # Use a generic query to retrieve more chunks from the filtered regulation
-                rule_filter = self._build_rule_code_filter(filter, target_rule_code)
-                all_chunks = self.store.search(
-                    Query(text="규정 조항", include_abolished=include_abolished),
-                    rule_filter,
-                    200  # Get many chunks to show regulation overview
-                )
-
-                # Return all chunks from this regulation, sorted by score
-                results = []
-                for i, r in enumerate(all_chunks[:top_k]):
-                    results.append(
-                        SearchResult(chunk=r.chunk, score=r.score, rank=i + 1)
-                    )
-                return results
-
-        # Handle "규정명 + 조문번호" pattern (e.g., "교원인사규정 제8조")
+        # 3. Regulation + article (e.g., "교원인사규정 제8조")
         reg_article = _extract_regulation_article_query(query_text)
         if reg_article:
-            reg_name, article_ref = reg_article
-            self._last_query_rewrite = QueryRewriteInfo(
-                original=query_text,
-                rewritten=f"{reg_name} {article_ref}",
-                used=True,
-                method="regulation_article",
-                from_cache=False,
-                fallback=False,
-                used_synonyms=False,
-                used_intent=False,
-                matched_intents=None,
+            return self._search_by_regulation_article(
+                query_text, reg_article, filter, top_k, include_abolished
             )
 
-            # Step 1: Find the regulation's rule_code by searching with regulation name
-            reg_query = Query(text=reg_name, include_abolished=include_abolished)
-            reg_results = self.store.search(reg_query, filter, 50)  # Search more to find the right one
+        # 4. General search with hybrid/reranking
+        return self._search_general(
+            query_text, filter, top_k, include_abolished, audience_override
+        )
 
-            # Find best matching rule_code - prioritize exact match
-            target_rule_code = None
-            best_score = 0.0
-            for r in reg_results:
-                chunk_reg_name = (
-                    r.chunk.parent_path[0] if r.chunk.parent_path else r.chunk.title
-                ) or ""
-                # Check for match (substring in either direction)
-                if reg_name in chunk_reg_name or chunk_reg_name in reg_name:
-                    # Prefer exact or near-exact matches
-                    match_score = 1.0 if chunk_reg_name == reg_name else 0.5
-                    if match_score > best_score:
-                        best_score = match_score
-                        target_rule_code = r.chunk.rule_code
-                        if match_score == 1.0:
-                            break  # Exact match found
+    def _search_by_rule_code_pattern(
+        self,
+        query_text: str,
+        filter: Optional[SearchFilter],
+        top_k: int,
+        include_abolished: bool,
+    ) -> List[SearchResult]:
+        """Handle rule code pattern search (e.g., '3-1-24')."""
+        self._last_query_rewrite = QueryRewriteInfo(
+            original=query_text,
+            rewritten=query_text,
+            used=False,
+            method=None,
+            from_cache=False,
+            fallback=False,
+            used_synonyms=None,
+            used_intent=None,
+            matched_intents=None,
+        )
+        rule_filter = self._build_rule_code_filter(filter, query_text)
+        query = Query(text="규정", include_abolished=include_abolished)
+        return self.store.search(query, rule_filter, top_k)
 
-            if not target_rule_code:
-                # Fallback: return empty if regulation not found
-                return []
+    def _search_by_regulation_only(
+        self,
+        query_text: str,
+        reg_only: str,
+        filter: Optional[SearchFilter],
+        top_k: int,
+        include_abolished: bool,
+    ) -> Optional[List[SearchResult]]:
+        """Handle regulation name only search (e.g., '교원인사규정')."""
+        self._last_query_rewrite = QueryRewriteInfo(
+            original=query_text,
+            rewritten=reg_only,
+            used=True,
+            method="regulation_only",
+            from_cache=False,
+            fallback=False,
+            used_synonyms=False,
+            used_intent=False,
+            matched_intents=None,
+        )
 
-            # Step 2: Get chunks from this regulation that contain the article number
-            # Search with both regulation name and article reference for better recall
-            rule_filter = self._build_rule_code_filter(filter, target_rule_code)
-            all_chunks = self.store.search(
-                Query(text=f"{reg_name} {article_ref}", include_abolished=include_abolished),
-                rule_filter,
-                500  # Get many chunks to ensure we find the right article
-            )
+        # Find the regulation's rule_code
+        target_rule_code = self._find_regulation_rule_code(
+            reg_only, filter, include_abolished
+        )
 
-            # Step 3: Filter and score by article number match
-            normalized_article = normalize_article_token(article_ref)
-            filtered_results = []
-            for r in all_chunks:
-                article_haystack = r.chunk.embedding_text or r.chunk.text
-                text_articles = {
-                    normalize_article_token(t)
-                    for t in ARTICLE_PATTERN.findall(article_haystack)
-                }
+        if not target_rule_code:
+            return None  # Fall through to general search
 
-                if normalized_article in text_articles:
-                    # Exact article match - high score
-                    filtered_results.append(
-                        SearchResult(chunk=r.chunk, score=1.0, rank=len(filtered_results) + 1)
-                    )
-                elif any(normalized_article in ta for ta in text_articles):
-                    # Partial match (e.g., 제8조 in 제8조의2)
-                    filtered_results.append(
-                        SearchResult(chunk=r.chunk, score=0.8, rank=len(filtered_results) + 1)
-                    )
+        # Get all articles from this regulation
+        rule_filter = self._build_rule_code_filter(filter, target_rule_code)
+        all_chunks = self.store.search(
+            Query(text="규정 조항", include_abolished=include_abolished),
+            rule_filter,
+            200,
+        )
 
-            # Sort and return
-            filtered_results.sort(key=lambda x: -x.score)
-            return filtered_results[:top_k]
+        return [
+            SearchResult(chunk=r.chunk, score=r.score, rank=i + 1)
+            for i, r in enumerate(all_chunks[:top_k])
+        ]
 
-        query = Query(text=query_text, include_abolished=include_abolished)
+    def _search_by_regulation_article(
+        self,
+        query_text: str,
+        reg_article: tuple,
+        filter: Optional[SearchFilter],
+        top_k: int,
+        include_abolished: bool,
+    ) -> List[SearchResult]:
+        """Handle regulation + article search (e.g., '교원인사규정 제8조')."""
+        reg_name, article_ref = reg_article
+        self._last_query_rewrite = QueryRewriteInfo(
+            original=query_text,
+            rewritten=f"{reg_name} {article_ref}",
+            used=True,
+            method="regulation_article",
+            from_cache=False,
+            fallback=False,
+            used_synonyms=False,
+            used_intent=False,
+            matched_intents=None,
+        )
 
-        # Rewrite query using LLM if HybridSearcher is available (with LLM)
-        # Falls back to synonym expansion if LLM is not available
+        # Find regulation's rule_code
+        target_rule_code = self._find_regulation_rule_code(
+            reg_name, filter, include_abolished, exact_match_priority=True
+        )
+
+        if not target_rule_code:
+            return []
+
+        # Get chunks from this regulation
+        rule_filter = self._build_rule_code_filter(filter, target_rule_code)
+        all_chunks = self.store.search(
+            Query(text=f"{reg_name} {article_ref}", include_abolished=include_abolished),
+            rule_filter,
+            500,
+        )
+
+        # Filter by article number match
+        normalized_article = normalize_article_token(article_ref)
+        filtered_results = []
+        for r in all_chunks:
+            article_haystack = r.chunk.embedding_text or r.chunk.text
+            text_articles = {
+                normalize_article_token(t)
+                for t in ARTICLE_PATTERN.findall(article_haystack)
+            }
+
+            if normalized_article in text_articles:
+                filtered_results.append(
+                    SearchResult(chunk=r.chunk, score=1.0, rank=len(filtered_results) + 1)
+                )
+            elif any(normalized_article in ta for ta in text_articles):
+                filtered_results.append(
+                    SearchResult(chunk=r.chunk, score=0.8, rank=len(filtered_results) + 1)
+                )
+
+        filtered_results.sort(key=lambda x: -x.score)
+        return filtered_results[:top_k]
+
+    def _find_regulation_rule_code(
+        self,
+        reg_name: str,
+        filter: Optional[SearchFilter],
+        include_abolished: bool,
+        exact_match_priority: bool = False,
+    ) -> Optional[str]:
+        """Find rule_code for a regulation name."""
+        reg_query = Query(text=reg_name, include_abolished=include_abolished)
+        reg_results = self.store.search(reg_query, filter, 50)
+
+        target_rule_code = None
+        best_score = 0.0
+        for r in reg_results:
+            chunk_reg_name = (
+                r.chunk.parent_path[0] if r.chunk.parent_path else r.chunk.title
+            ) or ""
+            if reg_name in chunk_reg_name or chunk_reg_name in reg_name:
+                if chunk_reg_name == reg_name:
+                    match_score = 1.0
+                elif chunk_reg_name.endswith(reg_name):
+                    match_score = 0.9
+                elif exact_match_priority:
+                    match_score = 0.5
+                else:
+                    match_score = 0.8
+                if match_score > best_score:
+                    best_score = match_score
+                    target_rule_code = r.chunk.rule_code
+                    if match_score == 1.0:
+                        break
+        return target_rule_code
+
+    def _search_general(
+        self,
+        query_text: str,
+        filter: Optional[SearchFilter],
+        top_k: int,
+        include_abolished: bool,
+        audience_override: Optional["Audience"],
+    ) -> List[SearchResult]:
+        """Perform general search with hybrid search, scoring, and reranking."""
+        # Query rewriting
+        query, rewritten_query_text = self._perform_query_rewriting(
+            query_text, include_abolished
+        )
+        scoring_query_text = self._select_scoring_query(query_text, rewritten_query_text)
+
+        # Detect audience
+        audience = self._detect_audience(query_text, audience_override)
+
+        # Get dense results
+        dense_results = self.store.search(query, filter, top_k * 3)
+
+        # Apply hybrid search if available
+        results = self._apply_hybrid_search(
+            dense_results, query_text, rewritten_query_text, filter, include_abolished, top_k
+        )
+
+        # Apply score bonuses
+        boosted_results = self._apply_score_bonuses(
+            results, query_text, scoring_query_text, audience
+        )
+
+        # Re-sort by boosted score
+        boosted_results.sort(key=lambda x: -x.score)
+
+        # Apply reranking if enabled
+        if self.use_reranker and boosted_results:
+            return self._apply_reranking(boosted_results, scoring_query_text, top_k)
+
+        return boosted_results[:top_k]
+
+    def _perform_query_rewriting(
+        self, query_text: str, include_abolished: bool
+    ) -> tuple:
+        """Perform query rewriting using hybrid searcher if available."""
         rewritten_query_text = query_text
         rewrite_used = False
         rewrite_method: Optional[str] = None
@@ -371,11 +446,10 @@ class SearchUseCase:
         used_synonyms: Optional[bool] = None
         used_intent: Optional[bool] = None
         matched_intents: Optional[List[str]] = None
+
         if self.hybrid_searcher:
-            # Set LLM client if not already set
             if self.llm and not self.hybrid_searcher._query_analyzer._llm_client:
                 self.hybrid_searcher.set_llm_client(self.llm)
-            # Rewrite query (uses LLM if available, otherwise expands with synonyms)
             rewrite_info = self.hybrid_searcher._query_analyzer.rewrite_query_with_info(
                 query_text
             )
@@ -393,13 +467,7 @@ class SearchUseCase:
             if used_synonyms is None:
                 used_synonyms = analyzer.has_synonyms(query_text)
             if rewritten_query_text and rewritten_query_text != query_text:
-                used_synonyms = used_synonyms or analyzer.has_synonyms(
-                    rewritten_query_text
-                )
-            # Use rewritten query for dense search too
-            query = Query(
-                text=rewritten_query_text, include_abolished=include_abolished
-            )
+                used_synonyms = used_synonyms or analyzer.has_synonyms(rewritten_query_text)
 
         self._last_query_rewrite = QueryRewriteInfo(
             original=query_text,
@@ -412,96 +480,91 @@ class SearchUseCase:
             used_intent=used_intent,
             matched_intents=matched_intents,
         )
-        scoring_query_text = self._select_scoring_query(
-            query_text, rewritten_query_text
+
+        query = Query(text=rewritten_query_text, include_abolished=include_abolished)
+        return query, rewritten_query_text
+
+    def _detect_audience(
+        self, query_text: str, audience_override: Optional["Audience"]
+    ) -> Optional["Audience"]:
+        """Detect audience from query if not overridden."""
+        if audience_override is not None:
+            return audience_override
+        if self.hybrid_searcher:
+            return self.hybrid_searcher._query_analyzer.detect_audience(query_text)
+        return None
+
+    def _apply_hybrid_search(
+        self,
+        dense_results: List[SearchResult],
+        query_text: str,
+        rewritten_query_text: str,
+        filter: Optional[SearchFilter],
+        include_abolished: bool,
+        top_k: int,
+    ) -> List[SearchResult]:
+        """Apply hybrid search (BM25 + dense) with RRF fusion."""
+        if not self.hybrid_searcher:
+            return dense_results
+
+        from ..infrastructure.hybrid_search import ScoredDocument
+
+        sparse_query_text = rewritten_query_text or query_text
+        sparse_results = self.hybrid_searcher.search_sparse(sparse_query_text, top_k * 3)
+        sparse_results = self._filter_sparse_results(
+            sparse_results, filter=filter, include_abolished=include_abolished
         )
 
-        # Detect audience if HybridSearcher/QueryAnalyzer is available
-        audience = audience_override
-        if audience is None and self.hybrid_searcher:
-            from ..infrastructure.hybrid_search import Audience
-
-            audience = self.hybrid_searcher._query_analyzer.detect_audience(query_text)
-            # Override audience if intentions/synonyms strongly suggest
-            # (Currently detect_audience handles simple keywords)
-
-        # Get dense search results from vector store
-        dense_results = self.store.search(query, filter, top_k * 3)
-
-        # Apply Hybrid Search if HybridSearcher is available
-        if self.hybrid_searcher:
-            from ..infrastructure.hybrid_search import ScoredDocument
-
-            # Get BM25 sparse results (already uses expanded query internally)
-            sparse_query_text = rewritten_query_text or query_text
-            sparse_results = self.hybrid_searcher.search_sparse(
-                sparse_query_text, top_k * 3
+        dense_docs = [
+            ScoredDocument(
+                doc_id=r.chunk.id,
+                score=r.score,
+                content=r.chunk.text,
+                metadata=r.chunk.to_metadata(),
             )
-            sparse_results = self._filter_sparse_results(
-                sparse_results,
-                filter=filter,
-                include_abolished=include_abolished,
-            )
-            # Convert dense results to ScoredDocument format for fusion
-            dense_docs = [
-                ScoredDocument(
-                    doc_id=r.chunk.id,
-                    score=r.score,
-                    content=r.chunk.text,
-                    metadata=r.chunk.to_metadata(),
+            for r in dense_results
+        ]
+
+        fused = self.hybrid_searcher.fuse_results(
+            sparse_results=sparse_results,
+            dense_results=dense_docs,
+            top_k=top_k * 3,
+            query_text=query_text,
+        )
+
+        id_to_result = {r.chunk.id: r for r in dense_results}
+        results = []
+        for i, doc in enumerate(fused):
+            if doc.doc_id in id_to_result:
+                original = id_to_result[doc.doc_id]
+                results.append(
+                    SearchResult(chunk=original.chunk, score=doc.score, rank=i + 1)
                 )
-                for r in dense_results
-            ]
+            else:
+                from ..domain.entities import Chunk
+                chunk = Chunk.from_metadata(doc.doc_id, doc.content, doc.metadata)
+                results.append(SearchResult(chunk=chunk, score=doc.score, rank=i + 1))
 
-            # Fuse results using RRF
-            fused = self.hybrid_searcher.fuse_results(
-                sparse_results=sparse_results,
-                dense_results=dense_docs,
-                top_k=top_k * 3,
-                query_text=query_text,
-            )
+        return results
 
-            # Convert back to SearchResult (rebuild chunks from metadata)
-            id_to_result = {r.chunk.id: r for r in dense_results}
-            results = []
-            for i, doc in enumerate(fused):
-                if doc.doc_id in id_to_result:
-                    # Use existing chunk from dense results
-                    original = id_to_result[doc.doc_id]
-                    results.append(
-                        SearchResult(
-                            chunk=original.chunk,
-                            score=doc.score,
-                            rank=i + 1,
-                        )
-                    )
-                else:
-                    # BM25-only result: need to rebuild chunk from metadata
-                    from ..domain.entities import Chunk
-
-                    chunk = Chunk.from_metadata(doc.doc_id, doc.content, doc.metadata)
-                    results.append(
-                        SearchResult(
-                            chunk=chunk,
-                            score=doc.score,
-                            rank=i + 1,
-                        )
-                    )
-        else:
-            # No hybrid searcher, use dense results directly
-            results = dense_results
-
-        # Apply keyword bonus: boost score if query terms appear in text or keywords
+    def _apply_score_bonuses(
+        self,
+        results: List[SearchResult],
+        query_text: str,
+        scoring_query_text: str,
+        audience: Optional["Audience"],
+    ) -> List[SearchResult]:
+        """Apply keyword, article, and audience-based score bonuses/penalties."""
         query_terms = scoring_query_text.lower().split()
         query_text_lower = scoring_query_text.lower()
         boosted_results = []
+
         for r in results:
             text_lower = r.chunk.text.lower()
-            # Count matching terms
             matches = sum(1 for term in query_terms if term in text_lower)
-            # Bonus: 0.1 per matching term
             bonus = matches * 0.1
 
+            # Keyword bonus
             keyword_bonus = 0.0
             if r.chunk.keywords:
                 keyword_hits = sum(
@@ -511,7 +574,7 @@ class SearchUseCase:
                 )
                 keyword_bonus = min(0.3, keyword_hits * 0.05)
 
-            # Article number exact match bonus (제N조, 제N항, 제N호)
+            # Article match bonus
             article_bonus = 0.0
             query_articles = {
                 normalize_article_token(t) for t in ARTICLE_PATTERN.findall(query_text)
@@ -523,84 +586,75 @@ class SearchUseCase:
                     for t in ARTICLE_PATTERN.findall(article_haystack)
                 }
                 if query_articles & text_articles:
-                    article_bonus = 0.2  # Exact article match
+                    article_bonus = 0.2
 
             new_score = min(1.0, r.score + bonus + keyword_bonus + article_bonus)
 
-            # Audience-based penalty logic
-            if audience:
-                from ..infrastructure.hybrid_search import Audience
-
-                # Check for audience mismatch
-                reg_name = (
-                    r.chunk.parent_path[0] if r.chunk.parent_path else r.chunk.title
-                )
-                reg_name_lower = reg_name.lower()
-                # PENALTY: Faculty query -> Student regulation
-                if audience == Audience.FACULTY:
-                    is_student_reg = (
-                        "학생" in reg_name_lower and "교원" not in reg_name_lower
-                    )
-                    if is_student_reg:
-                        # Apply severe penalty (0.5x) or filter
-                        new_score *= 0.5
-
-                # PENALTY: Student query -> Faculty/Staff regulation
-                elif audience == Audience.STUDENT:
-                    # Common faculty keywords in regulation titles
-                    is_faculty_reg = any(
-                        k in reg_name_lower
-                        for k in ["교원", "직원", "인사", "복무", "업적", "채용"]
-                    )
-                    # Ensure it's not a student regulation (e.g. "student guidance by faculty")
-                    is_faculty_reg = is_faculty_reg and "학생" not in reg_name_lower
-
-                    if is_faculty_reg:
-                        new_score *= 0.5
+            # Audience penalty
+            new_score = self._apply_audience_penalty(r.chunk, audience, new_score)
 
             boosted_results.append(
-                SearchResult(
-                    chunk=r.chunk,
-                    score=new_score,
-                    rank=r.rank,
-                )
+                SearchResult(chunk=r.chunk, score=new_score, rank=r.rank)
             )
 
-        # Re-sort by boosted score
-        boosted_results.sort(key=lambda x: -x.score)
+        return boosted_results
 
-        # Apply reranker if enabled
-        if self.use_reranker and boosted_results:
-            # Lazy-initialize reranker if not provided via DI
-            if not self._reranker_initialized:
-                from ..infrastructure.reranker import BGEReranker
-                self._reranker = BGEReranker()
-                self._reranker_initialized = True
+    def _apply_audience_penalty(
+        self,
+        chunk: Chunk,
+        audience: Optional["Audience"],
+        score: float,
+    ) -> float:
+        """Apply audience mismatch penalty to score."""
+        if not audience:
+            return score
 
-            # Prepare documents for reranking (use top candidates)
-            candidates = boosted_results[: top_k * 2]
-            documents = [(r.chunk.id, r.chunk.text, {}) for r in candidates]
+        from ..infrastructure.hybrid_search import Audience
 
-            # Rerank using cross-encoder
-            reranked = self._reranker.rerank(scoring_query_text, documents, top_k=top_k)
+        reg_name = chunk.parent_path[0] if chunk.parent_path else chunk.title
+        reg_name_lower = reg_name.lower()
 
-            # Map back to SearchResult
-            id_to_result = {r.chunk.id: r for r in candidates}
-            final_results = []
-            for i, rr in enumerate(reranked):
-                doc_id, content, score, metadata = rr
-                original = id_to_result.get(doc_id)
-                if original:
-                    final_results.append(
-                        SearchResult(
-                            chunk=original.chunk,
-                            score=score,
-                            rank=i + 1,
-                        )
-                    )
-            return final_results
+        if audience == Audience.FACULTY:
+            is_student_reg = "학생" in reg_name_lower and "교원" not in reg_name_lower
+            if is_student_reg:
+                return score * 0.5
+        elif audience == Audience.STUDENT:
+            is_faculty_reg = any(
+                k in reg_name_lower
+                for k in ["교원", "직원", "인사", "복무", "업적", "채용"]
+            )
+            is_faculty_reg = is_faculty_reg and "학생" not in reg_name_lower
+            if is_faculty_reg:
+                return score * 0.5
 
-        return boosted_results[:top_k]
+        return score
+
+    def _apply_reranking(
+        self,
+        results: List[SearchResult],
+        scoring_query_text: str,
+        top_k: int,
+    ) -> List[SearchResult]:
+        """Apply cross-encoder reranking to results."""
+        if not self._reranker_initialized:
+            from ..infrastructure.reranker import BGEReranker
+            self._reranker = BGEReranker()
+            self._reranker_initialized = True
+
+        candidates = results[: top_k * 2]
+        documents = [(r.chunk.id, r.chunk.text, {}) for r in candidates]
+        reranked = self._reranker.rerank(scoring_query_text, documents, top_k=top_k)
+
+        id_to_result = {r.chunk.id: r for r in candidates}
+        final_results = []
+        for i, rr in enumerate(reranked):
+            doc_id, content, score, metadata = rr
+            original = id_to_result.get(doc_id)
+            if original:
+                final_results.append(
+                    SearchResult(chunk=original.chunk, score=score, rank=i + 1)
+                )
+        return final_results
 
     def get_last_query_rewrite(self) -> Optional[QueryRewriteInfo]:
         """Return last query rewrite info (if any)."""

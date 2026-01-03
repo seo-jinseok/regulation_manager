@@ -117,7 +117,8 @@ class HwpToMarkdownReader(BaseReader):
                                     f"[dim]변환 데이터 생성 중... ({size_mb:.1f}MB)[/dim]"
                                 )
                                 last_reported_size = size_mb
-                        except Exception:
+                        except (OSError, PermissionError):
+                            # File access errors during monitoring are non-critical
                             pass
                         time.sleep(2)
 
