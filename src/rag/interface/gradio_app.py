@@ -635,14 +635,16 @@ def create_app(
                 return history, details, debug_text, state
             display_title = infer_regulation_title_from_tables(tables, match.title)
             label_text = attachment_label or "별표"
-            details = _format_table_matches(tables, attachment_no, label_text)
+            table_content = _format_table_matches(tables, attachment_no, label_text)
             title_label = f"{display_title} {label_text}"
             if attachment_no:
                 title_label = f"{display_title} {label_text} {attachment_no}"
+            # 대화창에 바로 전체 내용 표시
+            full_response = f"## 📋 {title_label}\n\n{table_content}"
             history.append(
                 {
                     "role": "assistant",
-                    "content": f"**{title_label}** 내용을 표시합니다.",
+                    "content": full_response,
                 }
             )
             state["last_query"] = query
@@ -685,13 +687,14 @@ def create_app(
             toc_text = _format_toc(view.toc)
             content_text = render_full_view_nodes(view.content)
             addenda_text = render_full_view_nodes(view.addenda)
-            details = (
-                toc_text + "\n\n### 본문\n\n" + (content_text or "본문이 없습니다.")
+            full_content = (
+                f"## 📖 {view.title}\n\n" + toc_text + "\n\n---\n\n### 본문\n\n" + (content_text or "본문이 없습니다.")
             )
             if addenda_text:
-                details += "\n\n### 부칙\n\n" + addenda_text
+                full_content += "\n\n---\n\n### 부칙\n\n" + addenda_text
+            # 대화창에 바로 전체 내용 표시
             history.append(
-                {"role": "assistant", "content": f"**{view.title}** 전문을 표시합니다."}
+                {"role": "assistant", "content": full_content}
             )
             state["last_query"] = query
             state["last_mode"] = "full_view"
@@ -796,11 +799,12 @@ def create_app(
                     article_node = full_view_usecase.get_article_view(selected.rule_code, article_no)
                     if article_node:
                         content_text = render_full_view_nodes([article_node])
+                        # 대화창에 바로 전체 내용 표시
+                        full_response = f"## 📌 {selected.title} 제{article_no}조\n\n{content_text}"
                         history.append({
                             "role": "assistant",
-                            "content": f"**{selected.title} 제{article_no}조** 전문을 표시합니다."
+                            "content": full_response
                         })
-                        details = content_text
                         state["last_query"] = query
                         state["last_mode"] = "article_view"
                         state["last_regulation"] = selected.title
@@ -837,11 +841,12 @@ def create_app(
                             chapter_disp = chapter_node.get("display_no", f"제{chapter_no}장").strip()
                             full_title = f"{selected.title} {chapter_disp} {chapter_title}".strip()
                             content_text = render_full_view_nodes(chapter_node.get("children", []))
+                            # 대화창에 바로 전체 내용 표시
+                            full_response = f"## 📑 {full_title}\n\n{content_text}"
                             history.append({
                                 "role": "assistant",
-                                "content": f"**{full_title}** 전문을 표시합니다."
+                                "content": full_response
                             })
-                            details = content_text
                             state["last_query"] = query
                             state["last_mode"] = "chapter_view"
                             state["last_regulation"] = selected.title
@@ -886,16 +891,8 @@ def create_app(
                 top_text = strip_path_prefix(
                     top.chunk.text, top.chunk.parent_path or []
                 )
-                details = f"""### 🏆 1위 결과: {top.chunk.rule_code}
-
-**규정명:** {top.chunk.parent_path[0] if top.chunk.parent_path else top.chunk.title}
-
-**경로:** {full_path}
-
----
-
-{top_text}
-"""
+                # 검색 결과 상세는 필요시 추가 질문으로 확인하도록 함
+                details = ""
                 state["last_query"] = query
                 state["last_mode"] = "search"
                 top_regulation = (
@@ -935,9 +932,12 @@ def create_app(
                 search_query=query,
             )
         )
-        # Replace typing indicator with actual response
-        history[-1] = {"role": "assistant", "content": answer_text}
-        details = sources_text
+        # 답변과 출처를 함께 대화창에 표시
+        combined_response = answer_text
+        if sources_text:
+            combined_response += "\n\n---\n\n" + sources_text
+        history[-1] = {"role": "assistant", "content": combined_response}
+        details = ""
         state["last_query"] = query
         state["last_mode"] = "ask"
         if regulation_title:
@@ -1107,11 +1107,8 @@ def create_app(
                                 label="Base URL"
                             )
                         
-                        # Detail panel
-                        gr.Markdown("### 📄 상세 정보")
-                        chat_detail = gr.Markdown(
-                            value="*질문하시면 관련 규정 상세 정보가 여기에 표시됩니다.*"
-                        )
+                        # Detail panel은 숨김 처리 (채팅창에 직접 표시)
+                        chat_detail = gr.Markdown(visible=False)
                         
                         with gr.Accordion("🔧 디버그", open=False):
                             chat_debug_out = gr.Markdown()
@@ -1172,7 +1169,7 @@ def create_app(
                 chat_clear.click(
                     fn=lambda: (
                         [],
-                        "*질문하시면 관련 규정 상세 정보가 여기에 표시됩니다.*",
+                        "",  # chat_detail은 이제 빈 값 (채팅창에 직접 표시)
                         "",
                         {
                             "audience": None,
