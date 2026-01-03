@@ -783,6 +783,71 @@ def create_app(
                         state["last_rule_code"] = overview.rule_code
                         return history, details, debug_text, state
 
+            # Check if query targets a specific article (e.g. "교원인사규정 제8조")
+            import re
+            article_match = re.search(r"(?:제)?\s*(\d+)\s*조", query)
+            target_regulation = explicit_regulation or extract_regulation_title(query)
+
+            if target_regulation and article_match:
+                article_no = int(article_match.group(1))
+                matches = full_view_usecase.find_matches(target_regulation)
+                if len(matches) == 1:
+                    selected = matches[0]
+                    article_node = full_view_usecase.get_article_view(selected.rule_code, article_no)
+                    if article_node:
+                        content_text = render_full_view_nodes([article_node])
+                        history.append({
+                            "role": "assistant",
+                            "content": f"**{selected.title} 제{article_no}조** 전문을 표시합니다."
+                        })
+                        details = content_text
+                        state["last_query"] = query
+                        state["last_mode"] = "article_view"
+                        state["last_regulation"] = selected.title
+                        state["last_rule_code"] = selected.rule_code
+                        return history, details, debug_text, state
+                elif len(matches) > 1:
+                    # Multiple matches, ask user to clarify
+                    options = [m.title for m in matches]
+                    state["pending"] = {
+                        "type": "regulation",
+                        "options": options,
+                        "query": query,
+                        "mode": "search",
+                    }
+                    history.append({
+                        "role": "assistant",
+                        "content": format_clarification("regulation", options),
+                    })
+                    return history, details, debug_text, state
+
+            # Check if query targets a specific chapter (e.g. "교원인사규정 제3장")
+            chapter_match = re.search(r"(?:제)?\s*(\d+)\s*장", query)
+            if target_regulation and chapter_match:
+                chapter_no = int(chapter_match.group(1))
+                matches = full_view_usecase.find_matches(target_regulation)
+                if len(matches) == 1:
+                    selected = matches[0]
+                    json_path = full_view_usecase._resolve_json_path()
+                    if json_path:
+                        doc = loader.get_regulation_doc(json_path, selected.rule_code)
+                        chapter_node = full_view_usecase.get_chapter_node(doc, chapter_no)
+                        if chapter_node:
+                            chapter_title = chapter_node.get("title", "").strip()
+                            chapter_disp = chapter_node.get("display_no", f"제{chapter_no}장").strip()
+                            full_title = f"{selected.title} {chapter_disp} {chapter_title}".strip()
+                            content_text = render_full_view_nodes(chapter_node.get("children", []))
+                            history.append({
+                                "role": "assistant",
+                                "content": f"**{full_title}** 전문을 표시합니다."
+                            })
+                            details = content_text
+                            state["last_query"] = query
+                            state["last_mode"] = "chapter_view"
+                            state["last_regulation"] = selected.title
+                            state["last_rule_code"] = selected.rule_code
+                            return history, details, debug_text, state
+
             search_with_hybrid = SearchUseCase(store)
             results = search_with_hybrid.search_unique(
                 query,
