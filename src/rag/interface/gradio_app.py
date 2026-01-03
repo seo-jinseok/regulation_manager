@@ -648,14 +648,14 @@ def create_app(
         analyzer = query_analyzer
 
         if attachment_requested:
-            matches = full_view_usecase.find_matches(attachment_query or query)
-            if not matches:
-                history.append(
-                    {"role": "assistant", "content": "해당 규정을 찾을 수 없습니다."}
-                )
-                return history, details, debug_text, state
-            if len(matches) > 1:
-                options = [m.title for m in matches]
+            # Use QueryHandler for attachment view
+            handler = QueryHandler()
+            result = handler.get_attachment_view(
+                attachment_query or query, attachment_label, attachment_no
+            )
+            
+            if result.type == QueryType.CLARIFICATION:
+                options = result.clarification_options
                 state["pending"] = {
                     "type": "regulation_table",
                     "options": options,
@@ -663,95 +663,63 @@ def create_app(
                     "table_no": attachment_no,
                     "label": attachment_label,
                 }
-                history.append(
-                    {
-                        "role": "assistant",
-                        "content": format_clarification("regulation", options),
-                    }
-                )
-                return history, details, debug_text, state
-
-            match = matches[0]
-            label_variants = attachment_label_variants(attachment_label)
-            tables = full_view_usecase.find_tables(
-                match.rule_code, attachment_no, label_variants
-            )
-            if not tables:
-                label_text = attachment_label or "별표"
-                history.append(
-                    {
-                        "role": "assistant",
-                        "content": f"{label_text}를 찾을 수 없습니다.",
-                    }
-                )
-                return history, details, debug_text, state
-            display_title = infer_regulation_title_from_tables(tables, match.title)
-            label_text = attachment_label or "별표"
-            table_content = _format_table_matches(tables, attachment_no, label_text)
-            title_label = f"{display_title} {label_text}"
-            if attachment_no:
-                title_label = f"{display_title} {label_text} {attachment_no}"
-            # 대화창에 바로 전체 내용 표시
-            full_response = f"## 📋 {title_label}\n\n{table_content}"
-            history.append(
-                {
+                history.append({
                     "role": "assistant",
-                    "content": full_response,
-                }
-            )
+                    "content": format_clarification("regulation", options),
+                })
+                return history, details, debug_text, state
+            
+            if not result.success:
+                history.append({
+                    "role": "assistant",
+                    "content": result.content,
+                })
+                return history, details, debug_text, state
+            
+            history.append({
+                "role": "assistant",
+                "content": result.content,
+            })
             state["last_query"] = query
             state["last_mode"] = "attachment"
-            state["last_regulation"] = display_title
-            state["last_rule_code"] = match.rule_code
+            state["last_regulation"] = result.state_update.get("last_regulation")
+            state["last_rule_code"] = result.state_update.get("last_rule_code")
             return history, details, debug_text, state
 
         if mode == "full_view":
-            matches = full_view_usecase.find_matches(query)
-            if not matches:
-                history.append(
-                    {"role": "assistant", "content": "해당 규정을 찾을 수 없습니다."}
-                )
-                return history, details, debug_text, state
-            if len(matches) > 1:
-                options = [m.title for m in matches]
+            # Use QueryHandler for full view
+            handler = QueryHandler()
+            result = handler.get_full_view(query)
+            
+            if result.type == QueryType.CLARIFICATION:
+                options = result.clarification_options
                 state["pending"] = {
                     "type": "regulation",
                     "options": options,
                     "query": query,
                     "mode": mode,
                 }
-                history.append(
-                    {
-                        "role": "assistant",
-                        "content": format_clarification("regulation", options),
-                    }
-                )
+                history.append({
+                    "role": "assistant",
+                    "content": format_clarification("regulation", options),
+                })
                 return history, details, debug_text, state
-            view = full_view_usecase.get_full_view(
-                matches[0].rule_code
-            ) or full_view_usecase.get_full_view(matches[0].title)
-            if not view:
-                history.append(
-                    {"role": "assistant", "content": "규정 전문을 불러오지 못했습니다."}
-                )
+            
+            if not result.success:
+                history.append({
+                    "role": "assistant",
+                    "content": result.content,
+                })
                 return history, details, debug_text, state
-
-            toc_text = _format_toc(view.toc)
-            content_text = render_full_view_nodes(view.content)
-            addenda_text = render_full_view_nodes(view.addenda)
-            full_content = (
-                f"## 📖 {view.title}\n\n" + toc_text + "\n\n---\n\n### 본문\n\n" + (content_text or "본문이 없습니다.")
-            )
-            if addenda_text:
-                full_content += "\n\n---\n\n### 부칙\n\n" + addenda_text
-            # 대화창에 바로 전체 내용 표시
-            history.append(
-                {"role": "assistant", "content": full_content}
-            )
+            
+            history.append({
+                "role": "assistant",
+                "content": result.content,
+            })
             state["last_query"] = query
             state["last_mode"] = "full_view"
-            state["last_regulation"] = view.title
-            state["last_rule_code"] = view.rule_code
+            state["last_regulation"] = result.state_update.get("last_regulation")
+            state["last_rule_code"] = result.state_update.get("last_rule_code")
             return history, details, debug_text, state
 
         if state.get("audience") is None and analyzer.is_audience_ambiguous(query):
@@ -789,54 +757,19 @@ def create_app(
             is_rule_code_only = RULE_CODE_PATTERN.match(query) is not None
 
             if is_regulation_only or is_rule_code_only:
-                json_path = full_view_usecase._resolve_json_path()
-                if json_path:
-                    overview = loader.get_regulation_overview(json_path, query)
-                    if overview:
-                        # Build overview markdown
-                        from ..domain.entities import RegulationStatus
-
-                        status_label = "✅ 시행중" if overview.status == RegulationStatus.ACTIVE else "❌ 폐지"
-                        lines = [f"## 📋 {overview.title} ({overview.rule_code})"]
-                        lines.append("")
-                        lines.append(f"**상태**: {status_label} | **총 조항 수**: {overview.article_count}개")
-                        lines.append("")
-
-                        if overview.chapters:
-                            lines.append("### 📖 목차")
-                            for ch in overview.chapters:
-                                article_info = f" ({ch.article_range})" if ch.article_range else ""
-                                lines.append(f"- **{ch.display_no}** {ch.title}{article_info}")
-                        else:
-                            lines.append("*(장 구조 없이 조항으로만 구성된 규정)*")
-
-                        if overview.has_addenda:
-                            lines.append("")
-                            lines.append("📎 **부칙** 있음")
-
-                        lines.append("")
-                        lines.append("---")
-                        lines.append(f"💡 특정 조항 검색: `{overview.title} 제N조` 또는 `{overview.rule_code} 제N조`")
-
-                        # Check for other matches (similar regulation names)
-                        if is_regulation_only:
-                            all_titles = loader.get_regulation_titles(json_path)
-                            other_matches = sorted([
-                                t for t in all_titles.values()
-                                if query in t and t != overview.title
-                            ])
-                            if other_matches:
-                                lines.append("")
-                                lines.append("❓ **혹시 다음 규정을 찾으셨나요?**")
-                                for m in other_matches:
-                                    lines.append(f"- {m}")
-
-                        history.append({"role": "assistant", "content": "\n".join(lines)})
-                        state["last_query"] = query
-                        state["last_mode"] = "overview"
-                        state["last_regulation"] = overview.title
-                        state["last_rule_code"] = overview.rule_code
-                        return history, details, debug_text, state
+                handler = QueryHandler()
+                result = handler.get_regulation_overview(query)
+                
+                if result.success:
+                    history.append({
+                        "role": "assistant",
+                        "content": result.content,
+                    })
+                    state["last_query"] = query
+                    state["last_mode"] = "overview"
+                    state["last_regulation"] = result.state_update.get("last_regulation")
+                    state["last_rule_code"] = result.state_update.get("last_rule_code")
+                    return history, details, debug_text, state
 
             # Check if query targets a specific article (e.g. "교원인사규정 제8조")
             import re
@@ -845,26 +778,11 @@ def create_app(
 
             if target_regulation and article_match:
                 article_no = int(article_match.group(1))
-                matches = full_view_usecase.find_matches(target_regulation)
-                if len(matches) == 1:
-                    selected = matches[0]
-                    article_node = full_view_usecase.get_article_view(selected.rule_code, article_no)
-                    if article_node:
-                        content_text = render_full_view_nodes([article_node])
-                        # 대화창에 바로 전체 내용 표시
-                        full_response = f"## 📌 {selected.title} 제{article_no}조\n\n{content_text}"
-                        history.append({
-                            "role": "assistant",
-                            "content": full_response
-                        })
-                        state["last_query"] = query
-                        state["last_mode"] = "article_view"
-                        state["last_regulation"] = selected.title
-                        state["last_rule_code"] = selected.rule_code
-                        return history, details, debug_text, state
-                elif len(matches) > 1:
-                    # Multiple matches, ask user to clarify
-                    options = [m.title for m in matches]
+                handler = QueryHandler()
+                result = handler.get_article_view(target_regulation, article_no)
+                
+                if result.type == QueryType.CLARIFICATION:
+                    options = result.clarification_options
                     state["pending"] = {
                         "type": "regulation",
                         "options": options,
@@ -876,34 +794,49 @@ def create_app(
                         "content": format_clarification("regulation", options),
                     })
                     return history, details, debug_text, state
+                
+                if result.success:
+                    history.append({
+                        "role": "assistant",
+                        "content": result.content,
+                    })
+                    state["last_query"] = query
+                    state["last_mode"] = "article_view"
+                    state["last_regulation"] = result.state_update.get("last_regulation")
+                    state["last_rule_code"] = result.state_update.get("last_rule_code")
+                    return history, details, debug_text, state
 
             # Check if query targets a specific chapter (e.g. "교원인사규정 제3장")
             chapter_match = re.search(r"(?:제)?\s*(\d+)\s*장", query)
             if target_regulation and chapter_match:
                 chapter_no = int(chapter_match.group(1))
-                matches = full_view_usecase.find_matches(target_regulation)
-                if len(matches) == 1:
-                    selected = matches[0]
-                    json_path = full_view_usecase._resolve_json_path()
-                    if json_path:
-                        doc = loader.get_regulation_doc(json_path, selected.rule_code)
-                        chapter_node = full_view_usecase.get_chapter_node(doc, chapter_no)
-                        if chapter_node:
-                            chapter_title = chapter_node.get("title", "").strip()
-                            chapter_disp = chapter_node.get("display_no", f"제{chapter_no}장").strip()
-                            full_title = f"{selected.title} {chapter_disp} {chapter_title}".strip()
-                            content_text = render_full_view_nodes(chapter_node.get("children", []))
-                            # 대화창에 바로 전체 내용 표시
-                            full_response = f"## 📑 {full_title}\n\n{content_text}"
-                            history.append({
-                                "role": "assistant",
-                                "content": full_response
-                            })
-                            state["last_query"] = query
-                            state["last_mode"] = "chapter_view"
-                            state["last_regulation"] = selected.title
-                            state["last_rule_code"] = selected.rule_code
-                            return history, details, debug_text, state
+                handler = QueryHandler()
+                result = handler.get_chapter_view(target_regulation, chapter_no)
+                
+                if result.type == QueryType.CLARIFICATION:
+                    options = result.clarification_options
+                    state["pending"] = {
+                        "type": "regulation",
+                        "options": options,
+                        "query": query,
+                        "mode": "search",
+                    }
+                    history.append({
+                        "role": "assistant",
+                        "content": format_clarification("regulation", options),
+                    })
+                    return history, details, debug_text, state
+                
+                if result.success:
+                    history.append({
+                        "role": "assistant",
+                        "content": result.content,
+                    })
+                    state["last_query"] = query
+                    state["last_mode"] = "chapter_view"
+                    state["last_regulation"] = result.state_update.get("last_regulation")
+                    state["last_rule_code"] = result.state_update.get("last_rule_code")
+                    return history, details, debug_text, state
 
             search_with_hybrid = SearchUseCase(store)
             results = search_with_hybrid.search_unique(
