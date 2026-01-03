@@ -1,6 +1,6 @@
 # 규정 관리 시스템
 
-대학 규정집(HWP)을 구조화된 JSON으로 변환하고, AI 기반 검색을 제공하는 시스템입니다.
+대학 규정집(HWP)을 구조화된 JSON으로 변환하고, Hybrid RAG 기반 AI 검색 및 답변 생성을 제공하는 시스템입니다.
 
 ---
 
@@ -233,7 +233,7 @@ flowchart TB
         Chroma --> Embed["BGE-M3\n(1024차원 임베딩)"]
     end
 
-    subgraph ASK ["3️⃣ 질문 처리 (regulation ask)"]
+    subgraph ASK ["3️⃣ 검색/질문 처리 (regulation search)"]
         direction TB
         Query["🔍 사용자 질문"] --> Analyzer["QueryAnalyzer\n• 유형 분석\n• 동의어 확장\n• 인텐트 매칭\n• 대상 감지 (학생/교원/직원)"]
         
@@ -322,9 +322,9 @@ HWP 파일의 복잡한 규정 내용을 **계층적 JSON 구조**로 변환합�
 
 ---
 
-### 3️⃣ 질문(Ask) 처리 파이프라인
+### 3️⃣ 검색/질문 처리 파이프라인
 
-사용자가 `regulation ask "질문"`을 실행하면 다음 단계로 처리됩니다.
+사용자가 검색/질문 명령(`regulation search` 또는 `regulation search -a`)을 실행하면 다음 단계로 처리됩니다.
 
 #### Step 3-1: 쿼리 분석 (QueryAnalyzer)
 

@@ -99,7 +99,11 @@ Apple Silicon Mac에서 최적화된 추론을 제공합니다.
 
 **설치:**
 ```bash
+# 시스템 전역 설치
 pip install mlx-lm
+
+# 또는 프로젝트 내 설치 (권장)
+uv add mlx-lm
 ```
 
 **서버 실행:**
