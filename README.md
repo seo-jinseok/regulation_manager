@@ -3,7 +3,26 @@
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-> **대학 규정집을 AI가 이해할 수 있는 형태로 변환하고, 자연어로 검색·질문할 수 있는 지능형 검색 시스템**
+> **대학 규정집(HWP)을 구조화된 JSON으로 변환하고, RAG(검색 증강 생성) 기반으로 자연어 질문에 정확한 답변을 제공하는 오픈소스 AI 검색 시스템**
+
+---
+
+## 목차
+
+- [개요](#개요)
+- [한눈에 보기](#한눈에-보기)
+- [핵심 개념](#핵심-개념)
+- [시스템 요구사항](#시스템-요구사항)
+- [빠른 시작](#빠른-시작)
+- [기능별 상세 안내](#기능별-상세-안내)
+- [명령어 요약](#명령어-요약)
+- [시스템 아키텍처](#시스템-아키텍처)
+- [처리 파이프라인 상세](#처리-파이프라인-상세)
+- [환경 설정](#환경-설정)
+- [보안 고려사항](#보안-고려사항)
+- [문제 해결](#문제-해결)
+- [개발자 정보](#개발자-정보)
+- [관련 문서](#관련-문서)
 
 ---
 
@@ -37,10 +56,10 @@
 
 시스템은 크게 **3단계**로 작동합니다:
 
-```
+```text
 [1. 변환]              [2. 저장]               [3. 검색/질문]
  HWP 규정집    →    구조화된 JSON    →    자연어로 검색
-   📄                   📋                    🔍
+    📄                   📋                    🔍
 ```
 
 ```mermaid
@@ -96,19 +115,62 @@ flowchart LR
 
 ---
 
+## 시스템 요구사항
+
+### 필수 사양
+
+| 항목 | 최소 사양 | 권장 사양 |
+|------|----------|----------|
+| **운영체제** | macOS 12+, Ubuntu 20.04+ | macOS 14+, Ubuntu 22.04+ |
+| **Python** | 3.11 | 3.12 |
+| **RAM** | 8GB | 16GB (Reranker 사용 시) |
+| **디스크** | 5GB | 10GB+ |
+| **GPU** | 불필요 | CUDA 지원 시 임베딩 가속 |
+
+> [!NOTE]
+> 현재 Windows는 공식 지원되지 않습니다. WSL2 환경에서 실행을 권장합니다.
+
+### 필수 의존성
+
+- **Python 3.11+**
+- **[uv](https://docs.astral.sh/uv/)**: Python 패키지 매니저
+- **[hwp5html](https://pypi.org/project/pyhwp/)**: HWP 파일 변환용 CLI 도구
+
+---
+
 ## 빠른 시작
 
 > **상세한 단계별 안내는 [QUICKSTART.md](./QUICKSTART.md)를 참고하세요.**
 
-### 설치
+### 1단계: 저장소 클론 및 환경 설정
 
 ```bash
-git clone <repository-url> && cd regulation_manager
+# 저장소 클론 (URL을 실제 저장소 주소로 변경하세요)
+git clone https://github.com/YOUR_ORG/regulation_manager.git
+cd regulation_manager
+
+# Python 가상환경 생성 및 활성화
 uv venv && source .venv/bin/activate
+
+# 의존성 설치
 uv sync
+
+# 환경 변수 설정
+cp .env.example .env
+# .env 파일을 편집하여 필요한 설정을 입력하세요
 ```
 
-### 기본 워크플로우
+### 2단계: hwp5html 설치 (HWP 변환 시 필요)
+
+```bash
+# hwp5html CLI 도구 설치
+uv add pyhwp
+
+# 설치 확인
+uv run hwp5html --help
+```
+
+### 3단계: 기본 워크플로우
 
 ```bash
 # 1. HWP 파일을 JSON으로 변환
@@ -125,7 +187,7 @@ uv run regulation
 
 `regulation` 명령만 실행하면 **대화형 모드**로 시작됩니다:
 
-```
+```text
 $ uv run regulation
 
 ℹ 대화형 모드입니다. 아래 예시 중 번호를 선택하거나 직접 질문하세요.
@@ -277,39 +339,31 @@ uv run regulation serve --mcp
 시스템은 세 개의 독립적인 파이프라인으로 구성됩니다.
 
 ```mermaid
-flowchart TB
-    subgraph CONVERT ["1️⃣ HWP → JSON 변환 (regulation convert)"]
-        direction LR
-        HWP["📄 HWP 파일"] --> hwp5html["hwp5html\n(HTML 변환)"]
-        hwp5html --> Parser["RegulationParser\n(구조화 파싱)"]
-        Parser --> Enhance["enhance_for_rag\n(RAG 필드 추가)"]
-        Enhance --> JSON["📋 JSON 출력"]
-    end
-
-    subgraph SYNC ["2️⃣ 벡터 DB 동기화 (regulation sync)"]
-        direction LR
-        JSON2["📋 JSON"] --> Loader["JSONLoader\n(청크 추출)"]
-        Loader --> Chroma[("ChromaDB\n(증분 동기화)")]
-        Chroma --> Embed["BGE-M3\n(1024차원 임베딩)"]
-    end
-
-    subgraph ASK ["3️⃣ 검색/질문 처리 (regulation search)"]
+flowchart LR
+    subgraph CONVERT ["1️⃣ HWP → JSON 변환"]
         direction TB
-        Query["🔍 사용자 질문"] --> Analyzer["QueryAnalyzer\n• 유형 분석\n• 동의어 확장\n• 인텐트 매칭\n• 대상 감지"]
-        
-        subgraph HYBRID ["Hybrid Search"]
-            direction LR
-            BM25["BM25\n(키워드 매칭)"] --> RRF["RRF 융합\n(k=60)"]
-            Dense["Dense Search\n(의미 유사도)"] --> RRF
-        end
-        
-        Analyzer --> HYBRID
-        RRF --> Filter["Audience Filter\n(대상 불일치 감점)"]
-        Filter --> Reranker["BGE Reranker\n(Cross-Encoder)"]
-        Reranker --> LLM["🤖 LLM 답변 생성"]
+        HWP["📄 HWP 파일"] --> hwp5html["hwp5html"]
+        hwp5html --> Parser["RegulationParser"]
+        Parser --> Enhance["enhance_for_rag"]
+        Enhance --> JSON["📋 JSON"]
     end
 
-    JSON --> JSON2
+    subgraph SYNC ["2️⃣ 벡터 DB 동기화"]
+        direction TB
+        JSON2["📋 JSON"] --> Loader["JSONLoader"]
+        Loader --> Chroma[("ChromaDB")]
+        Chroma --> Embed["BGE-M3 임베딩"]
+    end
+
+    subgraph ASK ["3️⃣ 검색/질문 처리"]
+        direction TB
+        Query["🔍 질문"] --> Analyzer["QueryAnalyzer"]
+        Analyzer --> Search["Hybrid Search"]
+        Search --> Reranker["BGE Reranker"]
+        Reranker --> LLM["🤖 LLM 답변"]
+    end
+
+    CONVERT --> SYNC --> ASK
 ```
 
 ### 기술 스택
@@ -344,7 +398,7 @@ HWP 파일의 복잡한 규정 내용을 **계층적 JSON 구조**로 변환합�
 
 **변환 예시**:
 
-```
+```text
 [HWP 원본]                      [JSON 출력]
 제4조 (용어의 정의)       →     { "display_no": "제4조",
   1. 학과(전공)란...              "title": "용어의 정의",
@@ -479,7 +533,7 @@ flowchart LR
 
 **RRF (Reciprocal Rank Fusion)**: 두 검색 결과의 순위를 결합하는 알고리즘입니다. 각 문서의 순위를 역수로 변환하여 합산합니다.
 
-$$\text{RRF}(d) = \sum_{r \in \text{ranklists}} \frac{1}{k + r(d)}$$
+> **수식**: `RRF(d) = Σ(1 / (k + rank(d)))` (k=60 사용)
 
 **대상 필터링 (Audience Filter)**:
 
@@ -516,7 +570,7 @@ $$\text{RRF}(d) = \sum_{r \in \text{ranklists}} \frac{1}{k + r(d)}$$
 
 **Context 구성 예시**:
 
-```
+```text
 [1] 규정: 교원연구년제규정 (3-1-24)
 경로: 교원연구년제규정 > 제3조 자격
 내용: ① 첫번째 연구년제를 위한 근무년수: 본 대학교에 6년 이상 재직한 자...
@@ -530,7 +584,7 @@ $$\text{RRF}(d) = \sum_{r \in \text{ranklists}} \frac{1}{k + r(d)}$$
 
 **Prompt 구조**:
 
-```
+```text
 당신은 대학 규정 전문가입니다. 아래 규정을 참고하여 질문에 답변하세요.
 
 [규정 내용]
@@ -574,14 +628,7 @@ RAG_INTENTS_PATH=data/config/intents.json
 
 실행 시 `.env`를 자동 로드하므로, 위 설정이 코드 기본값보다 우선 적용됩니다.
 
-**코드 기본값** (옵션/`.env` 미설정 시):
-
-| 사용 위치 | LLM 기본값 |
-|-----------|------------|
-| `regulation convert` | provider: `openai` (model: `gpt-4o`) |
-| `regulation search` / 웹 UI | provider: `ollama` (model: `gemma2`) |
-
-> **LLM 설정에 대한 자세한 내용은 [LLM_GUIDE.md](./LLM_GUIDE.md)를 참고하세요.**
+> **LLM 프로바이더별 설정, 기본값 정책 등 자세한 내용은 [LLM_GUIDE.md](./LLM_GUIDE.md)를 참고하세요.**
 
 ### 동의어 및 인텐트 사전
 
@@ -619,6 +666,29 @@ uv run regulation search "학교에 가기 싫어" -v
 
 ---
 
+## 보안 고려사항
+
+> [!CAUTION]
+> 규정 데이터에 민감한 정보(개인정보, 내부 행정 절차 등)가 포함될 수 있습니다.
+
+### 데이터 보호
+
+- **로컬 LLM 권장**: Ollama 등 로컬 모델 사용 시 데이터가 외부 서버로 전송되지 않습니다.
+- **클라우드 LLM 사용 시**: OpenAI, Gemini 등 외부 서비스 사용 시 해당 서비스의 데이터 처리 정책을 반드시 확인하세요.
+
+### 환경 변수 관리
+
+- **`.env` 파일 보안**: `.gitignore`에 `.env`가 포함되어 있는지 확인하세요.
+- **API 키 노출 방지**: 절대로 API 키를 코드에 직접 하드코딩하지 마세요.
+- **권한 관리**: `.env` 파일은 필요한 사용자만 읽을 수 있도록 권한을 설정하세요 (`chmod 600 .env`).
+
+### 네트워크 보안
+
+- **웹 UI**: 기본적으로 `localhost`에서만 접근 가능합니다. 외부 공개 시 방화벽 및 인증 설정을 추가하세요.
+- **MCP 서버**: 로컬 통신만 지원합니다. 원격 접근 시 SSH 터널 등을 사용하세요.
+
+---
+
 ## 문제 해결
 
 | 문제 | 해결 방법 |
@@ -627,7 +697,8 @@ uv run regulation search "학교에 가기 싫어" -v
 | "파일을 찾을 수 없습니다" | 파일 경로 확인 (절대 경로 권장) |
 | 검색 결과가 부정확함 | `--no-rerank` 제거하여 AI 재정렬 활성화 확인 |
 | 변환 품질이 낮음 | `--use_llm` 옵션으로 LLM 전처리 활성화 |
-| "hwp5html 실행 파일을 찾을 수 없습니다" | `hwp5html` 설치 후 다시 실행 |
+| "hwp5html 실행 파일을 찾을 수 없습니다" | `uv add pyhwp` 후 `uv run hwp5html --help`로 확인 |
+| 메모리 부족 | Reranker 비활성화 (`--no-rerank`) 또는 RAM 증설 |
 
 ---
 
@@ -637,7 +708,7 @@ uv run regulation search "학교에 가기 싫어" -v
 
 ### 프로젝트 구조
 
-```
+```text
 regulation_manager/
 ├── src/
 │   ├── main.py              # 변환 파이프라인 진입점
@@ -668,19 +739,13 @@ uv run pytest
 uv add <package>
 ```
 
-### 요구 사항
-
-- Python 3.11+
-- `uv` 패키지 매니저
-- `hwp5` 라이브러리 + `hwp5html` CLI (HWP 파일 처리)
-
 ---
 
 ## 관련 문서
 
-| 문서 | 설명 |
-|------|------|
-| [QUICKSTART.md](./QUICKSTART.md) | 빠른 시작 가이드 |
-| [LLM_GUIDE.md](./LLM_GUIDE.md) | LLM 설정 가이드 |
-| [SCHEMA_REFERENCE.md](./SCHEMA_REFERENCE.md) | JSON 출력 스키마 명세 |
-| [AGENTS.md](./AGENTS.md) | 개발자 및 AI 에이전트 가이드 |
+| 문서 | 내용 | 대상 독자 |
+|------|------|----------|
+| [QUICKSTART.md](./QUICKSTART.md) | 단계별 설치 및 첫 사용 가이드 | 모든 사용자 |
+| [LLM_GUIDE.md](./LLM_GUIDE.md) | Ollama, OpenAI, Gemini 등 LLM 설정 상세 | 관리자, 개발자 |
+| [SCHEMA_REFERENCE.md](./SCHEMA_REFERENCE.md) | JSON 출력 필드 상세 명세 | 개발자 |
+| [AGENTS.md](./AGENTS.md) | Clean Architecture, 코딩 규칙, TDD 가이드 | 기여자, AI 에이전트 |
