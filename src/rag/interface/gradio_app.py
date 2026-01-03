@@ -66,6 +66,7 @@ from .formatters import (
     render_full_view_nodes,
     strip_path_prefix,
 )
+from .query_handler import QueryContext, QueryHandler, QueryOptions, QueryResult, QueryType
 
 # Default paths
 DEFAULT_DB_PATH = "data/chroma_db"

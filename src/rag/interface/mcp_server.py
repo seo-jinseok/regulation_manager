@@ -39,6 +39,7 @@ from .formatters import (
     filter_by_relevance,
     normalize_relevance_scores,
 )
+from .query_handler import QueryHandler, QueryOptions, QueryType
 
 # Initialize MCP server with metadata
 mcp = FastMCP(
@@ -362,6 +363,120 @@ def get_sync_status() -> str:
             "state_regulations": status["state_regulations"],
             "store_chunks": status["store_chunks"],
             "store_regulations": status["store_regulations"],
+        },
+        ensure_ascii=False,
+    )
+
+
+@mcp.tool()
+def get_regulation_overview(regulation: str) -> str:
+    """
+    규정의 개요(목차, 조항 수, 구조)를 조회합니다.
+
+    Args:
+        regulation: 규정명 또는 규정번호 (예: "교원인사규정", "3-1-5")
+
+    Returns:
+        규정 개요 정보 (JSON 형식)
+    """
+    handler = QueryHandler()
+    result = handler.get_regulation_overview(regulation)
+
+    if not result.success:
+        return json.dumps(
+            {"success": False, "error": result.content},
+            ensure_ascii=False,
+        )
+
+    return json.dumps(
+        {
+            "success": True,
+            "type": "overview",
+            **result.data,
+        },
+        ensure_ascii=False,
+    )
+
+
+@mcp.tool()
+def view_article(regulation: str, article_no: int) -> str:
+    """
+    특정 규정의 조항 전문을 조회합니다.
+
+    Args:
+        regulation: 규정명 또는 규정번호 (예: "교원인사규정", "3-1-5")
+        article_no: 조항 번호 (예: 8 → 제8조)
+
+    Returns:
+        조항 전문 (JSON 형식)
+    """
+    handler = QueryHandler()
+    result = handler.get_article_view(regulation, article_no)
+
+    if result.type == QueryType.CLARIFICATION:
+        return json.dumps(
+            {
+                "success": True,
+                "type": "clarification",
+                "reason": result.clarification_type,
+                "options": result.clarification_options,
+            },
+            ensure_ascii=False,
+        )
+
+    if not result.success:
+        return json.dumps(
+            {"success": False, "error": result.content},
+            ensure_ascii=False,
+        )
+
+    return json.dumps(
+        {
+            "success": True,
+            "type": "article",
+            **result.data,
+        },
+        ensure_ascii=False,
+    )
+
+
+@mcp.tool()
+def view_chapter(regulation: str, chapter_no: int) -> str:
+    """
+    특정 규정의 장 전문을 조회합니다.
+
+    Args:
+        regulation: 규정명 또는 규정번호 (예: "학칙", "3-1-1")
+        chapter_no: 장 번호 (예: 3 → 제3장)
+
+    Returns:
+        장 전문 (JSON 형식)
+    """
+    handler = QueryHandler()
+    result = handler.get_chapter_view(regulation, chapter_no)
+
+    if result.type == QueryType.CLARIFICATION:
+        return json.dumps(
+            {
+                "success": True,
+                "type": "clarification",
+                "reason": result.clarification_type,
+                "options": result.clarification_options,
+            },
+            ensure_ascii=False,
+        )
+
+    if not result.success:
+        return json.dumps(
+            {"success": False, "error": result.content},
+            ensure_ascii=False,
+        )
+
+    return json.dumps(
+        {
+            "success": True,
+            "type": "chapter",
+            **result.data,
         },
         ensure_ascii=False,
     )
