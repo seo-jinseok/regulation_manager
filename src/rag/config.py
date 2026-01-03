@@ -56,6 +56,11 @@ class RAGConfig:
         )
     )
 
+    # Additional data paths
+    feedback_log_path: str = "data/feedback_log.jsonl"
+    evaluation_dataset_path: str = "data/config/evaluation_dataset.json"
+    regulation_keywords_path: str = "data/config/regulation_keywords.json"
+
     # Supported LLM providers
     llm_providers: List[str] = field(
         default_factory=lambda: [
@@ -102,6 +107,21 @@ class RAGConfig:
         if not self.intents_path:
             return None
         return Path(self.intents_path).resolve()
+
+    @property
+    def feedback_log_path_resolved(self) -> Path:
+        """Get absolute path to feedback log file."""
+        return Path(self.feedback_log_path).resolve()
+
+    @property
+    def evaluation_dataset_path_resolved(self) -> Path:
+        """Get absolute path to evaluation dataset file."""
+        return Path(self.evaluation_dataset_path).resolve()
+
+    @property
+    def regulation_keywords_path_resolved(self) -> Path:
+        """Get absolute path to regulation keywords file."""
+        return Path(self.regulation_keywords_path).resolve()
 
 
 # Global configuration instance (singleton)

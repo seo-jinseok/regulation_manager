@@ -80,12 +80,8 @@ class EvaluationUseCase:
 
     def _default_dataset_path(self) -> str:
         """Get default path to evaluation dataset."""
-        return str(
-            Path(__file__).parent.parent.parent.parent
-            / "data"
-            / "config"
-            / "evaluation_dataset.json"
-        )
+        from ..config import get_config
+        return str(get_config().evaluation_dataset_path_resolved)
 
     def load_dataset(self) -> List[TestCase]:
         """

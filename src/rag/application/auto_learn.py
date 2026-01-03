@@ -66,20 +66,12 @@ class AutoLearnUseCase:
         self._synonyms_path = synonyms_path or self._default_synonyms_path()
 
     def _default_intents_path(self) -> str:
-        return str(
-            Path(__file__).parent.parent.parent.parent
-            / "data"
-            / "config"
-            / "intents.json"
-        )
+        from ..config import get_config
+        return str(get_config().intents_path_resolved or "data/config/intents.json")
 
     def _default_synonyms_path(self) -> str:
-        return str(
-            Path(__file__).parent.parent.parent.parent
-            / "data"
-            / "config"
-            / "synonyms.json"
-        )
+        from ..config import get_config
+        return str(get_config().synonyms_path_resolved or "data/config/synonyms.json")
 
     def analyze_feedback(self) -> AnalysisResult:
         """

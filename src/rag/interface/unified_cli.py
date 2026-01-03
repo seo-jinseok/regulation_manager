@@ -32,14 +32,15 @@ except ImportError:
 
 
 def _get_default_llm_settings():
-    """Get default LLM settings from environment."""
-    providers = ["ollama", "lmstudio", "mlx", "local", "openai", "gemini", "openrouter"]
-    default_provider = os.getenv("LLM_PROVIDER") or "ollama"
-    if default_provider not in providers:
-        default_provider = "ollama"
-    default_model = os.getenv("LLM_MODEL") or None
-    default_base_url = os.getenv("LLM_BASE_URL") or None
-    return providers, default_provider, default_model, default_base_url
+    """Get default LLM settings from centralized config."""
+    from ..config import get_config
+    config = get_config()
+    return (
+        config.llm_providers,
+        config.llm_provider,
+        config.llm_model,
+        config.llm_base_url,
+    )
 
 
 def _add_convert_parser(subparsers):
