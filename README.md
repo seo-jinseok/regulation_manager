@@ -112,7 +112,9 @@ uv run regulation serve --web
 
 파일 업로드 → 변환 → DB 동기화 → 질문까지 한 화면에서 진행할 수 있습니다.
 
-**추가 기능**
+**주요 특징**
+- **ChatGPT 스타일 인터페이스**: 채팅 형식의 직관적인 대화 UI
+- **예시 쿼리 카드**: 클릭 한 번으로 다양한 검색 기능 체험
 - **전문 보기**: "전문/원문/전체" 요청 시 규정 전체 뷰 제공
 - **대상 선택**: 교수/학생/직원 대상이 모호할 때 선택 UI 제공
 
@@ -628,7 +630,7 @@ regulation_manager/
 │   ├── enhance_for_rag.py   # RAG 최적화 필드 추가
 │   ├── parsing/             # 파싱 모듈
 │   └── rag/                 # RAG 시스템 (Clean Architecture)
-│       ├── interface/       # CLI, Web UI, MCP Server
+│       ├── interface/       # CLI, Web UI, MCP Server, 공통 쿼리 핸들러
 │       ├── application/     # Use Cases
 │       ├── domain/          # 도메인 모델
 │       └── infrastructure/  # ChromaDB, Reranker, LLM

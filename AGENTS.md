@@ -97,7 +97,9 @@ regulation_manager/
 │       │   └── json_loader.py      # JSON → Chunk 변환
 │       └── interface/
 │           ├── unified_cli.py      # 통합 CLI 진입점
-│           ├── cli.py              # CLI 로직 (search, ask, sync, status, reset)
+│           ├── cli.py              # CLI 로직 (search, sync, status, reset)
+│           ├── query_handler.py    # 쿼리 처리 통합 핸들러 (CLI/Web/MCP 공용)
+│           ├── formatters.py       # 출력 포맷터 (Rich, Markdown)
 │           ├── gradio_app.py       # Gradio Web UI
 │           └── mcp_server.py       # MCP Server (FastMCP)
 ├── tests/                      # pytest 테스트
@@ -146,10 +148,10 @@ regulation_manager/
 ### 검색 파이프라인 (Ask/Search)
 
 ```
-Query → QueryAnalyzer → Hybrid Search → BGE Reranker → LLM 답변
-         ↓                ↓                ↓              ↓
-    유형/대상 분석      BM25 + Dense    Penalize Mismatch  Cross-Encoder    Context 구성
-    동의어 확장        RRF 융합                            재정렬          답변 생성
+Query → QueryAnalyzer → Hybrid Search → Audience Filter → BGE Reranker → LLM 답변
+         ↓                ↓                  ↓                ↓              ↓
+    유형/대상 분석      BM25 + Dense      대상 불일치        Cross-Encoder    Context 구성
+    동의어 확장        RRF 융합          감점 처리          재정렬          답변 생성
 ```
 
 **핵심 파일**:
