@@ -726,6 +726,63 @@ def create_app(
                     }
                 )
                 return history, details, debug_text, state
+
+            # Check if query is regulation name or code only -> show overview
+            from ..application.search_usecase import REGULATION_ONLY_PATTERN, RULE_CODE_PATTERN
+
+            is_regulation_only = REGULATION_ONLY_PATTERN.match(query) is not None
+            is_rule_code_only = RULE_CODE_PATTERN.match(query) is not None
+
+            if is_regulation_only or is_rule_code_only:
+                json_path = full_view_usecase._resolve_json_path()
+                if json_path:
+                    overview = loader.get_regulation_overview(json_path, query)
+                    if overview:
+                        # Build overview markdown
+                        from ..domain.entities import RegulationStatus
+
+                        status_label = "✅ 시행중" if overview.status == RegulationStatus.ACTIVE else "❌ 폐지"
+                        lines = [f"## 📋 {overview.title} ({overview.rule_code})"]
+                        lines.append("")
+                        lines.append(f"**상태**: {status_label} | **총 조항 수**: {overview.article_count}개")
+                        lines.append("")
+
+                        if overview.chapters:
+                            lines.append("### 📖 목차")
+                            for ch in overview.chapters:
+                                article_info = f" ({ch.article_range})" if ch.article_range else ""
+                                lines.append(f"- **{ch.display_no}** {ch.title}{article_info}")
+                        else:
+                            lines.append("*(장 구조 없이 조항으로만 구성된 규정)*")
+
+                        if overview.has_addenda:
+                            lines.append("")
+                            lines.append("📎 **부칙** 있음")
+
+                        lines.append("")
+                        lines.append("---")
+                        lines.append(f"💡 특정 조항 검색: `{overview.title} 제N조` 또는 `{overview.rule_code} 제N조`")
+
+                        # Check for other matches (similar regulation names)
+                        if is_regulation_only:
+                            all_titles = loader.get_regulation_titles(json_path)
+                            other_matches = sorted([
+                                t for t in all_titles.values()
+                                if query in t and t != overview.title
+                            ])
+                            if other_matches:
+                                lines.append("")
+                                lines.append("❓ **혹시 다음 규정을 찾으셨나요?**")
+                                for m in other_matches:
+                                    lines.append(f"- {m}")
+
+                        history.append({"role": "assistant", "content": "\n".join(lines)})
+                        state["last_query"] = query
+                        state["last_mode"] = "overview"
+                        state["last_regulation"] = overview.title
+                        state["last_rule_code"] = overview.rule_code
+                        return history, details, debug_text, state
+
             search_with_hybrid = SearchUseCase(store)
             results = search_with_hybrid.search_unique(
                 query,
