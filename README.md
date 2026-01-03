@@ -1,23 +1,104 @@
-# 규정 관리 시스템
+# 대학 규정 관리 시스템 (Regulation Manager)
 
-대학 규정집(HWP)을 구조화된 JSON으로 변환하고, Hybrid RAG 기반 AI 검색 및 답변 생성을 제공하는 시스템입니다.
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+> **대학 규정집을 AI가 이해할 수 있는 형태로 변환하고, 자연어로 검색·질문할 수 있는 지능형 검색 시스템**
 
 ---
 
 ## 개요
 
-이 시스템은 두 가지 핵심 기능을 제공합니다:
+### 시스템 소개
 
-1. **규정 변환**: HWP 파일 → 구조화된 JSON
-2. **규정 검색**: 자연어 질의 기반 AI 검색 및 답변 생성
+대학 규정집은 수백 개의 규정과 수천 개의 조항으로 구성된 방대한 문서입니다. 학생이 휴학 절차를 알고 싶거나, 교수가 연구년 자격을 확인하고 싶을 때, 기존 방식으로는 PDF나 HWP 파일을 열어 일일이 검색해야 했습니다.
 
-```
-[HWP 파일] → [JSON 변환] → [벡터 DB 저장] → [자연어 검색/질문]
-```
+**규정 관리 시스템**은 이러한 불편함을 해결합니다. HWP 형식의 규정집을 **구조화된 데이터**로 변환하고, **AI 기반 검색**을 통해 자연어 질문에 정확한 답변을 제공합니다.
+
+### 주요 기능
+
+| 기능 | 설명 |
+|------|------|
+| **규정 변환** | HWP 파일을 계층 구조가 보존된 JSON으로 변환 |
+| **지능형 검색** | 키워드와 의미를 모두 고려한 하이브리드 검색 |
+| **AI 답변 생성** | 관련 규정을 참조하여 질문에 대한 답변 작성 |
+| **다양한 인터페이스** | 명령줄(CLI), 웹 UI, AI 에이전트 연동(MCP) 지원 |
+
+### 대상 사용자
+
+- **학생**: "휴학하려면 어떻게 해야 하나요?"와 같은 질문에 즉시 답변
+- **교직원**: 규정 조항을 빠르게 조회하고 업무에 활용
+- **행정담당자**: 규정 데이터베이스 관리 및 검색 시스템 운영
+- **개발자**: AI 에이전트(Claude, Cursor 등)와 연동하여 규정 검색 자동화
 
 ---
 
-## 사용 방법
+## 한눈에 보기
+
+시스템은 크게 **3단계**로 작동합니다:
+
+```
+[1. 변환]              [2. 저장]               [3. 검색/질문]
+ HWP 규정집    →    구조화된 JSON    →    자연어로 검색
+   📄                   📋                    🔍
+```
+
+```mermaid
+flowchart LR
+    A["📄 HWP 규정집"] --> B["🔄 JSON 변환"]
+    B --> C["🗃️ 벡터 DB 저장"]
+    C --> D["🔍 검색"]
+    D --> E["🤖 AI 답변"]
+```
+
+**처리 흐름 요약**:
+
+1. **변환**: HWP 파일을 편/장/절/조/항/호/목 계층 구조로 파싱하여 JSON 생성
+2. **저장**: 각 조항을 벡터 데이터베이스에 저장하여 의미 기반 검색 가능
+3. **검색**: 키워드 매칭 + 의미 유사도를 결합한 하이브리드 검색 수행
+4. **답변**: AI가 검색 결과를 참고하여 질문에 대한 답변 생성
+
+---
+
+## 핵심 개념
+
+처음 사용하시는 분들을 위해 주요 기술 개념을 설명합니다.
+
+### RAG (Retrieval-Augmented Generation)
+
+**정의**: "검색 증강 생성"이라고 번역되며, AI가 답변을 생성할 때 관련 문서를 먼저 검색하여 참조하는 방식입니다.
+
+**비유**: 오픈북 시험을 생각해 보세요. 학생이 모든 내용을 암기하는 대신, 필요한 정보를 교재에서 찾아 답안을 작성합니다. RAG도 마찬가지로, AI가 질문을 받으면 먼저 규정집에서 관련 조항을 "검색"한 후, 그 내용을 바탕으로 답변을 "생성"합니다.
+
+**장점**: AI가 규정에 없는 내용을 지어내는 "환각(Hallucination)" 현상을 크게 줄여줍니다.
+
+### 벡터 데이터베이스 (Vector Database)
+
+**정의**: 텍스트를 숫자 벡터(임베딩)로 변환하여 저장하고, 의미적으로 유사한 문서를 빠르게 찾을 수 있는 데이터베이스입니다.
+
+**비유**: 도서관의 도서 분류 시스템을 상상해 보세요. 일반 도서관에서는 책을 주제별로 분류하지만, 벡터 데이터베이스는 책의 "의미"를 수치화하여 비슷한 내용의 책을 자동으로 그룹화합니다.
+
+**본 시스템에서의 역할**: ChromaDB를 사용하여 규정 조항을 벡터로 저장하고, 질문과 의미적으로 가장 유사한 조항을 검색합니다.
+
+### 하이브리드 검색 (Hybrid Search)
+
+**정의**: 전통적인 키워드 매칭(BM25)과 의미 기반 벡터 검색(Dense Search)을 결합한 검색 방식입니다.
+
+**왜 필요한가**: 키워드 검색만으로는 "학교 그만두고 싶어요"라는 질문에서 "퇴학"이나 "자퇴" 규정을 찾기 어렵습니다. 반대로, 의미 검색만으로는 "제15조"와 같은 정확한 조문 번호를 찾는 데 부정확할 수 있습니다. 두 방식을 결합하면 양쪽의 장점을 모두 활용할 수 있습니다.
+
+### 임베딩 (Embedding)
+
+**정의**: 텍스트를 고차원 벡터(숫자 배열)로 변환하는 과정입니다.
+
+**비유**: 모든 단어와 문장에 "좌표"를 부여하는 것과 같습니다. 의미가 비슷한 문장들은 가까운 좌표에 위치하게 됩니다.
+
+**본 시스템에서의 활용**: BGE-M3 모델을 사용하여 각 규정 조항을 1024차원 벡터로 변환합니다.
+
+---
+
+## 빠른 시작
+
+> **상세한 단계별 안내는 [QUICKSTART.md](./QUICKSTART.md)를 참고하세요.**
 
 ### 설치
 
@@ -38,14 +119,11 @@ uv run regulation sync data/output/규정집.json
 
 # 3. 대화형 모드로 시작 (권장)
 uv run regulation
-
-# 4. 또는 직접 검색/질문
-uv run regulation search "교원 연구년 신청 자격은?"
 ```
 
-### 대화형 모드 (Interactive)
+### 대화형 모드
 
-`regulation` 명령만 실행하면 **대화형 모드**로 시작됩니다.
+`regulation` 명령만 실행하면 **대화형 모드**로 시작됩니다:
 
 ```
 $ uv run regulation
@@ -70,37 +148,44 @@ $ uv run regulation
   [2] 휴학 기간 연장은 가능한가요?
   [3] 휴학 중 등록금은?
 
->>> 
+>>>
 ```
 
-**주요 특징:**
-- 시작 시 5개의 예시 쿼리 표시 (다양한 기능 소개)
-- 번호 입력으로 예시/제안 쿼리 실행
-- AI 답변 후 문맥 기반 후속 쿼리 제안
-- `/reset`으로 문맥 초기화, `/exit`로 종료
+---
 
-> **전문 보기(Full View)**는 웹 UI 또는 MCP에서 지원합니다.  
-> (예: `교원인사규정 전문` / `교원인사규정 원문`)
+## 기능별 상세 안내
 
-### 검색 및 질문 옵션
+### 검색 및 질문
+
+시스템은 질문 유형을 자동으로 분석하여 적절한 처리 방식을 선택합니다.
+
+| 질문 유형 | 예시 | 처리 방식 |
+|----------|------|----------|
+| 자연어 질문 | "휴학하려면 어떻게 해야 하나요?" | AI 답변 생성 |
+| 키워드 검색 | "교원 연구년" | 관련 문서 목록 반환 |
+| 조문 검색 | "제15조", "학칙 제3조" | 해당 조항 직접 표시 |
+| 규정 전문 | "교원인사규정 전문" | 규정 전체 구조 표시 |
+
+**명령줄 옵션**:
 
 | 옵션 | 설명 |
 |------|------|
 | `-a`, `--answer` | AI 답변 생성 강제 (Ask 모드) |
 | `-q`, `--quick` | 문서 검색만 수행 (Search 모드) |
 | `-n 10` | 검색 결과 개수 지정 |
-| `--include-abolished` | 폐지된 규정 포함 (Search 모드) |
-| `--no-rerank` | AI 재정렬 비활성화 (Search 모드) |
+| `--include-abolished` | 폐지된 규정 포함 |
+| `--no-rerank` | AI 재정렬 비활성화 |
 | `-v`, `--verbose` | 상세 정보 출력 (쿼리 분석, 모드 결정 이유 등) |
 
-### LLM 질문 옵션
+**LLM 옵션**:
 
 | 옵션 | 설명 |
 |------|------|
 | `--provider ollama` | LLM 프로바이더 (ollama, lmstudio, openai 등) |
 | `--model gemma2` | 사용할 모델명 |
-| `-v`, `--verbose` | 상세 정보 출력 (쿼리 분석, LLM 설정 등) |
 | `--show-sources` | 참고 규정 전문 출력 |
+
+> **LLM 설정에 대한 자세한 내용은 [LLM_GUIDE.md](./LLM_GUIDE.md)를 참고하세요.**
 
 ### 웹 UI
 
@@ -110,20 +195,20 @@ $ uv run regulation
 uv run regulation serve --web
 ```
 
-파일 업로드 → 변환 → DB 동기화 → 질문까지 한 화면에서 진행할 수 있습니다.
+**주요 특징**:
 
-**주요 특징**
 - **ChatGPT 스타일 인터페이스**: 채팅 형식의 직관적인 대화 UI
 - **예시 쿼리 카드**: 클릭 한 번으로 다양한 검색 기능 체험
 - **전문 보기**: "전문/원문/전체" 요청 시 규정 전체 뷰 제공
 - **대상 선택**: 교수/학생/직원 대상이 모호할 때 선택 UI 제공
 
-### MCP 서버
+파일 업로드 → 변환 → DB 동기화 → 질문까지 한 화면에서 진행할 수 있습니다.
+
+### MCP 서버 (AI 에이전트 연동)
 
 AI 에이전트(Claude, Cursor 등)에서 규정 검색 기능을 사용할 수 있는 MCP(Model Context Protocol) 서버를 제공합니다.
 
 ```bash
-# MCP 서버 실행 (stdio 모드)
 uv run regulation serve --mcp
 ```
 
@@ -145,14 +230,7 @@ uv run regulation serve --mcp
 | `status://sync` | 동기화 상태 정보 |
 | `list://regulations` | 등록된 규정 목록 |
 
-> DB 관리(sync, reset)는 CLI로 수행합니다.
-
-**특징**
-- `audience` 파라미터로 대상(교수/학생/직원) 지정 가능
-- 모호한 질의는 `type=clarification` 응답 반환
-- "전문/원문/전체" 요청은 `type=full_view` 응답 반환
-
-**클라이언트 연결 설정** (Claude Desktop 예시):
+**Claude Desktop 연결 설정** 예시:
 
 ```json
 {
@@ -165,6 +243,8 @@ uv run regulation serve --mcp
   }
 }
 ```
+
+> DB 관리(sync, reset)는 CLI로 수행합니다.
 
 ---
 
@@ -190,33 +270,11 @@ uv run regulation serve --mcp
 
 ---
 
-## 시스템 개요
+## 시스템 아키텍처
 
-### 작동 원리
+### 전체 구조
 
-대학 규정집(HWP)을 AI가 검색할 수 있는 형태로 변환하고, 자연어 질문에 대해 관련 규정을 찾아 답변을 생성합니다.
-
-```mermaid
-flowchart LR
-    A["📄 HWP 규정집"] --> B["🔄 JSON 변환"]
-    B --> C["🗃️ 벡터 DB 저장"]
-    C --> D["🔍 검색"]
-    D --> E["🤖 AI 답변"]
-```
-
-**처리 단계:**
-
-| 단계 | 설명 |
-|------|------|
-| **1. 문서 구조화** | HWP 파일을 편/장/절/조/항/호/목 계층 구조로 파싱하여 JSON으로 변환 |
-| **2. 벡터 DB 저장** | 각 조항을 임베딩하여 ChromaDB에 저장 (증분 동기화 지원) |
-| **3. 하이브리드 검색** | 키워드 매칭(BM25)과 의미 유사도(Dense) 검색을 결합하여 관련 규정 탐색 |
-| **4. 재정렬** | Cross-Encoder로 검색 결과를 정밀 평가하여 관련도 순으로 재정렬 |
-| **5. 답변 생성** | LLM이 상위 규정을 참고하여 질문에 대한 답변 작성 |
-
----
-
-### 기술 아키텍처
+시스템은 세 개의 독립적인 파이프라인으로 구성됩니다.
 
 ```mermaid
 flowchart TB
@@ -237,7 +295,7 @@ flowchart TB
 
     subgraph ASK ["3️⃣ 검색/질문 처리 (regulation search)"]
         direction TB
-        Query["🔍 사용자 질문"] --> Analyzer["QueryAnalyzer\n• 유형 분석\n• 동의어 확장\n• 인텐트 매칭\n• 대상 감지 (학생/교원/직원)"]
+        Query["🔍 사용자 질문"] --> Analyzer["QueryAnalyzer\n• 유형 분석\n• 동의어 확장\n• 인텐트 매칭\n• 대상 감지"]
         
         subgraph HYBRID ["Hybrid Search"]
             direction LR
@@ -248,21 +306,34 @@ flowchart TB
         Analyzer --> HYBRID
         RRF --> Filter["Audience Filter\n(대상 불일치 감점)"]
         Filter --> Reranker["BGE Reranker\n(Cross-Encoder)"]
-        Reranker --> LLM["🤖 LLM 답변 생성\n(대상 확인 및 환각 방지)"]
+        Reranker --> LLM["🤖 LLM 답변 생성"]
     end
 
     JSON --> JSON2
 ```
 
+### 기술 스택
+
+| 구성 요소 | 사용 기술 | 역할 |
+|----------|----------|------|
+| 문서 변환 | hwp5html, Python | HWP → HTML → JSON |
+| 벡터 저장 | ChromaDB | 로컬 영속 벡터 데이터베이스 |
+| 임베딩 | BAAI/bge-m3 | 1024차원 다국어 임베딩 |
+| 재정렬 | BAAI/bge-reranker-v2-m3 | Cross-Encoder 기반 정밀 순위화 |
+| 키워드 검색 | BM25 (rank-bm25) | TF-IDF 기반 희소 검색 |
+| LLM | Ollama, OpenAI, Gemini 등 | 답변 생성 |
+| 웹 UI | Gradio | 대화형 웹 인터페이스 |
+| MCP | FastMCP | AI 에이전트 연동 |
+
 ---
 
-## 상세 처리 단계
+## 처리 파이프라인 상세
 
-### 1️⃣ HWP → JSON 변환 (문서 구조화)
+### 1️⃣ HWP → JSON 변환
 
 HWP 파일의 복잡한 규정 내용을 **계층적 JSON 구조**로 변환합니다.
 
-**처리 단계:**
+**처리 단계**:
 
 | 단계 | 컴포넌트 | 설명 |
 |------|----------|------|
@@ -271,7 +342,7 @@ HWP 파일의 복잡한 규정 내용을 **계층적 JSON 구조**로 변환합�
 | 3 | `ReferenceResolver` | 상호 참조 해석 ("제15조 참조" → 링크) |
 | 4 | `enhance_for_rag.py` | RAG 최적화 필드 추가 |
 
-**변환 예시:**
+**변환 예시**:
 
 ```
 [HWP 원본]                      [JSON 출력]
@@ -284,23 +355,23 @@ HWP 파일의 복잡한 규정 내용을 **계층적 JSON 구조**로 변환합�
                                       ]}]}
 ```
 
-**RAG 최적화 필드:**
+**RAG 최적화 필드**:
 
 | 필드 | 타입 | 설명 | 예시 |
 |------|------|------|------|
-| `parent_path` | `Array<string>` | 계층 경로 (Breadcrumb) | `["학과평가규정", "제4조 용어의 정의", "6. 교육편제 조정"]` |
-| `embedding_text` | `string` | 임베딩용 텍스트 | `"제4조 > 6. 교육편제 조정 > 다. 폐지: 폐지란..."` |
+| `parent_path` | `Array<string>` | 계층 경로 (Breadcrumb) | `["학과평가규정", "제4조 용어의 정의"]` |
+| `embedding_text` | `string` | 임베딩용 텍스트 | `"제4조 > 다. 폐지: 폐지란..."` |
 | `keywords` | `Array<{term, weight}>` | 핵심 키워드 | `[{"term": "학과", "weight": 0.9}]` |
 | `chunk_level` | `string` | 청크 레벨 | `article`, `paragraph`, `item` |
 | `is_searchable` | `boolean` | 검색 대상 여부 | `true` |
 
----
+> **JSON 스키마에 대한 상세 명세는 [SCHEMA_REFERENCE.md](./SCHEMA_REFERENCE.md)를 참고하세요.**
 
-### 2️⃣ 벡터 DB 동기화 (ChromaDB)
+### 2️⃣ 벡터 DB 동기화
 
 변환된 JSON의 각 조항을 **청크(Chunk)** 단위로 분리하여 ChromaDB에 저장합니다.
 
-**기술 사양:**
+**기술 사양**:
 
 | 항목 | 값 | 설명 |
 |------|---|------|
@@ -309,7 +380,7 @@ HWP 파일의 복잡한 규정 내용을 **계층적 JSON 구조**로 변환합�
 | **청크 단위** | 조항(Article) 기준 | 평균 ~50 토큰/청크 |
 | **동기화 방식** | 증분 동기화 | 해시 비교로 변경분만 업데이트 |
 
-**메타데이터 스키마:**
+**메타데이터 스키마**:
 
 ```python
 {
@@ -322,13 +393,29 @@ HWP 파일의 복잡한 규정 내용을 **계층적 JSON 구조**로 변환합�
 }
 ```
 
----
+**증분 동기화**:
+
+월간 규정 업데이트 시 변경된 규정만 동기화하여 처리 시간을 단축합니다.
+
+```python
+for regulation in new_json:
+    hash = sha256(regulation_content)
+    if hash != stored_hash:
+        if regulation_id in store:
+            update(regulation)  # 수정
+        else:
+            add(regulation)     # 신규
+    
+for stored_id in store:
+    if stored_id not in new_json:
+        delete(stored_id)       # 삭제
+```
 
 ### 3️⃣ 검색/질문 처리 파이프라인
 
-사용자가 검색/질문 명령(`regulation search` 또는 `regulation search -a`)을 실행하면 다음 단계로 처리됩니다.
-
 #### Step 3-1: 쿼리 분석 (QueryAnalyzer)
+
+사용자의 질문을 분석하여 최적의 검색 전략을 결정합니다.
 
 ```python
 # 입력
@@ -341,18 +428,21 @@ query = "교원 연구년 신청 자격은 무엇인가요?"
     "dense_weight": 0.7,                 # Dense 가중치
     "expanded_query": "교원 연구년 신청 자격 연구년제 자격요건",  # 동의어 확장
     "cleaned_query": "교원 연구년 신청 자격",  # 불용어 제거
-    "audience": "FACULTY",               # 감지된 대상 (STUDENT/FACULTY/STAFF/ALL)
+    "audience": "FACULTY",               # 감지된 대상
 }
 ```
 
-**대상 감지 (Audience Detection):**
-질문 키워드를 분석하여 적용 대상을 감지합니다.
-- `FACULTY`: 교수, 교원, 강사, 연구년 등
-- `STUDENT`: 학생, 학부, 수강, 성적, 장학 등
-- `STAFF`: 직원, 행정, 승진, 전보 등
-```
+**대상 감지 (Audience Detection)**:
 
-**쿼리 유형별 가중치:**
+질문 키워드를 분석하여 적용 대상을 자동으로 감지합니다:
+
+| 대상 | 키워드 예시 |
+|------|------------|
+| `FACULTY` | 교수, 교원, 강사, 연구년 등 |
+| `STUDENT` | 학생, 학부, 수강, 성적, 장학 등 |
+| `STAFF` | 직원, 행정, 승진, 전보 등 |
+
+**쿼리 유형별 가중치**:
 
 | 쿼리 유형 | 패턴 예시 | BM25 | Dense |
 |-----------|----------|------|-------|
@@ -360,9 +450,8 @@ query = "교원 연구년 신청 자격은 무엇인가요?"
 | 규정명 | `"장학금규정"`, `"휴학 학칙"` | 0.5 | 0.5 |
 | 자연어 질문 | `"어떻게 휴학하나요?"` | 0.4 | 0.6 |
 | 의도 표현 | `"학교에 가기 싫어"` | 0.35 | 0.65 |
-| 기본값 | 그 외 | 0.5 | 0.5 |
 
-#### Step 3-2: Hybrid Search
+#### Step 3-2: 하이브리드 검색 (Hybrid Search)
 
 두 가지 검색 방식을 결합하여 정확도를 높입니다.
 
@@ -371,35 +460,36 @@ flowchart LR
     Query["🔍 Query"] --> BM25
     Query --> Dense
     
-    subgraph SPARSE ["BM25 Sparse Search"]
-        BM25["Okapi BM25\nk1=1.5, b=0.75\nTF-IDF 키워드 매칭"]
+    subgraph SPARSE ["BM25 (키워드 매칭)"]
+        BM25["Okapi BM25\nk1=1.5, b=0.75"]
     end
     
-    subgraph DENSE ["Dense Vector Search"]
-        Dense["BGE-M3\n1024차원 임베딩\nCosine Similarity"]
+    subgraph DENSE_SEARCH ["Dense (의미 검색)"]
+        Dense["BGE-M3\nCosine Similarity"]
     end
     
-    BM25 --> RRF["RRF 융합\nk=60\nscore = Σ 1/(k+rank)"]
+    BM25 --> RRF["RRF 융합\nk=60"]
     Dense --> RRF
     RRF --> Result["📋 후보 결과"]
 ```
 
-**BM25 수식:**
+**BM25**: 키워드의 출현 빈도와 문서 길이를 고려한 전통적인 정보 검색 알고리즘입니다. "제15조"와 같은 정확한 용어 매칭에 강합니다.
 
-$$\text{BM25}(q, d) = \sum_{t \in q} \text{IDF}(t) \cdot \frac{f(t,d) \cdot (k_1 + 1)}{f(t,d) + k_1 \cdot (1 - b + b \cdot \frac{|d|}{\text{avgdl}})}$$
+**Dense Search**: 텍스트의 "의미"를 벡터로 변환하여 유사도를 계산합니다. "학교 그만두고 싶어요"라는 질문에서 "퇴학", "자퇴" 관련 규정을 찾을 수 있습니다.
 
-**RRF 융합 수식:**
+**RRF (Reciprocal Rank Fusion)**: 두 검색 결과의 순위를 결합하는 알고리즘입니다. 각 문서의 순위를 역수로 변환하여 합산합니다.
 
 $$\text{RRF}(d) = \sum_{r \in \text{ranklists}} \frac{1}{k + r(d)}$$
 
-**대상 필터링 (Audience Filter):**
-감지된 대상과 규정의 대상이 불일치하면 **페널티(0.5x 감점)**를 부여하여 하단으로 내립니다.
+**대상 필터링 (Audience Filter)**:
+
+감지된 대상과 규정의 대상이 불일치하면 **페널티(0.5x 감점)**를 부여합니다:
 - `FACULTY` 질문 (예: "교수 징계") → `학생` 관련 규정 감점
 - `STUDENT` 질문 (예: "장학금") → `교직원` 관련 규정 감점
 
-#### Step 3-3: Reranking (BGE Cross-Encoder)
+#### Step 3-3: 재정렬 (Reranking)
 
-Bi-Encoder 검색 결과를 Cross-Encoder로 재정렬합니다.
+하이브리드 검색 결과를 Cross-Encoder로 더 정밀하게 재정렬합니다.
 
 | 항목 | 값 |
 |------|---|
@@ -408,25 +498,12 @@ Bi-Encoder 검색 결과를 Cross-Encoder로 재정렬합니다.
 | **입력** | `[query, document]` 쌍 |
 | **출력** | Relevance Score (0~1) |
 
-**Bi-Encoder vs Cross-Encoder:**
+**Bi-Encoder vs Cross-Encoder**:
 
-```mermaid
-flowchart LR
-    subgraph BI ["Bi-Encoder (빠름, 덜 정밀)"]
-        direction TB
-        Q1["Query"] --> E1["Encoder"] --> V1["Vec_q"]
-        D1["Doc"] --> E2["Encoder"] --> V2["Vec_d"]
-        V1 --> COS["cos(Vec_q, Vec_d)"]
-        V2 --> COS
-    end
-    
-    subgraph CROSS ["Cross-Encoder (느림, 더 정밀)"]
-        direction TB
-        QD["Query + Doc"] --> E3["Encoder"] --> Score["Relevance Score"]
-    end
-```
+- **Bi-Encoder (1단계 검색)**: 쿼리와 문서를 각각 독립적으로 벡터화한 후 유사도 계산. 빠르지만 덜 정밀.
+- **Cross-Encoder (2단계 재정렬)**: 쿼리와 문서를 함께 입력하여 관련도 점수 계산. 느리지만 더 정밀.
 
-**보너스 점수:**
+**보너스 점수**:
 
 | 조건 | 보너스 | 설명 |
 |------|--------|------|
@@ -435,9 +512,9 @@ flowchart LR
 
 #### Step 3-4: LLM 답변 생성
 
-Reranking된 상위 문서를 Context로 제공하여 LLM이 답변을 생성합니다.
+재정렬된 상위 문서를 Context로 제공하여 LLM이 답변을 생성합니다.
 
-**Context 구성:**
+**Context 구성 예시**:
 
 ```
 [1] 규정: 교원연구년제규정 (3-1-24)
@@ -451,7 +528,7 @@ Reranking된 상위 문서를 Context로 제공하여 LLM이 답변을 생성합
 관련도: 0.95
 ```
 
-**Prompt 구조:**
+**Prompt 구조**:
 
 ```
 당신은 대학 규정 전문가입니다. 아래 규정을 참고하여 질문에 답변하세요.
@@ -468,58 +545,17 @@ Reranking된 상위 문서를 Context로 제공하여 LLM이 답변을 생성합
 - 출처 규정 번호를 함께 명시하세요.
 ```
 
-**신뢰도 계산:**
-
-```python
-confidence = mean(top_n_reranker_scores) * answer_coverage_ratio
-# top_n_reranker_scores: 상위 N개 Reranker 점수
-# answer_coverage_ratio: 답변에 인용된 규정 비율
-```
-
----
-
-### 4️⃣ 증분 동기화
-
-월간 규정 업데이트 시 변경된 규정만 동기화하여 처리 시간을 단축합니다.
-
-**동기화 알고리즘:**
-
-```python
-for regulation in new_json:
-    hash = sha256(regulation_content)
-    if hash != stored_hash:
-        if regulation_id in store:
-            update(regulation)  # 수정
-        else:
-            add(regulation)     # 신규
-    
-for stored_id in store:
-    if stored_id not in new_json:
-        delete(stored_id)       # 삭제
-```
-
-**상태 파일 (`sync_state.json`):**
-
-```json
-{
-  "last_sync": "2025-12-26T10:36:09Z",
-  "json_file": "규정집9-343(20250909).json",
-  "regulations": {
-    "3-1-24": {"hash": "abc123...", "chunk_count": 54},
-    "3-1-61": {"hash": "def456...", "chunk_count": 32}
-  }
-}
-```
-
 ---
 
 ## 환경 설정
+
+### 환경 변수 설정
 
 ```bash
 cp .env.example .env
 ```
 
-**주요 설정:**
+**주요 설정**:
 
 ```bash
 # LLM 기본값
@@ -538,33 +574,35 @@ RAG_INTENTS_PATH=data/config/intents.json
 
 실행 시 `.env`를 자동 로드하므로, 위 설정이 코드 기본값보다 우선 적용됩니다.
 
-코드 기본값(옵션/`.env` 미설정 시):
+**코드 기본값** (옵션/`.env` 미설정 시):
 
 | 사용 위치 | LLM 기본값 |
 |-----------|------------|
 | `regulation convert` | provider: `openai` (model: `gpt-4o`) |
-| `regulation ask` / 웹 UI | provider: `ollama` (model: `gemma2`, base_url: `http://localhost:11434`) |
+| `regulation search` / 웹 UI | provider: `ollama` (model: `gemma2`) |
+
+> **LLM 설정에 대한 자세한 내용은 [LLM_GUIDE.md](./LLM_GUIDE.md)를 참고하세요.**
 
 ### 동의어 및 인텐트 사전
 
 시스템은 검색 품질 향상을 위해 **동의어 사전**과 **인텐트 규칙**을 기본 제공합니다.
 
-**기본 제공 데이터:**
+**기본 제공 데이터**:
 
 | 항목 | 수량 | 파일 |
 |------|------|------|
 | 동의어 용어 | 167개 | `data/config/synonyms.json` |
 | 인텐트 규칙 | 51개 | `data/config/intents.json` |
 
-**동의어 사전 예시:**
+**동의어 사전 예시**:
 - `"폐과"` → `["학과 폐지", "전공 폐지"]`
 - `"교수"` → `["교원", "교직원", "전임교원"]`
 
-**인텐트 규칙 예시:**
+**인텐트 규칙 예시**:
 - `"학교에 가기 싫어"` → `["휴직", "휴가", "연구년", "안식년"]`
 - `"그만두고 싶어"` → `["퇴직", "사직", "명예퇴직"]`
 
-**Verbose 모드로 확인:**
+**Verbose 모드로 확인**:
 
 ```bash
 # 쿼리 분석 과정 확인
@@ -574,32 +612,10 @@ uv run regulation search "학교에 가기 싫어" -v
 # 🔄 쿼리 분석 결과
 # ℹ 📋 규칙 기반 확장
 # ℹ    원본: '학교에 가기 싫어'
-# ℹ    변환: '학교에 가기 싫어 휴직 휴가 연구년 안식년 병가 연가'
+# ℹ    변환: '학교에 가기 싶어 휴직 휴가 연구년 안식년 병가 연가'
 # ℹ 📚 동의어 사전: ✅ 적용됨
 # ℹ 🎯 의도 인식: ✅ 매칭됨
-# ℹ    매칭된 의도: [휴직 / 휴가, 근무 회피]
 ```
-
-**커스텀 사전 사용:**
-
-환경변수로 다른 파일을 지정할 수 있습니다:
-
-```bash
-# .env 파일
-RAG_SYNONYMS_PATH=data/config/synonyms.json
-RAG_INTENTS_PATH=data/config/intents.json
-```
-
----
-
-## 문서
-
-| 문서 | 설명 |
-|------|------|
-| [QUICKSTART.md](./QUICKSTART.md) | 빠른 시작 가이드 |
-| [LLM_GUIDE.md](./LLM_GUIDE.md) | LLM 설정 가이드 |
-| [SCHEMA_REFERENCE.md](./SCHEMA_REFERENCE.md) | JSON 출력 스키마 명세 |
-| [AGENTS.md](./AGENTS.md) | 개발자 가이드 |
 
 ---
 
@@ -611,15 +627,15 @@ RAG_INTENTS_PATH=data/config/intents.json
 | "파일을 찾을 수 없습니다" | 파일 경로 확인 (절대 경로 권장) |
 | 검색 결과가 부정확함 | `--no-rerank` 제거하여 AI 재정렬 활성화 확인 |
 | 변환 품질이 낮음 | `--use_llm` 옵션으로 LLM 전처리 활성화 |
-| "hwp5html 실행 파일을 찾을 수 없습니다" | `hwp5html` 설치 후 다시 실행 (변환은 hwp5html CLI 필요) |
+| "hwp5html 실행 파일을 찾을 수 없습니다" | `hwp5html` 설치 후 다시 실행 |
 
 ---
 
-# 개발자 가이드
+## 개발자 정보
 
-> 상세한 개발 가이드, 코딩 규칙, Clean Architecture 원칙은 [AGENTS.md](./AGENTS.md)를 참고하세요.
+> **상세한 개발 가이드, 코딩 규칙, Clean Architecture 원칙은 [AGENTS.md](./AGENTS.md)를 참고하세요.**
 
-## 프로젝트 구조
+### 프로젝트 구조
 
 ```
 regulation_manager/
@@ -630,7 +646,7 @@ regulation_manager/
 │   ├── enhance_for_rag.py   # RAG 최적화 필드 추가
 │   ├── parsing/             # 파싱 모듈
 │   └── rag/                 # RAG 시스템 (Clean Architecture)
-│       ├── interface/       # CLI, Web UI, MCP Server, 공통 쿼리 핸들러
+│       ├── interface/       # CLI, Web UI, MCP Server
 │       ├── application/     # Use Cases
 │       ├── domain/          # 도메인 모델
 │       └── infrastructure/  # ChromaDB, Reranker, LLM
@@ -642,7 +658,7 @@ regulation_manager/
 └── tests/                   # pytest 테스트
 ```
 
-## 개발 명령어
+### 개발 명령어
 
 ```bash
 # 테스트 실행
@@ -652,9 +668,19 @@ uv run pytest
 uv add <package>
 ```
 
-## 요구 사항
+### 요구 사항
 
 - Python 3.11+
 - `uv` 패키지 매니저
 - `hwp5` 라이브러리 + `hwp5html` CLI (HWP 파일 처리)
 
+---
+
+## 관련 문서
+
+| 문서 | 설명 |
+|------|------|
+| [QUICKSTART.md](./QUICKSTART.md) | 빠른 시작 가이드 |
+| [LLM_GUIDE.md](./LLM_GUIDE.md) | LLM 설정 가이드 |
+| [SCHEMA_REFERENCE.md](./SCHEMA_REFERENCE.md) | JSON 출력 스키마 명세 |
+| [AGENTS.md](./AGENTS.md) | 개발자 및 AI 에이전트 가이드 |
