@@ -918,7 +918,6 @@ def create_app(
                             label="",
                             height=500,
                             show_label=False,
-                            type="messages",
                         )
                         
                         # Input area
