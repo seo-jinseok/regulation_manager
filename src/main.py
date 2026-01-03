@@ -82,6 +82,491 @@ def _build_pipeline_signature(rules_hash: str, llm_signature: str) -> str:
     return f"{PIPELINE_SIGNATURE_VERSION}|rules:{rules_hash}|llm:{llm_signature}"
 
 
+# --- Helper dataclasses for pipeline context ---
+from dataclasses import dataclass, field
+from typing import Any, Callable, List
+
+
+@dataclass
+class FilePaths:
+    """Output file paths for a single HWP file."""
+
+    raw_md: Path
+    raw_html: Path
+    json_out: Path
+    metadata: Path
+
+
+@dataclass
+class CacheState:
+    """Cache state for a single file."""
+
+    hwp_hash: Optional[str] = None
+    raw_md_hash: Optional[str] = None
+    cached_hwp_hash: Optional[str] = None
+    cached_raw_md_hash: Optional[str] = None
+    cached_pipeline_signature: Optional[str] = None
+    cached_final_json_hash: Optional[str] = None
+    cached_metadata_hash: Optional[str] = None
+    cache_hit: bool = False
+    raw_md_cache_hit: bool = True
+
+
+@dataclass
+class PipelineContext:
+    """Shared context for pipeline execution."""
+
+    cache_manager: CacheManager
+    preprocessor: "Preprocessor"
+    formatter: "RegulationFormatter"
+    metadata_extractor: "MetadataExtractor"
+    pipeline_signature: str
+    args: argparse.Namespace
+    console: "Console"
+
+
+# --- Helper functions for run_pipeline ---
+
+
+def _collect_hwp_files(input_path: Path, console: "Console") -> Optional[List[Path]]:
+    """Collect HWP files from input path."""
+    if not input_path.exists():
+        console.print(f"[red]입력 경로가 존재하지 않습니다: {input_path}[/red]")
+        return None
+
+    files = []
+    if input_path.is_file():
+        files.append(input_path)
+    elif input_path.is_dir():
+        files.extend(sorted(input_path.rglob("*.hwp")))
+
+    if not files:
+        console.print("[red]처리할 HWP 파일이 없습니다.[/red]")
+        return None
+
+    return files
+
+
+def _initialize_llm(
+    args: argparse.Namespace, console: "Console"
+) -> tuple[Optional["LLMClient"], str]:
+    """Initialize LLM client if requested."""
+    if not args.use_llm:
+        return None, "disabled"
+
+    provider_name = args.provider if args.provider else "openai"
+    try:
+        llm_client = LLMClient(
+            provider=provider_name,
+            model=args.model,
+            base_url=args.base_url,
+        )
+        return llm_client, llm_client.cache_namespace()
+    except Exception as e:
+        if args.allow_llm_fallback:
+            console.print(
+                f"[yellow]LLM 초기화 실패: {e} - LLM 비활성화하고 계속 진행합니다.[/yellow]"
+            )
+            return None, "disabled"
+        raise
+
+
+def _get_file_paths(file: Path, output_dir: Path, input_path: Path) -> FilePaths:
+    """Determine output paths for a file."""
+    if input_path.is_dir():
+        rel_path = file.relative_to(input_path)
+        file_output_dir = output_dir / rel_path.parent
+    else:
+        file_output_dir = output_dir
+    file_output_dir.mkdir(parents=True, exist_ok=True)
+
+    return FilePaths(
+        raw_md=file_output_dir / f"{file.stem}_raw.md",
+        raw_html=file_output_dir / f"{file.stem}_raw.xhtml",
+        json_out=file_output_dir / f"{file.stem}.json",
+        metadata=file_output_dir / f"{file.stem}_metadata.json",
+    )
+
+
+def _load_cache_state(
+    file: Path,
+    paths: FilePaths,
+    cache_manager: CacheManager,
+    args: argparse.Namespace,
+    console: "Console",
+) -> CacheState:
+    """Load and compute cache state for a file."""
+    state = CacheState()
+
+    file_state = cache_manager.get_file_state(str(file)) if cache_manager else None
+    if file_state:
+        state.cached_hwp_hash = file_state.get("hwp_hash")
+        state.cached_raw_md_hash = file_state.get("raw_md_hash")
+        state.cached_pipeline_signature = file_state.get("pipeline_signature")
+        state.cached_final_json_hash = file_state.get("final_json_hash")
+        state.cached_metadata_hash = file_state.get("metadata_hash")
+
+    if cache_manager:
+        try:
+            state.hwp_hash = cache_manager.compute_file_hash(file)
+            if state.cached_hwp_hash:
+                state.cache_hit = state.cached_hwp_hash == state.hwp_hash
+        except Exception as e:
+            if args.verbose:
+                console.print(f"[yellow]HWP 해시 계산 실패: {e}[/yellow]")
+
+        if paths.raw_md.exists():
+            try:
+                state.raw_md_hash = cache_manager.compute_file_hash(paths.raw_md)
+                if state.cached_raw_md_hash:
+                    state.raw_md_cache_hit = (
+                        state.cached_raw_md_hash == state.raw_md_hash
+                    )
+            except Exception as e:
+                state.raw_md_cache_hit = False
+                if args.verbose:
+                    console.print(f"[yellow]RAW MD 해시 계산 실패: {e}[/yellow]")
+
+    return state
+
+
+def _check_full_cache_hit(
+    paths: FilePaths,
+    cache_state: CacheState,
+    pipeline_signature: str,
+    cache_manager: CacheManager,
+    force: bool,
+) -> bool:
+    """Check if all outputs are cached and valid."""
+    if force:
+        return False
+
+    required_files_exist = (
+        paths.raw_md.exists() and paths.json_out.exists() and paths.metadata.exists()
+    )
+    if not required_files_exist:
+        return False
+
+    if not cache_state.cache_hit or not cache_state.raw_md_cache_hit:
+        return False
+
+    if cache_state.cached_pipeline_signature != pipeline_signature:
+        return False
+
+    def output_hash_matches(path: Path, cached_hash: Optional[str]) -> bool:
+        if not cache_manager or not cached_hash or not path.exists():
+            return False
+        try:
+            return cache_manager.compute_file_hash(path) == cached_hash
+        except Exception:
+            return False
+
+    if not output_hash_matches(paths.json_out, cache_state.cached_final_json_hash):
+        return False
+    if not output_hash_matches(paths.metadata, cache_state.cached_metadata_hash):
+        return False
+
+    return True
+
+
+def _log_cache_miss_reasons(
+    paths: FilePaths,
+    cache_state: CacheState,
+    pipeline_signature: str,
+    cache_manager: CacheManager,
+    console: "Console",
+) -> None:
+    """Log reasons for cache miss in verbose mode."""
+    reasons = []
+    if not paths.raw_md.exists():
+        reasons.append("raw_md 없음")
+    if not paths.json_out.exists():
+        reasons.append("json 없음")
+    if not paths.metadata.exists():
+        reasons.append("metadata 없음")
+    if not cache_state.cache_hit:
+        reasons.append("HWP 해시 불일치")
+    if not cache_state.raw_md_cache_hit:
+        reasons.append("raw_md 해시 불일치")
+    if cache_state.cached_pipeline_signature != pipeline_signature:
+        reasons.append("파이프라인 시그니처 변경")
+
+    required_files_exist = (
+        paths.raw_md.exists() and paths.json_out.exists() and paths.metadata.exists()
+    )
+    if required_files_exist:
+
+        def output_hash_matches(path: Path, cached_hash: Optional[str]) -> bool:
+            if not cache_manager or not cached_hash or not path.exists():
+                return False
+            try:
+                return cache_manager.compute_file_hash(path) == cached_hash
+            except Exception:
+                return False
+
+        if not output_hash_matches(paths.json_out, cache_state.cached_final_json_hash):
+            reasons.append("json 해시 불일치")
+        if not output_hash_matches(paths.metadata, cache_state.cached_metadata_hash):
+            reasons.append("metadata 해시 불일치")
+
+    if reasons:
+        console.print(f"[dim]캐시 미스: {', '.join(reasons)}[/dim]")
+
+
+def _convert_hwp_to_markdown(
+    file: Path,
+    paths: FilePaths,
+    cache_state: CacheState,
+    ctx: PipelineContext,
+    status_callback: Optional[Callable],
+) -> tuple[str, Optional[str], Optional[str]]:
+    """Step 1: Convert HWP to Markdown (or load from cache)."""
+    can_reuse_raw_md = (
+        paths.raw_md.exists()
+        and not ctx.args.force
+        and cache_state.cache_hit
+        and cache_state.raw_md_cache_hit
+    )
+
+    if can_reuse_raw_md:
+        with open(paths.raw_md, "r", encoding="utf-8") as f:
+            raw_md = f.read()
+        html_content = None
+        if paths.raw_html.exists():
+            with open(paths.raw_html, "r", encoding="utf-8") as f:
+                html_content = f.read()
+        if ctx.cache_manager and cache_state.hwp_hash:
+            ctx.cache_manager.update_file_state(
+                str(file),
+                hwp_hash=cache_state.hwp_hash,
+                raw_md_hash=cache_state.raw_md_hash,
+            )
+        return raw_md, html_content, cache_state.raw_md_hash
+
+    # Need to convert from HWP
+    if not shutil.which("hwp5html"):
+        raise RuntimeError(
+            "hwp5html 실행 파일을 찾을 수 없습니다. "
+            "HWP 변환을 위해 hwp5html을 설치하거나, "
+            "현재 HWP와 일치하는 캐시된 raw markdown이 필요합니다."
+        )
+
+    reader = HwpToMarkdownReader(keep_html=False)
+    docs = reader.load_data(
+        file, status_callback=status_callback, verbose=ctx.args.verbose
+    )
+    raw_md = docs[0].text
+    html_content = docs[0].metadata.get("html_content")
+
+    with open(paths.raw_md, "w", encoding="utf-8") as f:
+        f.write(raw_md)
+    if html_content:
+        with open(paths.raw_html, "w", encoding="utf-8") as f:
+            f.write(html_content)
+
+    raw_md_hash = None
+    if ctx.cache_manager and cache_state.hwp_hash:
+        raw_md_hash = ctx.cache_manager.compute_text_hash(raw_md)
+        ctx.cache_manager.update_file_state(
+            str(file),
+            hwp_hash=cache_state.hwp_hash,
+            raw_md_hash=raw_md_hash,
+        )
+
+    return raw_md, html_content, raw_md_hash
+
+
+def _extract_and_save_metadata(
+    clean_md: str,
+    file: Path,
+    paths: FilePaths,
+    ctx: PipelineContext,
+) -> tuple[Dict[str, Any], str]:
+    """Step 3: Extract metadata and save to file."""
+    extracted_metadata = ctx.metadata_extractor.extract(clean_md)
+    metadata_payload = {"file_name": file.name, **extracted_metadata}
+    metadata_text = json.dumps(metadata_payload, ensure_ascii=False, indent=2)
+    with open(paths.metadata, "w", encoding="utf-8") as f:
+        f.write(metadata_text)
+    return extracted_metadata, metadata_text
+
+
+def _format_documents(
+    clean_md: str,
+    html_content: Optional[str],
+    file: Path,
+    extracted_metadata: Dict[str, Any],
+    ctx: PipelineContext,
+    status_callback: Optional[Callable],
+) -> List[Dict[str, Any]]:
+    """Step 4: Format markdown into structured documents."""
+    if html_content:
+        clean_md = replace_markdown_tables_with_html(clean_md, html_content)
+
+    final_docs = ctx.formatter.parse(
+        clean_md,
+        html_content=html_content,
+        verbose_callback=status_callback,
+        extracted_metadata=extracted_metadata,
+        source_file_name=file.name,
+    )
+
+    # Backfill metadata
+    scan_date = time.strftime("%Y-%m-%d")
+    missing_rule_code = 0
+    missing_page_range = 0
+    for doc in final_docs:
+        metadata = doc.setdefault("metadata", {})
+        metadata.setdefault("scan_date", scan_date)
+        metadata.setdefault("file_name", file.name)
+        metadata.setdefault("rule_code", None)
+        metadata.setdefault("page_range", None)
+        if not metadata.get("rule_code"):
+            missing_rule_code += 1
+        if not metadata.get("page_range"):
+            missing_page_range += 1
+
+    if ctx.args.verbose:
+        ctx.console.print(
+            f"[dim]메타데이터 누락: rule_code {missing_rule_code}/{len(final_docs)}, "
+            f"page_range {missing_page_range}/{len(final_docs)}[/dim]"
+        )
+
+    return final_docs
+
+
+def _save_final_json(
+    file: Path,
+    paths: FilePaths,
+    final_docs: List[Dict[str, Any]],
+    extracted_metadata: Dict[str, Any],
+    metadata_text: str,
+    raw_md_hash: Optional[str],
+    raw_md: str,
+    cache_state: CacheState,
+    ctx: PipelineContext,
+) -> None:
+    """Step 5: Save final JSON output."""
+    source_meta = _extract_source_metadata(file.name)
+    final_json = {
+        "schema_version": OUTPUT_SCHEMA_VERSION,
+        "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "pipeline_signature": ctx.pipeline_signature,
+        "file_name": file.name,
+        "source_serial": source_meta["source_serial"],
+        "source_date": source_meta["source_date"],
+        "toc": extracted_metadata.get("toc") or [],
+        "index_by_alpha": extracted_metadata.get("index_by_alpha") or [],
+        "index_by_dept": extracted_metadata.get("index_by_dept") or {},
+        "docs": final_docs,
+    }
+
+    if ctx.args.enhance_rag:
+        final_json = enhance_json(final_json)
+        if ctx.args.verbose:
+            ctx.console.print("[dim]RAG 최적화 적용 완료[/dim]")
+
+    final_json_text = json.dumps(final_json, ensure_ascii=False, indent=2)
+    with open(paths.json_out, "w", encoding="utf-8") as f:
+        f.write(final_json_text)
+
+    if ctx.cache_manager:
+        if raw_md_hash is None:
+            raw_md_hash = ctx.cache_manager.compute_text_hash(raw_md)
+        ctx.cache_manager.update_file_state(
+            str(file),
+            hwp_hash=cache_state.hwp_hash,
+            raw_md_hash=raw_md_hash,
+            pipeline_signature=ctx.pipeline_signature,
+            final_json_hash=ctx.cache_manager.compute_text_hash(final_json_text),
+            metadata_hash=ctx.cache_manager.compute_text_hash(metadata_text),
+        )
+
+
+def _process_single_file(
+    file: Path,
+    input_path: Path,
+    output_dir: Path,
+    ctx: PipelineContext,
+    progress: Any,
+    total_task: Any,
+    steps_per_file: int,
+) -> bool:
+    """Process a single HWP file through the pipeline."""
+    status_callback = ctx.console.print if ctx.args.verbose else None
+    paths = _get_file_paths(file, output_dir, input_path)
+
+    cache_state = _load_cache_state(
+        file, paths, ctx.cache_manager, ctx.args, ctx.console
+    )
+
+    full_cache_hit = _check_full_cache_hit(
+        paths,
+        cache_state,
+        ctx.pipeline_signature,
+        ctx.cache_manager,
+        ctx.args.force,
+    )
+
+    if ctx.args.verbose and not full_cache_hit and not ctx.args.force:
+        _log_cache_miss_reasons(
+            paths, cache_state, ctx.pipeline_signature, ctx.cache_manager, ctx.console
+        )
+
+    if full_cache_hit:
+        if ctx.args.verbose:
+            ctx.console.print(
+                f"[dim]캐시 적중: {file.name} (변환/전처리/포맷팅 생략)[/dim]"
+            )
+        progress.advance(total_task, steps_per_file)
+        if ctx.cache_manager and cache_state.hwp_hash:
+            ctx.cache_manager.update_file_state(
+                str(file),
+                hwp_hash=cache_state.hwp_hash,
+                raw_md_hash=cache_state.raw_md_hash,
+                pipeline_signature=ctx.pipeline_signature,
+            )
+        return True  # Success (cached)
+
+    # Step 1: HWP -> MD
+    raw_md, html_content, raw_md_hash = _convert_hwp_to_markdown(
+        file, paths, cache_state, ctx, status_callback
+    )
+    progress.advance(total_task, 1)
+
+    # Step 2: Preprocess
+    clean_md = ctx.preprocessor.clean(raw_md, verbose_callback=status_callback)
+    progress.advance(total_task, 1)
+
+    # Step 3: Metadata extraction
+    extracted_metadata, metadata_text = _extract_and_save_metadata(
+        clean_md, file, paths, ctx
+    )
+    progress.advance(total_task, 1)
+
+    # Step 4: Formatting
+    final_docs = _format_documents(
+        clean_md, html_content, file, extracted_metadata, ctx, status_callback
+    )
+    progress.advance(total_task, 1)
+
+    # Step 5: Save JSON
+    _save_final_json(
+        file,
+        paths,
+        final_docs,
+        extracted_metadata,
+        metadata_text,
+        raw_md_hash,
+        raw_md,
+        cache_state,
+        ctx,
+    )
+    progress.advance(total_task, 1)
+
+    return True  # Success
+
+
 def run_pipeline(args: argparse.Namespace, console: Optional["Console"] = None) -> int:
     """Run the HWP to JSON conversion pipeline.
 
@@ -109,18 +594,9 @@ def run_pipeline(args: argparse.Namespace, console: Optional["Console"] = None) 
             "[yellow]경고: 'output/'은 레거시 경로입니다. 'data/output' 사용을 권장합니다.[/yellow]"
         )
 
-    if not input_path.exists():
-        console.print(f"[red]입력 경로가 존재하지 않습니다: {input_path}[/red]")
-        return 1
-
-    files = []
-    if input_path.is_file():
-        files.append(input_path)
-    elif input_path.is_dir():
-        files.extend(sorted(input_path.rglob("*.hwp")))
-
-    if not files:
-        console.print("[red]처리할 HWP 파일이 없습니다.[/red]")
+    # Collect files
+    files = _collect_hwp_files(input_path, console)
+    if files is None:
         return 1
 
     # Initialize components
@@ -130,33 +606,23 @@ def run_pipeline(args: argparse.Namespace, console: Optional["Console"] = None) 
         rules_path, cache_manager, console=console, verbose=args.verbose
     )
 
-    llm_client = None
-    llm_signature = "disabled"
-    if args.use_llm:
-        provider_name = args.provider if args.provider else "openai"
-        try:
-            llm_client = LLMClient(
-                provider=provider_name,
-                model=args.model,
-                base_url=args.base_url,
-            )
-            llm_signature = llm_client.cache_namespace()
-        except Exception as e:
-            if args.allow_llm_fallback:
-                console.print(
-                    f"[yellow]LLM 초기화 실패: {e} - LLM 비활성화하고 계속 진행합니다.[/yellow]"
-                )
-                llm_client = None
-                llm_signature = "disabled"
-            else:
-                console.print(f"[red]LLM 초기화 실패: {e}[/red]")
-                return 1
+    try:
+        llm_client, llm_signature = _initialize_llm(args, console)
+    except Exception as e:
+        console.print(f"[red]LLM 초기화 실패: {e}[/red]")
+        return 1
 
     pipeline_signature = _build_pipeline_signature(rules_hash, llm_signature)
 
-    preprocessor = Preprocessor(llm_client=llm_client, cache_manager=cache_manager)
-    formatter = RegulationFormatter()
-    metadata_extractor = MetadataExtractor()
+    ctx = PipelineContext(
+        cache_manager=cache_manager,
+        preprocessor=Preprocessor(llm_client=llm_client, cache_manager=cache_manager),
+        formatter=RegulationFormatter(),
+        metadata_extractor=MetadataExtractor(),
+        pipeline_signature=pipeline_signature,
+        args=args,
+        console=console,
+    )
 
     from rich.progress import (
         BarColumn,
@@ -169,6 +635,8 @@ def run_pipeline(args: argparse.Namespace, console: Optional["Console"] = None) 
     console.rule("[bold blue]처리 시작[/bold blue]")
 
     had_errors = False
+    STEPS_PER_FILE = 5
+
     with Progress(
         SpinnerColumn(),
         TimeElapsedColumn(),
@@ -176,279 +644,23 @@ def run_pipeline(args: argparse.Namespace, console: Optional["Console"] = None) 
         TextColumn("[progress.description]{task.description}"),
         console=console,
     ) as progress:
-        STEPS_PER_FILE = 5
-        TOTAL_STEPS = len(files) * STEPS_PER_FILE
-        total_task = progress.add_task("[green]전체 진행률[/green]", total=TOTAL_STEPS)
+        total_task = progress.add_task(
+            "[green]전체 진행률[/green]", total=len(files) * STEPS_PER_FILE
+        )
 
         for file in files:
             try:
-                status_callback = console.print if args.verbose else None
-                if input_path.is_dir():
-                    rel_path = file.relative_to(input_path)
-                    file_output_dir = output_dir / rel_path.parent
-                else:
-                    file_output_dir = output_dir
-                file_output_dir.mkdir(parents=True, exist_ok=True)
-
-                raw_md_path = file_output_dir / f"{file.stem}_raw.md"
-                raw_html_path = file_output_dir / f"{file.stem}_raw.xhtml"
-                json_path = file_output_dir / f"{file.stem}.json"
-                metadata_path = file_output_dir / f"{file.stem}_metadata.json"
-                html_content = None
-
-                file_state = (
-                    cache_manager.get_file_state(str(file)) if cache_manager else None
+                _process_single_file(
+                    file,
+                    input_path,
+                    output_dir,
+                    ctx,
+                    progress,
+                    total_task,
+                    STEPS_PER_FILE,
                 )
-                cached_hwp_hash = file_state.get("hwp_hash") if file_state else None
-                cached_raw_md_hash = (
-                    file_state.get("raw_md_hash") if file_state else None
-                )
-                cached_pipeline_signature = (
-                    file_state.get("pipeline_signature") if file_state else None
-                )
-                cached_final_json_hash = (
-                    file_state.get("final_json_hash") if file_state else None
-                )
-                cached_metadata_hash = (
-                    file_state.get("metadata_hash") if file_state else None
-                )
-                hwp_hash = None
-                raw_md_hash = None
-                cache_hit = False
-                raw_md_cache_hit = True
-                if cache_manager:
-                    try:
-                        hwp_hash = cache_manager.compute_file_hash(file)
-                        if cached_hwp_hash:
-                            cache_hit = cached_hwp_hash == hwp_hash
-                    except Exception as e:
-                        if args.verbose:
-                            console.print(f"[yellow]HWP 해시 계산 실패: {e}[/yellow]")
-                    if raw_md_path.exists():
-                        try:
-                            raw_md_hash = cache_manager.compute_file_hash(raw_md_path)
-                            if cached_raw_md_hash:
-                                raw_md_cache_hit = cached_raw_md_hash == raw_md_hash
-                        except Exception as e:
-                            raw_md_cache_hit = False
-                            if args.verbose:
-                                console.print(
-                                    f"[yellow]RAW MD 해시 계산 실패: {e}[/yellow]"
-                                )
-
-                def output_hash_matches(path: Path, cached_hash: str) -> bool:
-                    if not cache_manager or not cached_hash or not path.exists():
-                        return False
-                    try:
-                        return cache_manager.compute_file_hash(path) == cached_hash
-                    except Exception:
-                        return False
-
-                # Check all required output files exist
-                required_files_exist = (
-                    raw_md_path.exists()
-                    and json_path.exists()
-                    and metadata_path.exists()
-                )
-
-                full_cache_hit = (
-                    not args.force
-                    and required_files_exist
-                    and cache_hit
-                    and raw_md_cache_hit
-                    and cached_pipeline_signature == pipeline_signature
-                    and output_hash_matches(json_path, cached_final_json_hash)
-                    and output_hash_matches(metadata_path, cached_metadata_hash)
-                )
-
-                # Verbose logging for cache miss reasons
-                if args.verbose and not full_cache_hit and not args.force:
-                    reasons = []
-                    if not raw_md_path.exists():
-                        reasons.append("raw_md 없음")
-                    if not json_path.exists():
-                        reasons.append("json 없음")
-                    if not metadata_path.exists():
-                        reasons.append("metadata 없음")
-                    if not cache_hit:
-                        reasons.append("HWP 해시 불일치")
-                    if not raw_md_cache_hit:
-                        reasons.append("raw_md 해시 불일치")
-                    if cached_pipeline_signature != pipeline_signature:
-                        reasons.append("파이프라인 시그니처 변경")
-                    if required_files_exist and not output_hash_matches(
-                        json_path, cached_final_json_hash
-                    ):
-                        reasons.append("json 해시 불일치")
-                    if required_files_exist and not output_hash_matches(
-                        metadata_path, cached_metadata_hash
-                    ):
-                        reasons.append("metadata 해시 불일치")
-                    if reasons:
-                        console.print(f"[dim]캐시 미스: {', '.join(reasons)}[/dim]")
-
-                if full_cache_hit:
-                    if args.verbose:
-                        console.print(
-                            f"[dim]캐시 적중: {file.name} (변환/전처리/포맷팅 생략)[/dim]"
-                        )
-                    progress.advance(total_task, STEPS_PER_FILE)
-                    if cache_manager and hwp_hash:
-                        cache_manager.update_file_state(
-                            str(file),
-                            hwp_hash=hwp_hash,
-                            raw_md_hash=raw_md_hash,
-                            pipeline_signature=pipeline_signature,
-                        )
-                    continue
-
-                # 1. HWP -> MD
-                hwp5html_available = shutil.which("hwp5html") is not None
-                can_reuse_raw_md = (
-                    raw_md_path.exists()
-                    and not args.force
-                    and cache_hit
-                    and raw_md_cache_hit
-                )
-                if can_reuse_raw_md:
-                    with open(raw_md_path, "r", encoding="utf-8") as f:
-                        raw_md = f.read()
-                    if raw_html_path.exists():
-                        with open(raw_html_path, "r", encoding="utf-8") as f:
-                            html_content = f.read()
-                    if cache_manager and hwp_hash:
-                        cache_manager.update_file_state(
-                            str(file), hwp_hash=hwp_hash, raw_md_hash=raw_md_hash
-                        )
-                else:
-                    if not hwp5html_available:
-                        raise RuntimeError(
-                            "hwp5html 실행 파일을 찾을 수 없습니다. "
-                            "HWP 변환을 위해 hwp5html을 설치하거나, "
-                            "현재 HWP와 일치하는 캐시된 raw markdown이 필요합니다."
-                        )
-                    reader = HwpToMarkdownReader(keep_html=False)
-                    docs = reader.load_data(
-                        file, status_callback=status_callback, verbose=args.verbose
-                    )
-                    raw_md = docs[0].text
-                    html_content = docs[0].metadata.get("html_content")
-                    with open(raw_md_path, "w", encoding="utf-8") as f:
-                        f.write(raw_md)
-                    if html_content:
-                        with open(raw_html_path, "w", encoding="utf-8") as f:
-                            f.write(html_content)
-                    if cache_manager and hwp_hash:
-                        raw_md_hash = cache_manager.compute_text_hash(raw_md)
-                        cache_manager.update_file_state(
-                            str(file),
-                            hwp_hash=hwp_hash,
-                            raw_md_hash=raw_md_hash,
-                        )
-
-                progress.advance(total_task, 1)  # Step 1: HWP → MD
-
-                # Preprocess
-                clean_md = preprocessor.clean(raw_md, verbose_callback=status_callback)
-                progress.advance(total_task, 1)  # Step 2: Preprocess
-
-                extracted_metadata = metadata_extractor.extract(clean_md)
-                metadata_payload = {"file_name": file.name, **extracted_metadata}
-                metadata_text = json.dumps(
-                    metadata_payload, ensure_ascii=False, indent=2
-                )
-                with open(metadata_path, "w", encoding="utf-8") as f:
-                    f.write(metadata_text)
-                progress.advance(total_task, 1)  # Step 3: Metadata extraction
-
-                # Format
-                if html_content:
-                    clean_md = replace_markdown_tables_with_html(clean_md, html_content)
-                final_docs = formatter.parse(
-                    clean_md,
-                    html_content=html_content,
-                    verbose_callback=status_callback,
-                    extracted_metadata=extracted_metadata,
-                    source_file_name=file.name,
-                )
-
-                # Backfill metadata
-                scan_date = time.strftime("%Y-%m-%d")
-                missing_rule_code = 0
-                missing_page_range = 0
-                for doc in final_docs:
-                    metadata = doc.setdefault("metadata", {})
-                    metadata.setdefault("scan_date", scan_date)
-                    metadata.setdefault("file_name", file.name)
-                    metadata.setdefault("rule_code", None)
-                    metadata.setdefault("page_range", None)
-                    if not metadata.get("rule_code"):
-                        missing_rule_code += 1
-                    if not metadata.get("page_range"):
-                        missing_page_range += 1
-                if args.verbose:
-                    console.print(
-                        f"[dim]메타데이터 누락: rule_code {missing_rule_code}/{len(final_docs)}, "
-                        f"page_range {missing_page_range}/{len(final_docs)}[/dim]"
-                    )
-                progress.advance(total_task, 1)  # Step 4: Formatting
-
-                # Save
-                source_meta = _extract_source_metadata(file.name)
-                final_json = {
-                    "schema_version": OUTPUT_SCHEMA_VERSION,
-                    "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-                    "pipeline_signature": pipeline_signature,
-                    "file_name": file.name,
-                    "source_serial": source_meta["source_serial"],
-                    "source_date": source_meta["source_date"],
-                    "toc": (
-                        extracted_metadata.get("toc") if extracted_metadata else None
-                    )
-                    or [],
-                    "index_by_alpha": (
-                        extracted_metadata.get("index_by_alpha")
-                        if extracted_metadata
-                        else None
-                    )
-                    or [],
-                    "index_by_dept": (
-                        extracted_metadata.get("index_by_dept")
-                        if extracted_metadata
-                        else None
-                    )
-                    or {},
-                    "docs": final_docs,
-                }
-                # RAG enhancement if requested
-                if args.enhance_rag:
-                    final_json = enhance_json(final_json)
-                    if args.verbose:
-                        console.print("[dim]RAG 최적화 적용 완료[/dim]")
-
-                final_json_text = json.dumps(final_json, ensure_ascii=False, indent=2)
-                with open(json_path, "w", encoding="utf-8") as f:
-                    f.write(final_json_text)
-
-                if cache_manager:
-                    if raw_md_hash is None:
-                        raw_md_hash = cache_manager.compute_text_hash(raw_md)
-                    cache_manager.update_file_state(
-                        str(file),
-                        hwp_hash=hwp_hash,
-                        raw_md_hash=raw_md_hash,
-                        pipeline_signature=pipeline_signature,
-                        final_json_hash=cache_manager.compute_text_hash(
-                            final_json_text
-                        ),
-                        metadata_hash=cache_manager.compute_text_hash(metadata_text),
-                    )
-
-                progress.advance(total_task, 1)  # Step 5: Save JSON
-
             except Exception as e:
                 console.print(f"[red]Error processing {file.name}: {e}[/red]")
-                # Advance remaining steps to keep progress consistent
                 current = progress.tasks[total_task].completed
                 expected = (files.index(file) + 1) * STEPS_PER_FILE
                 remaining = expected - current
