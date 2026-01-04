@@ -392,6 +392,53 @@ def create_parser() -> argparse.ArgumentParser:
         help="ChromaDB 저장 경로",
     )
 
+    # synonym command group
+    synonym_parser = subparsers.add_parser(
+        "synonym",
+        help="동의어 관리 (LLM 기반 자동 생성 및 수동 관리)",
+    )
+    synonym_subparsers = synonym_parser.add_subparsers(dest="synonym_cmd")
+
+    # synonym suggest <term>
+    suggest_parser = synonym_subparsers.add_parser(
+        "suggest",
+        help="LLM으로 동의어 후보 생성",
+    )
+    suggest_parser.add_argument("term", help="동의어를 생성할 용어")
+    suggest_parser.add_argument(
+        "--context",
+        default="대학 규정",
+        help="용어 맥락 (기본: 대학 규정)",
+    )
+    suggest_parser.add_argument(
+        "--auto-add",
+        action="store_true",
+        help="검토 없이 바로 추가",
+    )
+    suggest_parser.add_argument(
+        "--provider",
+        type=str,
+        default=default_provider,
+        choices=providers,
+        help="LLM 프로바이더",
+    )
+    suggest_parser.add_argument("--model", type=str, default=default_model, help="모델명")
+    suggest_parser.add_argument("--base-url", type=str, default=default_base_url, help="로컬 서버 URL")
+
+    # synonym add <term> <synonym>
+    add_syn_parser = synonym_subparsers.add_parser("add", help="동의어 수동 추가")
+    add_syn_parser.add_argument("term", help="기준 용어")
+    add_syn_parser.add_argument("synonym", help="추가할 동의어")
+
+    # synonym remove <term> <synonym>
+    remove_syn_parser = synonym_subparsers.add_parser("remove", help="동의어 제거")
+    remove_syn_parser.add_argument("term", help="기준 용어")
+    remove_syn_parser.add_argument("synonym", help="제거할 동의어")
+
+    # synonym list [term]
+    list_syn_parser = synonym_subparsers.add_parser("list", help="동의어 목록 조회")
+    list_syn_parser.add_argument("term", nargs="?", help="특정 용어만 조회 (생략 시 전체)")
+
     return parser
 
 
@@ -1326,6 +1373,133 @@ def cmd_reset(args) -> int:
     return 0
 
 
+def cmd_synonym(args) -> int:
+    """Execute synonym management commands."""
+    from ..application.synonym_generator_service import SynonymGeneratorService
+    from ..infrastructure.llm_adapter import LLMClientAdapter
+
+    # Handle no subcommand
+    if not args.synonym_cmd:
+        print_error("synonym 서브커맨드를 지정해주세요: suggest, add, remove, list")
+        print_info("예: regulation synonym suggest '정원'")
+        return 1
+
+    # Initialize service (without LLM for non-suggest commands)
+    service = SynonymGeneratorService()
+
+    if args.synonym_cmd == "list":
+        # List synonyms
+        if args.term:
+            synonyms = service.get_synonyms(args.term)
+            if synonyms:
+                print_success(f"'{args.term}'의 동의어 ({len(synonyms)}개):")
+                for i, syn in enumerate(synonyms, 1):
+                    print(f"  {i}. {syn}")
+            else:
+                print_info(f"'{args.term}'에 대한 동의어가 없습니다.")
+        else:
+            terms = service.list_terms()
+            if terms:
+                print_success(f"등록된 용어 ({len(terms)}개):")
+                for term in sorted(terms):
+                    count = len(service.get_synonyms(term))
+                    print(f"  - {term} ({count}개)")
+            else:
+                print_info("등록된 동의어가 없습니다.")
+        return 0
+
+    elif args.synonym_cmd == "add":
+        # Add synonym manually
+        if service.add_synonym(args.term, args.synonym):
+            print_success(f"'{args.synonym}'이(가) '{args.term}'의 동의어로 추가되었습니다.")
+        else:
+            print_info(f"'{args.synonym}'은(는) 이미 '{args.term}'의 동의어입니다.")
+        return 0
+
+    elif args.synonym_cmd == "remove":
+        # Remove synonym
+        if service.remove_synonym(args.term, args.synonym):
+            print_success(f"'{args.synonym}'이(가) '{args.term}'의 동의어에서 제거되었습니다.")
+        else:
+            print_error(f"'{args.synonym}'은(는) '{args.term}'의 동의어가 아닙니다.")
+            return 1
+        return 0
+
+    elif args.synonym_cmd == "suggest":
+        # Generate synonyms using LLM
+        try:
+            llm_client = LLMClientAdapter(
+                provider=args.provider,
+                model=args.model,
+                base_url=args.base_url,
+            )
+            service = SynonymGeneratorService(llm_client=llm_client)
+        except Exception as e:
+            print_error(f"LLM 클라이언트 초기화 실패: {e}")
+            return 1
+
+        # Show existing synonyms if any
+        existing = service.get_synonyms(args.term)
+        if existing:
+            print_info(f"현재 '{args.term}'의 동의어 ({len(existing)}개): {', '.join(existing)}")
+            print()
+
+        # Generate candidates
+        print_info(f"🤖 '{args.term}'의 동의어를 LLM으로 생성 중...")
+        try:
+            candidates = service.generate_synonyms(args.term, context=args.context)
+        except Exception as e:
+            print_error(f"동의어 생성 실패: {e}")
+            return 1
+
+        if not candidates:
+            print_info("생성된 동의어 후보가 없습니다.")
+            return 0
+
+        print_success(f"🤖 LLM이 제안하는 동의어 후보 ({len(candidates)}개):")
+        for i, candidate in enumerate(candidates, 1):
+            print(f"  {i}. {candidate}")
+
+        # Auto-add mode
+        if args.auto_add:
+            added = service.add_synonyms(args.term, candidates)
+            print_success(f"✅ {added}개 동의어가 자동으로 추가되었습니다.")
+            return 0
+
+        # Interactive selection
+        print()
+        print_info("추가할 동의어 번호를 선택하세요 (쉼표로 구분, 전체: all, 취소: q):")
+        try:
+            choice = input("> ").strip().lower()
+        except (KeyboardInterrupt, EOFError):
+            print("\n취소합니다.")
+            return 0
+
+        if choice == "q" or not choice:
+            print_info("취소되었습니다.")
+            return 0
+
+        if choice == "all":
+            selected = candidates
+        else:
+            selected = []
+            for part in choice.split(","):
+                part = part.strip()
+                if part.isdigit():
+                    idx = int(part)
+                    if 1 <= idx <= len(candidates):
+                        selected.append(candidates[idx - 1])
+
+        if selected:
+            added = service.add_synonyms(args.term, selected)
+            print_success(f"✅ {added}개 동의어가 추가되었습니다.")
+        else:
+            print_info("추가된 동의어가 없습니다.")
+
+        return 0
+
+    return 1
+
 def main(argv: Optional[list] = None) -> int:
     """Main entry point."""
     parser = create_parser()
@@ -1337,6 +1511,7 @@ def main(argv: Optional[list] = None) -> int:
         "ask": cmd_ask,
         "status": cmd_status,
         "reset": cmd_reset,
+        "synonym": cmd_synonym,
     }
 
     if args.command in commands:

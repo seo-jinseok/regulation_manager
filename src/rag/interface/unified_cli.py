@@ -512,6 +512,71 @@ def _add_analyze_parser(subparsers):
     )
 
 
+def _add_synonym_parser(subparsers):
+    """Add synonym subcommand parser."""
+    # Get LLM settings for suggest command
+    providers, default_provider, default_model, default_base_url = (
+        _get_default_llm_settings()
+    )
+
+    parser = subparsers.add_parser(
+        "synonym",
+        help="동의어 관리 (LLM 기반 자동 생성 및 수동 관리)",
+        description="동의어 사전을 관리합니다. LLM으로 동의어를 자동 생성하거나 수동으로 추가/제거할 수 있습니다.",
+    )
+    synonym_subparsers = parser.add_subparsers(dest="synonym_cmd")
+
+    # synonym suggest <term>
+    suggest_parser = synonym_subparsers.add_parser(
+        "suggest",
+        help="LLM으로 동의어 후보 생성",
+    )
+    suggest_parser.add_argument("term", help="동의어를 생성할 용어")
+    suggest_parser.add_argument(
+        "--context",
+        default="대학 규정",
+        help="용어 맥락 (기본: 대학 규정)",
+    )
+    suggest_parser.add_argument(
+        "--auto-add",
+        action="store_true",
+        help="검토 없이 바로 추가",
+    )
+    suggest_parser.add_argument(
+        "--provider",
+        type=str,
+        default=default_provider,
+        choices=providers,
+        help="LLM 프로바이더",
+    )
+    suggest_parser.add_argument(
+        "--model",
+        type=str,
+        default=default_model,
+        help="모델명",
+    )
+    suggest_parser.add_argument(
+        "--base-url",
+        type=str,
+        default=default_base_url,
+        help="로컬 서버 URL",
+    )
+
+    # synonym add <term> <synonym>
+    add_parser = synonym_subparsers.add_parser("add", help="동의어 수동 추가")
+    add_parser.add_argument("term", help="기준 용어")
+    add_parser.add_argument("synonym", help="추가할 동의어")
+
+    # synonym remove <term> <synonym>
+    remove_parser = synonym_subparsers.add_parser("remove", help="동의어 제거")
+    remove_parser.add_argument("term", help="기준 용어")
+    remove_parser.add_argument("synonym", help="제거할 동의어")
+
+    # synonym list [term]
+    list_parser = synonym_subparsers.add_parser("list", help="동의어 목록 조회")
+    list_parser.add_argument("term", nargs="?", help="특정 용어만 조회 (생략 시 전체)")
+
+
 def create_parser() -> argparse.ArgumentParser:
     """Create main argument parser with all subcommands."""
     parser = argparse.ArgumentParser(
@@ -553,6 +618,7 @@ def create_parser() -> argparse.ArgumentParser:
     _add_extract_keywords_parser(subparsers)
     _add_feedback_parser(subparsers)
     _add_analyze_parser(subparsers)
+    _add_synonym_parser(subparsers)
 
     return parser
 
@@ -761,6 +827,12 @@ def cmd_analyze(args) -> int:
     return 0
 
 
+def cmd_synonym(args) -> int:
+    """Execute synonym management commands."""
+    from .cli import cmd_synonym as _cmd_synonym
+
+    return _cmd_synonym(args)
+
 # =============================================================================
 # Entry Point
 # =============================================================================
@@ -806,6 +878,7 @@ def main(argv: Optional[list] = None) -> int:
         "extract-keywords": cmd_extract_keywords,
         "feedback": cmd_feedback,
         "analyze": cmd_analyze,
+        "synonym": cmd_synonym,
     }
 
     if args.command in commands:
