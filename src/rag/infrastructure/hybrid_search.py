@@ -232,6 +232,7 @@ class QueryAnalyzer:
         """
         self._llm_client = llm_client
         self._cache: Dict[str, QueryRewriteResult] = {}  # Query rewrite cache
+        self._synonym_session_cache: Dict[str, List[str]] = {}  # LLM-generated synonym cache
         self._synonyms = self._load_synonyms(synonyms_path)
         self._intent_rules = self._load_intents(intents_path)
 
@@ -602,13 +603,43 @@ class QueryAnalyzer:
         return " ".join(tokens) if tokens else cleaned
 
     def _get_synonym_expansions(self, cleaned_query: str) -> List[str]:
-        """Collect synonym expansions for the cleaned query."""
+        """Collect synonym expansions, using LLM for unknown terms if available."""
         expansions: List[str] = []
-        for term, synonyms in self._synonyms.items():
-            if term in cleaned_query:
+        tokens = cleaned_query.split() if cleaned_query else []
+
+        for token in tokens:
+            # Skip short tokens (likely particles or noise)
+            if len(token) < 2:
+                continue
+
+            # Check if term exists in synonyms.json
+            if token in self._synonyms:
                 # Add first 2 synonyms to avoid over-expansion
-                expansions.extend(synonyms[:2])
+                expansions.extend(self._synonyms[token][:2])
+            elif self._llm_client:
+                # Generate synonyms via LLM for unknown terms
+                llm_synonyms = self._generate_synonyms_cached(token)
+                expansions.extend(llm_synonyms[:2])
+
         return expansions
+
+    def _generate_synonyms_cached(self, term: str) -> List[str]:
+        """Generate synonyms via LLM with session cache."""
+        # Check session cache first
+        if term in self._synonym_session_cache:
+            return self._synonym_session_cache[term]
+
+        try:
+            from ..application.synonym_generator_service import SynonymGeneratorService
+
+            service = SynonymGeneratorService(llm_client=self._llm_client)
+            synonyms = service.generate_synonyms(term, exclude_existing=False)
+            self._synonym_session_cache[term] = synonyms
+            return synonyms
+        except Exception:
+            # On any error, return empty list (don't block search)
+            self._synonym_session_cache[term] = []
+            return []
 
     def _intent_keywords(self, query: str) -> List[str]:
         """Return intent-based keywords for colloquial queries."""
