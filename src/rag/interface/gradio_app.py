@@ -567,6 +567,11 @@ def create_app(
 
         history = history or []
         if not message or not message.strip():
+            # Show helpful message for empty input
+            history.append({
+                "role": "assistant",
+                "content": "💡 검색어를 입력해주세요. 예시: '휴학 신청 절차', '교원 연구년 자격은?'"
+            })
             return history, details, debug_text, state
         if history and isinstance(history[0], (list, tuple)):
             normalized = []
@@ -850,6 +855,16 @@ def create_app(
                     {"role": "assistant", "content": "검색 결과가 없습니다."}
                 )
             else:
+                # Check if all results have very low scores (irrelevant query)
+                LOW_RELEVANCE_THRESHOLD = 0.05
+                max_score = max(r.score for r in results) if results else 0
+                if max_score < LOW_RELEVANCE_THRESHOLD:
+                    history.append({
+                        "role": "assistant",
+                        "content": "⚠️ 입력하신 검색어와 관련된 규정을 찾기 어렵습니다.\n\n💡 다른 키워드로 검색해보세요. 예: '휴학', '등록금', '연구년'"
+                    })
+                    return history, details, debug_text, state
+
                 # Build search results as a nice table
                 table_rows = [
                     "| # | 규정명 | 코드 | 조항 | 점수 |",
@@ -899,8 +914,11 @@ def create_app(
             return history, details, debug_text, state
 
         # Ask mode (LLM)
-        # Show typing indicator
-        history.append({"role": "assistant", "content": "🤖 AI 응답 생성 중..."})
+        # Show step-by-step progress indicator
+        history.append({
+            "role": "assistant",
+            "content": "🔍 1/3 규정 검색 중...\n🎯 2/3 관련도 재정렬 중...\n🤖 3/3 AI 답변 생성 중..."
+        })
         
         answer_text, sources_text, debug_text, rule_code, regulation_title = (
             _run_ask_once(

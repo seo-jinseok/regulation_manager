@@ -720,6 +720,8 @@ def _perform_unified_search(
         if interactive:
             return 0
         print_error("검색어를 입력해주세요.")
+        print_info("💡 예시: uv run regulation search '휴학 신청 절차'")
+        print_info("💡 예시: uv run regulation search '교원 연구년 자격은?' -a")
         return 1
     args.query = query
     history_text = (
@@ -946,6 +948,14 @@ def _perform_unified_search(
             print_info("검색 결과가 없습니다.")
             return 0
 
+        # Check if all results have very low scores (irrelevant query)
+        LOW_RELEVANCE_THRESHOLD = 0.05
+        max_score = max(r.score for r in results) if results else 0
+        if max_score < LOW_RELEVANCE_THRESHOLD:
+            print_info("⚠️ 입력하신 검색어와 관련된 규정을 찾기 어렵습니다.")
+            print_info("💡 다른 키워드로 검색해보세요. 예: '휴학', '등록금', '연구년'")
+            return 0
+
         # Display Results (Search Style)
         if RICH_AVAILABLE:
             table = Table(title=f"검색 결과: '{args.query}'")
@@ -1036,8 +1046,11 @@ def _perform_unified_search(
     else:
         # Ask (LLM Answer)
         if RICH_AVAILABLE:
+            # Show step-by-step progress
+            console.print("[dim]🔍 1/3 규정 검색 중...[/dim]")
+            console.print("[dim]🎯 2/3 관련도 재정렬 중...[/dim]")
             with console.status(
-                "[bold green]🤖 AI 답변 생성 중... (10-30초 소요)[/bold green]"
+                "[bold green]🤖 3/3 AI 답변 생성 중... (10-30초 소요)[/bold green]"
             ):
                 try:
                     answer = search.ask(
@@ -1051,8 +1064,11 @@ def _perform_unified_search(
                     print_error(f"답변 생성 실패: {e}")
                     return 1
         else:
-            print("AI 답변 생성 중...")
+            print("🔍 1/3 규정 검색 중...")
+            print("🎯 2/3 관련도 재정렬 중...")
+            print("🤖 3/3 AI 답변 생성 중...")
             try:
+
                 answer = search.ask(
                     question=raw_query,
                     top_k=args.top_k,
