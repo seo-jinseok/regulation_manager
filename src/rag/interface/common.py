@@ -59,5 +59,17 @@ def decide_search_mode(query: str, force_mode: Optional[str] = None) -> str:
     if len(query) > 15 and " " in query:
         return "ask"
 
+    # 4. Intent-matched queries (e.g. "학교 그만두고 싶어" -> 휴학/휴직)
+    # If the query matches an intent pattern, treat as Ask for better UX
+    try:
+        from ..infrastructure.query_analyzer import QueryAnalyzer
+
+        analyzer = QueryAnalyzer()
+        rewrite_result = analyzer.expand_query(query)
+        if rewrite_result.used_intent:
+            return "ask"
+    except ImportError:
+        pass
+
     # Default to Search (Keyword-based)
     return "search"

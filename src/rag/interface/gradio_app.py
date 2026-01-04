@@ -349,9 +349,9 @@ def create_app(
         auto_sync_note = f"\n- {auto_sync_message}" if auto_sync_message else ""
         return f"""**동기화 상태**
 - 마지막 동기화: {status["last_sync"] or "없음"}
-- JSON 파일: {status["json_file"] or "없음"}
+- 규정집 파일: {status["json_file"] or "없음"}
 - 인덱싱된 규정: {status["store_regulations"]}개
-- 청크 수: {status["store_chunks"]}개
+- 저장된 조항 수: {status["store_chunks"]}개
 - LLM: {llm_status}{auto_sync_note}
 """
 
@@ -994,7 +994,7 @@ def create_app(
         lines = []
         lines.append("## DB 상태")
         lines.append(f"- DB 경로: `{db_path_value}`")
-        lines.append(f"- 청크 수: {store_local.count()}")
+        lines.append(f"- 저장된 조항 수: {store_local.count()}")
         lines.append(f"- 규정 수: {len(store_local.get_all_rule_codes())}")
         if last_synced:
             lines.append(f"- **규정집: `{last_synced}`**")
@@ -1043,6 +1043,7 @@ def create_app(
                             label="",
                             height=500,
                             show_label=False,
+                            value=[{"role": "assistant", "content": "👋 안녕하세요! 대학 규정을 검색하거나 질문할 수 있습니다.\n\n💡 아래 예시 버튼을 클릭하거나 직접 질문을 입력해주세요."}],
                         )
                         
                         # Input area
@@ -1070,7 +1071,10 @@ def create_app(
                         with gr.Row():
                             ex4 = gr.Button("📋 학칙 별표 1", size="sm")
                             ex5 = gr.Button("😢 학교 그만두고 싶어요", size="sm")
-                            chat_clear = gr.Button("🗑️ 대화 초기화", size="sm", variant="secondary")
+                        
+                        # 대화 초기화 버튼을 예시 버튼과 분리
+                        gr.Markdown("---")
+                        chat_clear = gr.Button("🗑️ 대화 초기화", variant="secondary", size="sm")
 
                     # Settings sidebar
                     with gr.Column(scale=1):

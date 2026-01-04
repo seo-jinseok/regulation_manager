@@ -1342,8 +1342,8 @@ def cmd_status(args) -> int:
         table.add_row("마지막 동기화", status["last_sync"] or "없음")
         table.add_row("📚 규정집", status["json_file"] or "없음")
         table.add_row("상태 파일 규정 수", str(status["state_regulations"]))
-        table.add_row("DB 청크 수", str(status["store_chunks"]))
-        table.add_row("DB 규정 수", str(status["store_regulations"]))
+        table.add_row("저장된 조항 수", str(status["store_chunks"]))
+        table.add_row("규정 수", str(status["store_regulations"]))
 
         console.print(table)
     else:
@@ -1377,7 +1377,7 @@ def cmd_reset(args) -> int:
         return 0
 
     print_info(f"데이터베이스: {args.db_path}")
-    print_info(f"삭제 예정 청크 수: {chunk_count}")
+    print_info(f"삭제 예정 조항 수: {chunk_count}")
 
     # Clear vector store
     deleted = store.clear_all()
@@ -1385,7 +1385,7 @@ def cmd_reset(args) -> int:
     # Clear sync state
     sync.reset_state()
 
-    print_success(f"데이터베이스 초기화 완료! {deleted}개 청크 삭제됨")
+    print_success(f"데이터베이스 초기화 완료! {deleted}개 조항 삭제됨")
     return 0
 
 
