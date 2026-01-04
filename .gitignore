@@ -86,3 +86,11 @@ verify_*.py
 # Test temporary outputs
 data/test_output*/
 .cache_test*/
+
+# Debug scripts and outputs (project root)
+debug_*.py
+debug_*.txt
+grep_*.txt
+*_grep.txt
+inspect_*.py
+inspection_*.txt
