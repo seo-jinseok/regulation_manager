@@ -160,6 +160,17 @@ class QueryAnalyzer:
     STAFF_KEYWORDS = ["직원", "행정", "사무", "참사", "주사", "승진", "전보"]
     AMBIGUOUS_AUDIENCE_KEYWORDS = ["징계", "처분", "위반", "제재", "윤리", "고충"]
 
+    # Context keywords for better audience detection
+    STUDENT_CONTEXT_KEYWORDS = [
+        "공부", "수업", "과제", "시험", "학점",
+        "F", "학사경고", "휴학", "자퇴", "졸업",
+        "장학금", "등록금", "기숙사", "생활관",
+    ]
+    FACULTY_CONTEXT_KEYWORDS = [
+        "강의", "연구", "논문", "연구년", "승진",
+        "교수", "책임시수", "업적", "안식년", "학회",
+    ]
+
     # Weight presets for each query type: (bm25_weight, dense_weight)
     WEIGHT_PRESETS: Dict[QueryType, Tuple[float, float]] = {
         QueryType.ARTICLE_REFERENCE: (0.6, 0.4),  # Favor exact keyword match
@@ -461,6 +472,7 @@ class QueryAnalyzer:
         query_lower = query.lower()
         matches: List[Audience] = []
 
+        # Primary keywords (explicit audience mention)
         if any(k in query_lower for k in self.FACULTY_KEYWORDS):
             matches.append(Audience.FACULTY)
         if any(k in query_lower for k in self.STUDENT_KEYWORDS):
@@ -470,6 +482,16 @@ class QueryAnalyzer:
 
         if matches:
             return matches
+
+        # Secondary: Context-based detection (when no explicit keywords)
+        context_matches: List[Audience] = []
+        if any(k in query_lower for k in self.STUDENT_CONTEXT_KEYWORDS):
+            context_matches.append(Audience.STUDENT)
+        if any(k in query_lower for k in self.FACULTY_CONTEXT_KEYWORDS):
+            context_matches.append(Audience.FACULTY)
+        
+        if context_matches:
+            return context_matches
 
         if any(k in query_lower for k in self.AMBIGUOUS_AUDIENCE_KEYWORDS):
             return [Audience.STUDENT, Audience.FACULTY, Audience.STAFF]
@@ -800,6 +822,21 @@ class QueryAnalyzer:
 
         return rules
 
+    def _normalize_for_matching(self, text: str) -> str:
+        """
+        Normalize text for flexible intent matching.
+        
+        - Removes whitespace for compound matching ("해외 학회" -> "해외학회")
+        - Removes common verb endings ("싶어요" -> "싶어")
+        """
+        if not text:
+            return ""
+        # Remove all whitespace
+        normalized = re.sub(r'\s+', '', text)
+        # Remove common polite/formal endings for flexibility
+        normalized = re.sub(r'(요|습니다|니다|세요|줘|주세요|할까요|하나요|인가요)$', '', normalized)
+        return normalized
+
     def _match_intents(self, query: str) -> List[IntentMatch]:
         """Match query against intent rules and return ranked matches."""
         if not query:
@@ -807,16 +844,22 @@ class QueryAnalyzer:
 
         cleaned = self.clean_query(query)
         haystack = cleaned or query
+        # Pre-compute normalized version for trigger matching
+        normalized_query = self._normalize_for_matching(haystack)
         matches: List[IntentMatch] = []
 
         for rule in self._intent_rules:
             score = 0
+            # Pattern matching (regex - already flexible)
             for pattern in rule.patterns:
                 if pattern.search(haystack):
                     score += 2
+            # Trigger matching with normalization (handles whitespace/ending variations)
             for trigger in rule.triggers:
-                if trigger in haystack:
+                normalized_trigger = self._normalize_for_matching(trigger)
+                if normalized_trigger and normalized_trigger in normalized_query:
                     score += 1
+            # Keyword matching (exact, for precision)
             for keyword in rule.keywords:
                 if keyword and keyword in haystack:
                     score += 1

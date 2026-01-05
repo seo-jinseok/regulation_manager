@@ -190,6 +190,96 @@
             ],
             "expected_rule_codes": [],
             "min_relevance_score": 0.05
+        },
+        {
+            "id": "edge_overseas_conference",
+            "category": "교원",
+            "query": "해외 학회 참석하고 싶어",
+            "expected_intents": [
+                "학술대회 참가"
+            ],
+            "expected_keywords": [
+                "학술대회",
+                "해외출장",
+                "학회"
+            ],
+            "expected_rule_codes": [],
+            "min_relevance_score": 0.3,
+            "notes": "띄어쓰기 변형 테스트"
+        },
+        {
+            "id": "edge_study_dislike",
+            "category": "학생",
+            "query": "공부하기 싫어",
+            "expected_intents": [
+                "휴학 관심"
+            ],
+            "expected_keywords": [
+                "휴학"
+            ],
+            "expected_rule_codes": [],
+            "min_relevance_score": 0.3,
+            "notes": "간접 의도 표현 테스트"
+        },
+        {
+            "id": "edge_lecture_exemption",
+            "category": "교원",
+            "query": "강의 면제 받으려면?",
+            "expected_intents": [
+                "강의 회피"
+            ],
+            "expected_keywords": [
+                "강의면제",
+                "연구년"
+            ],
+            "expected_rule_codes": [],
+            "min_relevance_score": 0.3,
+            "notes": "강의 면제 관련 쿼리"
+        },
+        {
+            "id": "edge_dormitory",
+            "category": "학생",
+            "query": "기숙사 살고 싶어",
+            "expected_intents": [
+                "기숙사 관련"
+            ],
+            "expected_keywords": [
+                "기숙사",
+                "생활관"
+            ],
+            "expected_rule_codes": [],
+            "min_relevance_score": 0.3,
+            "notes": "기숙사 관련 쿼리"
+        },
+        {
+            "id": "edge_quit_ambiguous",
+            "category": "공통",
+            "query": "그만두고 싶어",
+            "expected_intents": [
+                "퇴직 의향"
+            ],
+            "expected_keywords": [
+                "퇴직",
+                "사직"
+            ],
+            "expected_rule_codes": [],
+            "min_relevance_score": 0.2,
+            "notes": "대상 모호 쿼리 - 교원/직원 대상"
+        },
+        {
+            "id": "edge_school_quit_student",
+            "category": "학생",
+            "query": "학교 그만두고 싶어",
+            "expected_intents": [
+                "휴학 관심"
+            ],
+            "expected_keywords": [
+                "휴학",
+                "자퇴"
+            ],
+            "expected_rule_codes": [],
+            "min_relevance_score": 0.3,
+            "notes": "학생 컨텍스트 감지 테스트"
         }
     ]
 }
