@@ -894,17 +894,20 @@ def _perform_unified_search(
 
     use_reranker = not args.no_rerank
     
-    # Step 1.5: Tool Calling Mode (FunctionGemma-style)
-    if getattr(args, "use_tools", False):
-        from ..infrastructure.function_gemma_adapter import FunctionGemmaAdapter
+    # Step 1.5: Tool Calling Mode (DEFAULT) - FunctionGemma for routing, base LLM for answers
+    use_tool_calling = not getattr(args, "no_tools", False)
+    
+    if use_tool_calling and mode == "ask":
+        from ..infrastructure.function_gemma_adapter import FunctionGemmaAdapter, MLX_AVAILABLE
         from ..infrastructure.tool_executor import ToolExecutor
         from ..infrastructure.query_analyzer import QueryAnalyzer
         from ..application.search_usecase import SearchUseCase
+        from ..infrastructure.llm_adapter import LLMClientAdapter
         
         if RICH_AVAILABLE:
-            console.print("[bold blue]🔧 Tool Calling 모드 활성화[/bold blue]")
+            console.print("[bold blue]🔧 Tool Calling 모드 (기본)[/bold blue]")
         
-        # Initialize components
+        # Initialize search components
         search_usecase = SearchUseCase(store, use_reranker=use_reranker)
         query_analyzer = QueryAnalyzer()
         tool_executor = ToolExecutor(
@@ -912,50 +915,81 @@ def _perform_unified_search(
             query_analyzer=query_analyzer,
         )
         
+        # Initialize base LLM for answer generation
+        try:
+            llm_client = LLMClientAdapter(
+                provider=args.provider,
+                model=args.model,
+                base_url=args.base_url,
+            )
+        except Exception as e:
+            if RICH_AVAILABLE:
+                console.print(f"[dim]LLM 초기화 경고: {e} - API 직접 호출 사용[/dim]")
+            llm_client = None
+        
         tool_mode = getattr(args, "tool_mode", "auto")
         adapter = FunctionGemmaAdapter(
             tool_executor=tool_executor,
             api_mode=tool_mode,
+            llm_client=llm_client,  # Pass base LLM for answer generation
         )
         
         if RICH_AVAILABLE:
-            console.print(f"[dim]API 모드: {adapter._api_mode}[/dim]")
+            mode_display = {
+                "mlx": "MLX (Apple Silicon)",
+                "openai": "OpenAI API (LM Studio)",
+                "ollama": "Ollama",
+                "text": "텍스트 파싱",
+            }.get(adapter._api_mode, adapter._api_mode)
+            console.print(f"[dim]API 모드: {mode_display}[/dim]")
+            if MLX_AVAILABLE and adapter._api_mode == "mlx":
+                console.print(f"[dim]MLX 모델: {adapter._mlx_model_id}[/dim]")
             console.print()
             
             with console.status("[bold blue]🤖 Tool Calling으로 처리 중...[/bold blue]"):
                 try:
-                    answer_text, tool_results = adapter.process_query(query)
+                    answer_text, tool_results = adapter.process_query(query, llm_client=llm_client)
                 except Exception as e:
                     print_error(f"Tool Calling 실패: {e}")
-                    return 1
+                    # Fallback to traditional mode
+                    if RICH_AVAILABLE:
+                        console.print("[dim]기존 방식으로 재시도...[/dim]")
+                    use_tool_calling = False
             
-            # Display results
-            console.print("[bold green]🤖 AI 답변:[/bold green]")
-            console.print()
-            console.print(Markdown(answer_text))
-            console.print()
-            
-            if tool_results:
-                console.print("[bold cyan]📊 호출된 도구:[/bold cyan]")
-                for result in tool_results:
-                    status = "✅" if result.success else "❌"
-                    console.print(f"  {status} {result.tool_name}")
+            if use_tool_calling:
+                # Display results
+                console.print("[bold green]🤖 AI 답변:[/bold green]")
+                console.print()
+                console.print(Markdown(answer_text))
+                console.print()
+                
+                if tool_results and args.verbose:
+                    console.print("[bold cyan]📊 호출된 도구:[/bold cyan]")
+                    for result in tool_results:
+                        status = "✅" if result.success else "❌"
+                        console.print(f"  {status} {result.tool_name}")
+                
+                return 0
         else:
             print("🤖 Tool Calling 모드로 처리 중...")
             try:
-                answer_text, tool_results = adapter.process_query(query)
+                answer_text, tool_results = adapter.process_query(query, llm_client=llm_client)
             except Exception as e:
                 print_error(f"Tool Calling 실패: {e}")
-                return 1
+                use_tool_calling = False
             
-            print("\n=== AI 답변 ===")
-            print(answer_text)
-            print("\n📊 호출된 도구:")
-            for result in tool_results:
-                status = "✅" if result.success else "❌"
-                print(f"  {status} {result.tool_name}")
-        
-        return 0
+            if use_tool_calling:
+                print("\n=== AI 답변 ===")
+                print(answer_text)
+                if tool_results and args.verbose:
+                    print("\n📊 호출된 도구:")
+                    for result in tool_results:
+                        status = "✅" if result.success else "❌"
+                        print(f"  {status} {result.tool_name}")
+                
+                return 0
+    
+    # Fallback to traditional mode (--no-tools or tool calling failed)
 
     # Initialize LLM only if needed
     llm = None

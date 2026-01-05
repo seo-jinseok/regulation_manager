@@ -261,18 +261,18 @@ def _add_search_parser(subparsers):
         help="관련 규정 전문 출력 (답변 생성 시)",
     )
     
-    # Tool calling (FunctionGemma) option
+    # Tool calling is now DEFAULT (FunctionGemma for routing, base LLM for answers)
     parser.add_argument(
-        "--use-tools",
+        "--no-tools",
         action="store_true",
-        help="Tool Calling 모드 사용 (LLM이 도구를 호출하여 검색)",
+        help="Tool Calling 비활성화 (기존 방식 사용)",
     )
     parser.add_argument(
         "--tool-mode",
         type=str,
         choices=["auto", "mlx", "openai", "ollama"],
         default="auto",
-        help="Tool Calling 백엔드 (auto: 자동 선택, mlx: Apple Silicon, openai: LM Studio 등)",
+        help="Tool Calling 백엔드 (auto: MLX 우선, mlx: Apple Silicon, openai: LM Studio)",
     )
 
 

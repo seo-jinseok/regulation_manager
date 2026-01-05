@@ -183,13 +183,51 @@ class FunctionGemmaAdapter:
             self._mlx_model, self._mlx_tokenizer = mlx_load(self._mlx_model_id)
             print("MLX model loaded!")
     
+    def _parse_functiongemma_response(self, response: str) -> List[ToolCall]:
+        """Parse FunctionGemma's tool call format.
+        
+        FunctionGemma outputs: <start_function_call>call:func_name{arg:value}<end_function_call>
+        """
+        import re
+        tool_calls = []
+        
+        # Match FunctionGemma format
+        pattern = r'<start_function_call>call:(\w+)\{([^}]*)\}<end_function_call>'
+        matches = re.findall(pattern, response)
+        
+        for name, args_str in matches:
+            # Parse arguments (format: arg1:<escape>value1<escape>,arg2:<escape>value2<escape>)
+            arguments = {}
+            if args_str:
+                # Split by comma, handle escaped values
+                arg_pattern = r'(\w+):<escape>([^<]*)<escape>'
+                arg_matches = re.findall(arg_pattern, args_str)
+                for arg_name, arg_value in arg_matches:
+                    arguments[arg_name] = arg_value
+                
+                # Also try simpler format: arg:value
+                if not arguments:
+                    simple_pattern = r'(\w+):([^,]+)'
+                    simple_matches = re.findall(simple_pattern, args_str)
+                    for arg_name, arg_value in simple_matches:
+                        arguments[arg_name.strip()] = arg_value.strip().strip('"\'')
+            
+            tool_calls.append(ToolCall(name=name, arguments=arguments))
+        
+        return tool_calls
+    
     def process_query_mlx(
-        self, query: str, context: Optional[str] = None
+        self, query: str, context: Optional[str] = None, llm_client=None
     ) -> Tuple[str, List[ToolResult]]:
         """
-        Process query using MLX (Apple Silicon optimized).
+        Process query using MLX FunctionGemma for tool calling.
         
-        Uses mlx-lm for fast local inference on M-series chips.
+        FunctionGemma handles tool selection, base LLM generates final answer.
+        
+        Args:
+            query: User question
+            context: Optional additional context
+            llm_client: Base LLM client for answer generation (uses env settings if None)
         """
         if not MLX_AVAILABLE:
             raise RuntimeError("MLX not available")
@@ -199,81 +237,131 @@ class FunctionGemmaAdapter:
         self._load_mlx_model()
         
         tool_results: List[ToolResult] = []
-        tools_prompt = get_tools_prompt()
         
-        # Build initial prompt
+        # FunctionGemma official format: use 'developer' role and tools parameter
         messages = [
-            {"role": "system", "content": self.SYSTEM_PROMPT},
-            {"role": "user", "content": f"{tools_prompt}\n\n사용자 질문: {query}"}
+            {
+                "role": "developer",
+                "content": "You are a model that can do function calling with the following functions"
+            },
+            {
+                "role": "user", 
+                "content": query if not context else f"{context}\n\n{query}"
+            }
         ]
         
-        if context:
-            messages[1]["content"] = f"{tools_prompt}\n\n추가 컨텍스트: {context}\n\n사용자 질문: {query}"
-        
         for iteration in range(self._max_iterations):
-            # Apply chat template
-            prompt = self._mlx_tokenizer.apply_chat_template(
-                messages, add_generation_prompt=True
-            )
+            # Apply chat template with tools
+            try:
+                inputs = self._mlx_tokenizer.apply_chat_template(
+                    messages,
+                    tools=TOOL_DEFINITIONS,
+                    add_generation_prompt=True,
+                )
+                if isinstance(inputs, dict):
+                    prompt = inputs.get("input_ids", inputs)
+                else:
+                    prompt = inputs
+            except Exception:
+                # Fallback: build prompt manually
+                tools_desc = get_tools_prompt()
+                prompt = self._mlx_tokenizer.apply_chat_template(
+                    [
+                        {"role": "system", "content": f"You can call these functions:\n{tools_desc}"},
+                        {"role": "user", "content": query}
+                    ],
+                    add_generation_prompt=True,
+                )
             
             # Generate response
             response = mlx_generate(
                 self._mlx_model,
                 self._mlx_tokenizer,
                 prompt=prompt,
-                max_tokens=1024,
+                max_tokens=512,
                 verbose=False,
             )
             
-            # Parse tool calls from response
-            parsed = self._parse_response(response)
+            # Parse FunctionGemma format tool calls
+            parsed_calls = self._parse_functiongemma_response(response)
             
-            if not parsed.tool_calls:
-                # No tool calls, return the response
-                return parsed.final_response or response, tool_results
+            if not parsed_calls:
+                # No tool calls - FunctionGemma decided no tools needed
+                # This shouldn't happen for valid queries, but handle gracefully
+                return response, tool_results
             
             # Execute tool calls
-            for tool_call in parsed.tool_calls:
-                # Special handling for generate_answer
+            for tool_call in parsed_calls:
+                # Handle generate_answer with base LLM
                 if tool_call.name == "generate_answer":
-                    result = self._tool_executor.execute(tool_call.name, tool_call.arguments)
-                    tool_results.append(result)
-                    
-                    if result.success:
-                        return result.result, tool_results
-                    
-                    # Generate answer directly using MLX
                     context_text = tool_call.arguments.get("context", "")
                     question = tool_call.arguments.get("question", query)
                     
-                    answer_messages = [
-                        {"role": "system", "content": "당신은 대학 규정을 설명하는 전문가입니다."},
-                        {"role": "user", "content": f"질문: {question}\n\n컨텍스트:\n{context_text}\n\n답변:"}
-                    ]
-                    answer_prompt = self._mlx_tokenizer.apply_chat_template(
-                        answer_messages, add_generation_prompt=True
+                    # Use base LLM for answer generation
+                    answer = self._generate_answer_with_base_llm(
+                        question, context_text, llm_client
                     )
-                    answer = mlx_generate(
-                        self._mlx_model,
-                        self._mlx_tokenizer,
-                        prompt=answer_prompt,
-                        max_tokens=2048,
-                        verbose=False,
-                    )
+                    tool_results.append(ToolResult(
+                        tool_name="generate_answer",
+                        success=True,
+                        result=answer,
+                    ))
                     return answer, tool_results
                 
-                # Normal tool execution
+                # Execute other tools
                 result = self._tool_executor.execute(tool_call.name, tool_call.arguments)
                 tool_results.append(result)
                 
-                # Add tool result to messages
+                # Add result to conversation for next iteration
                 messages.append({"role": "assistant", "content": response})
-                messages.append({"role": "user", "content": f"도구 결과 ({result.tool_name}):\n{result.to_context_string()}"})
+                messages.append({
+                    "role": "user",
+                    "content": f"Tool result ({result.tool_name}):\n{result.to_context_string()}"
+                })
+        
+        # Max iterations reached - generate answer with accumulated results
+        if tool_results:
+            context_text = "\n\n".join([r.to_context_string() for r in tool_results])
+            answer = self._generate_answer_with_base_llm(query, context_text, llm_client)
+            return answer, tool_results
         
         return "검색 반복 횟수를 초과했습니다.", tool_results
+    
+    def _generate_answer_with_base_llm(
+        self, question: str, context: str, llm_client=None
+    ) -> str:
+        """Generate answer using base LLM (not FunctionGemma)."""
+        # Try provided client first
+        if llm_client:
+            return llm_client.generate(
+                system_prompt="당신은 대학 규정을 설명하는 전문가입니다. 컨텍스트를 바탕으로 질문에 답변하세요.",
+                user_message=f"질문: {question}\n\n컨텍스트:\n{context}",
+                temperature=0.0,
+            )
+        
+        # Fall back to OpenAI-compatible API
+        try:
+            payload = {
+                "model": os.getenv("LLM_MODEL", "eeve-korean-instruct-7b-v2.0-preview-mlx"),
+                "messages": [
+                    {"role": "system", "content": "당신은 대학 규정을 설명하는 전문가입니다."},
+                    {"role": "user", "content": f"질문: {question}\n\n컨텍스트:\n{context}\n\n답변:"}
+                ],
+                "temperature": 0,
+            }
+            resp = requests.post(
+                f"{self._base_url}/v1/chat/completions",
+                json=payload,
+                headers={"Content-Type": "application/json"},
+                timeout=120,
+            )
+            resp.raise_for_status()
+            return resp.json().get("choices", [{}])[0].get("message", {}).get("content", "")
+        except Exception as e:
+            return f"답변 생성 실패: {e}"
 
     def process_query_openai(
-        self, query: str, context: Optional[str] = None
+        self, query: str, context: Optional[str] = None, llm_client=None
     ) -> Tuple[str, List[ToolResult]]:
         """
         Process query using OpenAI-compatible API (LM Studio, vLLM, etc.).
@@ -342,7 +430,21 @@ class FunctionGemmaAdapter:
                     
                     # Special handling for generate_answer
                     if tool_name == "generate_answer":
-                        # Try to execute with LLM client
+                        # If llm_client is provided, use it for answer generation
+                        if llm_client:
+                            context_text = args.get("context", "")
+                            question = args.get("question", query)
+                            answer = self._generate_answer_with_base_llm(
+                                question, context_text, llm_client
+                            )
+                            tool_results.append(ToolResult(
+                                tool_name="generate_answer",
+                                success=True,
+                                result=answer,
+                            ))
+                            return answer, tool_results
+                            
+                        # Try to execute with LLM client (legacy fallback)
                         result = self._tool_executor.execute(tool_name, args)
                         tool_results.append(result)
                         
@@ -474,7 +576,7 @@ class FunctionGemmaAdapter:
 
 
     def process_query(
-        self, query: str, context: Optional[str] = None
+        self, query: str, context: Optional[str] = None, llm_client=None
     ) -> Tuple[str, List[ToolResult]]:
         """
         Process a user query using tool calling.
@@ -484,21 +586,28 @@ class FunctionGemmaAdapter:
         Args:
             query: User's question.
             context: Optional additional context.
+            llm_client: Optional base LLM client for answer generation.
 
         Returns:
             Tuple of (final_answer, list_of_tool_results)
         """
         # Route to appropriate API based on mode
         if self._api_mode == "mlx":
-            return self.process_query_mlx(query, context)
+            return self.process_query_mlx(query, context, llm_client=llm_client)
         if self._api_mode == "openai":
-            return self.process_query_openai(query, context)
+            return self.process_query_openai(query, context, llm_client=llm_client)
         if self._api_mode == "ollama":
             return self.process_query_native(query, context)
         
         # Fallback to text parsing mode
-        if not self._llm_client:
+        if not self._llm_client and not llm_client:
             raise RuntimeError("LLM client not initialized")
+        
+        # Use provided client or fallback to internal client
+        client = llm_client or self._llm_client
+        if not client:
+             raise RuntimeError("LLM client not initialized")
+
         if not self._tool_executor:
             raise RuntimeError("Tool executor not initialized")
 
@@ -507,7 +616,7 @@ class FunctionGemmaAdapter:
 
         for iteration in range(self._max_iterations):
             # Get model response
-            response = self._llm_client.generate(
+            response = client.generate(
                 system_prompt=self.SYSTEM_PROMPT,
                 user_message=conversation,
                 temperature=0.0,
