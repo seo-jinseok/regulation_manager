@@ -182,7 +182,7 @@ class QueryAnalyzer:
             0.4,
             0.6,
         ),  # Slightly favor semantic, but still consider keywords
-        QueryType.INTENT: (0.4, 0.6),  # Intent-heavy queries lean semantic (Adjusted to catch keywords)
+        QueryType.INTENT: (0.5, 0.5),  # Intent queries often contain specific keywords, so balanced is better
         QueryType.GENERAL: (0.5, 0.5),  # Balanced default (increased BM25 from 0.3)
     }
 
@@ -209,11 +209,15 @@ class QueryAnalyzer:
             ["휴직", "휴가", "연구년", "안식년"],
         ),
         (
-            re.compile(r"(그만두고\s*싶|그만\s*두고\s*싶|퇴직|사직)"),
+            re.compile(r"(그만두고\s*싶|그만\s*두고\s*싶|퇴직|사직|관두고|나가고)"),
             ["퇴직", "사직", "명예퇴직"],
         ),
         (re.compile(r"(수업|강의).*안.*하.*싶"), ["휴강", "보강", "강의"]),
-        (re.compile(r".*싶어"), ["희망", "원함"]),  # General desire pattern (Removed '신청' which is too generic)
+        (re.compile(r".*싶어"), ["희망", "원함"]),  # General desire pattern (lowest priority)
+        # New patterns added for specific failure cases
+        (re.compile(r"장학금.*(받|타|신청).*싶"), ["장학금", "신청", "지급"]),
+        (re.compile(r"(학회|출장).*(가|참석).*싶"), ["국외여비", "출장", "학회"]),
+        (re.compile(r"(공부|학업).*하기.*싫"), ["휴학", "자퇴"]),
     ]
     INTENT_MAX_MATCHES = 3
 
@@ -860,10 +864,10 @@ class QueryAnalyzer:
                 normalized_trigger = self._normalize_for_matching(trigger)
                 if normalized_trigger and normalized_trigger in normalized_query:
                     score += 1
-            # Keyword matching (exact, for precision)
-            for keyword in rule.keywords:
-                if keyword and keyword in haystack:
-                    score += 1
+            
+            # Note: We do NOT match on rule.keywords here. 
+            # Keywords are for query expansion (output), not for intent detection (input).
+            # Using keywords for detection causes false positives (e.g. "장학금" keyword matching "장학금 규정")
 
             if score > 0:
                 matches.append(

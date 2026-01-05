@@ -87,6 +87,9 @@ class TestQueryAnalyzer:
         """의도 표현은 INTENT로 분류"""
         assert analyzer.analyze("학교에 가기 싫어") == QueryType.INTENT
         assert analyzer.analyze("그만두고 싶어") == QueryType.INTENT
+        assert analyzer.analyze("장학금 받고 싶어") == QueryType.INTENT
+        assert analyzer.analyze("해외 학회 가고 싶어") == QueryType.INTENT
+        assert analyzer.analyze("공부하기 싫어") == QueryType.INTENT
 
     # --- Academic Keywords Detection ---
 
@@ -132,9 +135,10 @@ class TestQueryAnalyzer:
         assert dense_w == 0.6
 
     def test_get_weights_intent(self, analyzer: QueryAnalyzer):
-        """INTENT는 Dense 가중치가 더 높음"""
+        """INTENT는 균형 잡힌 가중치 (0.5, 0.5)를 가짐 (키워드 매칭 중요성 반영)"""
         bm25_w, dense_w = analyzer.get_weights("학교에 가기 싫어")
-        assert bm25_w < dense_w
+        assert bm25_w == 0.5
+        assert dense_w == 0.5
 
     def test_get_weights_general(self, analyzer: QueryAnalyzer):
         """GENERAL은 균형 가중치 (0.5, 0.5)"""
