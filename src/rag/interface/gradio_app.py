@@ -79,135 +79,375 @@ DEFAULT_LLM_MODEL = os.getenv("LLM_MODEL") or ""
 DEFAULT_LLM_BASE_URL = os.getenv("LLM_BASE_URL") or ""
 
 
-# Custom CSS for ChatGPT-style UI
+# Custom CSS for Modern 2025 UI - Glassmorphism + Minimalism
 CUSTOM_CSS = """
-/* Global theme */
+/* ============================================
+   Modern 2025 UI Theme
+   - Glassmorphism with subtle blur
+   - Minimalist color palette
+   - Smooth micro-animations
+   ============================================ */
+
 :root {
-    --primary-color: #10a37f;
-    --primary-dark: #0d8a6a;
-    --bg-dark: #202123;
-    --bg-sidebar: #343541;
-    --bg-chat: #444654;
-    --text-primary: #ececf1;
-    --text-secondary: #c5c5d2;
-    --border-color: #4d4d4f;
+    /* Primary palette - elegant emerald green */
+    --primary: #10b981;
+    --primary-light: #34d399;
+    --primary-dark: #059669;
+    
+    /* Neutral palette - sophisticated grays */
+    --bg-base: #0f0f0f;
+    --bg-elevated: #1a1a1a;
+    --bg-surface: rgba(255, 255, 255, 0.03);
+    --bg-glass: rgba(255, 255, 255, 0.05);
+    
+    /* Text colors */
+    --text-primary: #fafafa;
+    --text-secondary: #a3a3a3;
+    --text-muted: #737373;
+    
+    /* Accent colors */
+    --accent-purple: #a855f7;
+    --accent-blue: #3b82f6;
+    --accent-amber: #f59e0b;
+    
+    /* Borders and shadows */
+    --border-subtle: rgba(255, 255, 255, 0.06);
+    --border-glass: rgba(255, 255, 255, 0.1);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+    
+    /* Animation timing */
+    --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Chat container */
+/* Global dark theme */
+.gradio-container {
+    background: var(--bg-base) !important;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+}
+
+.dark {
+    --background-fill-primary: var(--bg-base) !important;
+}
+
+/* ============================================
+   Header - Clean & Minimal
+   ============================================ */
+.header-container {
+    text-align: center;
+    padding: 32px 24px 24px;
+}
+
+.header-title {
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: -0.025em;
+    margin: 0;
+}
+
+.header-subtitle {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-top: 8px;
+    font-weight: 400;
+}
+
+/* ============================================
+   Chat Container - Glassmorphism
+   ============================================ */
 .chatbot {
-    background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%) !important;
+    background: var(--bg-elevated) !important;
+    border: 1px solid var(--border-subtle) !important;
     border-radius: 16px !important;
-    border: 1px solid rgba(255,255,255,0.1) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
 }
 
-/* Message bubbles */
+/* Message bubbles - modern rounded */
 .message {
-    border-radius: 12px !important;
-    padding: 12px 16px !important;
-    margin: 8px 0 !important;
+    border-radius: 16px !important;
+    padding: 14px 18px !important;
+    margin: 6px 0 !important;
+    font-size: 0.95rem !important;
+    line-height: 1.6 !important;
+    transition: transform 0.15s var(--ease-smooth) !important;
 }
 
 .message.user {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-    margin-left: 20% !important;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%) !important;
+    color: white !important;
+    margin-left: 15% !important;
+    box-shadow: var(--shadow-sm) !important;
 }
 
 .message.bot {
-    background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%) !important;
-    border: 1px solid rgba(255,255,255,0.1) !important;
+    background: var(--bg-glass) !important;
+    border: 1px solid var(--border-glass) !important;
+    color: var(--text-primary) !important;
+    backdrop-filter: blur(10px) !important;
 }
 
-/* Input area */
-.input-row {
-    background: rgba(255,255,255,0.05) !important;
-    border-radius: 24px !important;
-    padding: 8px !important;
-    margin-top: 16px !important;
+/* ============================================
+   Input Area - Sleek & Modern
+   ============================================ */
+.input-container textarea {
+    background: var(--bg-surface) !important;
+    border: 1px solid var(--border-subtle) !important;
+    border-radius: 12px !important;
+    color: var(--text-primary) !important;
+    padding: 14px 16px !important;
+    font-size: 0.95rem !important;
+    transition: all 0.2s var(--ease-smooth) !important;
 }
 
-/* Send button */
-.send-btn {
-    background: linear-gradient(135deg, #10a37f 0%, #0d8a6a 100%) !important;
-    border-radius: 50% !important;
+.input-container textarea:focus {
+    border-color: var(--primary) !important;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15) !important;
+    outline: none !important;
+}
+
+.input-container textarea::placeholder {
+    color: var(--text-muted) !important;
+}
+
+/* ============================================
+   Buttons - Minimal with Hover Effects
+   ============================================ */
+button.primary {
+    background: var(--primary) !important;
     border: none !important;
-    min-width: 48px !important;
-    height: 48px !important;
+    border-radius: 10px !important;
+    color: white !important;
+    font-weight: 500 !important;
+    padding: 10px 20px !important;
+    transition: all 0.2s var(--ease-smooth) !important;
 }
 
-.send-btn:hover {
-    transform: scale(1.05) !important;
-    box-shadow: 0 4px 15px rgba(16, 163, 127, 0.4) !important;
+button.primary:hover {
+    background: var(--primary-light) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3) !important;
 }
 
-/* Example cards */
-.example-card {
-    background: linear-gradient(135deg, rgba(102,126,234,0.1) 0%, rgba(118,75,162,0.1) 100%) !important;
-    border: 1px solid rgba(255,255,255,0.1) !important;
-    border-radius: 12px !important;
-    padding: 12px 16px !important;
-    cursor: pointer !important;
-    transition: all 0.3s ease !important;
+button.secondary {
+    background: var(--bg-glass) !important;
+    border: 1px solid var(--border-glass) !important;
+    border-radius: 10px !important;
+    color: var(--text-secondary) !important;
+    font-weight: 500 !important;
+    transition: all 0.2s var(--ease-smooth) !important;
 }
 
-.example-card:hover {
-    background: linear-gradient(135deg, rgba(102,126,234,0.2) 0%, rgba(118,75,162,0.2) 100%) !important;
+button.secondary:hover {
+    background: rgba(255, 255, 255, 0.08) !important;
+    color: var(--text-primary) !important;
+    border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+/* ============================================
+   Example Cards - Glass Effect
+   ============================================ */
+.example-btn {
+    background: var(--bg-glass) !important;
+    border: 1px solid var(--border-glass) !important;
+    border-radius: 10px !important;
+    color: var(--text-secondary) !important;
+    font-size: 0.85rem !important;
+    padding: 10px 14px !important;
+    transition: all 0.2s var(--ease-smooth) !important;
+    backdrop-filter: blur(8px) !important;
+}
+
+.example-btn:hover {
+    background: rgba(255, 255, 255, 0.08) !important;
+    color: var(--text-primary) !important;
     transform: translateY(-2px) !important;
-    box-shadow: 0 4px 12px rgba(102,126,234,0.2) !important;
+    box-shadow: var(--shadow-md) !important;
+    border-color: rgba(255, 255, 255, 0.15) !important;
 }
 
-/* Settings accordion */
-.settings-accordion {
-    background: rgba(255,255,255,0.03) !important;
-    border-radius: 12px !important;
-    border: 1px solid rgba(255,255,255,0.08) !important;
+/* ============================================
+   Sidebar Settings - Clean Layout
+   ============================================ */
+.settings-panel {
+    background: var(--bg-elevated) !important;
+    border: 1px solid var(--border-subtle) !important;
+    border-radius: 14px !important;
+    padding: 20px !important;
 }
 
-/* Header */
-.header {
-    text-align: center;
-    padding: 24px 0;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    font-size: 2em;
-    font-weight: bold;
+.settings-panel label {
+    color: var(--text-secondary) !important;
+    font-size: 0.85rem !important;
+    font-weight: 500 !important;
 }
 
-/* Detail panel */
-.detail-panel {
-    background: rgba(255,255,255,0.02) !important;
-    border-radius: 12px !important;
-    padding: 16px !important;
-    max-height: 300px !important;
-    overflow-y: auto !important;
+/* Accordion - Subtle styling */
+.accordion {
+    background: transparent !important;
+    border: 1px solid var(--border-subtle) !important;
+    border-radius: 10px !important;
 }
 
-/* Status badge */
-.status-badge {
-    display: inline-block;
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 0.85em;
-    background: rgba(16, 163, 127, 0.2);
-    color: #10a37f;
+.accordion .label-wrap {
+    background: var(--bg-surface) !important;
+    border-radius: 10px !important;
+    padding: 12px 16px !important;
 }
 
-/* Typing indicator animation */
-@keyframes typing {
-    0%, 60%, 100% { opacity: 0.3; }
-    30% { opacity: 1; }
+/* Slider - Modern track */
+input[type="range"] {
+    accent-color: var(--primary) !important;
 }
 
-.typing-indicator span {
-    animation: typing 1.4s infinite;
+/* Checkbox - Subtle */
+input[type="checkbox"] {
+    accent-color: var(--primary) !important;
+    border-radius: 4px !important;
 }
 
-.typing-indicator span:nth-child(2) {
-    animation-delay: 0.2s;
+/* Radio buttons */
+.radio-group label {
+    background: var(--bg-surface) !important;
+    border: 1px solid var(--border-subtle) !important;
+    border-radius: 8px !important;
+    padding: 8px 12px !important;
+    transition: all 0.15s var(--ease-smooth) !important;
 }
 
-.typing-indicator span:nth-child(3) {
-    animation-delay: 0.4s;
+.radio-group label:hover {
+    background: var(--bg-glass) !important;
+}
+
+.radio-group label.selected {
+    border-color: var(--primary) !important;
+    background: rgba(16, 185, 129, 0.1) !important;
+}
+
+/* ============================================
+   Tabs - Minimal underline style
+   ============================================ */
+.tabs {
+    border-bottom: 1px solid var(--border-subtle) !important;
+}
+
+.tabitem {
+    background: transparent !important;
+    color: var(--text-secondary) !important;
+    border: none !important;
+    padding: 12px 20px !important;
+    font-weight: 500 !important;
+    transition: color 0.2s var(--ease-smooth) !important;
+}
+
+.tabitem:hover {
+    color: var(--text-primary) !important;
+}
+
+.tabitem.selected {
+    color: var(--primary) !important;
+    border-bottom: 2px solid var(--primary) !important;
+}
+
+/* ============================================
+   Dropdown & Textbox - Consistent styling
+   ============================================ */
+select, input[type="text"], .textbox input {
+    background: var(--bg-surface) !important;
+    border: 1px solid var(--border-subtle) !important;
+    border-radius: 8px !important;
+    color: var(--text-primary) !important;
+    padding: 10px 12px !important;
+}
+
+select:focus, input:focus {
+    border-color: var(--primary) !important;
+    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.15) !important;
+}
+
+/* ============================================
+   Markdown Content - Readable typography
+   ============================================ */
+.markdown-text {
+    color: var(--text-primary) !important;
+    line-height: 1.7 !important;
+}
+
+.markdown-text h1, .markdown-text h2, .markdown-text h3 {
+    color: var(--text-primary) !important;
+    font-weight: 600 !important;
+    letter-spacing: -0.025em !important;
+}
+
+.markdown-text code {
+    background: var(--bg-glass) !important;
+    border-radius: 4px !important;
+    padding: 2px 6px !important;
+    font-size: 0.9em !important;
+}
+
+.markdown-text pre {
+    background: var(--bg-elevated) !important;
+    border: 1px solid var(--border-subtle) !important;
+    border-radius: 8px !important;
+    padding: 12px 16px !important;
+}
+
+.markdown-text a {
+    color: var(--primary-light) !important;
+    text-decoration: none !important;
+}
+
+.markdown-text a:hover {
+    text-decoration: underline !important;
+}
+
+/* ============================================
+   Status indicators
+   ============================================ */
+.status-success {
+    color: var(--primary) !important;
+}
+
+.status-warning {
+    color: var(--accent-amber) !important;
+}
+
+.status-info {
+    color: var(--accent-blue) !important;
+}
+
+/* ============================================
+   Animations - Subtle & Smooth
+   ============================================ */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-in {
+    animation: fadeIn 0.3s var(--ease-smooth) forwards;
+}
+
+/* Scrollbar - Minimal */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
 }
 """
 
@@ -1149,19 +1389,18 @@ def create_app(
 
         return "\n".join(lines)
 
-    # Build UI
+    # Build UI (theme/css are passed to launch() for Gradio 6.0 compatibility)
     with gr.Blocks(
         title="📚 대학 규정집 Q&A",
     ) as app:
-        # Header
+        # Header - Minimal & Clean
         gr.HTML("""
-            <div style="text-align: center; padding: 20px 0;">
-                <h1 style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                           -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-                           font-size: 2.5em; font-weight: bold; margin: 0;">
+            <div style="text-align: center; padding: 28px 20px 20px;">
+                <h1 style="font-size: 1.6rem; font-weight: 600; color: #fafafa; 
+                           letter-spacing: -0.025em; margin: 0;">
                     📚 대학 규정집 Q&A
                 </h1>
-                <p style="color: #666; margin-top: 8px;">
+                <p style="color: #a3a3a3; margin-top: 6px; font-size: 0.9rem; font-weight: 400;">
                     질문하면 AI가 답변하고, 검색어를 입력하면 관련 규정을 찾아드립니다
                 </p>
             </div>
@@ -1380,9 +1619,15 @@ def main():
         show_error=True,
         css=CUSTOM_CSS,
         theme=gr.themes.Soft(
-            primary_hue="emerald",
-            secondary_hue="purple",
-            neutral_hue="slate",
+            primary_hue=gr.themes.colors.emerald,
+            neutral_hue=gr.themes.colors.neutral,
+        ).set(
+            body_background_fill="#0f0f0f",
+            body_background_fill_dark="#0f0f0f",
+            block_background_fill="#1a1a1a",
+            block_background_fill_dark="#1a1a1a",
+            border_color_primary="rgba(255,255,255,0.06)",
+            border_color_primary_dark="rgba(255,255,255,0.06)",
         ),
     )
 
