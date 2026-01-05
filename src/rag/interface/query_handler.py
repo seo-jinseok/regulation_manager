@@ -47,6 +47,16 @@ from .formatters import (
     strip_path_prefix,
 )
 
+# Optional FunctionGemma imports
+try:
+    from ..infrastructure.function_gemma_adapter import FunctionGemmaAdapter
+    from ..infrastructure.tool_executor import ToolExecutor
+    FUNCTION_GEMMA_AVAILABLE = True
+except ImportError:
+    FUNCTION_GEMMA_AVAILABLE = False
+    FunctionGemmaAdapter = None
+    ToolExecutor = None
+
 
 class QueryType(Enum):
     """Query result types."""
@@ -84,6 +94,8 @@ class QueryOptions:
     llm_provider: Optional[str] = None
     llm_model: Optional[str] = None
     llm_base_url: Optional[str] = None
+    # FunctionGemma options
+    use_function_gemma: bool = False
 
 
 @dataclass
@@ -117,6 +129,7 @@ class QueryHandler:
         store=None,
         llm_client=None,
         use_reranker: bool = True,
+        function_gemma_client=None,
     ):
         self.store = store
         self.llm_client = llm_client
@@ -125,6 +138,84 @@ class QueryHandler:
         self.full_view_usecase = FullViewUseCase(self.loader)
         self.query_analyzer = QueryAnalyzer()
         self._last_query_rewrite = None
+        
+        # FunctionGemma setup
+        self._function_gemma_adapter = None
+        if FUNCTION_GEMMA_AVAILABLE and function_gemma_client:
+            self._setup_function_gemma(function_gemma_client)
+    
+    def _setup_function_gemma(self, function_gemma_client) -> None:
+        """Initialize FunctionGemma adapter with tool executor."""
+        from ..application.search_usecase import SearchUseCase
+        from ..application.sync_usecase import SyncUseCase
+        from ..infrastructure.json_loader import JSONDocumentLoader
+        
+        # Create tool executor with use cases
+        search_usecase = None
+        sync_usecase = None
+        
+        if self.store:
+            search_usecase = SearchUseCase(
+                self.store,
+                llm_client=self.llm_client,
+                use_reranker=self.use_reranker,
+            )
+            loader = JSONDocumentLoader()
+            sync_usecase = SyncUseCase(loader, self.store)
+        
+        tool_executor = ToolExecutor(
+            search_usecase=search_usecase,
+            sync_usecase=sync_usecase,
+            query_analyzer=self.query_analyzer,
+            llm_client=self.llm_client,
+        )
+        
+        self._function_gemma_adapter = FunctionGemmaAdapter(
+            llm_client=function_gemma_client,
+            tool_executor=tool_executor,
+        )
+    
+    def _process_with_function_gemma(
+        self,
+        query: str,
+        context: QueryContext,
+        options: QueryOptions,
+    ) -> QueryResult:
+        """
+        Process query using FunctionGemma tool-based approach.
+        
+        FunctionGemma selects and executes tools, then generates
+        the final answer using the base LLM.
+        """
+        try:
+            answer, tool_results = self._function_gemma_adapter.process_query(query)
+            
+            # Build debug info from tool results
+            debug_lines = []
+            for result in tool_results:
+                status = "✅" if result.success else "❌"
+                debug_lines.append(f"{status} {result.tool_name}")
+            
+            debug_info = "\n".join(debug_lines) if options.show_debug else ""
+            
+            return QueryResult(
+                type=QueryType.ASK,
+                success=True,
+                content=answer,
+                data={
+                    "tool_results": [r.to_dict() for r in tool_results],
+                    "used_function_gemma": True,
+                },
+                debug_info=debug_info,
+            )
+        except Exception as e:
+            # Fallback to standard processing on error
+            return QueryResult(
+                type=QueryType.ERROR,
+                success=False,
+                content=f"FunctionGemma 처리 오류: {str(e)}. 기본 검색을 시도해주세요.",
+            )
+    
     
     def process_query(
         self,
@@ -136,6 +227,8 @@ class QueryHandler:
         Main entry point for query processing.
         
         Analyzes the query and routes to appropriate handler.
+        If use_function_gemma is enabled and adapter is available,
+        uses FunctionGemma for tool-based processing.
         """
         context = context or QueryContext()
         options = options or QueryOptions()
@@ -148,6 +241,10 @@ class QueryHandler:
             )
         
         query = query.strip()
+        
+        # FunctionGemma tool-based processing
+        if options.use_function_gemma and self._function_gemma_adapter:
+            return self._process_with_function_gemma(query, context, options)
         
         # Determine mode
         mode = options.force_mode or decide_search_mode(query)
