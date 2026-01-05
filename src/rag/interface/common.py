@@ -65,10 +65,10 @@ def decide_search_mode(query: str, force_mode: Optional[str] = None) -> str:
         from ..infrastructure.query_analyzer import QueryAnalyzer
 
         analyzer = QueryAnalyzer()
-        rewrite_result = analyzer.expand_query(query)
+        rewrite_result = analyzer.rewrite_query_with_info(query)
         if rewrite_result.used_intent:
             return "ask"
-    except ImportError:
+    except (ImportError, Exception):
         pass
 
     # Default to Search (Keyword-based)
