@@ -1506,9 +1506,12 @@ def create_app(
 
                 # Event handlers
                 def on_submit(msg, history, state, top_k, abolished, llm_p, llm_m, llm_b, db, target, context, debug):
-                    result = chat_respond(msg, history, state, top_k, abolished, llm_p, llm_m, llm_b, db, target, context, debug)
-                    # Clear input after sending
-                    return result + ("",)
+                    # chat_respond is now a generator for streaming
+                    for result in chat_respond(msg, history, state, top_k, abolished, llm_p, llm_m, llm_b, db, target, context, debug):
+                        # Unpack result and add empty string for input clear
+                        hist, detail, dbg, st = result
+                        yield hist, detail, dbg, st, ""
+                    # Final yield is already included in the generator
 
                 chat_send.click(
                     fn=on_submit,
