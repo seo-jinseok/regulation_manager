@@ -1044,31 +1044,68 @@ def _perform_unified_search(
                 _append_history(state, "assistant", summary)
 
     else:
-        # Ask (LLM Answer)
+        # Ask (LLM Answer) - Streaming by default
         if RICH_AVAILABLE:
+            from rich.live import Live
+            from rich.text import Text
+            
             # Show step-by-step progress
             console.print("[dim]🔍 1/3 규정 검색 중...[/dim]")
             console.print("[dim]🎯 2/3 관련도 재정렬 중...[/dim]")
-            with console.status(
-                "[bold green]🤖 3/3 AI 답변 생성 중... (10-30초 소요)[/bold green]"
-            ):
-                try:
-                    answer = search.ask(
-                        question=raw_query,
-                        top_k=args.top_k,
-                        history_text=history_text or None,
-                        search_query=query,
-                        debug=args.debug,
-                    )
-                except Exception as e:
-                    print_error(f"답변 생성 실패: {e}")
-                    return 1
+            console.print("[dim]🤖 3/3 AI 답변 생성 중...[/dim]")
+            console.print()
+            
+            try:
+                # Use streaming API
+                stream_gen = search.ask_stream(
+                    question=raw_query,
+                    top_k=args.top_k,
+                    history_text=history_text or None,
+                    search_query=query,
+                )
+                
+                sources = []
+                confidence = 0.0
+                answer_text = ""
+                
+                # First yield is metadata
+                first_item = next(stream_gen)
+                if first_item.get("type") == "metadata":
+                    sources = first_item.get("sources", [])
+                    confidence = first_item.get("confidence", 0.0)
+                
+                # Stream tokens with Live display
+                console.print("[bold green]🤖 AI 답변:[/bold green]")
+                console.print()
+                
+                with Live(Text(""), console=console, refresh_per_second=10) as live:
+                    for item in stream_gen:
+                        if item.get("type") == "token":
+                            token = item.get("content", "")
+                            answer_text += token
+                            # Update live display with accumulated text
+                            live.update(Markdown(answer_text))
+                
+                console.print()
+                
+            except Exception as e:
+                print_error(f"답변 생성 실패: {e}")
+                return 1
+            
+            # Create Answer object for consistent handling
+            from ..domain.entities import SearchResult
+            answer = type('Answer', (), {
+                'text': answer_text,
+                'sources': sources,
+                'confidence': confidence,
+            })()
+            
         else:
             print("🔍 1/3 규정 검색 중...")
             print("🎯 2/3 관련도 재정렬 중...")
             print("🤖 3/3 AI 답변 생성 중...")
             try:
-
+                # Fallback to non-streaming for non-Rich terminals
                 answer = search.ask(
                     question=raw_query,
                     top_k=args.top_k,
@@ -1085,59 +1122,49 @@ def _perform_unified_search(
 
         answer_text = normalize_markdown_emphasis(answer.text)
 
-        # Display Answer (Ask Style)
-        if RICH_AVAILABLE:
+        # Display sources with numbered references
+        if RICH_AVAILABLE and answer.sources:
             console.print()
-            console.print(
-                Panel(
-                    Markdown(answer_text),
-                    title="🤖 AI 답변",
-                    border_style="green",
+            console.print("[bold cyan]📚 참고 규정:[/bold cyan]")
+
+            # Shared formatting logic
+            norm_scores = normalize_relevance_scores(answer.sources)
+            display_sources = filter_by_relevance(answer.sources, norm_scores)
+
+            for i, result in enumerate(display_sources, 1):
+                chunk = result.chunk
+                reg_name = (
+                    chunk.parent_path[0] if chunk.parent_path else chunk.title
                 )
-            )
+                path = build_display_path(
+                    chunk.parent_path, chunk.text, chunk.title
+                )
+                norm_score = norm_scores.get(chunk.id, 0.0)
+                rel_score = int(norm_score * 100)
+                rel_label = get_relevance_label_combined(rel_score)
+                display_text = extract_display_text(chunk.text)
 
-            if answer.sources:
-                console.print()
-                console.print("[bold cyan]📚 참고 규정:[/bold cyan]")
+                content_parts = [
+                    f"[bold blue]📖 {reg_name}[/bold blue]",
+                    f"[dim]📍 {path}[/dim]",
+                    "",
+                    display_text,
+                    "",
+                    f"[dim]📋 규정번호: {chunk.rule_code} | 관련도: {rel_score}% {rel_label}[/dim]"
+                    + (
+                        f" [dim]| AI 신뢰도: {result.score:.3f}[/dim]"
+                        if args.verbose
+                        else ""
+                    ),
+                ]
 
-                # Shared formatting logic
-                norm_scores = normalize_relevance_scores(answer.sources)
-                display_sources = filter_by_relevance(answer.sources, norm_scores)
-
-                for i, result in enumerate(display_sources, 1):
-                    chunk = result.chunk
-                    reg_name = (
-                        chunk.parent_path[0] if chunk.parent_path else chunk.title
+                console.print(
+                    Panel(
+                        "\n".join(content_parts),
+                        title=f"[{i}]",
+                        border_style="blue",
                     )
-                    path = build_display_path(
-                        chunk.parent_path, chunk.text, chunk.title
-                    )
-                    norm_score = norm_scores.get(chunk.id, 0.0)
-                    rel_score = int(norm_score * 100)
-                    rel_label = get_relevance_label_combined(rel_score)
-                    display_text = extract_display_text(chunk.text)
-
-                    content_parts = [
-                        f"[bold blue]📖 {reg_name}[/bold blue]",
-                        f"[dim]📍 {path}[/dim]",
-                        "",
-                        display_text,
-                        "",
-                        f"[dim]📋 규정번호: {chunk.rule_code} | 관련도: {rel_score}% {rel_label}[/dim]"
-                        + (
-                            f" [dim]| AI 신뢰도: {result.score:.3f}[/dim]"
-                            if args.verbose
-                            else ""
-                        ),
-                    ]
-
-                    console.print(
-                        Panel(
-                            "\n".join(content_parts),
-                            title=f"[{i}]",
-                            border_style="blue",
-                        )
-                    )
+                )
 
             # Confidence Info
             console.print()
@@ -1149,8 +1176,33 @@ def _perform_unified_search(
                     border_style="dim",
                 )
             )
+            
+            # Interactive: Allow user to view full regulation by entering number
+            if interactive and display_sources:
+                console.print()
+                console.print("[dim]👉 번호를 입력하면 해당 규정 전문을 볼 수 있습니다 (Enter: 건너뛰기)[/dim]")
+                try:
+                    choice = input().strip()
+                    if choice.isdigit():
+                        idx = int(choice)
+                        if 1 <= idx <= len(display_sources):
+                            selected_chunk = display_sources[idx - 1].chunk
+                            # Show full regulation
+                            from ..application.full_view_usecase import FullViewUseCase
+                            from ..infrastructure.json_loader import JSONDocumentLoader
+                            full_view_uc = FullViewUseCase(JSONDocumentLoader())
+                            view = full_view_uc.get_full_view(selected_chunk.rule_code)
+                            if view:
+                                toc_text = _format_toc(view.toc)
+                                content_text = render_full_view_nodes(view.content)
+                                detail = f"{toc_text}\n\n### 본문\n\n{content_text or '본문이 없습니다.'}"
+                                _print_markdown(f"{view.title} 전문", detail)
+                            else:
+                                print_info(f"규정 전문을 불러오지 못했습니다.")
+                except (KeyboardInterrupt, EOFError):
+                    pass
 
-        else:
+        elif not RICH_AVAILABLE:
             print("\n=== AI 답변 ===")
             print(answer_text)
             print("\n=== 참고 규정 ===")

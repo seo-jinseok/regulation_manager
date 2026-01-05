@@ -66,6 +66,7 @@ from .formatters import (
     render_full_view_nodes,
     strip_path_prefix,
 )
+from .link_formatter import extract_and_format_references, format_as_markdown_links
 from .query_handler import QueryContext, QueryHandler, QueryOptions, QueryResult, QueryType
 
 # Default paths
@@ -701,11 +702,19 @@ def create_app(
             rel_label = get_relevance_label_combined(rel_pct)
             score_info = f" | AI 신뢰도: {r.score:.3f}" if show_debug else ""
             snippet = strip_path_prefix(r.chunk.text, r.chunk.parent_path or [])
+            
+            # Format regulation references in snippet as links (visual only for now)
+            # We use a dummy link that doesn't go anywhere but looks like a link
+            snippet_with_links = format_as_markdown_links(
+                snippet, 
+                extract_and_format_references(snippet, "markdown")[0],
+                link_template="#"
+            )
 
             sources_md.append(f"""#### [{i}] {reg_name}
 **경로:** {path}
 
-{snippet[:300]}{"..." if len(snippet) > 300 else ""}
+{snippet_with_links[:500]}{"..." if len(snippet_with_links) > 500 else ""}
 
 *규정번호: {r.chunk.rule_code} | 관련도: {rel_pct}% {rel_label}{score_info}*
 
@@ -1412,6 +1421,13 @@ def create_app(
                 with gr.Row():
                     # Main chat area
                     with gr.Column(scale=3):
+                        # Navigation Buttons
+                        with gr.Row():
+                            btn_back = gr.Button("◀ 뒤로", size="sm", interactive=False)
+                            btn_forward = gr.Button("앞으로 ▶", size="sm", interactive=False)
+                            # Spacer
+                            gr.HTML("<div style='flex-grow: 1;'></div>")
+
                         chat_bot = gr.Chatbot(
                             label="",
                             height=500,
@@ -1501,20 +1517,121 @@ def create_app(
                         "last_mode": None,
                         "last_regulation": None,
                         "last_rule_code": None,
+                        "nav_history": [],  # List of (mode, query, regulation)
+                        "nav_index": -1,
                     }
                 )
 
+                # Navigation Logic
+                def update_nav_buttons(state):
+                    history = state.get("nav_history", [])
+                    index = state.get("nav_index", -1)
+                    has_back = index > 0
+                    has_forward = index < len(history) - 1
+                    return (
+                        gr.update(interactive=has_back),
+                        gr.update(interactive=has_forward),
+                        state
+                    )
+
+                def confirm_navigation(state, direction):
+                    history = state.get("nav_history", [])
+                    index = state.get("nav_index", -1)
+                    
+                    new_index = index + direction
+                    if 0 <= new_index < len(history):
+                        state["nav_index"] = new_index
+                        mode, query, regulation = history[new_index]
+                        return query, state
+                    return None, state
+
                 # Event handlers
                 def on_submit(msg, history, state, top_k, abolished, llm_p, llm_m, llm_b, db, target, context, debug):
+                    # Update History for Navigation
+                    # Logic: If query changes effectively (new search or view), apend to history
+                    # This is tricky because chat_respond is a generator. 
+                    # We might need to handle history update inside chat_respond or wrapper.
+                    # For now, let's rely on chat_respond updating state and we intercept it?
+                    # Actually, chat_respond updates 'last_query' etc.
+                    
+                    # Store previous state to detect change
+                    prev_query = state.get("last_query")
+                    prev_mode = state.get("last_mode")
+                    
                     # chat_respond is now a generator for streaming
+                    # We need to capture the FINAL state to update navigation
+                    final_state = state
                     for result in chat_respond(msg, history, state, top_k, abolished, llm_p, llm_m, llm_b, db, target, context, debug):
                         # Unpack result and add empty string for input clear
                         hist, detail, dbg, st = result
+                        final_state = st
                         yield hist, detail, dbg, st, ""
-                    # Final yield is already included in the generator
+                    
+                    # After generation, update navigation history if meaningful change
+                    curr_query = final_state.get("last_query")
+                    curr_mode = final_state.get("last_mode")
+                    
+                    if curr_query and (curr_query != prev_query or curr_mode != prev_mode):
+                        # Append to history
+                        nav_history = final_state.get("nav_history", [])
+                        nav_index = final_state.get("nav_index", -1)
+                        
+                        # If we were back in history, truncate future
+                        if nav_index < len(nav_history) - 1:
+                            nav_history = nav_history[:nav_index + 1]
+                        
+                        nav_history.append((curr_mode, curr_query, final_state.get("last_regulation")))
+                        final_state["nav_history"] = nav_history
+                        final_state["nav_index"] = len(nav_history) - 1
+                        
+                        yield hist, detail, dbg, final_state, ""
+
+                def on_back_click(history, state, top_k, abolished, llm_p, llm_m, llm_b, db, target, context, debug):
+                     query, new_state = confirm_navigation(state, -1)
+                     if query:
+                         # Re-run query
+                         # Note: This will generate a new chat message. 
+                         # Ideally, we should just show the old view, but chat interface is linear.
+                         # Rerunning is acceptable for "Navigation" in a chat context (like browser history reloads).
+                         async for res in on_submit(query, history, new_state, top_k, abolished, llm_p, llm_m, llm_b, db, target, context, debug):
+                             yield res
+                     else:
+                         yield history, "", "", state, ""
+                
+                def on_forward_click(history, state, top_k, abolished, llm_p, llm_m, llm_b, db, target, context, debug):
+                     query, new_state = confirm_navigation(state, 1)
+                     if query:
+                         async for res in on_submit(query, history, new_state, top_k, abolished, llm_p, llm_m, llm_b, db, target, context, debug):
+                             yield res
+                     else:
+                         yield history, "", "", state, ""
+
+                # We need to wire up the buttons to also update their valid state (interactive or not)
+                # But Gradio updates are sent with yields.
+                # We can add a separate output for buttons to on_submit
+                
+                # Simplified approach: Just update buttons on every interaction end?
+                # Using a separate event listener for button updates is hard.
+                # Let's piggyback on on_submit to return button updates?
+                # outputs=[chat_bot, chat_detail, chat_debug_out, chat_state, chat_input, btn_back, btn_forward]
+                
+                # Redefine on_submit to include button updates
+                def on_submit_with_nav(msg, history, state, top_k, abolished, llm_p, llm_m, llm_b, db, target, context, debug):
+                     # ... (logic from on_submit) ...
+                     # Wrap the generator
+                    gen = on_submit(msg, history, state, top_k, abolished, llm_p, llm_m, llm_b, db, target, context, debug)
+                    for res in gen:
+                        hist, detail, dbg, st, inp = res
+                        # Calc button state
+                        nav_history = st.get("nav_history", [])
+                        nav_index = st.get("nav_index", -1)
+                        has_back = nav_index > 0
+                        has_forward = nav_index < len(nav_history) - 1
+                        
+                        yield hist, detail, dbg, st, inp, gr.update(interactive=has_back), gr.update(interactive=has_forward)
 
                 chat_send.click(
-                    fn=on_submit,
+                    fn=on_submit_with_nav,
                     inputs=[
                         chat_input,
                         chat_bot,
@@ -1529,10 +1646,10 @@ def create_app(
                         chat_context,
                         chat_debug,
                     ],
-                    outputs=[chat_bot, chat_detail, chat_debug_out, chat_state, chat_input],
+                    outputs=[chat_bot, chat_detail, chat_debug_out, chat_state, chat_input, btn_back, btn_forward],
                 )
                 chat_input.submit(
-                    fn=on_submit,
+                    fn=on_submit_with_nav,
                     inputs=[
                         chat_input,
                         chat_bot,
@@ -1547,8 +1664,25 @@ def create_app(
                         chat_context,
                         chat_debug,
                     ],
-                    outputs=[chat_bot, chat_detail, chat_debug_out, chat_state, chat_input],
+                    outputs=[chat_bot, chat_detail, chat_debug_out, chat_state, chat_input, btn_back, btn_forward],
                 )
+                
+                # Wire up Back/Forward
+                btn_back.click(
+                    fn=on_back_click,
+                    inputs=[
+                        chat_bot, chat_state, chat_top_k, chat_abolished, chat_llm_p, chat_llm_m, chat_llm_b, gr.State(db_path), chat_target, chat_context, chat_debug
+                    ],
+                    outputs=[chat_bot, chat_detail, chat_debug_out, chat_state, chat_input, btn_back, btn_forward]
+                )
+                btn_forward.click(
+                    fn=on_forward_click,
+                    inputs=[
+                        chat_bot, chat_state, chat_top_k, chat_abolished, chat_llm_p, chat_llm_m, chat_llm_b, gr.State(db_path), chat_target, chat_context, chat_debug
+                    ],
+                    outputs=[chat_bot, chat_detail, chat_debug_out, chat_state, chat_input, btn_back, btn_forward]
+                )
+
                 chat_clear.click(
                     fn=lambda: (
                         [],
