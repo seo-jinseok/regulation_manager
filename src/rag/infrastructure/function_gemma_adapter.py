@@ -1,16 +1,20 @@
 """
 FunctionGemma Adapter for Regulation RAG System.
 
-Handles communication with FunctionGemma model for tool calling.
-Supports two modes:
-1. Native Ollama tool calling API (preferred, requires 'ollama' package)
-2. Text parsing fallback for other LLM clients
+Handles communication with LLM models for tool calling.
+Supports multiple modes:
+1. OpenAI-compatible API (LM Studio, vLLM, etc.) - default
+2. Native Ollama tool calling API
+3. Text parsing fallback for basic LLM clients
 """
 
 import json
+import os
 import re
 from dataclasses import dataclass, field
 from typing import Any, Dict, Generator, List, Optional, Tuple
+
+import requests
 
 from .tool_definitions import TOOL_DEFINITIONS, get_tools_prompt
 from .tool_executor import ToolExecutor, ToolResult
@@ -81,24 +85,35 @@ class FunctionGemmaAdapter:
         llm_client=None,
         tool_executor: Optional[ToolExecutor] = None,
         max_iterations: int = 5,
-        model: str = "functiongemma",
-        use_native_api: bool = True,
+        model: str = None,
+        base_url: str = None,
+        api_mode: str = "auto",
     ):
         """
         Initialize FunctionGemmaAdapter.
 
         Args:
-            llm_client: LLM client for FunctionGemma model (fallback mode).
+            llm_client: LLM client for text parsing fallback mode.
             tool_executor: Executor for running tools.
             max_iterations: Maximum number of tool call iterations.
-            model: Ollama model name for native API mode.
-            use_native_api: Whether to use Ollama native tool calling API.
+            model: Model name for API calls.
+            base_url: Base URL for OpenAI-compatible API (e.g., http://localhost:1234).
+            api_mode: API mode - "auto", "openai", "ollama", or "text".
+                - "auto": Try OpenAI-compatible first, then Ollama, then text parsing
+                - "openai": Use OpenAI-compatible API (LM Studio, vLLM, etc.)
+                - "ollama": Use Ollama native API
+                - "text": Use text parsing with provided llm_client
         """
         self._llm_client = llm_client
         self._tool_executor = tool_executor
         self._max_iterations = max_iterations
-        self._model = model
-        self._use_native_api = use_native_api and OLLAMA_AVAILABLE
+        
+        # Load from environment if not provided
+        self._model = model or os.getenv("LLM_MODEL", "functiongemma")
+        self._base_url = base_url or os.getenv("LLM_BASE_URL", "http://localhost:1234")
+        
+        # Determine API mode
+        self._api_mode = self._resolve_api_mode(api_mode)
 
     def set_llm_client(self, llm_client) -> None:
         """Set the LLM client."""
@@ -107,6 +122,149 @@ class FunctionGemmaAdapter:
     def set_tool_executor(self, tool_executor: ToolExecutor) -> None:
         """Set the tool executor."""
         self._tool_executor = tool_executor
+
+    def _resolve_api_mode(self, mode: str) -> str:
+        """Resolve API mode based on availability."""
+        if mode == "openai":
+            return "openai"
+        if mode == "ollama":
+            return "ollama" if OLLAMA_AVAILABLE else "text"
+        if mode == "text":
+            return "text"
+        
+        # Auto mode: try to detect best available
+        # First check if OpenAI-compatible server is reachable
+        try:
+            resp = requests.get(f"{self._base_url}/v1/models", timeout=2)
+            if resp.status_code == 200:
+                return "openai"
+        except Exception:
+            pass
+        
+        # Then try Ollama
+        if OLLAMA_AVAILABLE:
+            try:
+                ollama.list()
+                return "ollama"
+            except Exception:
+                pass
+        
+        # Fallback to text parsing
+        return "text"
+
+    def process_query_openai(
+        self, query: str, context: Optional[str] = None
+    ) -> Tuple[str, List[ToolResult]]:
+        """
+        Process query using OpenAI-compatible API (LM Studio, vLLM, etc.).
+        
+        Uses the /v1/chat/completions endpoint with tools parameter.
+        """
+        if not self._tool_executor:
+            raise RuntimeError("Tool executor not initialized")
+        
+        tool_results: List[ToolResult] = []
+        messages = [{"role": "user", "content": query}]
+        
+        if context:
+            messages[0]["content"] = f"{context}\n\n질문: {query}"
+        
+        for iteration in range(self._max_iterations):
+            payload = {
+                "model": self._model,
+                "messages": messages,
+                "tools": TOOL_DEFINITIONS,
+                "tool_choice": "auto",
+                "temperature": 0,
+            }
+            
+            try:
+                resp = requests.post(
+                    f"{self._base_url}/v1/chat/completions",
+                    json=payload,
+                    headers={"Content-Type": "application/json"},
+                    timeout=120,
+                )
+                resp.raise_for_status()
+                data = resp.json()
+            except Exception as e:
+                return f"API 오류: {str(e)}", tool_results
+            
+            message = data.get("choices", [{}])[0].get("message", {})
+            tool_calls = message.get("tool_calls", [])
+            
+            if tool_calls:
+                # Process tool calls
+                for tc in tool_calls:
+                    func = tc.get("function", {})
+                    tool_name = func.get("name", "")
+                    
+                    # Parse arguments (may be string or dict)
+                    args = func.get("arguments", {})
+                    if isinstance(args, str):
+                        try:
+                            args = json.loads(args)
+                        except json.JSONDecodeError:
+                            args = {}
+                    
+                    # Special handling for generate_answer
+                    if tool_name == "generate_answer":
+                        # Try to execute with LLM client
+                        result = self._tool_executor.execute(tool_name, args)
+                        tool_results.append(result)
+                        
+                        if result.success:
+                            return result.result, tool_results
+                        
+                        # If generate_answer fails (no LLM client), 
+                        # ask the model to generate answer directly
+                        context = args.get("context", "")
+                        question = args.get("question", query)
+                        
+                        # Make a simple completion request (no tools)
+                        answer_payload = {
+                            "model": self._model,
+                            "messages": [
+                                {"role": "system", "content": "당신은 대학 규정을 설명하는 전문가입니다. 주어진 컨텍스트를 바탕으로 질문에 정확하고 친절하게 답변하세요."},
+                                {"role": "user", "content": f"질문: {question}\n\n컨텍스트:\n{context}\n\n위 컨텍스트를 바탕으로 답변해주세요."}
+                            ],
+                            "temperature": 0,
+                        }
+                        
+                        try:
+                            answer_resp = requests.post(
+                                f"{self._base_url}/v1/chat/completions",
+                                json=answer_payload,
+                                headers={"Content-Type": "application/json"},
+                                timeout=120,
+                            )
+                            answer_resp.raise_for_status()
+                            answer_data = answer_resp.json()
+                            answer_content = answer_data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                            return answer_content if answer_content else "답변을 생성하지 못했습니다.", tool_results
+                        except Exception:
+                            pass
+                        
+                        return "답변 생성에 실패했습니다.", tool_results
+                    
+                    # Normal tool execution
+                    result = self._tool_executor.execute(tool_name, args)
+                    tool_results.append(result)
+                    
+                    # Add assistant message and tool response
+                    messages.append(message)
+                    messages.append({
+                        "role": "tool",
+                        "tool_call_id": tc.get("id", ""),
+                        "content": result.to_context_string(),
+                    })
+            else:
+                # No tool calls, return the response content
+                content = message.get("content", "")
+                return content if content else "응답을 생성하지 못했습니다.", tool_results
+        
+        return "검색 반복 횟수를 초과했습니다.", tool_results
+
 
     def _get_ollama_tools(self) -> List[callable]:
         """Convert tool definitions to Ollama-compatible function list."""
@@ -186,7 +344,9 @@ class FunctionGemmaAdapter:
         self, query: str, context: Optional[str] = None
     ) -> Tuple[str, List[ToolResult]]:
         """
-        Process a user query using FunctionGemma tool calling.
+        Process a user query using tool calling.
+
+        Automatically selects the best available API mode.
 
         Args:
             query: User's question.
@@ -195,8 +355,10 @@ class FunctionGemmaAdapter:
         Returns:
             Tuple of (final_answer, list_of_tool_results)
         """
-        # Use native Ollama API if available and enabled
-        if self._use_native_api and OLLAMA_AVAILABLE:
+        # Route to appropriate API based on mode
+        if self._api_mode == "openai":
+            return self.process_query_openai(query, context)
+        if self._api_mode == "ollama":
             return self.process_query_native(query, context)
         
         # Fallback to text parsing mode
