@@ -206,6 +206,161 @@ class QueryHandler:
             return self.search(query, options)
         else:
             return self.ask(query, options, context)
+
+    def process_query_stream(
+        self,
+        query: str,
+        context: Optional[QueryContext] = None,
+        options: Optional[QueryOptions] = None,
+    ):
+        """
+        Streaming version of process_query.
+        Yields events: {"type": str, "content": Any, ...}
+        """
+        context = context or QueryContext()
+        options = options or QueryOptions()
+        
+        if not query or not query.strip():
+            yield {"type": "error", "content": "검색어를 입력해주세요."}
+            return
+        
+        query = query.strip()
+        mode = options.force_mode or decide_search_mode(query)
+        
+        # Check for regulation-only or rule-code-only queries first
+        if self._is_overview_query(query):
+            result = self.get_regulation_overview(query)
+            yield from self._yield_result(result)
+            return
+
+        # Check for specific article query
+        article_match = re.search(r"(?:제)?\s*(\d+)\s*조", query)
+        target_regulation = extract_regulation_title(query)
+        
+        if target_regulation and article_match:
+            article_no = int(article_match.group(1))
+            result = self.get_article_view(target_regulation, article_no, context)
+            if result.type != QueryType.ERROR:
+                yield from self._yield_result(result)
+                return
+        
+        # Check for chapter query
+        chapter_match = re.search(r"(?:제)?\s*(\d+)\s*장", query)
+        if target_regulation and chapter_match:
+            chapter_no = int(chapter_match.group(1))
+            result = self.get_chapter_view(target_regulation, chapter_no, context)
+            if result.type != QueryType.ERROR:
+                yield from self._yield_result(result)
+                return
+
+        # Check for attachment query
+        attachment_request = parse_attachment_request(
+            query,
+            context.last_regulation if context.interactive else None,
+        )
+        if attachment_request:
+            reg_query, table_no, label = attachment_request
+            result = self.get_attachment_view(reg_query, label, table_no, context)
+            if result.type != QueryType.ERROR:
+                yield from self._yield_result(result)
+                return
+        
+        # Full view mode
+        if mode == "full_view":
+            result = self.get_full_view(query, context)
+            yield from self._yield_result(result)
+            return
+        
+        # Check audience ambiguity
+        if options.audience_override is None and self.query_analyzer.is_audience_ambiguous(query):
+            yield {
+                "type": "clarification",
+                "clarification_type": "audience",
+                "options": ["교수", "학생", "직원"],
+                "content": "질문 대상을 선택해주세요: 교수, 학생, 직원"
+            }
+            return
+            
+        # Search or Ask
+        if mode == "search":
+            # Search is synchronous for now, treat as instant result
+            yield {"type": "progress", "content": "🔍 규정 검색 중..."}
+            result = self.search(query, options)
+            yield from self._yield_result(result)
+        else:
+            # Ask - Streaming
+            yield from self.ask_stream(query, options, context)
+
+    def _yield_result(self, result: QueryResult):
+        """Helper to yield a QueryResult as stream events."""
+        if result.type == QueryType.CLARIFICATION:
+            yield {
+                "type": "clarification",
+                "clarification_type": result.clarification_type,
+                "options": result.clarification_options,
+                "content": result.content
+            }
+        elif result.type == QueryType.ERROR:
+            yield {"type": "error", "content": result.content}
+        else:
+            # For standard results, we yield metadata then content
+            # If state update exists, yield it logic might be handled by caller or here
+            # We yield 'answer' or 'complete'
+            # Gradio expects 'token' loop or 'complete'
+            yield {
+                "type": "metadata",
+                "rule_code": result.data.get("rule_code"),
+                "regulation_title": result.data.get("title") or result.data.get("regulation_title")
+            }
+            yield {"type": "complete", "content": result.content, "data": result.data}
+            if result.state_update:
+                yield {"type": "state", "update": result.state_update}
+
+    def ask_stream(
+        self,
+        question: str,
+        options: Optional[QueryOptions] = None,
+        context: Optional[QueryContext] = None,
+    ):
+        """Stream LLM-generated answer."""
+        options = options or QueryOptions()
+        context = context or QueryContext()
+        
+        if self.store is None or self.store.count() == 0 or self.llm_client is None:
+             yield {"type": "error", "content": "시스템이 초기화되지 않았거나 DB가 비어있습니다."}
+             return
+
+        search_usecase = SearchUseCase(
+            self.store,
+            llm_client=self.llm_client,
+            use_reranker=options.use_rerank,
+        )
+        
+        # History setup...
+        history_text = None
+        if context.history:
+            history_lines = []
+            for msg in context.history[-10:]:
+                role = "사용자" if msg.get("role") == "user" else "AI"
+                content = msg.get("content", "")
+                if content:
+                    history_lines.append(f"{role}: {content[:200]}")
+            if history_lines:
+                history_text = "\n".join(history_lines)
+        
+        yield {"type": "progress", "content": "🔍 규정 검색 중..."}
+        
+        # Use SearchUseCase.ask_stream
+        for event in search_usecase.ask_stream(
+            question=question,
+            top_k=options.top_k,
+            include_abolished=options.include_abolished,
+            audience_override=options.audience_override,
+            history_text=history_text,
+        ):
+             yield event
+        
+        self._last_query_rewrite = search_usecase.get_last_query_rewrite()
     
     def _is_overview_query(self, query: str) -> bool:
         """Check if query is requesting regulation overview."""

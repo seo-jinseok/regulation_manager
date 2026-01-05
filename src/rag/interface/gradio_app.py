@@ -1005,377 +1005,138 @@ def create_app(
                 query = attachment_query
                 mode = "attachment"
 
-        analyzer = query_analyzer
 
-        if attachment_requested:
-            # Use QueryHandler for attachment view
-            handler = QueryHandler()
-            result = handler.get_attachment_view(
-                attachment_query or query, attachment_label, attachment_no
-            )
-            
-            if result.type == QueryType.CLARIFICATION:
-                options = result.clarification_options
-                state["pending"] = {
-                    "type": "regulation_table",
-                    "options": options,
-                    "query": query,
-                    "table_no": attachment_no,
-                    "label": attachment_label,
-                }
-                history.append({
-                    "role": "assistant",
-                    "content": format_clarification("regulation", options),
-                })
-                yield history, details, debug_text, state
-            
-            if not result.success:
-                history.append({
-                    "role": "assistant",
-                    "content": result.content,
-                })
-                yield history, details, debug_text, state
-            
-            history.append({
-                "role": "assistant",
-                "content": result.content,
-            })
-            state["last_rule_code"] = result.state_update.get("last_rule_code")
-            yield history, details, debug_text, state
 
-        # Check for regulation name/code query (Overview)
-        is_regulation_only = REGULATION_ONLY_PATTERN.match(query) is not None
-        is_rule_code_only = RULE_CODE_PATTERN.match(query) is not None
+            mode = None # Let QueryHandler decide
 
-        if (is_regulation_only or is_rule_code_only) and not attachment_requested and mode != "ask":
-             # Use QueryHandler for overview (fuzzy match included)
-            handler = QueryHandler()
-            result = handler.get_regulation_overview(query)
-            
-            # If found or clarification needed
-            if result.success or result.type == QueryType.CLARIFICATION:
-                if result.type == QueryType.CLARIFICATION:
-                    options = result.clarification_options
-                    state["pending"] = {
-                        "type": "regulation",
-                        "options": options,
-                        "query": query,
-                        "mode": "full_view" # Clarification usually leads to full view selection or overview? Overview usually.
-                        # Actually if user selects, we show Full View usually. 
-                        # But here we are in Overview path.
-                        # Let's map it to "full_view" for pending since resolving ambiguity usually implies "Go to that regulation".
-                        # Or I can add "overview" mode to pending.
-                        # Let's keep "full_view" for now as it's safe.
-                    }
-                    history.append({
-                        "role": "assistant",
-                        "content": format_clarification("regulation", options),
-                    })
-                    yield history, details, debug_text, state
-                else:
-                    # Success
-                    history.append({
-                        "role": "assistant",
-                        "content": result.content,
-                    })
-                    state["last_query"] = query
-                    state["last_mode"] = "overview"
-                    state["last_regulation"] = result.state_update.get("last_regulation")
-                    state["last_rule_code"] = result.state_update.get("last_rule_code")
-                    yield history, details, debug_text, state
-                
-                # Stop processing (detected as overview)
-                return
-
-        if mode == "full_view":
-            # Use QueryHandler for full view
-            handler = QueryHandler()
-            result = handler.get_full_view(query)
-            
-            if result.type == QueryType.CLARIFICATION:
-                options = result.clarification_options
-                state["pending"] = {
-                    "type": "regulation",
-                    "options": options,
-                    "query": query,
-                    "mode": mode,
-                }
-                history.append({
-                    "role": "assistant",
-                    "content": format_clarification("regulation", options),
-                })
-                yield history, details, debug_text, state
-            
-            if not result.success:
-                history.append({
-                    "role": "assistant",
-                    "content": result.content,
-                })
-                yield history, details, debug_text, state
-            
-            history.append({
-                "role": "assistant",
-                "content": result.content,
-            })
-            state["last_query"] = query
-            state["last_mode"] = "full_view"
-            state["last_regulation"] = result.state_update.get("last_regulation")
-            state["last_rule_code"] = result.state_update.get("last_rule_code")
-            yield history, details, debug_text, state
-
-        if state.get("audience") is None and analyzer.is_audience_ambiguous(query):
-            options = ["교수", "학생", "직원"]
-            state["pending"] = {
-                "type": "audience",
-                "options": options,
-                "query": query,
-                "mode": mode,
-            }
-            history.append(
-                {
-                    "role": "assistant",
-                    "content": format_clarification("audience", options),
-                }
-            )
-            yield history, details, debug_text, state
-
-        audience_override = _parse_audience(state.get("audience") or "")
-
-        if mode == "search":
-            if store.count() == 0:
-                history.append(
-                    {
-                        "role": "assistant",
-                        "content": "데이터베이스가 비어 있습니다. CLI에서 'regulation sync'를 실행하세요.",
-                    }
+        # Initialize QueryHandler
+        db_path_value = target_db_path or "data/chroma_db"
+        store = ChromaVectorStore(persist_directory=db_path_value)
+        
+        llm_client = None
+        if use_mock_llm: # Captured from create_app scope
+            llm_client = MockLLMClient()
+        else:
+            try:
+                llm_client = LLMClientAdapter(
+                    provider=llm_provider,
+                    model=llm_model or None,
+                    base_url=llm_base_url or None,
                 )
-                yield history, details, debug_text, state
+            except Exception:
+                pass # Handler handles None client for search, but for Ask it triggers error
 
-            # Check if query is regulation name or code only -> show overview
-            from ..application.search_usecase import REGULATION_ONLY_PATTERN, RULE_CODE_PATTERN
+        handler = QueryHandler(
+            store=store,
+            llm_client=llm_client,
+            use_reranker=True, # Default true for web
+        )
 
-            is_regulation_only = REGULATION_ONLY_PATTERN.match(query) is not None
-            is_rule_code_only = RULE_CODE_PATTERN.match(query) is not None
+        options = QueryOptions(
+            top_k=top_k,
+            include_abolished=include_abolished,
+            audience_override=_parse_audience(state.get("audience")),
+            force_mode=mode if pending else None, # Only force if mode was determined by pending resolution
+            show_debug=show_debug,
+            llm_provider=llm_provider,
+            llm_model=llm_model,
+            llm_base_url=llm_base_url,
+        )
 
-            if is_regulation_only or is_rule_code_only:
-                handler = QueryHandler()
-                result = handler.get_regulation_overview(query)
-                
-                if result.success:
-                    history.append({
-                        "role": "assistant",
-                        "content": result.content,
-                    })
-                    state["last_query"] = query
-                    state["last_mode"] = "overview"
-                    state["last_regulation"] = result.state_update.get("last_regulation")
-                    state["last_rule_code"] = result.state_update.get("last_rule_code")
-                    yield history, details, debug_text, state
+        context = QueryContext(
+            state=state,
+            history=history,
+            interactive=True,
+            last_regulation=state.get("last_regulation"),
+            last_rule_code=state.get("last_rule_code"),
+        )
 
-            # Check if query targets a specific article (e.g. "교원인사규정 제8조")
-            import re
-            article_match = re.search(r"(?:제)?\s*(\d+)\s*조", query)
-            target_regulation = explicit_regulation or extract_regulation_title(query)
-
-            if target_regulation and article_match:
-                article_no = int(article_match.group(1))
-                handler = QueryHandler()
-                result = handler.get_article_view(target_regulation, article_no)
-                
-                if result.type == QueryType.CLARIFICATION:
-                    options = result.clarification_options
-                    state["pending"] = {
-                        "type": "regulation",
-                        "options": options,
-                        "query": query,
-                        "mode": "search",
-                    }
-                    history.append({
-                        "role": "assistant",
-                        "content": format_clarification("regulation", options),
-                    })
-                    yield history, details, debug_text, state
-                
-                if result.success:
-                    history.append({
-                        "role": "assistant",
-                        "content": result.content,
-                    })
-                    state["last_query"] = query
-                    state["last_mode"] = "article_view"
-                    state["last_regulation"] = result.state_update.get("last_regulation")
-                    state["last_rule_code"] = result.state_update.get("last_rule_code")
-                    yield history, details, debug_text, state
-
-            # Check if query targets a specific chapter (e.g. "교원인사규정 제3장")
-            chapter_match = re.search(r"(?:제)?\s*(\d+)\s*장", query)
-            if target_regulation and chapter_match:
-                chapter_no = int(chapter_match.group(1))
-                handler = QueryHandler()
-                result = handler.get_chapter_view(target_regulation, chapter_no)
-                
-                if result.type == QueryType.CLARIFICATION:
-                    options = result.clarification_options
-                    state["pending"] = {
-                        "type": "regulation",
-                        "options": options,
-                        "query": query,
-                        "mode": "search",
-                    }
-                    history.append({
-                        "role": "assistant",
-                        "content": format_clarification("regulation", options),
-                    })
-                    yield history, details, debug_text, state
-                
-                if result.success:
-                    history.append({
-                        "role": "assistant",
-                        "content": result.content,
-                    })
-                    state["last_query"] = query
-                    state["last_mode"] = "chapter_view"
-                    state["last_regulation"] = result.state_update.get("last_regulation")
-                    state["last_rule_code"] = result.state_update.get("last_rule_code")
-                    yield history, details, debug_text, state
-
-            search_with_hybrid = SearchUseCase(store)
-            results = search_with_hybrid.search_unique(
-                query,
-                top_k=top_k,
-                include_abolished=include_abolished,
-                audience_override=audience_override,
-            )
-            if not results:
-                history.append(
-                    {"role": "assistant", "content": "검색 결과가 없습니다."}
-                )
-            else:
-                # Check if all results have very low scores (irrelevant query)
-                LOW_RELEVANCE_THRESHOLD = 0.05
-                max_score = max(r.score for r in results) if results else 0
-                if max_score < LOW_RELEVANCE_THRESHOLD:
-                    history.append({
-                        "role": "assistant",
-                        "content": "⚠️ 입력하신 검색어와 관련된 규정을 찾기 어렵습니다.\n\n💡 다른 키워드로 검색해보세요. 예: '휴학', '등록금', '연구년'"
-                    })
-                    yield history, details, debug_text, state
-
-                # Build search results as a nice table
-                table_rows = [
-                    "| # | 규정명 | 코드 | 조항 | 점수 |",
-                    "|---|------|------|------|------|",
-                ]
-                for i, r in enumerate(results, 1):
-                    reg_title = r.chunk.parent_path[0] if r.chunk.parent_path else r.chunk.title
-                    path_segments = (
-                        clean_path_segments(r.chunk.parent_path) if r.chunk.parent_path else []
-                    )
-                    path = " > ".join(path_segments[-2:]) if path_segments else r.chunk.title
-                    table_rows.append(
-                        f"| {i} | {reg_title} | {r.chunk.rule_code} | {path[:40]} | {r.score:.2f} |"
-                    )
-                history.append(
-                    {"role": "assistant", "content": "\n".join(table_rows)}
-                )
-                top = results[0]
-                full_path = (
-                    " > ".join(clean_path_segments(top.chunk.parent_path))
-                    if top.chunk.parent_path
-                    else top.chunk.title
-                )
-                top_text = strip_path_prefix(
-                    top.chunk.text, top.chunk.parent_path or []
-                )
-                # 검색 결과 상세는 필요시 추가 질문으로 확인하도록 함
-                details = ""
-                state["last_query"] = query
-                state["last_mode"] = "search"
-                top_regulation = (
-                    top.chunk.parent_path[0]
-                    if top.chunk.parent_path
-                    else top.chunk.title
-                )
-                if explicit_regulation:
-                    state["last_regulation"] = explicit_regulation
-                elif explicit_target or not state.get("last_regulation"):
-                    state["last_regulation"] = top_regulation
-                elif state.get("last_regulation") == top_regulation:
-                    state["last_regulation"] = top_regulation
-                state["last_rule_code"] = top.chunk.rule_code
-            if show_debug:
-                debug_text = _format_query_rewrite_debug(
-                    search_with_hybrid.get_last_query_rewrite()
-                )
-            yield history, details, debug_text, state
-
-        # Ask mode (LLM) - Streaming response
         # Initialize assistant message for streaming
         history.append({
             "role": "assistant",
             "content": "🔍 1/3 규정 검색 중..."
         })
-        
-        # Streaming response
+
+        # Processing loop
         answer_text = ""
         sources_text = ""
         debug_text = ""
-        rule_code = ""
-        regulation_title = ""
         
-        for item in _run_ask_stream(
-            message,
-            top_k,
-            include_abolished,
-            llm_provider,
-            llm_model,
-            llm_base_url,
-            target_db_path,
-            audience_override,
-            show_debug,
-            history_text=history_context or None,
-            search_query=query,
-        ):
-            if item["type"] == "error":
-                history[-1] = {"role": "assistant", "content": item["content"]}
+        for event in handler.process_query_stream(query, context, options):
+            evt_type = event["type"]
+            
+            if evt_type == "progress":
+                history[-1] = {"role": "assistant", "content": event["content"]}
                 yield history, details, debug_text, state
-                return
-            elif item["type"] == "progress":
-                history[-1] = {"role": "assistant", "content": item["content"]}
-                yield history, details, debug_text, state
-            elif item["type"] == "token":
-                # First token: clear progress, start answer
+            
+            elif evt_type == "token":
+                # Accumulate text for streaming
                 if not answer_text:
                     history[-1] = {"role": "assistant", "content": ""}
-                answer_text += item["content"]
+                answer_text += event["content"]
                 history[-1] = {"role": "assistant", "content": answer_text}
                 yield history, details, debug_text, state
-            elif item["type"] == "sources":
-                sources_text = item["content"]
-            elif item["type"] == "debug":
-                debug_text = item["content"]
-            elif item["type"] == "metadata":
-                rule_code = item.get("rule_code", "")
-                regulation_title = item.get("regulation_title", "")
-        
-        # Final response with sources
-        combined_response = normalize_markdown_emphasis(answer_text)
-        if sources_text:
-            combined_response += "\n\n---\n\n" + sources_text
-        history[-1] = {"role": "assistant", "content": combined_response}
-        
-        details = ""
-        state["last_query"] = query
-        state["last_mode"] = "ask"
-        if regulation_title:
-            if explicit_regulation:
-                state["last_regulation"] = explicit_regulation
-            elif explicit_target or not state.get("last_regulation"):
-                state["last_regulation"] = regulation_title
-            elif state.get("last_regulation") == regulation_title:
-                state["last_regulation"] = regulation_title
-        if rule_code:
-            state["last_rule_code"] = rule_code
+                
+            elif evt_type == "sources":
+                sources_text = event["content"]
+            
+            elif evt_type == "debug":
+                debug_text = event["content"]
+                
+            elif evt_type == "metadata":
+                if event.get("rule_code"):
+                    state["last_rule_code"] = event["rule_code"]
+                if event.get("regulation_title"):
+                    state["last_regulation"] = event["regulation_title"]
+            
+            elif evt_type == "state":
+                # explicit state update
+                state.update(event["update"])
+                
+            elif evt_type == "clarification":
+                # QueryHandler returns clarification_type, options, and a generic content message.
+                # We need to format it with buttons for the UI.
+                clarification_type = event["clarification_type"]
+                clarification_options = event["options"]
+
+                state["pending"] = {
+                    "type": clarification_type,
+                    "options": clarification_options,
+                    "query": query,
+                    "mode": event.get("mode", "search"), # Default to search if mode not specified by handler
+                    "table_no": event.get("table_no"),
+                    "label": event.get("label"),
+                }
+                
+                clarified_content = format_clarification(clarification_type, clarification_options)
+                history[-1] = {"role": "assistant", "content": clarified_content}
+                
+                yield history, details, debug_text, state
+                return # Stop processing, waiting for user clarification
+            
+            elif evt_type == "error":
+                history[-1] = {"role": "assistant", "content": f"⚠️ {event['content']}"}
+                yield history, details, debug_text, state
+                return # Stop processing on error
+
+            elif evt_type == "complete":
+                # Final non-streaming content (e.g. Overview, Search Table) or final LLM answer
+                content = event["content"]
+                
+                # If it's an LLM answer, sources might be separate.
+                # For search results, sources are usually part of the content.
+                if sources_text and "---" not in content[-50:]: # Avoid duplication if sources already appended
+                     content += "\n\n---\n\n" + sources_text
+
+                history[-1] = {"role": "assistant", "content": normalize_markdown_emphasis(content)}
+                state["last_query"] = query
+                # State updates for last_regulation/last_rule_code are handled by 'metadata' event
+                # or by the state update from QueryHandler.
+                yield history, details, debug_text, state
+
+        # Final yield to ensure everything is settled, especially if no 'complete' event was sent
+        # (e.g., if only progress updates were sent and then nothing more)
+        # This also ensures the last state is yielded.
         yield history, details, debug_text, state
 
 
