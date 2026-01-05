@@ -8,7 +8,7 @@ import re
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, List, Optional
 
-from ..domain.entities import Answer, Chunk, SearchResult
+from ..domain.entities import Answer, Chunk, ChunkLevel, SearchResult
 from ..domain.repositories import IHybridSearcher, ILLMClient, IReranker, IVectorStore
 from ..domain.value_objects import Query, SearchFilter
 from ..infrastructure.patterns import (
@@ -257,7 +257,8 @@ class SearchUseCase:
         )
         rule_filter = self._build_rule_code_filter(filter, query_text)
         query = Query(text="규정", include_abolished=include_abolished)
-        return self.store.search(query, rule_filter, top_k)
+        results = self.store.search(query, rule_filter, top_k * 5)
+        return self._deduplicate_by_article(results, top_k)
 
     def _search_by_regulation_only(
         self,
@@ -296,10 +297,11 @@ class SearchUseCase:
             200,
         )
 
-        return [
+        raw_results = [
             SearchResult(chunk=r.chunk, score=r.score, rank=i + 1)
-            for i, r in enumerate(all_chunks[:top_k])
+            for i, r in enumerate(all_chunks)
         ]
+        return self._deduplicate_by_article(raw_results, top_k)
 
     def _search_by_regulation_article(
         self,
@@ -359,7 +361,8 @@ class SearchUseCase:
                 )
 
         filtered_results.sort(key=lambda x: -x.score)
-        return filtered_results[:top_k]
+        filtered_results.sort(key=lambda x: -x.score)
+        return self._deduplicate_by_article(filtered_results, top_k)
 
     def _find_regulation_rule_code(
         self,
@@ -393,6 +396,58 @@ class SearchUseCase:
                     if match_score == 1.0:
                         break
         return target_rule_code
+
+    def _deduplicate_by_article(
+        self, results: List[SearchResult], top_k: int
+    ) -> List[SearchResult]:
+        """
+        Deduplicate results to ensure only one chunk per article is returned.
+
+        Key logic:
+        - Identify the 'Article' context for each chunk (Regulation + Article Number).
+        - Keep only the highest-scoring chunk for each Article context.
+        - Chunks not belonging to an article (e.g. regulation metadata) are always kept (unless duplicates by ID).
+        """
+        seen_keys = set()
+        unique_results = []
+
+        for result in results:
+            # 1. Generate deduplication key
+            # Key format: (rule_code, article_identifier)
+            # If no article identifier found, use (rule_code, chunk_id) to allow unique non-article chunks.
+            
+            chunk = result.chunk
+            article_key = None
+
+            # Check title first
+            if chunk.level == ChunkLevel.ARTICLE:
+                article_key = chunk.title
+            
+            # Check parent path if not found in title (or if level is paragraph)
+            # We look for the "Article" node in the parent path
+            if not article_key and chunk.parent_path:
+                for path_item in reversed(chunk.parent_path):
+                    # Check if path item matches "Article N" pattern
+                    # We use simple string check or regex
+                    if ARTICLE_PATTERN.match(path_item):
+                        article_key = path_item
+                        break
+            
+            if article_key:
+                # Normalize key to handle slight variations if needed, 
+                # strictly we use the string as is assuming consistent naming in same reg
+                key = (chunk.rule_code, article_key)
+            else:
+                # Not an article chunk (or preamble, etc), treat as unique by ID
+                key = (chunk.rule_code, chunk.id)
+
+            if key not in seen_keys:
+                seen_keys.add(key)
+                unique_results.append(result)
+                if len(unique_results) >= top_k:
+                    break
+        
+        return unique_results
 
     def _search_general(
         self,
@@ -430,9 +485,10 @@ class SearchUseCase:
 
         # Apply reranking if enabled
         if self.use_reranker and boosted_results:
-            return self._apply_reranking(boosted_results, scoring_query_text, top_k)
+            boosted_results = self._apply_reranking(boosted_results, scoring_query_text, top_k)
 
-        return boosted_results[:top_k]
+        # Deduplicate by article (One Chunk per Article)
+        return self._deduplicate_by_article(boosted_results, top_k)
 
     def _perform_query_rewriting(
         self, query_text: str, include_abolished: bool

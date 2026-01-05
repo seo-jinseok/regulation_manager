@@ -285,3 +285,52 @@ def test_hybrid_filters_by_rule_code_and_level():
     results = usecase.search("휴학", filter=filter, top_k=10, include_abolished=True)
 
     assert {r.chunk.id for r in results} == {"doc_allowed"}
+
+
+def test_search_deduplicates_same_article():
+    """같은 조항의 여러 청크가 검색되면 가장 점수가 높은 하나만 반환해야 함."""
+    # 상황: 제4조에 해당하는 청크가 3개 검색됨 (본문, 항1, 항2)
+    # 점수: 항1(0.9) > 본문(0.8) > 항2(0.7)
+    # 기대: 항1 하나만 결과에 포함되어야 함 (One Chunk Per Article)
+
+    # Chunk 1: Article 4 Body
+    c1 = Chunk(
+        id="c1", rule_code="3-1-6", level=ChunkLevel.ARTICLE,
+        title="제4조(위원회)", text="위원회는...", 
+        embedding_text="", full_text="", parent_path=["규정"], 
+        token_count=10, keywords=[], is_searchable=True
+    )
+
+    # Chunk 2: Article 4 Paragraph 1 (Highest Score)
+    c2 = Chunk(
+        id="c2", rule_code="3-1-6", level=ChunkLevel.PARAGRAPH,
+        title="①", text="위원회는 5인...", 
+        embedding_text="", full_text="", parent_path=["규정", "제4조(위원회)"], 
+        token_count=10, keywords=[], is_searchable=True
+    )
+
+    # Chunk 3: Article 4 Paragraph 2
+    c3 = Chunk(
+        id="c3", rule_code="3-1-6", level=ChunkLevel.PARAGRAPH,
+        title="②", text="위원장은...", 
+        embedding_text="", full_text="", parent_path=["규정", "제4조(위원회)"], 
+        token_count=10, keywords=[], is_searchable=True
+    )
+
+    # Search Results (Sorted by score already)
+    raw_results = [
+        SearchResult(chunk=c2, score=0.9, rank=1),
+        SearchResult(chunk=c1, score=0.8, rank=2),
+        SearchResult(chunk=c3, score=0.7, rank=3),
+    ]
+
+    store = FakeStore(raw_results)
+    usecase = SearchUseCase(store, use_reranker=False, use_hybrid=False)
+
+    # Act
+    results = usecase.search("위원회", top_k=5)
+
+    # Assert
+    assert len(results) == 1
+    assert results[0].chunk.id == "c2"  # Highest score kept
+    assert results[0].score == pytest.approx(1.0)
