@@ -226,7 +226,29 @@ class QueryHandler:
         
         overview = self.loader.get_regulation_overview(json_path, query)
         if not overview:
-            return QueryResult(
+            # Try finding candidates
+            candidates = self.loader.find_regulation_candidates(json_path, query)
+            if len(candidates) == 1:
+                # Found exactly one match
+                overview = self.loader.get_regulation_overview(json_path, candidates[0][0])
+            elif len(candidates) > 1:
+                # Multiple matches found
+                return QueryResult(
+                    type=QueryType.CLARIFICATION,
+                    success=True,
+                    clarification_type="regulation",
+                    clarification_options=[c[1] for c in candidates],
+                    content="여러 규정이 매칭됩니다. 선택해주세요.",
+                )
+            else:
+                return QueryResult(
+                    type=QueryType.ERROR,
+                    success=False,
+                    content="해당 규정을 찾을 수 없습니다.",
+                )
+        
+        if not overview:
+             return QueryResult(
                 type=QueryType.ERROR,
                 success=False,
                 content="해당 규정을 찾을 수 없습니다.",

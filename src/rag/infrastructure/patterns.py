@@ -35,9 +35,9 @@ HIERARCHY_PATTERN: Pattern[str] = re.compile(
 REGULATION_SUFFIXES = ("규정", "학칙", "내규", "세칙", "지침", "정관")
 REGULATION_SUFFIX_PATTERN = r"(?:규정|학칙|내규|세칙|지침|정관)"
 
-# Matches regulation name only (e.g., "교원인사규정", "학칙")
+# Matches regulation name only (e.g., "교원인사규정", "학칙", "대학 등록금 규정")
 REGULATION_ONLY_PATTERN: Pattern[str] = re.compile(
-    rf"^\s*([가-힣]+{REGULATION_SUFFIX_PATTERN})\s*$"
+    rf"^\s*([가-힣\s]+{REGULATION_SUFFIX_PATTERN})\s*$"
 )
 
 # Matches regulation name + article reference (e.g., "교원인사규정 제8조")
