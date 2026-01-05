@@ -153,17 +153,18 @@ class FunctionGemmaAdapter:
             return "text"
         
         # Auto mode: try to detect best available
-        # On macOS with Apple Silicon, prefer MLX for speed
-        if MLX_AVAILABLE:
-            return "mlx"
         
-        # Then check if OpenAI-compatible server is reachable
+        # 1. Prefer OpenAI-compatible server (LM Studio/vLLM) as it handles templates reliably
         try:
-            resp = requests.get(f"{self._base_url}/v1/models", timeout=2)
+            resp = requests.get(f"{self._base_url}/v1/models", timeout=1)
             if resp.status_code == 200:
                 return "openai"
         except Exception:
             pass
+
+        # 2. Then MLX (if available) - Fast but experimental template support
+        if MLX_AVAILABLE:
+            return "mlx"
         
         # Then try Ollama
         if OLLAMA_AVAILABLE:
@@ -216,6 +217,7 @@ class FunctionGemmaAdapter:
         
         return tool_calls
     
+
     def process_query_mlx(
         self, query: str, context: Optional[str] = None, llm_client=None
     ) -> Tuple[str, List[ToolResult]]:
@@ -229,6 +231,8 @@ class FunctionGemmaAdapter:
             context: Optional additional context
             llm_client: Base LLM client for answer generation (uses env settings if None)
         """
+        import json
+        
         if not MLX_AVAILABLE:
             raise RuntimeError("MLX not available")
         if not self._tool_executor:
@@ -238,41 +242,32 @@ class FunctionGemmaAdapter:
         
         tool_results: List[ToolResult] = []
         
-        # FunctionGemma official format: use 'developer' role and tools parameter
+        # Prepare content
+        tools_json = json.dumps(TOOL_DEFINITIONS, indent=None)
+        system_content = f"You are a helpful assistant with access to the following functions. Use them if required - \n{tools_json}"
+        
+        user_content = query
+        if context:
+            user_content = f"Context:\n{context}\n\nQuestion:\n{query}"
+        
+        # Use tokenizer's chat template to generate correct prompt structure
         messages = [
-            {
-                "role": "developer",
-                "content": "You are a model that can do function calling with the following functions"
-            },
-            {
-                "role": "user", 
-                "content": query if not context else f"{context}\n\n{query}"
-            }
+            {"role": "system", "content": system_content},
+            {"role": "user", "content": user_content}
         ]
         
+        try:
+            prompt = self._mlx_tokenizer.apply_chat_template(
+                messages, 
+                tokenize=False, 
+                add_generation_prompt=True
+            )
+        except Exception as e:
+            # Fallback for models or tokenizers without proper template
+            print(f"Warning: Failed to apply chat template ({e}), using manual format.")
+            prompt = f"<start_of_turn>system\n{system_content}<end_of_turn>\n<start_of_turn>user\n{user_content}<end_of_turn>\n<start_of_turn>model\n"
+        
         for iteration in range(self._max_iterations):
-            # Apply chat template with tools
-            try:
-                inputs = self._mlx_tokenizer.apply_chat_template(
-                    messages,
-                    tools=TOOL_DEFINITIONS,
-                    add_generation_prompt=True,
-                )
-                if isinstance(inputs, dict):
-                    prompt = inputs.get("input_ids", inputs)
-                else:
-                    prompt = inputs
-            except Exception:
-                # Fallback: build prompt manually
-                tools_desc = get_tools_prompt()
-                prompt = self._mlx_tokenizer.apply_chat_template(
-                    [
-                        {"role": "system", "content": f"You can call these functions:\n{tools_desc}"},
-                        {"role": "user", "content": query}
-                    ],
-                    add_generation_prompt=True,
-                )
-            
             # Generate response
             response = mlx_generate(
                 self._mlx_model,
@@ -286,8 +281,7 @@ class FunctionGemmaAdapter:
             parsed_calls = self._parse_functiongemma_response(response)
             
             if not parsed_calls:
-                # No tool calls - FunctionGemma decided no tools needed
-                # This shouldn't happen for valid queries, but handle gracefully
+                # No tool calls
                 return response, tool_results
             
             # Execute tool calls
@@ -312,12 +306,15 @@ class FunctionGemmaAdapter:
                 result = self._tool_executor.execute(tool_call.name, tool_call.arguments)
                 tool_results.append(result)
                 
-                # Add result to conversation for next iteration
-                messages.append({"role": "assistant", "content": response})
-                messages.append({
-                    "role": "user",
-                    "content": f"Tool result ({result.tool_name}):\n{result.to_context_string()}"
-                })
+                # Update prompt for next turn (Multi-turn)
+                # Append model output (tool call)
+                prompt += f"{response}<end_of_turn>\n"
+                # Append tool result (simulate 'tool' role if model supported it, but FunctionGemma might expect user role for observation)
+                # Standard FunctionGemma pattern for results isn't clearly documented for multi-turn in the same chat structure,
+                # but we can try providing it as a user message or continuing the turn.
+                # However, for simplicity and typical usage, we usually just append the result.
+                # Let's try appending as a separated user block which serves as 'observation'.
+                prompt += f"<start_of_turn>user\nObservation: {result.to_context_string()}<end_of_turn>\n<start_of_turn>model\n"
         
         # Max iterations reached - generate answer with accumulated results
         if tool_results:

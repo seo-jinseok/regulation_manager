@@ -272,7 +272,7 @@ def _add_search_parser(subparsers):
         type=str,
         choices=["auto", "mlx", "openai", "ollama"],
         default="auto",
-        help="Tool Calling 백엔드 (auto: MLX 우선, mlx: Apple Silicon, openai: LM Studio)",
+        help="Tool Calling 백엔드 (auto: OpenAI API 우선, mlx: Apple Silicon Experimental)",
     )
 
 
