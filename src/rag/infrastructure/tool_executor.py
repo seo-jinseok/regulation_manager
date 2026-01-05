@@ -24,6 +24,7 @@ class ToolResult:
     success: bool
     result: Any
     error: Optional[str] = None
+    arguments: Optional[Dict[str, Any]] = None
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for LLM context."""
@@ -32,6 +33,7 @@ class ToolResult:
             "success": self.success,
             "result": self.result,
             "error": self.error,
+            "arguments": self.arguments,
         }
 
     def to_context_string(self) -> str:
@@ -95,13 +97,19 @@ class ToolExecutor:
                     error=f"Unknown tool: {tool_name}",
                 )
             result = handler(arguments)
-            return ToolResult(tool_name=tool_name, success=True, result=result)
+            return ToolResult(
+                tool_name=tool_name, 
+                success=True, 
+                result=result,
+                arguments=arguments
+            )
         except Exception as e:
             return ToolResult(
                 tool_name=tool_name,
                 success=False,
                 result=None,
                 error=str(e),
+                arguments=arguments
             )
 
     def _get_handler(self, tool_name: str):

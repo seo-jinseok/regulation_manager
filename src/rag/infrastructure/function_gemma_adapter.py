@@ -451,6 +451,7 @@ class FunctionGemmaAdapter:
                                 tool_name="generate_answer",
                                 success=True,
                                 result=answer,
+                                arguments=args,
                             ))
                             return answer, tool_results
                             

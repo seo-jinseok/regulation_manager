@@ -196,9 +196,24 @@ class QueryHandler:
             debug_lines = []
             for result in tool_results:
                 status = "✅" if result.success else "❌"
-                debug_lines.append(f"{status} {result.tool_name}")
+                debug_msg = f"{status} **{result.tool_name}**"
+                
+                if result.arguments:
+                    import json
+                    try:
+                        args_str = json.dumps(result.arguments, ensure_ascii=False)
+                        debug_msg += f"\n   🔹 Args: `{args_str}`"
+                    except Exception:
+                        debug_msg += f"\n   🔹 Args: {result.arguments}"
+                
+                res_str = str(result.result)
+                if len(res_str) > 300:
+                    res_str = res_str[:300] + "... (truncated)"
+                debug_msg += f"\n   🔸 Result: {res_str}"
+                
+                debug_lines.append(debug_msg)
             
-            debug_info = "\n".join(debug_lines) if options.show_debug else ""
+            debug_info = "\n\n".join(debug_lines) if options.show_debug else ""
             
             return QueryResult(
                 type=QueryType.ASK,
