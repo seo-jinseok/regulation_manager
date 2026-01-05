@@ -182,7 +182,7 @@ class QueryAnalyzer:
             0.4,
             0.6,
         ),  # Slightly favor semantic, but still consider keywords
-        QueryType.INTENT: (0.35, 0.65),  # Intent-heavy queries lean semantic
+        QueryType.INTENT: (0.4, 0.6),  # Intent-heavy queries lean semantic (Adjusted to catch keywords)
         QueryType.GENERAL: (0.5, 0.5),  # Balanced default (increased BM25 from 0.3)
     }
 
@@ -213,6 +213,7 @@ class QueryAnalyzer:
             ["퇴직", "사직", "명예퇴직"],
         ),
         (re.compile(r"(수업|강의).*안.*하.*싶"), ["휴강", "보강", "강의"]),
+        (re.compile(r".*싶어"), ["희망", "원함"]),  # General desire pattern (Removed '신청' which is too generic)
     ]
     INTENT_MAX_MATCHES = 3
 
