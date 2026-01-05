@@ -18,9 +18,21 @@ if TYPE_CHECKING:
 
 @dataclass
 class ImprovementSuggestion:
-    """A suggested improvement based on feedback analysis."""
+    """
+    A suggested improvement based on feedback analysis.
+    
+    Types:
+        - intent: intents.json에 트리거 추가
+        - synonym: synonyms.json에 동의어 추가
+        - rerank: Reranker 검토 필요
+        - llm_expert: LLM 기반 제안
+        - code_pattern: QueryAnalyzer 패턴 로직 개선 필요
+        - code_weight: 가중치 프리셋 조정 필요
+        - code_audience: 대상 감지 로직 개선 필요
+        - architecture: 시스템 구조적 개선 필요
+    """
 
-    type: str  # "intent", "synonym", "prompt"
+    type: str
     priority: str  # "high", "medium", "low"
     description: str
     suggested_value: Dict[str, Any] = field(default_factory=dict)
@@ -116,6 +128,10 @@ class AutoLearnUseCase:
         # Check for missing synonyms
         synonym_suggestions = self._check_missing_synonyms(query_groups)
         suggestions.extend(synonym_suggestions)
+
+        # Check for code-level improvements (patterns in failures)
+        code_suggestions = self._check_code_improvements(query_groups)
+        suggestions.extend(code_suggestions)
 
         # LLM-based suggestions (if available)
         if self._llm_client and query_groups:
@@ -258,6 +274,128 @@ class AutoLearnUseCase:
                     )
                 )
 
+        return suggestions[:5]
+
+    def _check_code_improvements(
+        self,
+        query_groups: Dict[str, List["FeedbackEntry"]],
+    ) -> List[ImprovementSuggestion]:
+        """
+        Analyze failure patterns to suggest code-level improvements.
+        
+        Detects patterns that indicate need for:
+        - QueryAnalyzer pattern logic changes
+        - Weight preset adjustments
+        - Audience detection improvements
+        - Architectural changes
+        """
+        suggestions = []
+        
+        # Pattern 1: Intent triggers match but wrong results
+        # → Indicates weight preset or reranker issues
+        intent_matched_failures = [
+            (q, entries) for q, entries in query_groups.items()
+            if any(e.matched_intents for e in entries)
+        ]
+        if len(intent_matched_failures) >= 3:
+            suggestions.append(
+                ImprovementSuggestion(
+                    type="code_weight",
+                    priority="high",
+                    description=(
+                        f"인텐트 매칭됨에도 {len(intent_matched_failures)}개 쿼리에서 "
+                        "잘못된 결과 반환 → WEIGHT_PRESETS 또는 Reranker 가중치 조정 필요"
+                    ),
+                    suggested_value={
+                        "action": "adjust_weight_presets",
+                        "file": "src/rag/infrastructure/query_analyzer.py",
+                        "target": "WEIGHT_PRESETS",
+                        "note": "Intent 쿼리의 BM25/Dense 비율 검토",
+                    },
+                    affected_queries=[q for q, _ in intent_matched_failures[:5]],
+                )
+            )
+        
+        # Pattern 2: Similar query patterns failing repeatedly
+        # → Indicates missing pattern in QueryAnalyzer
+        pattern_keywords = ["싶어", "하고", "어떻게", "뭐야", "알려줘"]
+        keyword_failures: Dict[str, List[str]] = {}
+        for query in query_groups.keys():
+            for kw in pattern_keywords:
+                if kw in query:
+                    keyword_failures.setdefault(kw, []).append(query)
+        
+        for kw, queries in keyword_failures.items():
+            if len(queries) >= 3:
+                suggestions.append(
+                    ImprovementSuggestion(
+                        type="code_pattern",
+                        priority="high",
+                        description=(
+                            f"'{kw}' 패턴 포함 쿼리 {len(queries)}개 반복 실패 → "
+                            "QueryAnalyzer.INTENT_PATTERNS에 새 패턴 추가 필요"
+                        ),
+                        suggested_value={
+                            "action": "add_intent_pattern",
+                            "file": "src/rag/infrastructure/query_analyzer.py",
+                            "pattern_keyword": kw,
+                            "sample_queries": queries[:3],
+                        },
+                        affected_queries=queries[:5],
+                    )
+                )
+        
+        # Pattern 3: Audience-related failures
+        # → Indicates audience detection logic issues
+        audience_keywords = ["학생", "교수", "교원", "직원", "교직원"]
+        audience_failures = []
+        for query in query_groups.keys():
+            for kw in audience_keywords:
+                if kw in query:
+                    audience_failures.append(query)
+                    break
+        
+        if len(audience_failures) >= 2:
+            suggestions.append(
+                ImprovementSuggestion(
+                    type="code_audience",
+                    priority="medium",
+                    description=(
+                        f"대상 키워드 포함 쿼리 {len(audience_failures)}개 실패 → "
+                        "detect_audience() 또는 AUDIENCE_KEYWORDS 확장 필요"
+                    ),
+                    suggested_value={
+                        "action": "extend_audience_detection",
+                        "file": "src/rag/infrastructure/query_analyzer.py",
+                        "target": "FACULTY_KEYWORDS, STUDENT_KEYWORDS, STAFF_KEYWORDS",
+                    },
+                    affected_queries=audience_failures[:5],
+                )
+            )
+        
+        # Pattern 4: High failure rate overall
+        # → Indicates potential architectural issues
+        if len(query_groups) >= 10:
+            suggestions.append(
+                ImprovementSuggestion(
+                    type="architecture",
+                    priority="medium",
+                    description=(
+                        f"전체 {len(query_groups)}개 문제 쿼리 발생 → "
+                        "검색 파이프라인 전반 검토 필요 (HybridSearcher, Reranker)"
+                    ),
+                    suggested_value={
+                        "action": "review_pipeline",
+                        "components": [
+                            "HybridSearcher (BM25 + Dense 융합)",
+                            "BGEReranker (Cross-Encoder 재정렬)",
+                            "QueryAnalyzer (쿼리 분석/확장)",
+                        ],
+                    },
+                    affected_queries=list(query_groups.keys())[:10],
+                )
+            )
+        
         return suggestions[:5]
 
     def suggest_with_llm(self, query: str) -> Optional[ImprovementSuggestion]:
