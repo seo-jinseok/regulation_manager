@@ -1351,6 +1351,7 @@ def _perform_unified_search(
                 state["last_regulation"] = top_regulation
             state["last_rule_code"] = top.rule_code
         state["last_query"] = raw_query
+        state["last_answer"] = answer_text
         if interactive:
             _append_history(state, "assistant", answer_text)
 
@@ -1449,6 +1450,7 @@ def _run_interactive_session(args) -> int:
         followups = get_followup_suggestions(
             sanitized,
             regulation_title=state.get("last_regulation"),
+            answer_text=state.get("last_answer"),
         )
         if followups:
             current_suggestions = followups

@@ -523,13 +523,24 @@ class QueryHandler:
                 overview = self.loader.get_regulation_overview(json_path, candidates[0][0])
             elif len(candidates) > 1:
                 # Multiple matches found
-                return QueryResult(
-                    type=QueryType.CLARIFICATION,
-                    success=True,
-                    clarification_type="regulation",
-                    clarification_options=[c[1] for c in candidates],
-                    content="여러 규정이 매칭됩니다. 선택해주세요.",
-                )
+                # Check for exact match (ignoring spaces)
+                normalized_query = query.replace(" ", "")
+                exact_match = None
+                for code, title in candidates:
+                    if title.replace(" ", "") == normalized_query:
+                        exact_match = (code, title)
+                        break
+                
+                if exact_match:
+                    overview = self.loader.get_regulation_overview(json_path, exact_match[0])
+                else:
+                    return QueryResult(
+                        type=QueryType.CLARIFICATION,
+                        success=True,
+                        clarification_type="regulation",
+                        clarification_options=[c[1] for c in candidates],
+                        content="여러 규정이 매칭됩니다. 선택해주세요.",
+                    )
             else:
                 return QueryResult(
                     type=QueryType.ERROR,

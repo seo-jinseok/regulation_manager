@@ -608,6 +608,12 @@ def create_parser() -> argparse.ArgumentParser:
 """,
     )
     parser.add_argument(
+        "--debug",
+        action="store_true",
+        dest="global_debug",
+        help="전역 디버그 모드 활성화",
+    )
+    parser.add_argument(
         "--version",
         action="version",
         version="%(prog)s 0.1.0",
@@ -856,6 +862,10 @@ def main(argv: Optional[list] = None) -> int:
     """Main entry point for the unified CLI."""
     parser = create_parser()
     args = parser.parse_args(argv)
+
+    # Global debug flag handling
+    if hasattr(args, "global_debug") and args.global_debug:
+        args.debug = True
 
     # 커맨드 없이 실행하면 interactive 모드로 시작
     if not args.command:
