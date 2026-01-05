@@ -551,6 +551,15 @@ def _print_query_result(result: QueryResult, verbose: bool = False) -> None:
     
     _print_markdown(title, result.content)
 
+    # Print debug info if available
+    if result.debug_info:
+        if RICH_AVAILABLE:
+            console.print()
+            console.print(Panel(Markdown(result.debug_info), title="🔧 실행 과정 (Debug)", border_style="yellow"))
+        else:
+            print("\n[실행 과정 (Debug)]")
+            print(result.debug_info)
+
 def _print_regulation_overview(overview, other_matches: Optional[list] = None) -> None:
     """Print regulation overview in a nice format."""
     from ..domain.entities import RegulationStatus
@@ -963,11 +972,20 @@ def _perform_unified_search(
                 console.print(Markdown(answer_text))
                 console.print()
                 
-                if tool_results and args.verbose:
+                if tool_results and (args.verbose or args.debug):
                     console.print("[bold cyan]📊 호출된 도구:[/bold cyan]")
                     for result in tool_results:
                         status = "✅" if result.success else "❌"
-                        console.print(f"  {status} {result.tool_name}")
+                        console.print(f"  {status} [bold]{result.tool_name}[/bold]")
+                        
+                        if args.debug:
+                            if result.arguments:
+                                console.print(f"    [dim]Args: {result.arguments}[/dim]")
+                            res_str = str(result.result)
+                            if len(res_str) > 200:
+                                res_str = res_str[:200] + "..."
+                            console.print(f"    [dim]Result: {res_str}[/dim]")
+                            console.print()
                 
                 return 0
         else:
@@ -981,11 +999,19 @@ def _perform_unified_search(
             if use_tool_calling:
                 print("\n=== AI 답변 ===")
                 print(answer_text)
-                if tool_results and args.verbose:
+                if tool_results and (args.verbose or args.debug):
                     print("\n📊 호출된 도구:")
                     for result in tool_results:
                         status = "✅" if result.success else "❌"
                         print(f"  {status} {result.tool_name}")
+                        if args.debug:
+                            if result.arguments:
+                                print(f"    Args: {result.arguments}")
+                            res_str = str(result.result)
+                            if len(res_str) > 200:
+                                res_str = res_str[:200] + "..."
+                            print(f"    Result: {res_str}")
+                            print()
                 
                 return 0
     
