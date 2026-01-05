@@ -68,6 +68,7 @@ from .formatters import (
 )
 from .link_formatter import extract_and_format_references, format_as_markdown_links
 from .query_handler import QueryContext, QueryHandler, QueryOptions, QueryResult, QueryType
+from ..infrastructure.patterns import REGULATION_ONLY_PATTERN, RULE_CODE_PATTERN
 
 # Default paths
 DEFAULT_DB_PATH = "data/chroma_db"
@@ -1039,11 +1040,52 @@ def create_app(
                 "role": "assistant",
                 "content": result.content,
             })
-            state["last_query"] = query
-            state["last_mode"] = "attachment"
-            state["last_regulation"] = result.state_update.get("last_regulation")
             state["last_rule_code"] = result.state_update.get("last_rule_code")
             yield history, details, debug_text, state
+
+        # Check for regulation name/code query (Overview)
+        is_regulation_only = REGULATION_ONLY_PATTERN.match(query) is not None
+        is_rule_code_only = RULE_CODE_PATTERN.match(query) is not None
+
+        if (is_regulation_only or is_rule_code_only) and not attachment_requested and mode != "ask":
+             # Use QueryHandler for overview (fuzzy match included)
+            handler = QueryHandler()
+            result = handler.get_regulation_overview(query)
+            
+            # If found or clarification needed
+            if result.success or result.type == QueryType.CLARIFICATION:
+                if result.type == QueryType.CLARIFICATION:
+                    options = result.clarification_options
+                    state["pending"] = {
+                        "type": "regulation",
+                        "options": options,
+                        "query": query,
+                        "mode": "full_view" # Clarification usually leads to full view selection or overview? Overview usually.
+                        # Actually if user selects, we show Full View usually. 
+                        # But here we are in Overview path.
+                        # Let's map it to "full_view" for pending since resolving ambiguity usually implies "Go to that regulation".
+                        # Or I can add "overview" mode to pending.
+                        # Let's keep "full_view" for now as it's safe.
+                    }
+                    history.append({
+                        "role": "assistant",
+                        "content": format_clarification("regulation", options),
+                    })
+                    yield history, details, debug_text, state
+                else:
+                    # Success
+                    history.append({
+                        "role": "assistant",
+                        "content": result.content,
+                    })
+                    state["last_query"] = query
+                    state["last_mode"] = "overview"
+                    state["last_regulation"] = result.state_update.get("last_regulation")
+                    state["last_rule_code"] = result.state_update.get("last_rule_code")
+                    yield history, details, debug_text, state
+                
+                # Stop processing (detected as overview)
+                return
 
         if mode == "full_view":
             # Use QueryHandler for full view
