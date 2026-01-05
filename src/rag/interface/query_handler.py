@@ -130,6 +130,7 @@ class QueryHandler:
         llm_client=None,
         use_reranker: bool = True,
         function_gemma_client=None,
+        function_gemma_adapter=None,
     ):
         self.store = store
         self.llm_client = llm_client
@@ -140,9 +141,10 @@ class QueryHandler:
         self._last_query_rewrite = None
         
         # FunctionGemma setup
-        self._function_gemma_adapter = None
-        if FUNCTION_GEMMA_AVAILABLE and function_gemma_client:
-            self._setup_function_gemma(function_gemma_client)
+        self._function_gemma_adapter = function_gemma_adapter
+        if FUNCTION_GEMMA_AVAILABLE and not self._function_gemma_adapter:
+            if function_gemma_client:
+                self._setup_function_gemma(function_gemma_client)
     
     def _setup_function_gemma(self, function_gemma_client) -> None:
         """Initialize FunctionGemma adapter with tool executor."""
@@ -322,6 +324,27 @@ class QueryHandler:
             return
         
         query = query.strip()
+        
+        # FunctionGemma tool-based processing (Sync -> Event Stream)
+        if options.use_function_gemma and self._function_gemma_adapter:
+            # Yield progress
+            yield {"type": "progress", "content": "🤖 도구 기반 답변 생성 중..."}
+            
+            # Run synchronously (Tool Calling does not support streaming yet)
+            q_result = self._process_with_function_gemma(query, context, options)
+            
+            if q_result.success:
+                 # Yield usage info
+                 if q_result.debug_info:
+                     yield {"type": "progress", "content": f"🛠️ 사용된 도구:\n{q_result.debug_info}"}
+                     
+                 # Yield final answer
+                 yield {"type": "complete", "content": q_result.content, "data": q_result.data}
+                 return
+            else:
+                 yield {"type": "error", "content": q_result.content}
+                 return
+
         mode = options.force_mode or decide_search_mode(query)
         
         # Check for regulation-only or rule-code-only queries first

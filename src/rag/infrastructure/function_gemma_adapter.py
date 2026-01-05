@@ -90,6 +90,11 @@ class FunctionGemmaAdapter:
 - 최종 답변 생성 시 반드시 generate_answer 도구를 사용하세요.
 """
 
+    
+    # Class-level cache for MLX model to avoid reloading in Web UI
+    _cached_mlx_model = None
+    _cached_mlx_tokenizer = None
+
     def __init__(
         self,
         llm_client=None,
@@ -178,11 +183,19 @@ class FunctionGemmaAdapter:
         return "text"
     
     def _load_mlx_model(self):
-        """Lazy load MLX model and tokenizer."""
-        if self._mlx_model is None and MLX_AVAILABLE:
+        """Lazy load MLX model and tokenizer (with class-level caching)."""
+        if not MLX_AVAILABLE:
+            return
+
+        if FunctionGemmaAdapter._cached_mlx_model is None:
             print(f"Loading MLX model: {self._mlx_model_id}...")
-            self._mlx_model, self._mlx_tokenizer = mlx_load(self._mlx_model_id)
-            print("MLX model loaded!")
+            model, tokenizer = mlx_load(self._mlx_model_id)
+            FunctionGemmaAdapter._cached_mlx_model = model
+            FunctionGemmaAdapter._cached_mlx_tokenizer = tokenizer
+            print("MLX model loaded! (Cached)")
+        
+        self._mlx_model = FunctionGemmaAdapter._cached_mlx_model
+        self._mlx_tokenizer = FunctionGemmaAdapter._cached_mlx_tokenizer
     
     def _parse_functiongemma_response(self, response: str) -> List[ToolCall]:
         """Parse FunctionGemma's tool call format.

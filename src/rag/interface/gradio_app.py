@@ -40,8 +40,16 @@ from ..domain.value_objects import SearchFilter
 from ..infrastructure.chroma_store import ChromaVectorStore
 from ..infrastructure.hybrid_search import Audience, QueryAnalyzer
 from ..infrastructure.json_loader import JSONDocumentLoader
+from ..infrastructure.json_loader import JSONDocumentLoader
 from ..infrastructure.llm_adapter import LLMClientAdapter
 from ..infrastructure.llm_client import MockLLMClient
+try:
+    from ..infrastructure.function_gemma_adapter import FunctionGemmaAdapter
+    FUNCTION_GEMMA_AVAILABLE = True
+except ImportError:
+    FUNCTION_GEMMA_AVAILABLE = False
+    FunctionGemmaAdapter = None
+
 from .chat_logic import (
     attachment_label_variants,
     build_history_context,
@@ -522,6 +530,78 @@ def _decide_search_mode_ui(query: str) -> str:
     return decide_search_mode(query, None)
 
 
+def _process_with_handler(
+    query: str,
+    top_k: int,
+    include_abolished: bool,
+    llm_provider: str,
+    llm_model: str,
+    llm_base_url: str,
+    target_db_path: str,
+    audience_override: Optional[Audience],
+    use_tools: bool,
+    history: List[dict],
+    state: dict,
+    use_mock_llm: bool = False,
+    default_db_path: str = DEFAULT_DB_PATH,
+) -> QueryResult:
+    """Process query using QueryHandler."""
+    db_path_value = target_db_path or default_db_path
+    store_for_query = ChromaVectorStore(persist_directory=db_path_value)
+    
+    # Initialize LLM client
+    llm_client = None
+    if not use_mock_llm:
+        try:
+            llm_client = LLMClientAdapter(
+                provider=llm_provider,
+                model=llm_model or None,
+                base_url=llm_base_url or None,
+            )
+        except Exception:
+            pass  # Will use search only if LLM fails
+    else:
+        llm_client = MockLLMClient()
+    
+    # Initialize FunctionGemmaAdapter if tools enabled
+    function_gemma_adapter = None
+    if use_tools and FUNCTION_GEMMA_AVAILABLE:
+        try:
+            # Use same llm_client for tool execution (if openai mode)
+            function_gemma_adapter = FunctionGemmaAdapter(
+                llm_client=llm_client,
+                api_mode="auto"
+            )
+        except Exception:
+            pass
+
+    handler = QueryHandler(
+        store=store_for_query,
+        llm_client=llm_client,
+        function_gemma_adapter=function_gemma_adapter,
+        use_reranker=True, # Default to True for Web UI
+    )
+    
+    context = QueryContext(
+        state=state,
+        history=history,
+        interactive=True,
+        last_regulation=state.get("last_regulation"),
+        last_rule_code=state.get("last_rule_code"),
+    )
+    
+    options = QueryOptions(
+        top_k=top_k,
+        include_abolished=include_abolished,
+        audience_override=audience_override,
+        use_function_gemma=use_tools,
+        llm_provider=llm_provider,
+        llm_model=llm_model,
+        llm_base_url=llm_base_url,
+    )
+    
+    return handler.process_query(query, context, options)
+
 def create_app(
     db_path: str = DEFAULT_DB_PATH,
     use_mock_llm: bool = False,
@@ -601,56 +681,7 @@ def create_app(
     query_analyzer = QueryAnalyzer()
     full_view_usecase = FullViewUseCase(JSONDocumentLoader())
 
-    def _process_with_handler(
-        query: str,
-        top_k: int,
-        include_abolished: bool,
-        llm_provider: str,
-        llm_model: str,
-        llm_base_url: str,
-        target_db_path: str,
-        audience_override: Optional[Audience],
-        history: List[dict],
-        state: dict,
-    ) -> QueryResult:
-        """Process query using QueryHandler."""
-        db_path_value = target_db_path or db_path
-        store_for_query = ChromaVectorStore(persist_directory=db_path_value)
-        
-        # Initialize LLM client
-        llm_client = None
-        if not use_mock_llm:
-            try:
-                llm_client = LLMClientAdapter(
-                    provider=llm_provider,
-                    model=llm_model or None,
-                    base_url=llm_base_url or None,
-                )
-            except Exception:
-                pass  # Will use search only if LLM fails
-        else:
-            llm_client = MockLLMClient()
-        
-        handler = QueryHandler(
-            store=store_for_query,
-            llm_client=llm_client,
-        )
-        
-        context = QueryContext(
-            state=state,
-            history=history,
-            interactive=True,
-            last_regulation=state.get("last_regulation"),
-            last_rule_code=state.get("last_rule_code"),
-        )
-        
-        options = QueryOptions(
-            top_k=top_k,
-            include_abolished=include_abolished,
-            audience_override=audience_override,
-        )
-        
-        return handler.process_query(query, context, options)
+
 
     def _parse_audience(selection: str) -> Optional[Audience]:
         if selection == "교수":
@@ -896,6 +927,177 @@ def create_app(
 
     # Main chat function (stateful)
     def chat_respond(
+        msg: str,
+        history: List[dict],
+        state: dict,
+        top_k: int,
+        abolished: bool,
+        llm_p: str,
+        llm_m: str,
+        llm_b: str,
+        db_path_val: str,
+        target_sel: str,
+        use_context: bool,
+        use_tools: bool,
+        show_debug: bool,
+    ):
+        """Handle chat interaction with streaming."""
+        if not msg.strip():
+            # Show helpful message for empty input
+            history.append({
+                "role": "assistant",
+                "content": "💡 검색어를 입력해주세요. 예시: '휴학 신청 절차', '교원 연구년 자격은?'"
+            })
+            yield history, "", "", state
+            return
+
+        # Prepare arguments
+        audience_override = _parse_audience(target_sel) if target_sel != "자동" else None
+        
+        # Build history context if enabled
+        history_context = []
+        if use_context:
+            history_context = history
+
+        # New logic inline here:
+        db_path_value = db_path_val or db_path
+        store_for_query = ChromaVectorStore(persist_directory=db_path_value)
+        
+        llm_client = None
+        if not use_mock_llm:
+            try:
+                llm_client = LLMClientAdapter(
+                    provider=llm_p,
+                    model=llm_m or None,
+                    base_url=llm_b or None,
+                )
+            except Exception:
+                pass
+        else:
+            llm_client = MockLLMClient()
+
+        function_gemma_adapter = None
+        if use_tools and FUNCTION_GEMMA_AVAILABLE:
+            try:
+                function_gemma_adapter = FunctionGemmaAdapter(
+                    llm_client=llm_client,
+                    api_mode="auto"
+                )
+            except Exception:
+                pass
+        
+        handler = QueryHandler(
+            store=store_for_query,
+            llm_client=llm_client,
+            function_gemma_adapter=function_gemma_adapter,
+            use_reranker=True, # Default true for web
+        )
+        
+        context = QueryContext(
+            state=state,
+            history=history_context,
+            interactive=True,
+            last_regulation=state.get("last_regulation"),
+            last_rule_code=state.get("last_rule_code"),
+        )
+        
+        options = QueryOptions(
+            top_k=top_k,
+            include_abolished=abolished,
+            audience_override=audience_override,
+            use_function_gemma=use_tools,
+            show_debug=show_debug,
+            llm_provider=llm_p,
+            llm_model=llm_m,
+            llm_base_url=llm_b,
+        )
+
+        # Start streaming
+        # Add user message
+        history.append({"role": "user", "content": msg})
+        # Initial assistant message for progress
+        history.append({"role": "assistant", "content": "🔍 1/3 규정 검색 중..."})
+        yield history, "", "", state
+
+        current_response = ""
+        current_debug = ""
+        sources_text = ""
+        
+        for event in handler.process_query_stream(msg, context, options):
+            evt_type = event["type"]
+
+            if evt_type == "progress":
+                history[-1] = {"role": "assistant", "content": event["content"]}
+                yield history, "", current_debug, state
+            
+            elif evt_type == "token":
+                current_response += event["content"]
+                history[-1]["content"] = current_response
+                yield history, "", current_debug, state
+                
+            elif evt_type == "sources":
+                sources_text = event["content"]
+            
+            elif evt_type == "debug":
+                current_debug += f"\n{event['content']}"
+                yield history, "", current_debug, state # Yield debug updates immediately
+                
+            elif evt_type == "metadata":
+                if event.get("rule_code"):
+                    state["last_rule_code"] = event["rule_code"]
+                if event.get("regulation_title"):
+                    state["last_regulation"] = event["regulation_title"]
+            
+            elif evt_type == "state":
+                # explicit state update
+                state.update(event["update"])
+                
+            elif evt_type == "clarification":
+                clarification_type = event["clarification_type"]
+                clarification_options = event["options"]
+
+                state["pending"] = {
+                    "type": clarification_type,
+                    "options": clarification_options,
+                    "query": msg, # Use original message for pending query
+                    "mode": event.get("mode", "search"), # Default to search if mode not specified by handler
+                    "table_no": event.get("table_no"),
+                    "label": event.get("label"),
+                }
+                
+                clarified_content = format_clarification(clarification_type, clarification_options)
+                history[-1] = {"role": "assistant", "content": clarified_content}
+                
+                yield history, "", current_debug, state
+                return # Stop processing, waiting for user clarification
+            
+            elif evt_type == "error":
+                history[-1] = {"role": "assistant", "content": f"⚠️ {event['content']}"}
+                yield history, "", current_debug, state
+                return # Stop processing on error
+
+            elif evt_type == "complete":
+                # Final non-streaming content (e.g. Overview, Search Table) or final LLM answer
+                content = event["content"]
+                
+                # If it's an LLM answer, sources might be separate.
+                # For search results, sources are usually part of the content.
+                if sources_text and "---" not in content[-50:]: # Avoid duplication if sources already appended
+                     content += "\n\n---\n\n" + sources_text
+
+                history[-1] = {"role": "assistant", "content": normalize_markdown_emphasis(content)}
+                state["last_query"] = msg # Update last_query with the original message
+                # State updates for last_regulation/last_rule_code are handled by 'metadata' event
+                # or by the state update from QueryHandler.
+                yield history, "", current_debug, state
+
+        # Final yield to ensure everything is settled, especially if no 'complete' event was sent
+        # (e.g., if only progress updates were sent and then nothing more)
+        # This also ensures the last state is yielded.
+        yield history, "", current_debug, state
+
+    # Main chat function (stateful)
+    def chat_respond_old(
         message: str,
         history: List[dict],
         state: dict,
@@ -928,6 +1130,7 @@ def create_app(
                 "content": "💡 검색어를 입력해주세요. 예시: '휴학 신청 절차', '교원 연구년 자격은?'"
             })
             yield history, details, debug_text, state
+            return # Added return here to match new chat_respond behavior
         if history and isinstance(history[0], (list, tuple)):
             normalized = []
             for user_text, assistant_text in history:
@@ -959,6 +1162,7 @@ def create_app(
                     response = format_clarification("audience", pending["options"])
                     history.append({"role": "assistant", "content": response})
                     yield history, details, debug_text, state
+                    return # Added return
                 state["audience"] = choice
                 state["pending"] = None
                 query = pending["query"]
@@ -969,6 +1173,7 @@ def create_app(
                     response = format_clarification("regulation", pending["options"])
                     history.append({"role": "assistant", "content": response})
                     yield history, details, debug_text, state
+                    return # Added return
                 state["pending"] = None
                 query = choice
                 mode = "full_view"
@@ -978,6 +1183,7 @@ def create_app(
                     response = format_clarification("regulation", pending["options"])
                     history.append({"role": "assistant", "content": response})
                     yield history, details, debug_text, state
+                    return # Added return
                 state["pending"] = None
                 attachment_query = choice
                 attachment_no = pending.get("table_no")
@@ -1139,7 +1345,6 @@ def create_app(
         # This also ensures the last state is yielded.
         yield history, details, debug_text, state
 
-
     def record_web_feedback(query, rule_code, rating, comment):
         """Record feedback from Web UI."""
         if not query or not rule_code:
@@ -1287,6 +1492,10 @@ def create_app(
                         chat_context = gr.Checkbox(
                             label="대화 문맥 활용", value=True
                         )
+                        chat_use_tools = gr.Checkbox(
+                             label="🛠️ Tool Calling 사용", value=True,
+                             info="FunctionGemma를 사용하여 보다 정확한 답변을 제공합니다."
+                        )
                         chat_debug = gr.Checkbox(
                             label="디버그 출력", value=False
                         )
@@ -1349,7 +1558,7 @@ def create_app(
                     return None, state
 
                 # Event handlers
-                def on_submit(msg, history, state, top_k, abolished, llm_p, llm_m, llm_b, db, target, context, debug):
+                def on_submit(msg, history, state, top_k, abolished, llm_p, llm_m, llm_b, db, target, context, use_tools, debug):
                     # Update History for Navigation
                     # Logic: If query changes effectively (new search or view), apend to history
                     # This is tricky because chat_respond is a generator. 
@@ -1364,7 +1573,7 @@ def create_app(
                     # chat_respond is now a generator for streaming
                     # We need to capture the FINAL state to update navigation
                     final_state = state
-                    for result in chat_respond(msg, history, state, top_k, abolished, llm_p, llm_m, llm_b, db, target, context, debug):
+                    for result in chat_respond(msg, history, state, top_k, abolished, llm_p, llm_m, llm_b, db, target, context, use_tools, debug):
                         # Unpack result and add empty string for input clear
                         hist, detail, dbg, st = result
                         final_state = st
@@ -1389,22 +1598,22 @@ def create_app(
                         
                         yield hist, detail, dbg, final_state, ""
 
-                def on_back_click(history, state, top_k, abolished, llm_p, llm_m, llm_b, db, target, context, debug):
+                def on_back_click(history, state, top_k, abolished, llm_p, llm_m, llm_b, db, target, context, use_tools, debug):
                      query, new_state = confirm_navigation(state, -1)
                      if query:
                          # Re-run query
                          # Note: This will generate a new chat message. 
                          # Ideally, we should just show the old view, but chat interface is linear.
                          # Rerunning is acceptable for "Navigation" in a chat context (like browser history reloads).
-                         for res in on_submit(query, history, new_state, top_k, abolished, llm_p, llm_m, llm_b, db, target, context, debug):
+                         for res in on_submit(query, history, new_state, top_k, abolished, llm_p, llm_m, llm_b, db, target, context, use_tools, debug):
                              yield res
                      else:
                          yield history, "", "", state, ""
                 
-                def on_forward_click(history, state, top_k, abolished, llm_p, llm_m, llm_b, db, target, context, debug):
+                def on_forward_click(history, state, top_k, abolished, llm_p, llm_m, llm_b, db, target, context, use_tools, debug):
                      query, new_state = confirm_navigation(state, 1)
                      if query:
-                         for res in on_submit(query, history, new_state, top_k, abolished, llm_p, llm_m, llm_b, db, target, context, debug):
+                          for res in on_submit(query, history, new_state, top_k, abolished, llm_p, llm_m, llm_b, db, target, context, use_tools, debug):
                              yield res
                      else:
                          yield history, "", "", state, ""
@@ -1419,10 +1628,10 @@ def create_app(
                 # outputs=[chat_bot, chat_detail, chat_debug_out, chat_state, chat_input, btn_back, btn_forward]
                 
                 # Redefine on_submit to include button updates
-                def on_submit_with_nav(msg, history, state, top_k, abolished, llm_p, llm_m, llm_b, db, target, context, debug):
+                def on_submit_with_nav(msg, history, state, top_k, abolished, llm_p, llm_m, llm_b, db, target, context, use_tools, debug):
                      # ... (logic from on_submit) ...
                      # Wrap the generator
-                    gen = on_submit(msg, history, state, top_k, abolished, llm_p, llm_m, llm_b, db, target, context, debug)
+                    gen = on_submit(msg, history, state, top_k, abolished, llm_p, llm_m, llm_b, db, target, context, use_tools, debug)
                     for res in gen:
                         hist, detail, dbg, st, inp = res
                         # Calc button state
@@ -1447,6 +1656,7 @@ def create_app(
                         gr.State(db_path),
                         chat_target,
                         chat_context,
+                        chat_use_tools,
                         chat_debug,
                     ],
                     outputs=[chat_bot, chat_detail, chat_debug_out, chat_state, chat_input, btn_back, btn_forward],
@@ -1465,6 +1675,7 @@ def create_app(
                         gr.State(db_path),
                         chat_target,
                         chat_context,
+                        chat_use_tools,
                         chat_debug,
                     ],
                     outputs=[chat_bot, chat_detail, chat_debug_out, chat_state, chat_input, btn_back, btn_forward],
@@ -1474,14 +1685,14 @@ def create_app(
                 btn_back.click(
                     fn=on_back_click,
                     inputs=[
-                        chat_bot, chat_state, chat_top_k, chat_abolished, chat_llm_p, chat_llm_m, chat_llm_b, gr.State(db_path), chat_target, chat_context, chat_debug
+                        chat_bot, chat_state, chat_top_k, chat_abolished, chat_llm_p, chat_llm_m, chat_llm_b, gr.State(db_path), chat_target, chat_context, chat_use_tools, chat_debug
                     ],
                     outputs=[chat_bot, chat_detail, chat_debug_out, chat_state, chat_input, btn_back, btn_forward]
                 )
                 btn_forward.click(
                     fn=on_forward_click,
                     inputs=[
-                        chat_bot, chat_state, chat_top_k, chat_abolished, chat_llm_p, chat_llm_m, chat_llm_b, gr.State(db_path), chat_target, chat_context, chat_debug
+                        chat_bot, chat_state, chat_top_k, chat_abolished, chat_llm_p, chat_llm_m, chat_llm_b, gr.State(db_path), chat_target, chat_context, chat_use_tools, chat_debug
                     ],
                     outputs=[chat_bot, chat_detail, chat_debug_out, chat_state, chat_input, btn_back, btn_forward]
                 )
