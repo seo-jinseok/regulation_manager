@@ -3,9 +3,10 @@ FunctionGemma Adapter for Regulation RAG System.
 
 Handles communication with LLM models for tool calling.
 Supports multiple modes:
-1. OpenAI-compatible API (LM Studio, vLLM, etc.) - default
-2. Native Ollama tool calling API
-3. Text parsing fallback for basic LLM clients
+1. MLX (Apple Silicon optimized) - mlx-lm package
+2. OpenAI-compatible API (LM Studio, vLLM, etc.)
+3. Native Ollama tool calling API
+4. Text parsing fallback for basic LLM clients
 """
 
 import json
@@ -18,6 +19,15 @@ import requests
 
 from .tool_definitions import TOOL_DEFINITIONS, get_tools_prompt
 from .tool_executor import ToolExecutor, ToolResult
+
+# Try to import mlx-lm for Apple Silicon optimization
+try:
+    from mlx_lm import load as mlx_load, generate as mlx_generate
+    MLX_AVAILABLE = True
+except ImportError:
+    MLX_AVAILABLE = False
+    mlx_load = None
+    mlx_generate = None
 
 # Try to import ollama for native tool calling
 try:
@@ -88,6 +98,7 @@ class FunctionGemmaAdapter:
         model: str = None,
         base_url: str = None,
         api_mode: str = "auto",
+        mlx_model: str = "mlx-community/functiongemma-270m-it-4bit",
     ):
         """
         Initialize FunctionGemmaAdapter.
@@ -98,11 +109,13 @@ class FunctionGemmaAdapter:
             max_iterations: Maximum number of tool call iterations.
             model: Model name for API calls.
             base_url: Base URL for OpenAI-compatible API (e.g., http://localhost:1234).
-            api_mode: API mode - "auto", "openai", "ollama", or "text".
-                - "auto": Try OpenAI-compatible first, then Ollama, then text parsing
+            api_mode: API mode - "auto", "mlx", "openai", "ollama", or "text".
+                - "auto": Try MLX first (on macOS), then OpenAI, then Ollama
+                - "mlx": Use MLX (Apple Silicon optimized)
                 - "openai": Use OpenAI-compatible API (LM Studio, vLLM, etc.)
                 - "ollama": Use Ollama native API
                 - "text": Use text parsing with provided llm_client
+            mlx_model: Hugging Face model ID for MLX (default: functiongemma-270m-it-4bit)
         """
         self._llm_client = llm_client
         self._tool_executor = tool_executor
@@ -111,6 +124,11 @@ class FunctionGemmaAdapter:
         # Load from environment if not provided
         self._model = model or os.getenv("LLM_MODEL", "functiongemma")
         self._base_url = base_url or os.getenv("LLM_BASE_URL", "http://localhost:1234")
+        self._mlx_model_id = mlx_model
+        
+        # MLX model/tokenizer (lazy loaded)
+        self._mlx_model = None
+        self._mlx_tokenizer = None
         
         # Determine API mode
         self._api_mode = self._resolve_api_mode(api_mode)
@@ -125,6 +143,8 @@ class FunctionGemmaAdapter:
 
     def _resolve_api_mode(self, mode: str) -> str:
         """Resolve API mode based on availability."""
+        if mode == "mlx":
+            return "mlx" if MLX_AVAILABLE else "openai"
         if mode == "openai":
             return "openai"
         if mode == "ollama":
@@ -133,7 +153,11 @@ class FunctionGemmaAdapter:
             return "text"
         
         # Auto mode: try to detect best available
-        # First check if OpenAI-compatible server is reachable
+        # On macOS with Apple Silicon, prefer MLX for speed
+        if MLX_AVAILABLE:
+            return "mlx"
+        
+        # Then check if OpenAI-compatible server is reachable
         try:
             resp = requests.get(f"{self._base_url}/v1/models", timeout=2)
             if resp.status_code == 200:
@@ -151,6 +175,102 @@ class FunctionGemmaAdapter:
         
         # Fallback to text parsing
         return "text"
+    
+    def _load_mlx_model(self):
+        """Lazy load MLX model and tokenizer."""
+        if self._mlx_model is None and MLX_AVAILABLE:
+            print(f"Loading MLX model: {self._mlx_model_id}...")
+            self._mlx_model, self._mlx_tokenizer = mlx_load(self._mlx_model_id)
+            print("MLX model loaded!")
+    
+    def process_query_mlx(
+        self, query: str, context: Optional[str] = None
+    ) -> Tuple[str, List[ToolResult]]:
+        """
+        Process query using MLX (Apple Silicon optimized).
+        
+        Uses mlx-lm for fast local inference on M-series chips.
+        """
+        if not MLX_AVAILABLE:
+            raise RuntimeError("MLX not available")
+        if not self._tool_executor:
+            raise RuntimeError("Tool executor not initialized")
+        
+        self._load_mlx_model()
+        
+        tool_results: List[ToolResult] = []
+        tools_prompt = get_tools_prompt()
+        
+        # Build initial prompt
+        messages = [
+            {"role": "system", "content": self.SYSTEM_PROMPT},
+            {"role": "user", "content": f"{tools_prompt}\n\n사용자 질문: {query}"}
+        ]
+        
+        if context:
+            messages[1]["content"] = f"{tools_prompt}\n\n추가 컨텍스트: {context}\n\n사용자 질문: {query}"
+        
+        for iteration in range(self._max_iterations):
+            # Apply chat template
+            prompt = self._mlx_tokenizer.apply_chat_template(
+                messages, add_generation_prompt=True
+            )
+            
+            # Generate response
+            response = mlx_generate(
+                self._mlx_model,
+                self._mlx_tokenizer,
+                prompt=prompt,
+                max_tokens=1024,
+                verbose=False,
+            )
+            
+            # Parse tool calls from response
+            parsed = self._parse_response(response)
+            
+            if not parsed.tool_calls:
+                # No tool calls, return the response
+                return parsed.final_response or response, tool_results
+            
+            # Execute tool calls
+            for tool_call in parsed.tool_calls:
+                # Special handling for generate_answer
+                if tool_call.name == "generate_answer":
+                    result = self._tool_executor.execute(tool_call.name, tool_call.arguments)
+                    tool_results.append(result)
+                    
+                    if result.success:
+                        return result.result, tool_results
+                    
+                    # Generate answer directly using MLX
+                    context_text = tool_call.arguments.get("context", "")
+                    question = tool_call.arguments.get("question", query)
+                    
+                    answer_messages = [
+                        {"role": "system", "content": "당신은 대학 규정을 설명하는 전문가입니다."},
+                        {"role": "user", "content": f"질문: {question}\n\n컨텍스트:\n{context_text}\n\n답변:"}
+                    ]
+                    answer_prompt = self._mlx_tokenizer.apply_chat_template(
+                        answer_messages, add_generation_prompt=True
+                    )
+                    answer = mlx_generate(
+                        self._mlx_model,
+                        self._mlx_tokenizer,
+                        prompt=answer_prompt,
+                        max_tokens=2048,
+                        verbose=False,
+                    )
+                    return answer, tool_results
+                
+                # Normal tool execution
+                result = self._tool_executor.execute(tool_call.name, tool_call.arguments)
+                tool_results.append(result)
+                
+                # Add tool result to messages
+                messages.append({"role": "assistant", "content": response})
+                messages.append({"role": "user", "content": f"도구 결과 ({result.tool_name}):\n{result.to_context_string()}"})
+        
+        return "검색 반복 횟수를 초과했습니다.", tool_results
 
     def process_query_openai(
         self, query: str, context: Optional[str] = None
@@ -164,10 +284,23 @@ class FunctionGemmaAdapter:
             raise RuntimeError("Tool executor not initialized")
         
         tool_results: List[ToolResult] = []
-        messages = [{"role": "user", "content": query}]
+        
+        # System prompt for guiding tool usage
+        system_prompt = """당신은 대학 규정 전문가입니다. 사용자의 질문에 답하기 위해 제공된 도구를 사용하세요.
+
+작업 순서:
+1. search_regulations 도구로 관련 규정을 검색합니다.
+2. 검색 결과를 바탕으로 generate_answer 도구를 호출하여 최종 답변을 생성합니다.
+
+중요: 검색 결과를 받은 후에는 반드시 generate_answer를 호출하여 사용자에게 친절한 답변을 제공하세요."""
+
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": query}
+        ]
         
         if context:
-            messages[0]["content"] = f"{context}\n\n질문: {query}"
+            messages[1]["content"] = f"{context}\n\n질문: {query}"
         
         for iteration in range(self._max_iterations):
             payload = {
@@ -356,6 +489,8 @@ class FunctionGemmaAdapter:
             Tuple of (final_answer, list_of_tool_results)
         """
         # Route to appropriate API based on mode
+        if self._api_mode == "mlx":
+            return self.process_query_mlx(query, context)
         if self._api_mode == "openai":
             return self.process_query_openai(query, context)
         if self._api_mode == "ollama":

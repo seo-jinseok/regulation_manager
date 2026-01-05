@@ -893,6 +893,69 @@ def _perform_unified_search(
         return 1
 
     use_reranker = not args.no_rerank
+    
+    # Step 1.5: Tool Calling Mode (FunctionGemma-style)
+    if getattr(args, "use_tools", False):
+        from ..infrastructure.function_gemma_adapter import FunctionGemmaAdapter
+        from ..infrastructure.tool_executor import ToolExecutor
+        from ..infrastructure.query_analyzer import QueryAnalyzer
+        from ..application.search_usecase import SearchUseCase
+        
+        if RICH_AVAILABLE:
+            console.print("[bold blue]🔧 Tool Calling 모드 활성화[/bold blue]")
+        
+        # Initialize components
+        search_usecase = SearchUseCase(store, use_reranker=use_reranker)
+        query_analyzer = QueryAnalyzer()
+        tool_executor = ToolExecutor(
+            search_usecase=search_usecase,
+            query_analyzer=query_analyzer,
+        )
+        
+        tool_mode = getattr(args, "tool_mode", "auto")
+        adapter = FunctionGemmaAdapter(
+            tool_executor=tool_executor,
+            api_mode=tool_mode,
+        )
+        
+        if RICH_AVAILABLE:
+            console.print(f"[dim]API 모드: {adapter._api_mode}[/dim]")
+            console.print()
+            
+            with console.status("[bold blue]🤖 Tool Calling으로 처리 중...[/bold blue]"):
+                try:
+                    answer_text, tool_results = adapter.process_query(query)
+                except Exception as e:
+                    print_error(f"Tool Calling 실패: {e}")
+                    return 1
+            
+            # Display results
+            console.print("[bold green]🤖 AI 답변:[/bold green]")
+            console.print()
+            console.print(Markdown(answer_text))
+            console.print()
+            
+            if tool_results:
+                console.print("[bold cyan]📊 호출된 도구:[/bold cyan]")
+                for result in tool_results:
+                    status = "✅" if result.success else "❌"
+                    console.print(f"  {status} {result.tool_name}")
+        else:
+            print("🤖 Tool Calling 모드로 처리 중...")
+            try:
+                answer_text, tool_results = adapter.process_query(query)
+            except Exception as e:
+                print_error(f"Tool Calling 실패: {e}")
+                return 1
+            
+            print("\n=== AI 답변 ===")
+            print(answer_text)
+            print("\n📊 호출된 도구:")
+            for result in tool_results:
+                status = "✅" if result.success else "❌"
+                print(f"  {status} {result.tool_name}")
+        
+        return 0
 
     # Initialize LLM only if needed
     llm = None

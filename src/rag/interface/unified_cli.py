@@ -260,6 +260,20 @@ def _add_search_parser(subparsers):
         action="store_true",
         help="관련 규정 전문 출력 (답변 생성 시)",
     )
+    
+    # Tool calling (FunctionGemma) option
+    parser.add_argument(
+        "--use-tools",
+        action="store_true",
+        help="Tool Calling 모드 사용 (LLM이 도구를 호출하여 검색)",
+    )
+    parser.add_argument(
+        "--tool-mode",
+        type=str,
+        choices=["auto", "mlx", "openai", "ollama"],
+        default="auto",
+        help="Tool Calling 백엔드 (auto: 자동 선택, mlx: Apple Silicon, openai: LM Studio 등)",
+    )
 
 
 def _add_ask_parser(subparsers):
