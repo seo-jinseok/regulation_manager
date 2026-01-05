@@ -1593,7 +1593,7 @@ def create_app(
                          # Note: This will generate a new chat message. 
                          # Ideally, we should just show the old view, but chat interface is linear.
                          # Rerunning is acceptable for "Navigation" in a chat context (like browser history reloads).
-                         async for res in on_submit(query, history, new_state, top_k, abolished, llm_p, llm_m, llm_b, db, target, context, debug):
+                         for res in on_submit(query, history, new_state, top_k, abolished, llm_p, llm_m, llm_b, db, target, context, debug):
                              yield res
                      else:
                          yield history, "", "", state, ""
@@ -1601,7 +1601,7 @@ def create_app(
                 def on_forward_click(history, state, top_k, abolished, llm_p, llm_m, llm_b, db, target, context, debug):
                      query, new_state = confirm_navigation(state, 1)
                      if query:
-                         async for res in on_submit(query, history, new_state, top_k, abolished, llm_p, llm_m, llm_b, db, target, context, debug):
+                         for res in on_submit(query, history, new_state, top_k, abolished, llm_p, llm_m, llm_b, db, target, context, debug):
                              yield res
                      else:
                          yield history, "", "", state, ""
