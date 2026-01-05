@@ -57,6 +57,7 @@ from .formatters import (
     strip_path_prefix,
 )
 from .query_handler import QueryContext, QueryHandler, QueryOptions, QueryResult, QueryType
+from ..infrastructure.patterns import REGULATION_ONLY_PATTERN, RULE_CODE_PATTERN
 
 # Rich for pretty output (optional)
 try:
@@ -865,6 +866,31 @@ def _perform_unified_search(
                 f"{reg_title} {label_text} 내용을 표시했습니다.",
             )
         return 0
+
+    # Unified Search: Check for Regulation Overview
+    # (Matches QueryHandler.process_query logic)
+    if (REGULATION_ONLY_PATTERN.match(query) or RULE_CODE_PATTERN.match(query)) and mode == "search":
+        handler = QueryHandler()
+        result = handler.get_regulation_overview(query)
+        
+        # If successfully found unique (or handled exact match) regulation
+        if result.success and result.type in (QueryType.OVERVIEW, QueryType.CLARIFICATION):
+             if result.type == QueryType.CLARIFICATION:
+                _print_query_result(result, args.verbose)
+                return 0
+             
+             # Success - Print Overview
+             _print_query_result(result, args.verbose)
+             state["last_regulation"] = result.data.get("title")
+             state["last_rule_code"] = result.data.get("rule_code")
+             state["last_query"] = raw_query
+             if interactive:
+                 _append_history(
+                     state, 
+                     "assistant", 
+                     f"{result.data.get('title')} 규정 개요를 표시했습니다."
+                 )
+             return 0
 
     if mode == "full_view":
         full_view = FullViewUseCase(JSONDocumentLoader())
