@@ -539,6 +539,111 @@ def create_app(
                 top_regulation_title = top_chunk.title
         return answer_text, sources_text, debug_text, rule_code, top_regulation_title
 
+    def _run_ask_stream(
+        question: str,
+        top_k: int,
+        include_abolished: bool,
+        llm_provider: str,
+        llm_model: str,
+        llm_base_url: str,
+        target_db_path: str,
+        audience_override: Optional[Audience],
+        show_debug: bool,
+        history_text: Optional[str] = None,
+        search_query: Optional[str] = None,
+    ):
+        """
+        Streaming version of _run_ask_once.
+        
+        Yields:
+            dict: Contains type ('progress', 'token', 'sources', 'debug', 'metadata')
+                  and corresponding content.
+        """
+        db_path_value = target_db_path or db_path
+        store_for_ask = ChromaVectorStore(persist_directory=db_path_value)
+        if store_for_ask.count() == 0:
+            yield {
+                "type": "error",
+                "content": "데이터베이스가 비어 있습니다. CLI에서 'regulation sync'를 실행하세요."
+            }
+            return
+
+        # Progress: Starting search
+        yield {"type": "progress", "content": "🔍 1/3 규정 검색 중..."}
+
+        if use_mock_llm:
+            llm_client = MockLLMClient()
+        else:
+            llm_client = LLMClientAdapter(
+                provider=llm_provider,
+                model=llm_model or None,
+                base_url=llm_base_url or None,
+            )
+
+        search_with_llm = SearchUseCase(store_for_ask, llm_client)
+        filter = None
+        if not include_abolished:
+            filter = SearchFilter(status=RegulationStatus.ACTIVE)
+
+        # Progress: Reranking
+        yield {"type": "progress", "content": "🔍 1/3 규정 검색 중...\n🎯 2/3 관련도 재정렬 중..."}
+
+        sources = []
+        rule_code = ""
+        regulation_title = ""
+        debug_text = ""
+
+        # Use streaming if available
+        try:
+            for item in search_with_llm.ask_stream(
+                question,
+                filter=filter,
+                top_k=top_k,
+                include_abolished=include_abolished,
+                audience_override=audience_override,
+                history_text=history_text,
+                search_query=search_query,
+            ):
+                if item["type"] == "metadata":
+                    sources = item["sources"]
+                    # Progress: LLM generating
+                    yield {"type": "progress", "content": "🔍 1/3 규정 검색 중...\n🎯 2/3 관련도 재정렬 중...\n🤖 3/3 AI 답변 생성 중..."}
+                    
+                    if sources:
+                        top_chunk = sources[0].chunk
+                        rule_code = top_chunk.rule_code
+                        regulation_title = top_chunk.parent_path[0] if top_chunk.parent_path else top_chunk.title
+                elif item["type"] == "token":
+                    yield {"type": "token", "content": item["content"]}
+        except Exception as e:
+            # Fallback to non-streaming
+            answer = search_with_llm.ask(
+                question,
+                filter=filter,
+                top_k=top_k,
+                include_abolished=include_abolished,
+                audience_override=audience_override,
+                history_text=history_text,
+                search_query=search_query,
+            )
+            sources = answer.sources
+            if sources:
+                top_chunk = sources[0].chunk
+                rule_code = top_chunk.rule_code
+                regulation_title = top_chunk.parent_path[0] if top_chunk.parent_path else top_chunk.title
+            yield {"type": "token", "content": answer.text}
+
+        # Send sources and debug info at the end
+        sources_text = _build_sources_markdown(sources, show_debug)
+        if show_debug:
+            debug_text = _format_query_rewrite_debug(
+                search_with_llm.get_last_query_rewrite()
+            )
+
+        yield {"type": "sources", "content": sources_text}
+        yield {"type": "debug", "content": debug_text}
+        yield {"type": "metadata", "rule_code": rule_code, "regulation_title": regulation_title}
+
     # Main chat function (stateful)
     def chat_respond(
         message: str,
@@ -572,7 +677,7 @@ def create_app(
                 "role": "assistant",
                 "content": "💡 검색어를 입력해주세요. 예시: '휴학 신청 절차', '교원 연구년 자격은?'"
             })
-            return history, details, debug_text, state
+            yield history, details, debug_text, state
         if history and isinstance(history[0], (list, tuple)):
             normalized = []
             for user_text, assistant_text in history:
@@ -603,7 +708,7 @@ def create_app(
                 if not choice:
                     response = format_clarification("audience", pending["options"])
                     history.append({"role": "assistant", "content": response})
-                    return history, details, debug_text, state
+                    yield history, details, debug_text, state
                 state["audience"] = choice
                 state["pending"] = None
                 query = pending["query"]
@@ -613,7 +718,7 @@ def create_app(
                 if not choice:
                     response = format_clarification("regulation", pending["options"])
                     history.append({"role": "assistant", "content": response})
-                    return history, details, debug_text, state
+                    yield history, details, debug_text, state
                 state["pending"] = None
                 query = choice
                 mode = "full_view"
@@ -622,7 +727,7 @@ def create_app(
                 if not choice:
                     response = format_clarification("regulation", pending["options"])
                     history.append({"role": "assistant", "content": response})
-                    return history, details, debug_text, state
+                    yield history, details, debug_text, state
                 state["pending"] = None
                 attachment_query = choice
                 attachment_no = pending.get("table_no")
@@ -672,14 +777,14 @@ def create_app(
                     "role": "assistant",
                     "content": format_clarification("regulation", options),
                 })
-                return history, details, debug_text, state
+                yield history, details, debug_text, state
             
             if not result.success:
                 history.append({
                     "role": "assistant",
                     "content": result.content,
                 })
-                return history, details, debug_text, state
+                yield history, details, debug_text, state
             
             history.append({
                 "role": "assistant",
@@ -689,7 +794,7 @@ def create_app(
             state["last_mode"] = "attachment"
             state["last_regulation"] = result.state_update.get("last_regulation")
             state["last_rule_code"] = result.state_update.get("last_rule_code")
-            return history, details, debug_text, state
+            yield history, details, debug_text, state
 
         if mode == "full_view":
             # Use QueryHandler for full view
@@ -708,14 +813,14 @@ def create_app(
                     "role": "assistant",
                     "content": format_clarification("regulation", options),
                 })
-                return history, details, debug_text, state
+                yield history, details, debug_text, state
             
             if not result.success:
                 history.append({
                     "role": "assistant",
                     "content": result.content,
                 })
-                return history, details, debug_text, state
+                yield history, details, debug_text, state
             
             history.append({
                 "role": "assistant",
@@ -725,7 +830,7 @@ def create_app(
             state["last_mode"] = "full_view"
             state["last_regulation"] = result.state_update.get("last_regulation")
             state["last_rule_code"] = result.state_update.get("last_rule_code")
-            return history, details, debug_text, state
+            yield history, details, debug_text, state
 
         if state.get("audience") is None and analyzer.is_audience_ambiguous(query):
             options = ["교수", "학생", "직원"]
@@ -741,7 +846,7 @@ def create_app(
                     "content": format_clarification("audience", options),
                 }
             )
-            return history, details, debug_text, state
+            yield history, details, debug_text, state
 
         audience_override = _parse_audience(state.get("audience") or "")
 
@@ -753,7 +858,7 @@ def create_app(
                         "content": "데이터베이스가 비어 있습니다. CLI에서 'regulation sync'를 실행하세요.",
                     }
                 )
-                return history, details, debug_text, state
+                yield history, details, debug_text, state
 
             # Check if query is regulation name or code only -> show overview
             from ..application.search_usecase import REGULATION_ONLY_PATTERN, RULE_CODE_PATTERN
@@ -774,7 +879,7 @@ def create_app(
                     state["last_mode"] = "overview"
                     state["last_regulation"] = result.state_update.get("last_regulation")
                     state["last_rule_code"] = result.state_update.get("last_rule_code")
-                    return history, details, debug_text, state
+                    yield history, details, debug_text, state
 
             # Check if query targets a specific article (e.g. "교원인사규정 제8조")
             import re
@@ -798,7 +903,7 @@ def create_app(
                         "role": "assistant",
                         "content": format_clarification("regulation", options),
                     })
-                    return history, details, debug_text, state
+                    yield history, details, debug_text, state
                 
                 if result.success:
                     history.append({
@@ -809,7 +914,7 @@ def create_app(
                     state["last_mode"] = "article_view"
                     state["last_regulation"] = result.state_update.get("last_regulation")
                     state["last_rule_code"] = result.state_update.get("last_rule_code")
-                    return history, details, debug_text, state
+                    yield history, details, debug_text, state
 
             # Check if query targets a specific chapter (e.g. "교원인사규정 제3장")
             chapter_match = re.search(r"(?:제)?\s*(\d+)\s*장", query)
@@ -830,7 +935,7 @@ def create_app(
                         "role": "assistant",
                         "content": format_clarification("regulation", options),
                     })
-                    return history, details, debug_text, state
+                    yield history, details, debug_text, state
                 
                 if result.success:
                     history.append({
@@ -841,7 +946,7 @@ def create_app(
                     state["last_mode"] = "chapter_view"
                     state["last_regulation"] = result.state_update.get("last_regulation")
                     state["last_rule_code"] = result.state_update.get("last_rule_code")
-                    return history, details, debug_text, state
+                    yield history, details, debug_text, state
 
             search_with_hybrid = SearchUseCase(store)
             results = search_with_hybrid.search_unique(
@@ -863,7 +968,7 @@ def create_app(
                         "role": "assistant",
                         "content": "⚠️ 입력하신 검색어와 관련된 규정을 찾기 어렵습니다.\n\n💡 다른 키워드로 검색해보세요. 예: '휴학', '등록금', '연구년'"
                     })
-                    return history, details, debug_text, state
+                    yield history, details, debug_text, state
 
                 # Build search results as a nice table
                 table_rows = [
@@ -911,35 +1016,63 @@ def create_app(
                 debug_text = _format_query_rewrite_debug(
                     search_with_hybrid.get_last_query_rewrite()
                 )
-            return history, details, debug_text, state
+            yield history, details, debug_text, state
 
-        # Ask mode (LLM)
-        # Show step-by-step progress indicator
+        # Ask mode (LLM) - Streaming response
+        # Initialize assistant message for streaming
         history.append({
             "role": "assistant",
-            "content": "🔍 1/3 규정 검색 중...\n🎯 2/3 관련도 재정렬 중...\n🤖 3/3 AI 답변 생성 중..."
+            "content": "🔍 1/3 규정 검색 중..."
         })
         
-        answer_text, sources_text, debug_text, rule_code, regulation_title = (
-            _run_ask_once(
-                message,
-                top_k,
-                include_abolished,
-                llm_provider,
-                llm_model,
-                llm_base_url,
-                target_db_path,
-                audience_override,
-                show_debug,
-                history_text=history_context or None,
-                search_query=query,
-            )
-        )
-        # 답변과 출처를 함께 대화창에 표시
-        combined_response = answer_text
+        # Streaming response
+        answer_text = ""
+        sources_text = ""
+        debug_text = ""
+        rule_code = ""
+        regulation_title = ""
+        
+        for item in _run_ask_stream(
+            message,
+            top_k,
+            include_abolished,
+            llm_provider,
+            llm_model,
+            llm_base_url,
+            target_db_path,
+            audience_override,
+            show_debug,
+            history_text=history_context or None,
+            search_query=query,
+        ):
+            if item["type"] == "error":
+                history[-1] = {"role": "assistant", "content": item["content"]}
+                yield history, details, debug_text, state
+                return
+            elif item["type"] == "progress":
+                history[-1] = {"role": "assistant", "content": item["content"]}
+                yield history, details, debug_text, state
+            elif item["type"] == "token":
+                # First token: clear progress, start answer
+                if not answer_text:
+                    history[-1] = {"role": "assistant", "content": ""}
+                answer_text += item["content"]
+                history[-1] = {"role": "assistant", "content": answer_text}
+                yield history, details, debug_text, state
+            elif item["type"] == "sources":
+                sources_text = item["content"]
+            elif item["type"] == "debug":
+                debug_text = item["content"]
+            elif item["type"] == "metadata":
+                rule_code = item.get("rule_code", "")
+                regulation_title = item.get("regulation_title", "")
+        
+        # Final response with sources
+        combined_response = normalize_markdown_emphasis(answer_text)
         if sources_text:
             combined_response += "\n\n---\n\n" + sources_text
         history[-1] = {"role": "assistant", "content": combined_response}
+        
         details = ""
         state["last_query"] = query
         state["last_mode"] = "ask"
@@ -952,7 +1085,8 @@ def create_app(
                 state["last_regulation"] = regulation_title
         if rule_code:
             state["last_rule_code"] = rule_code
-        return history, details, debug_text, state
+        yield history, details, debug_text, state
+
 
     def record_web_feedback(query, rule_code, rating, comment):
         """Record feedback from Web UI."""

@@ -121,6 +121,20 @@ class LLMClient:
         response = self.llm.complete(prompt)
         return response.text
 
+    def stream_complete(self, prompt: str):
+        """
+        Stream completion tokens from LLM.
+
+        Args:
+            prompt: Input prompt for completion.
+
+        Yields:
+            str: Each token/chunk as it becomes available.
+        """
+        response_gen = self.llm.stream_complete(prompt)
+        for response in response_gen:
+            yield response.delta
+
     def cache_namespace(self) -> str:
         parts = [self.provider or "", self.model or "", self.base_url or ""]
         return "|".join(parts)

@@ -854,6 +854,91 @@ class SearchUseCase:
             confidence=confidence,
         )
 
+    def ask_stream(
+        self,
+        question: str,
+        filter: Optional[SearchFilter] = None,
+        top_k: int = 5,
+        include_abolished: bool = False,
+        audience_override: Optional["Audience"] = None,
+        history_text: Optional[str] = None,
+        search_query: Optional[str] = None,
+    ):
+        """
+        Ask a question and stream the LLM-generated answer token by token.
+
+        Args:
+            question: The user's question.
+            filter: Optional metadata filters.
+            top_k: Number of chunks to use as context.
+            include_abolished: Whether to include abolished regulations.
+            audience_override: Optional audience override for ranking penalties.
+            history_text: Optional conversation context for the LLM.
+            search_query: Optional override for retrieval query.
+
+        Yields:
+            dict: First yield contains metadata (sources, confidence).
+                  Subsequent yields contain answer tokens.
+
+        Raises:
+            ConfigurationError: If LLM client is not configured.
+        """
+        if not self.llm:
+            from ..exceptions import ConfigurationError
+            raise ConfigurationError("LLM client not configured. Use search() instead.")
+
+        # Check if llm_client supports streaming
+        if not hasattr(self.llm, 'stream_generate'):
+            # Fallback to non-streaming
+            answer = self.ask(
+                question=question,
+                filter=filter,
+                top_k=top_k,
+                include_abolished=include_abolished,
+                audience_override=audience_override,
+                history_text=history_text,
+                search_query=search_query,
+            )
+            yield {"type": "metadata", "sources": answer.sources, "confidence": answer.confidence}
+            yield {"type": "token", "content": answer.text}
+            return
+
+        # Get relevant chunks (same as ask)
+        retrieval_query = search_query or question
+        results = self.search(
+            retrieval_query,
+            filter=filter,
+            top_k=top_k * 3,
+            include_abolished=include_abolished,
+            audience_override=audience_override,
+        )
+
+        if not results:
+            yield {"type": "metadata", "sources": [], "confidence": 0.0}
+            yield {"type": "token", "content": "관련 규정을 찾을 수 없습니다. 다른 검색어로 시도해주세요."}
+            return
+
+        # Filter out low-signal headings
+        filtered_results = self._select_answer_sources(results, top_k)
+        if not filtered_results:
+            filtered_results = results[:top_k]
+
+        # Build context
+        context = self._build_context(filtered_results)
+        user_message = self._build_user_message(question, context, history_text)
+        confidence = self._compute_confidence(filtered_results)
+
+        # First yield: metadata (sources and confidence)
+        yield {"type": "metadata", "sources": filtered_results, "confidence": confidence}
+
+        # Stream LLM response token by token
+        for token in self.llm.stream_generate(
+            system_prompt=REGULATION_QA_PROMPT,
+            user_message=user_message,
+            temperature=0.0,
+        ):
+            yield {"type": "token", "content": token}
+
     def _build_user_message(
         self,
         question: str,

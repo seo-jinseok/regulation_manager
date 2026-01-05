@@ -84,6 +84,36 @@ class LLMClientAdapter(ILLMClient):
 
         return self._client.complete(full_prompt)
 
+    def stream_generate(
+        self,
+        system_prompt: str,
+        user_message: str,
+        temperature: float = 0.0,
+    ):
+        """
+        Stream a response from the LLM token by token.
+
+        Args:
+            system_prompt: System instructions.
+            user_message: User's question with context.
+            temperature: Sampling temperature (0.0 = deterministic).
+
+        Yields:
+            str: Each token/chunk as it becomes available.
+        """
+        full_prompt = f"""<system>
+{system_prompt}
+</system>
+
+<user>
+{user_message}
+</user>
+
+<assistant>"""
+
+        for token in self._client.stream_complete(full_prompt):
+            yield token
+
     def get_embedding(self, text: str) -> List[float]:
         """
         Get embedding vector for text.
