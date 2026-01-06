@@ -500,17 +500,17 @@ def format_regulation_content(text: str) -> str:
             # Paragraph: No indent
             formatted.append(stripped)
         elif p_subparagraph.match(stripped):
-            # Subparagraph: 1 Ideographic Space
-            formatted.append("\u3000" + stripped)
-        elif p_item.match(stripped):
-            # Item: 2 Ideographic Spaces
+            # Subparagraph: 2 Ideographic Spaces
             formatted.append("\u3000\u3000" + stripped)
-        elif p_subitem_num.match(stripped):
-            # Subitem (1): 3 Ideographic Spaces
-            formatted.append("\u3000\u3000\u3000" + stripped)
-        elif p_subitem_char.match(stripped):
-            # Subitem (가): 4 Ideographic Spaces
+        elif p_item.match(stripped):
+            # Item: 4 Ideographic Spaces
             formatted.append("\u3000\u3000\u3000\u3000" + stripped)
+        elif p_subitem_num.match(stripped):
+            # Subitem (1): 6 Ideographic Spaces
+            formatted.append("\u3000\u3000\u3000\u3000\u3000\u3000" + stripped)
+        elif p_subitem_char.match(stripped):
+            # Subitem (가): 8 Ideographic Spaces
+            formatted.append("\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000" + stripped)
         else:
             # Continuation line
             formatted.append(line)

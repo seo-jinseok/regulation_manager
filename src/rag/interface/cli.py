@@ -14,6 +14,7 @@ Usage:
 
 import argparse
 import os
+import re
 import sys
 from pathlib import Path
 from typing import Optional
@@ -62,10 +63,11 @@ from ..infrastructure.patterns import REGULATION_ONLY_PATTERN, RULE_CODE_PATTERN
 
 # Rich for pretty output (optional)
 try:
-    from rich.console import Console
+    from rich.console import Console, Group
     from rich.markdown import Markdown
     from rich.panel import Panel
     from rich.table import Table
+    from rich.text import Text
 
     RICH_AVAILABLE = True
     console = Console()
@@ -502,13 +504,39 @@ def _format_toc(toc: list[str]) -> str:
     return "### 목차\n" + "\n".join([f"- {t}" for t in toc])
 
 
-def _print_markdown(title: str, text: str) -> None:
+def _print_markdown(title: str, text: object) -> None:
     if RICH_AVAILABLE:
+        renderable = text
+        if isinstance(text, str):
+            renderable = Markdown(text)
+            
         console.print()
-        console.print(Panel(Markdown(text), title=title, border_style="green"))
+        console.print(Panel(renderable, title=title, border_style="green"))
     else:
         print(f"\n=== {title} ===")
-        print(text)
+        print(str(text))
+
+
+def _text_from_regulation(formatted_text: str) -> object:
+    """Convert formatted regulation text to Rich Text with header styling."""
+    if not RICH_AVAILABLE:
+        return formatted_text
+        
+    text_obj = Text()
+    
+    # Regex for markdown header: whitespace, 1-6 hashes, whitespace, text
+    header_pattern = re.compile(r"^\s*(#{1,6})\s+(.*)")
+    
+    for line in formatted_text.splitlines():
+        match = header_pattern.match(line)
+        if match:
+             # Extract title part
+             # We ignore header level for CLI logic, just bold cyan
+             title = match.group(2)
+             text_obj.append(title + "\n", style="bold cyan")
+        else:
+            text_obj.append(line + "\n")
+    return text_obj
 
 
 def _print_query_result(result: QueryResult, verbose: bool = False) -> None:
@@ -533,7 +561,6 @@ def _print_query_result(result: QueryResult, verbose: bool = False) -> None:
                 print(f"  {i}. {opt}")
         return
     
-
     # Map result types to titles
     title_map = {
         QueryType.OVERVIEW: "📋 규정 개요",
@@ -554,7 +581,12 @@ def _print_query_result(result: QueryResult, verbose: bool = False) -> None:
     
     content = result.content
     if result.type in (QueryType.ARTICLE, QueryType.CHAPTER, QueryType.FULL_VIEW):
-        content = format_regulation_content(content)
+        formatted = format_regulation_content(content)
+        # Use Text to preserve exact spacing and style headers manually
+        if RICH_AVAILABLE:
+            content = _text_from_regulation(formatted)
+        else:
+            content = formatted
 
     _print_markdown(title, content)
 
@@ -1163,9 +1195,14 @@ def _perform_unified_search(
                 
                 if len(detail_text) > 500:
                     detail_text = detail_text[:500] + "..."
+                if RICH_AVAILABLE:
+                    content = Text(detail_text)
+                else:
+                    content = detail_text
+                    
                 console.print(
                     Panel(
-                        detail_text,
+                        content,
                         title=f"[1위] {top.chunk.rule_code}",
                         border_style="green",
                     )
@@ -1359,8 +1396,17 @@ def _perform_unified_search(
                                 content_text = render_full_view_nodes(view.content)
                                 # Apply indentation
                                 content_text = format_regulation_content(content_text)
-                                detail = f"{toc_text}\n\n### 본문\n\n{content_text or '본문이 없습니다.'}"
-                                _print_markdown(f"{view.title} 전문", detail)
+                                
+                                if RICH_AVAILABLE:
+                                    renderable = Group(
+                                        Markdown(toc_text),
+                                        Markdown("### 본문"),
+                                        _text_from_regulation(content_text or '본문이 없습니다.')
+                                    )
+                                    _print_markdown(f"{view.title} 전문", renderable)
+                                else:
+                                    detail = f"{toc_text}\n\n### 본문\n\n{content_text or '본문이 없습니다.'}"
+                                    _print_markdown(f"{view.title} 전문", detail)
                             else:
                                 print_info(f"규정 전문을 불러오지 못했습니다.")
                 except (KeyboardInterrupt, EOFError):
