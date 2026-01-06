@@ -137,6 +137,7 @@ class FunctionGemmaAdapter:
         
         # Determine API mode
         self._api_mode = self._resolve_api_mode(api_mode)
+        print(f"[DEBUG] FunctionGemmaAdapter initialized. tool_executor={self._tool_executor}, api_mode={self._api_mode}")
 
     def set_llm_client(self, llm_client) -> None:
         """Set the LLM client."""

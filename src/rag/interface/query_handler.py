@@ -167,6 +167,7 @@ class QueryHandler:
             query_analyzer=self.query_analyzer,
             llm_client=self.llm_client,
         )
+        print(f"[DEBUG] _setup_function_gemma: Created tool_executor={tool_executor}")
         
         self._function_gemma_adapter = FunctionGemmaAdapter(
             llm_client=function_gemma_client,
