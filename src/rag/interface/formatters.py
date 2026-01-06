@@ -522,14 +522,14 @@ def format_regulation_content(text: str) -> str:
             # Subparagraph (1.): 2 Spaces
             formatted.append("  " + stripped)
         elif p_item.match(stripped):
-            # Item (가.): 4 Spaces
-            formatted.append("    " + stripped)
+            # Item (가.): 5 Spaces (2 + 3)
+            formatted.append("     " + stripped)
         elif p_subitem_num.match(stripped):
-            # Subitem (1): 6 Spaces
-            formatted.append("      " + stripped)
-        elif p_subitem_char.match(stripped):
-            # Subitem (가): 8 Spaces
+            # Subitem (1): 8 Spaces (5 + 3)
             formatted.append("        " + stripped)
+        elif p_subitem_char.match(stripped):
+            # Subitem (가): 11 Spaces (8 + 3)
+            formatted.append("           " + stripped)
         else:
             # Continuation line
             formatted.append(clean_line)

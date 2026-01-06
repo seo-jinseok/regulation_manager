@@ -580,13 +580,70 @@ def _print_query_result(result: QueryResult, verbose: bool = False) -> None:
         title = f"{title} - {reg_title}"
     
     content = result.content
-    if result.type in (QueryType.ARTICLE, QueryType.CHAPTER, QueryType.FULL_VIEW):
-        formatted = format_regulation_content(content)
+    
+    # Custom rendering for SEARCH to preserve indentation
+    if result.type == QueryType.SEARCH and RICH_AVAILABLE:
+        from rich.console import Group
+        
+        # Split content into Table part and Top Result part
+        # We rely on the "---" separator we added in QueryHandler
+        parts = result.content.split("\n\n---\n\n")
+        
+        renderables = []
+        
+        # 1. Result Table
+        if parts:
+            renderables.append(Markdown(parts[0]))
+            
+        # 2. Top Result Detail
+        if len(parts) > 1:
+            top_part = parts[1]
+            # Split metadata and content
+            # QueryHandler adds metadata lines starting with "**" or "###"
+            # And then the text.
+            # We want to find where the text starts.
+            
+            # Simple heuristic: Split by double newline, find the chunk text.
+            # In QueryHandler: 
+            # content += f"### 🏆 1위 결과: ...\n\n"
+            # content += f"**규정명:** ...\n\n"
+            # content += f"**경로:** ...\n\n{top_text}"
+            
+            # We can parse this manually or just render metadata as Markdown and Text as Text.
+            # Let's extract metadata lines vs text lines.
+            
+            lines = top_part.splitlines()
+            metadata_lines = []
+            text_lines = []
+            is_text = False
+            
+            for line in lines:
+                if not is_text:
+                    if not line.strip(): 
+                        continue
+                    if line.startswith("###") or line.startswith("**"):
+                        metadata_lines.append(line)
+                    else:
+                        is_text = True
+                        text_lines.append(line)
+                else:
+                    text_lines.append(line)
+            
+            if metadata_lines:
+                renderables.append(Markdown("\n".join(metadata_lines)))
+                renderables.append(Text("\n")) # Spacer
+                
+            if text_lines:
+                raw_text = "\n".join(text_lines)
+                formatted_text = format_regulation_content(raw_text)
+                renderables.append(_text_from_regulation(formatted_text))
+
+        content = Group(*renderables)
+
+    elif result.type in (QueryType.ARTICLE, QueryType.CHAPTER, QueryType.FULL_VIEW):
         # Use Text to preserve exact spacing and style headers manually
         if RICH_AVAILABLE:
-            content = _text_from_regulation(formatted)
-        else:
-            content = formatted
+            content = _text_from_regulation(content)
 
     _print_markdown(title, content)
 

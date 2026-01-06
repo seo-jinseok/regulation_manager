@@ -37,14 +37,10 @@ from .chat_logic import (
 from .common import decide_search_mode
 from .formatters import (
     clean_path_segments,
-    filter_by_relevance,
-    infer_attachment_label,
-    infer_regulation_title_from_tables,
-    normalize_markdown_emphasis,
-    normalize_markdown_table,
     normalize_relevance_scores,
     render_full_view_nodes,
     strip_path_prefix,
+    format_regulation_content,
 )
 
 # Optional FunctionGemma imports
@@ -655,6 +651,7 @@ class QueryHandler:
             )
         
         content_text = render_full_view_nodes([article_node])
+        content_text = format_regulation_content(content_text)
         full_response = f"## 📌 {selected.title} 제{article_no}조\n\n{content_text}"
         
         return QueryResult(
@@ -723,6 +720,7 @@ class QueryHandler:
         full_title = f"{selected.title} {chapter_disp} {chapter_title}".strip()
         
         content_text = render_full_view_nodes(chapter_node.get("children", []))
+        content_text = format_regulation_content(content_text)
         full_response = f"## 📑 {full_title}\n\n{content_text}"
         
         return QueryResult(
@@ -872,7 +870,9 @@ class QueryHandler:
         )
         
         content_text = render_full_view_nodes(view.content)
+        content_text = format_regulation_content(content_text)
         addenda_text = render_full_view_nodes(view.addenda)
+        addenda_text = format_regulation_content(addenda_text)
         
         full_content = f"## 📖 {view.title}\n\n{toc_text}\n\n---\n\n### 본문\n\n{content_text or '본문이 없습니다.'}"
         if addenda_text:
