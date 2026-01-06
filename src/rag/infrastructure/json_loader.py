@@ -8,6 +8,7 @@ Supports incremental sync by computing content hashes.
 import hashlib
 import json
 import re
+import unicodedata
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
@@ -291,7 +292,10 @@ class JSONDocumentLoader(IDocumentLoader):
 
     @staticmethod
     def _normalize_title(title: str) -> str:
-        return "".join(str(title).split())
+        if not title:
+            return ""
+        title = unicodedata.normalize("NFC", str(title))
+        return "".join(title.split())
 
     def get_regulation_overview(
         self, json_path: str, identifier: str

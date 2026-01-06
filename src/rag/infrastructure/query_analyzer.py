@@ -8,6 +8,7 @@ and provides query expansion with synonyms for better recall.
 import json
 import os
 import re
+import unicodedata
 from collections import defaultdict
 from dataclasses import dataclass
 from enum import Enum
@@ -322,13 +323,12 @@ class QueryAnalyzer:
     def rewrite_query_with_info(self, query: str) -> QueryRewriteResult:
         """
         Rewrite query and return detailed metadata.
-
-        Args:
-            query: The original natural language query.
-
-        Returns:
-            QueryRewriteResult containing rewrite metadata.
         """
+        if not query:
+             return QueryRewriteResult(original="", rewritten="", method="none", from_cache=False, used_llm=False, used_intent=False, used_synonyms=False, fallback=False, matched_intents=[])
+
+        query = unicodedata.normalize("NFC", query)
+        
         # Check cache first
         if query in self._cache:
             cached = self._cache[query]
@@ -428,13 +428,12 @@ class QueryAnalyzer:
     def analyze(self, query: str) -> QueryType:
         """
         Analyze query text and determine its type.
-
-        Args:
-            query: The search query text.
-
-        Returns:
-            QueryType indicating the detected query pattern.
         """
+        if not query:
+            return QueryType.GENERAL
+            
+        query = unicodedata.normalize("NFC", query)
+        
         # Check for article references (highest priority for exact match)
         if ARTICLE_PATTERN.search(query):
             return QueryType.ARTICLE_REFERENCE
@@ -474,6 +473,10 @@ class QueryAnalyzer:
 
     def detect_audience_candidates(self, query: str) -> List[Audience]:
         """Return matching audiences for the query."""
+        if not query:
+            return [Audience.ALL]
+            
+        query = unicodedata.normalize("NFC", query)
         query_lower = query.lower()
         matches: List[Audience] = []
 
@@ -830,12 +833,11 @@ class QueryAnalyzer:
     def _normalize_for_matching(self, text: str) -> str:
         """
         Normalize text for flexible intent matching.
-        
-        - Removes whitespace for compound matching ("해외 학회" -> "해외학회")
-        - Removes common verb endings ("싶어요" -> "싶어")
         """
         if not text:
             return ""
+        
+        text = unicodedata.normalize("NFC", text)
         # Remove all whitespace
         normalized = re.sub(r'\s+', '', text)
         # Remove common polite/formal endings for flexibility

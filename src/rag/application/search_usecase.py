@@ -5,6 +5,7 @@ Provides search functionality with optional LLM-based Q&A.
 """
 
 import re
+import unicodedata
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, List, Optional
 
@@ -208,6 +209,8 @@ class SearchUseCase:
         query_text = _coerce_query_text(query_text).strip()
         if not query_text:
             return []
+            
+        query_text = unicodedata.normalize("NFC", query_text)
 
         # 1. Rule code pattern (e.g., "3-1-24")
         if RULE_CODE_PATTERN.match(query_text):

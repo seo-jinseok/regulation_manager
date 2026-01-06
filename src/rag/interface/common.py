@@ -1,4 +1,5 @@
 from typing import Optional
+import unicodedata
 
 
 def decide_search_mode(query: str, force_mode: Optional[str] = None) -> str:
@@ -15,7 +16,7 @@ def decide_search_mode(query: str, force_mode: Optional[str] = None) -> str:
     if force_mode:
         return force_mode.lower()
 
-    query = query.strip()
+    query = unicodedata.normalize("NFC", query).strip()
     query_lower = query.lower()
 
     # 0. Full-view request signals

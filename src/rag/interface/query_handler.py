@@ -14,7 +14,9 @@ Supported query types:
 - Ask: LLM-generated answer with sources
 """
 
+import logging
 import re
+import unicodedata
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
@@ -130,16 +132,23 @@ class QueryHandler:
         use_reranker: bool = True,
         function_gemma_client=None,
         function_gemma_adapter=None,
+        json_path: Optional[str] = None,
     ):
         self.store = store
         self.llm_client = llm_client
         self.use_reranker = use_reranker
         self.loader = JSONDocumentLoader()
-        self.full_view_usecase = FullViewUseCase(self.loader)
+        self.full_view_usecase = FullViewUseCase(loader=self.loader, json_path=json_path)
         self.query_analyzer = QueryAnalyzer()
         self._last_query_rewrite = None
         
-        # FunctionGemma setup
+    def _normalize_query(self, query: str) -> str:
+        """Normalize input query to NFC for consistent matching."""
+        if not query:
+            return ""
+        return unicodedata.normalize("NFC", query)
+
+    # FunctionGemma setup
         self._function_gemma_adapter = function_gemma_adapter
         if FUNCTION_GEMMA_AVAILABLE and not self._function_gemma_adapter:
             if function_gemma_client:
@@ -249,6 +258,7 @@ class QueryHandler:
         """
         context = context or QueryContext()
         options = options or QueryOptions()
+        query = self._normalize_query(query)
         
         if not query or not query.strip():
             return QueryResult(
@@ -344,7 +354,8 @@ class QueryHandler:
         """
         context = context or QueryContext()
         options = options or QueryOptions()
-        
+        query = self._normalize_query(query)
+
         if not query or not query.strip():
             yield {"type": "error", "content": "검색어를 입력해주세요."}
             return
