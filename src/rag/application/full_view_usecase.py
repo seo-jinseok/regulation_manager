@@ -480,17 +480,21 @@ class FullViewUseCase:
                 json_file = ""
 
             if json_file:
-                file_path = Path(json_file)
-                if file_path.is_absolute() and file_path.exists():
-                    self.json_path = str(file_path)
-                    return self.json_path
-                if file_path.exists():
-                    self.json_path = str(file_path)
-                    return self.json_path
-                output_candidate = sync_path.parent / "output" / json_file
-                if output_candidate.exists():
-                    self.json_path = str(output_candidate)
-                    return self.json_path
+                # Apply validation to sync state file
+                if json_file.endswith("_plan.json") or json_file.startswith("improvement_"):
+                    pass # Skip plan files from sync state for full view
+                else:
+                    file_path = Path(json_file)
+                    if file_path.is_absolute() and file_path.exists():
+                        self.json_path = str(file_path)
+                        return self.json_path
+                    if file_path.exists():
+                        self.json_path = str(file_path)
+                        return self.json_path
+                    output_candidate = sync_path.parent / "output" / json_file
+                    if output_candidate.exists():
+                        self.json_path = str(output_candidate)
+                        return self.json_path
 
         output_dir = Path("data/output")
         if output_dir.exists():
