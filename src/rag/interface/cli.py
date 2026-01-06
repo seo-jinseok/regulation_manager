@@ -1143,6 +1143,7 @@ def _run_interactive_session(args) -> int:
             continue
 
         # Sanitize and validate query before passing to search
+        sanitized = _sanitize_query_input(query)
         if sanitized:
             args.query = sanitized
             _perform_unified_search(args, state=state, interactive=True)
