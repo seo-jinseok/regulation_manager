@@ -1557,21 +1557,18 @@ def create_app(
                         return query, state
                     return None, state
 
+                db_state = gr.State(db_path)
+
                 # Event handlers
                 def on_submit(msg, history, state, top_k, abolished, llm_p, llm_m, llm_b, db, target, context, use_tools, debug):
                     # Update History for Navigation
                     # Logic: If query changes effectively (new search or view), apend to history
-                    # This is tricky because chat_respond is a generator. 
-                    # We might need to handle history update inside chat_respond or wrapper.
-                    # For now, let's rely on chat_respond updating state and we intercept it?
-                    # Actually, chat_respond updates 'last_query' etc.
+                    # We need to capture the FINAL state to update navigation
                     
                     # Store previous state to detect change
                     prev_query = state.get("last_query")
                     prev_mode = state.get("last_mode")
                     
-                    # chat_respond is now a generator for streaming
-                    # We need to capture the FINAL state to update navigation
                     final_state = state
                     for result in chat_respond(msg, history, state, top_k, abolished, llm_p, llm_m, llm_b, db, target, context, use_tools, debug):
                         # Unpack result and add empty string for input clear
@@ -1602,9 +1599,6 @@ def create_app(
                      query, new_state = confirm_navigation(state, -1)
                      if query:
                          # Re-run query
-                         # Note: This will generate a new chat message. 
-                         # Ideally, we should just show the old view, but chat interface is linear.
-                         # Rerunning is acceptable for "Navigation" in a chat context (like browser history reloads).
                          for res in on_submit(query, history, new_state, top_k, abolished, llm_p, llm_m, llm_b, db, target, context, use_tools, debug):
                              yield res
                      else:
@@ -1618,18 +1612,8 @@ def create_app(
                      else:
                          yield history, "", "", state, ""
 
-                # We need to wire up the buttons to also update their valid state (interactive or not)
-                # But Gradio updates are sent with yields.
-                # We can add a separate output for buttons to on_submit
-                
-                # Simplified approach: Just update buttons on every interaction end?
-                # Using a separate event listener for button updates is hard.
-                # Let's piggyback on on_submit to return button updates?
-                # outputs=[chat_bot, chat_detail, chat_debug_out, chat_state, chat_input, btn_back, btn_forward]
-                
                 # Redefine on_submit to include button updates
                 def on_submit_with_nav(msg, history, state, top_k, abolished, llm_p, llm_m, llm_b, db, target, context, use_tools, debug):
-                     # ... (logic from on_submit) ...
                      # Wrap the generator
                     gen = on_submit(msg, history, state, top_k, abolished, llm_p, llm_m, llm_b, db, target, context, use_tools, debug)
                     for res in gen:
@@ -1653,7 +1637,7 @@ def create_app(
                         chat_llm_p,
                         chat_llm_m,
                         chat_llm_b,
-                        gr.State(db_path),
+                        db_state,
                         chat_target,
                         chat_context,
                         chat_use_tools,
@@ -1672,7 +1656,7 @@ def create_app(
                         chat_llm_p,
                         chat_llm_m,
                         chat_llm_b,
-                        gr.State(db_path),
+                        db_state,
                         chat_target,
                         chat_context,
                         chat_use_tools,
@@ -1685,14 +1669,14 @@ def create_app(
                 btn_back.click(
                     fn=on_back_click,
                     inputs=[
-                        chat_bot, chat_state, chat_top_k, chat_abolished, chat_llm_p, chat_llm_m, chat_llm_b, gr.State(db_path), chat_target, chat_context, chat_use_tools, chat_debug
+                        chat_bot, chat_state, chat_top_k, chat_abolished, chat_llm_p, chat_llm_m, chat_llm_b, db_state, chat_target, chat_context, chat_use_tools, chat_debug
                     ],
                     outputs=[chat_bot, chat_detail, chat_debug_out, chat_state, chat_input, btn_back, btn_forward]
                 )
                 btn_forward.click(
                     fn=on_forward_click,
                     inputs=[
-                        chat_bot, chat_state, chat_top_k, chat_abolished, chat_llm_p, chat_llm_m, chat_llm_b, gr.State(db_path), chat_target, chat_context, chat_use_tools, chat_debug
+                        chat_bot, chat_state, chat_top_k, chat_abolished, chat_llm_p, chat_llm_m, chat_llm_b, db_state, chat_target, chat_context, chat_use_tools, chat_debug
                     ],
                     outputs=[chat_bot, chat_detail, chat_debug_out, chat_state, chat_input, btn_back, btn_forward]
                 )
