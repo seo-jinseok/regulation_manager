@@ -710,12 +710,26 @@ def cmd_reset(args) -> int:
 def cmd_serve(args) -> int:
     """Execute serve command - start Web UI or MCP Server."""
     if args.web:
-        from .gradio_app import create_app
+        import gradio as gr
+        from .gradio_app import create_app, CUSTOM_CSS
 
         app = create_app(db_path=args.db_path)
         app.launch(
             server_port=args.port,
             share=args.share,
+            show_error=True,
+            css=CUSTOM_CSS,
+            theme=gr.themes.Soft(
+                primary_hue=gr.themes.colors.emerald,
+                neutral_hue=gr.themes.colors.neutral,
+            ).set(
+                body_background_fill="#0f0f0f",
+                body_background_fill_dark="#0f0f0f",
+                block_background_fill="#1a1a1a",
+                block_background_fill_dark="#1a1a1a",
+                border_color_primary="rgba(255,255,255,0.06)",
+                border_color_primary_dark="rgba(255,255,255,0.06)",
+            ),
         )
         return 0
     elif args.mcp:
