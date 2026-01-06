@@ -5,6 +5,7 @@ Provides regulation-level retrieval for "전문/전체" requests.
 """
 
 import json
+import unicodedata
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -61,6 +62,16 @@ class FullViewUseCase:
         config = get_config()
         self.loader = loader
         self.json_path = json_path or config.json_path
+
+    def _is_valid_json_file(self, path: str) -> bool:
+        """Check if file is a valid regulation JSON (not a plan/metadata file)."""
+        name = Path(path).name
+        return (
+            not name.endswith("_plan.json")
+            and not name.startswith("improvement_")
+            and not name.startswith("generated_queries")
+            and not name.endswith("_metadata.json")
+        )
 
     def find_matches(self, query: str) -> List[RegulationMatch]:
         """Find regulation matches for a query."""
@@ -467,9 +478,11 @@ class FullViewUseCase:
             candidates.append(config.json_path)
 
         for candidate in candidates:
-            if candidate and Path(candidate).exists():
-                self.json_path = candidate
-                return candidate
+            if candidate:
+                path_obj = Path(candidate)
+                if path_obj.exists() and self._is_valid_json_file(candidate):
+                    self.json_path = candidate
+                    return candidate
 
         sync_path = Path(config.sync_state_path)
         if sync_path.exists():
@@ -481,7 +494,7 @@ class FullViewUseCase:
 
             if json_file:
                 # Apply validation to sync state file
-                if json_file.endswith("_plan.json") or json_file.startswith("improvement_"):
+                if not self._is_valid_json_file(json_file):
                     pass # Skip plan files from sync state for full view
                 else:
                     file_path = Path(json_file)
@@ -501,13 +514,11 @@ class FullViewUseCase:
             json_files = [
                 p
                 for p in output_dir.rglob("*.json")
-                if not p.name.endswith("_metadata.json")
-                and not p.name.endswith("_plan.json")
-                and not p.name.startswith("improvement_")
+                if self._is_valid_json_file(str(p))
             ]
             if json_files:
-                # Prioritize '규정집.json' if it exists
-                target = next((p for p in json_files if "규정집" in p.name), None)
+                # Prioritize '규정집.json' if it exists (handle NFD normalization for Mac)
+                target = next((p for p in json_files if "규정집" in unicodedata.normalize("NFC", p.name)), None)
                 if target:
                    self.json_path = str(target)
                    return self.json_path
