@@ -497,53 +497,39 @@ def format_regulation_content(text: str) -> str:
             continue
         
         # Normalize "제 N조" -> "제N조"
-        # Only at start of line usually, but handle within text just in case?
-        # User request: "조" : 기존 "제 N조" -> "제N조"
-        # Safe to replace generally.
         clean_line = re.sub(r"제\s+(\d+)조", r"제\1조", line)
         stripped = clean_line.lstrip()
         
         # Normalize "1 ???" -> "1. ???" (Add dot if missing for numbering)
         # Check if line starts with number followed by space (and NO dot)
-        # Regex: Start, optional whitespace, digits, SPACE, anything.
-        # But exclude if it already has dot "1. "
         match_num = re.match(r"^(\s*)(\d+)\s+([^.])", clean_line)
         if match_num:
-             # Make sure it's not a year "2024년" (usually no space after number? "2024년" -> "2024")
-             # But "2024 " -> "2024. "?
-             # Regulation items usually are 1 or 2 digits. Years are 4.
-             # Safe guard: digits length < 3? Or check context?
-             # User said: "1 ???" -> "1. ???". 
-             # Let's apply if digits are 1-2 chars long.
              prefix_space = match_num.group(1)
              number = match_num.group(2)
              rest = match_num.group(3)
-             # Get remainder of line
-             full_rest = clean_line[match_num.end(2):] # includes space and rest
-             # match_num.group(3) is just the first char of rest?
+             full_rest = clean_line[match_num.end(2):] 
              
-             if len(number) <= 3: # 999 max
-                  # Replace "1 " with "1. "
-                  # We reconstruct the line
+             # Apply generally for regulation numbering (typically 1-3 digits)
+             if len(number) <= 3:
                   clean_line = f"{prefix_space}{number}. {full_rest.lstrip()}"
                   stripped = clean_line.lstrip()
 
         # Re-check pattern matches on normalized line
         if p_paragraph.match(stripped):
-            # Paragraph: No indent
+            # Paragraph (①): No indent
             formatted.append(stripped)
         elif p_subparagraph.match(stripped):
-            # Subparagraph: 2 Ideographic Spaces
-            formatted.append("\u3000\u3000" + stripped)
+            # Subparagraph (1.): 2 Spaces
+            formatted.append("  " + stripped)
         elif p_item.match(stripped):
-            # Item: 4 Ideographic Spaces
-            formatted.append("\u3000\u3000\u3000\u3000" + stripped)
+            # Item (가.): 4 Spaces
+            formatted.append("    " + stripped)
         elif p_subitem_num.match(stripped):
-            # Subitem (1): 6 Ideographic Spaces
-            formatted.append("\u3000\u3000\u3000\u3000\u3000\u3000" + stripped)
+            # Subitem (1): 6 Spaces
+            formatted.append("      " + stripped)
         elif p_subitem_char.match(stripped):
-            # Subitem (가): 8 Ideographic Spaces
-            formatted.append("\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000" + stripped)
+            # Subitem (가): 8 Spaces
+            formatted.append("        " + stripped)
         else:
             # Continuation line
             formatted.append(clean_line)
