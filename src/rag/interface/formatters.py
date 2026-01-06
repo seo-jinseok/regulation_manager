@@ -406,6 +406,17 @@ def _inject_tables(text: str, metadata: Dict[str, object]) -> str:
     return re.sub(r"\[TABLE:(\d+)\]", replace, text)
 
 
+def _is_repetitive_pattern(node: dict) -> bool:
+    """Check if a node follows a repetitive implementation date pattern."""
+    text = str(node.get("text") or "").strip()
+    # Pattern: "이 (변경) 규정은 YYYY년 M월 D일부터 시행한다."
+    patterns = [
+        r"이\s*(?:변경\s*)?규정은\s*\d{4}년\s*\d{1,2}월\s*\d{1,2}일부터\s*시행한다",
+        r"제\d+조\s*\(시행일\)",
+    ]
+    return any(re.search(p, text) for p in patterns)
+
+
 def render_full_view_nodes(
     nodes: List[dict],
     depth: int = 0,
@@ -426,19 +437,30 @@ def render_full_view_nodes(
         return ""
 
     display_nodes = nodes
-    abbreviated = False
+    total_count = len(nodes)
     
-    # Abbreviate if too many items at this level (e.g., many 부칙 items)
-    if max_items > 0 and len(nodes) > max_items:
-        # Show first few and last one
-        top_k = min(5, max_items // 2)
-        display_nodes = nodes[:top_k] + [{"type": "abbreviation"}] + [nodes[-1]]
-        abbreviated = True
+    # Smart Abbreviation: Detect repetitive implementation date patterns
+    # If more than 5 items and many are implementation dates, we can be more aggressive
+    repetitive_indices = [i for i, n in enumerate(nodes) if _is_repetitive_pattern(n)]
+    
+    # If we have many repetitive items (>= 3), abbreviate them specifically
+    if len(repetitive_indices) >= 5 and max_items > 0:
+        # Keep first 2 and last 1 of the whole list, OR respect max_items
+        keep_top = 3
+        keep_bottom = 1
+        if total_count > (keep_top + keep_bottom + 1):
+            display_nodes = nodes[:keep_top] + [{"type": "abbreviation", "count": total_count - (keep_top + keep_bottom)}] + nodes[-keep_bottom:]
+
+    # Fallback to simple count-based abbreviation if not already abbreviated
+    elif max_items > 0 and total_count > max_items:
+        keep = max(1, max_items // 2)
+        display_nodes = nodes[:keep] + [{"type": "abbreviation", "count": total_count - (keep + 1)}] + [nodes[-1]]
 
     lines = []
     for node in display_nodes:
         if node.get("type") == "abbreviation":
-            lines.append(f"\n*... (중략: {len(nodes) - (len(display_nodes) - 1)}개 항목) ...*\n")
+            count = node.get("count", 0)
+            lines.append(f"\n*... (중략: {count}개 항목) ...*\n")
             continue
 
         display_no = str(node.get("display_no") or "").strip()
@@ -463,8 +485,12 @@ def render_full_view_nodes(
 
         children = node.get("children", []) or []
         if children:
-            # We don't abbreviate sub-levels by default unless they are very deep
-            lines.append(render_full_view_nodes(children, depth + 1))
+            # Pass max_items down but reduced or specific for sub-levels
+            # For addenda, we typically want abbreviation at the first level of addenda_item
+            sub_max = max_items if node_type == "addendum" else 0
+            rendered_children = render_full_view_nodes(children, depth + 1, max_items=sub_max)
+            if rendered_children:
+                lines.append(rendered_children)
 
     return "\n\n".join([line for line in lines if line])
 

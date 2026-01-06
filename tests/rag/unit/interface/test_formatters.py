@@ -353,6 +353,29 @@ class TestRenderFullViewNodes:
         rendered = render_full_view_nodes(nodes)
         assert "[TABLE:2]" in rendered
 
+    def test_abbreviates_repetitive_implementation_dates(self):
+        nodes = [
+            {"type": "addendum_item", "display_no": str(i), "text": f"이 변경 규정은 202{i}년 1월 1일부터 시행한다."}
+            for i in range(1, 11)
+        ]
+        # max_items=5 should trigger abbreviation
+        rendered = render_full_view_nodes(nodes, max_items=5)
+        assert "2021년 1월 1일" in rendered
+        assert "2022년 1월 1일" in rendered
+        assert "2023년 1월 1일" in rendered
+        assert "중략" in rendered
+        assert "20210년 1월 1일" in rendered # Last item
+
+    def test_abbreviates_many_items(self):
+        nodes = [
+            {"type": "item", "display_no": str(i), "text": f"항목 {i}"}
+            for i in range(1, 101)
+        ]
+        rendered = render_full_view_nodes(nodes, max_items=10)
+        assert "항목 1" in rendered
+        assert "중략: 94개 항목" in rendered
+        assert "항목 100" in rendered
+
 
 class TestNormalizeMarkdownTable:
     def test_promotes_first_data_row_when_header_blank(self):
