@@ -17,7 +17,7 @@ import os
 import re
 import sys
 from pathlib import Path
-from typing import Optional
+from typing import Any, Dict, List, Optional
 
 # Enable readline for better interactive input handling (backspace, arrow keys, etc.)
 try:
@@ -98,6 +98,66 @@ def print_error(msg: str) -> None:
         console.print(f"[red]✗[/red] {msg}")
     else:
         print(f"[ERROR] {msg}")
+
+
+def _print_sources_and_confidence(sources: list, confidence: float, verbose: bool = False):
+    """Print sources and confidence panel."""
+    if not sources:
+        return
+
+    if RICH_AVAILABLE:
+        console.print()
+        console.print("[bold cyan]📚 참고 규정:[/bold cyan]")
+
+        for i, src in enumerate(sources, 1):
+            if isinstance(src, dict):
+                title = src.get("title", "규정")
+                rule_code = src.get("rule_code", "")
+                text = src.get("text", "")
+                score = src.get("score", 0.0)
+                path = src.get("path", "")
+            else:
+                chunk = src.chunk
+                title = chunk.parent_path[0] if chunk.parent_path else chunk.title
+                rule_code = chunk.rule_code
+                text = extract_display_text(chunk.text)
+                score = src.score
+                path = build_display_path(chunk.parent_path, chunk.text, chunk.title)
+
+            content_parts = [
+                f"[bold blue]📖 {title}[/bold blue]",
+                f"[dim]📍 {path}[/dim]" if path else "",
+                "",
+                text[:500] + "..." if len(text) > 500 else text,
+                "",
+                f"[dim]📋 규정번호: {rule_code} | AI 유사도: {score:.3f}[/dim]"
+            ]
+
+            console.print(
+                Panel(
+                    "\n".join(filter(None, content_parts)),
+                    title=f"[{i}]",
+                    border_style="blue",
+                )
+            )
+
+        conf_icon, conf_label, conf_detail = get_confidence_info(confidence)
+        console.print()
+        console.print(
+            Panel(
+                f"[bold]{conf_icon} {conf_label}[/bold] (신뢰도 {confidence:.0%})\n\n{conf_detail}",
+                title="📊 답변 신뢰도",
+                border_style="dim",
+            )
+        )
+    else:
+        print("\n=== 참고 규정 ===")
+        for i, src in enumerate(sources, 1):
+            if isinstance(src, dict):
+                print(f"[{i}] {src.get('rule_code')}: {src.get('text')[:100]}...")
+            else:
+                print(f"[{i}] {src.chunk.rule_code}: {src.chunk.text[:100]}...")
+        print(f"\n평균 신뢰도: {confidence:.0%}")
 
 
 def print_query_rewrite(search, original_query: str) -> None:
@@ -647,6 +707,12 @@ def _print_query_result(result: QueryResult, verbose: bool = False) -> None:
 
     _print_markdown(title, content)
 
+    # Print sources and confidence for ASK results
+    if result.type == QueryType.ASK:
+        sources = result.data.get("sources", [])
+        confidence = result.data.get("confidence", 0.0)
+        _print_sources_and_confidence(sources, confidence, verbose)
+
     # Print debug info if available
     if result.debug_info:
         if RICH_AVAILABLE:
@@ -806,700 +872,195 @@ def _perform_unified_search(
 ) -> int:
     """Core logic for unified search/ask."""
     from rich.panel import Panel
-
-    from ..application.full_view_usecase import FullViewUseCase
-    from ..application.search_usecase import SearchUseCase
     from ..infrastructure.chroma_store import ChromaVectorStore
-    from ..infrastructure.json_loader import JSONDocumentLoader
     from ..infrastructure.llm_adapter import LLMClientAdapter
+    from ..infrastructure.function_gemma_adapter import FunctionGemmaAdapter
+    from ..infrastructure.tool_executor import ToolExecutor
+    from ..infrastructure.query_analyzer import QueryAnalyzer
+    from ..application.search_usecase import SearchUseCase
 
     state = state or {}
     raw_query = _sanitize_query_input(args.query)
     query = raw_query
-    context_hint = None
+    
     if interactive and query:
         context_hint = state.get("last_regulation") or state.get("last_query")
         query = expand_followup_query(query, context_hint)
+    
     query = _sanitize_query_input(query)
     if not query:
         if interactive:
             return 0
         print_error("검색어를 입력해주세요.")
-        print_info("💡 예시: uv run regulation search '휴학 신청 절차'")
-        print_info("💡 예시: uv run regulation search '교원 연구년 자격은?' -a")
         return 1
+    
     args.query = query
-    history_text = (
-        build_history_context(state.get("history", [])) if interactive else ""
-    )
-    if interactive:
-        _append_history(state, "user", raw_query)
-    explicit_target = has_explicit_target(raw_query)
-    explicit_regulation = extract_regulation_title(raw_query)
-
-    mode = force_mode or _decide_search_mode(args)
-    if args.verbose:
-        print_info(f"실행 모드: {mode.upper()} (쿼리: '{args.query}')")
-
-    # Check if query is regulation name or code only -> show overview
-    import re
-    from ..application.search_usecase import REGULATION_ONLY_PATTERN, RULE_CODE_PATTERN
-
-    is_regulation_only = REGULATION_ONLY_PATTERN.match(query) is not None
-    is_rule_code_only = RULE_CODE_PATTERN.match(query) is not None
-
-    if is_regulation_only or is_rule_code_only:
-        # Use QueryHandler for overview
-        handler = QueryHandler()
-        result = handler.get_regulation_overview(query)
-        
-        if result.success:
-            _print_query_result(result, args.verbose)
-            state["last_regulation"] = result.state_update.get("last_regulation")
-            state["last_rule_code"] = result.state_update.get("last_rule_code")
-            state["last_query"] = raw_query
-            if interactive:
-                reg_title = result.data.get("title", query)
-                _append_history(
-                    state,
-                    "assistant",
-                    f"{reg_title} 개요를 표시했습니다.",
-                )
-            return 0
-        # If overview not found, fall through to normal search
-
-    # Check if query targets a specific article (e.g. "Regulation Article 7")
-    # This allows showing the full text of the article instead of just a search snippet
-    article_match = re.search(r"(?:제)?\s*(\d+)\s*조", query)
-    # Use 'query' here which may have been expanded with context (e.g. "교원인사규정 5장")
-    target_regulation = explicit_regulation or extract_regulation_title(query)
-
-    if target_regulation and article_match:
-        article_no = int(article_match.group(1))
-        handler = QueryHandler()
-        result = handler.get_article_view(target_regulation, article_no)
-        
-        if result.type == QueryType.CLARIFICATION:
-            # Need user to select regulation
-            print("여러 규정이 매칭됩니다. 선택해주세요:")
-            for i, opt in enumerate(result.clarification_options, 1):
-                print(f"  {i}. {opt}")
-            return 0
-        
-        if result.success:
-            _print_query_result(result, args.verbose)
-            state["last_regulation"] = result.state_update.get("last_regulation")
-            state["last_rule_code"] = result.state_update.get("last_rule_code")
-            state["last_query"] = raw_query
-            if interactive:
-                reg_title = result.data.get("regulation_title", target_regulation)
-                _append_history(
-                    state,
-                    "assistant",
-                    f"{reg_title} 제{article_no}조 전문을 표시했습니다.",
-                )
-            return 0
-
-    # Check if query targets a specific chapter (e.g. "Regulation Chapter 5")
-    chapter_match = re.search(r"(?:제)?\s*(\d+)\s*장", query)
-    if target_regulation and chapter_match:
-        chapter_no = int(chapter_match.group(1))
-        handler = QueryHandler()
-        result = handler.get_chapter_view(target_regulation, chapter_no)
-        
-        if result.type == QueryType.CLARIFICATION:
-            print("여러 규정이 매칭됩니다. 선택해주세요:")
-            for i, opt in enumerate(result.clarification_options, 1):
-                print(f"  {i}. {opt}")
-            return 0
-        
-        if result.success:
-            _print_query_result(result, args.verbose)
-            state["last_regulation"] = result.state_update.get("last_regulation")
-            state["last_rule_code"] = result.state_update.get("last_rule_code")
-            state["last_query"] = raw_query
-            if interactive:
-                reg_title = result.data.get("regulation_title", target_regulation)
-                chapter_title = result.data.get("chapter_title", "")
-                full_title = f"{reg_title} 제{chapter_no}장 {chapter_title}".strip()
-                _append_history(
-                    state,
-                    "assistant",
-                    f"{full_title} 전문을 표시했습니다.",
-                )
-            return 0
-
-    attachment_request = parse_attachment_request(
-        args.query,
-        state.get("last_regulation") if interactive else None,
-    )
-    if attachment_request:
-        reg_query, table_no, label = attachment_request
-        handler = QueryHandler()
-        result = handler.get_attachment_view(reg_query, label, table_no)
-        
-        if result.type == QueryType.CLARIFICATION:
-            print("여러 규정이 매칭됩니다. 선택해주세요:")
-            for i, opt in enumerate(result.clarification_options, 1):
-                print(f"  {i}. {opt}")
-            return 0
-        
-        if not result.success:
-            print_info(result.content)
-            return 0
-        
-        _print_query_result(result, args.verbose)
-        state["last_regulation"] = result.state_update.get("last_regulation")
-        state["last_rule_code"] = result.state_update.get("last_rule_code")
-        state["last_query"] = raw_query
-        if interactive:
-            label_text = result.data.get("label", "별표")
-            reg_title = result.data.get("regulation_title", reg_query)
-            _append_history(
-                state,
-                "assistant",
-                f"{reg_title} {label_text} 내용을 표시했습니다.",
-            )
-        return 0
-
-    # Unified Search: Check for Regulation Overview
-    # (Matches QueryHandler.process_query logic)
-    if (REGULATION_ONLY_PATTERN.match(query) or RULE_CODE_PATTERN.match(query)) and mode == "search":
-        # Pass json_path if available in args, otherwise QueryHandler relies on defaults/env
-        handler = QueryHandler()
-        result = handler.get_regulation_overview(query)
-        
-        # If successfully found unique (or handled exact match) regulation
-        if result.success and result.type in (QueryType.OVERVIEW, QueryType.CLARIFICATION):
-             if result.type == QueryType.CLARIFICATION:
-                _print_query_result(result, args.verbose)
-                return 0
-             
-             # Success - Print Overview
-             _print_query_result(result, args.verbose)
-             state["last_regulation"] = result.data.get("title")
-             state["last_rule_code"] = result.data.get("rule_code")
-             state["last_query"] = raw_query
-             if interactive:
-                 _append_history(
-                     state, 
-                     "assistant", 
-                     f"{result.data.get('title')} 규정 개요를 표시했습니다."
-                 )
-             return 0
-        elif not result.success and args.debug:
-             print_info(f"규정 개요 검색 실패 (Fallback to Search): {result.content}")
-
-    if mode == "full_view":
-        full_view = FullViewUseCase(JSONDocumentLoader())
-        matches = full_view.find_matches(args.query)
-        selected = _select_regulation(matches, interactive)
-        if not selected:
-            return 0
-
-        view = full_view.get_full_view(selected.rule_code) or full_view.get_full_view(
-            selected.title
-        )
-        if not view:
-            print_error("규정 전문을 불러오지 못했습니다.")
-            return 1
-
-        toc_text = _format_toc(view.toc)
-        content_text = render_full_view_nodes(view.content)
-        addenda_text = render_full_view_nodes(view.addenda)
-        detail = f"{toc_text}\n\n### 본문\n\n{content_text or '본문이 없습니다.'}"
-        if addenda_text:
-            detail += f"\n\n### 부칙\n\n{addenda_text}"
-
-        _print_markdown(f"{view.title} 전문", detail)
-        state["last_regulation"] = view.title
-        state["last_rule_code"] = view.rule_code
-        state["last_query"] = raw_query
-        if interactive:
-            _append_history(state, "assistant", f"{view.title} 전문을 표시했습니다.")
-        return 0
-
-    # Step 1: Check database
+    
+    # Initialize components
     store = ChromaVectorStore(persist_directory=args.db_path)
     if store.count() == 0:
         print_error("데이터베이스가 비어 있습니다. 먼저 sync를 실행하세요.")
         return 1
 
-    use_reranker = not args.no_rerank
-    
-    # Step 1.5: Tool Calling Mode (DEFAULT) - FunctionGemma for routing, base LLM for answers
+    use_reranker = not getattr(args, "no_rerank", False)
     use_tool_calling = not getattr(args, "no_tools", False)
     
-    if use_tool_calling and mode == "ask":
-        from ..infrastructure.function_gemma_adapter import FunctionGemmaAdapter, MLX_AVAILABLE
-        from ..infrastructure.tool_executor import ToolExecutor
-        from ..infrastructure.query_analyzer import QueryAnalyzer
-        from ..application.search_usecase import SearchUseCase
-        from ..infrastructure.llm_adapter import LLMClientAdapter
-        
-        if RICH_AVAILABLE:
-            console.print("[bold blue]🔧 Tool Calling 모드 (기본)[/bold blue]")
-        
-        # Initialize search components
-        search_usecase = SearchUseCase(store, use_reranker=use_reranker)
-        query_analyzer = QueryAnalyzer()
-        tool_executor = ToolExecutor(
-            search_usecase=search_usecase,
-            query_analyzer=query_analyzer,
+    # Initialize LLM Client
+    llm_client = None
+    try:
+        llm_client = LLMClientAdapter(
+            provider=args.provider,
+            model=args.model,
+            base_url=args.base_url,
         )
-        
-        # Initialize base LLM for answer generation
-        try:
-            llm_client = LLMClientAdapter(
-                provider=args.provider,
-                model=args.model,
-                base_url=args.base_url,
-            )
-        except Exception as e:
-            if RICH_AVAILABLE:
-                console.print(f"[dim]LLM 초기화 경고: {e} - API 직접 호출 사용[/dim]")
-            llm_client = None
-        
+    except Exception as e:
+        if not interactive and (args.command == "ask" or force_mode == "ask"):
+            print_error(f"LLM 초기화 실패: {e}")
+            return 1
+
+    # Initialize FunctionGemma if tools enabled
+    function_gemma_client = None
+    if use_tool_calling:
+        search_uc = SearchUseCase(store, use_reranker=use_reranker)
+        analyzer = QueryAnalyzer()
+        executor = ToolExecutor(search_usecase=search_uc, query_analyzer=analyzer)
         tool_mode = getattr(args, "tool_mode", "auto")
-        adapter = FunctionGemmaAdapter(
-            tool_executor=tool_executor,
+        function_gemma_client = FunctionGemmaAdapter(
+            tool_executor=executor,
             api_mode=tool_mode,
-            llm_client=llm_client,  # Pass base LLM for answer generation
+            llm_client=llm_client,
         )
-        
-        if RICH_AVAILABLE:
-            mode_display = {
-                "mlx": "MLX (Apple Silicon)",
-                "openai": "OpenAI API (LM Studio)",
-                "ollama": "Ollama",
-                "text": "텍스트 파싱",
-            }.get(adapter._api_mode, adapter._api_mode)
-            console.print(f"[dim]API 모드: {mode_display}[/dim]")
-            if MLX_AVAILABLE and adapter._api_mode == "mlx":
-                console.print(f"[dim]MLX 모델: {adapter._mlx_model_id}[/dim]")
-            console.print()
-            
-            with console.status("[bold blue]🤖 Tool Calling으로 처리 중...[/bold blue]"):
-                try:
-                    answer_text, tool_results = adapter.process_query(query, llm_client=llm_client)
-                except Exception as e:
-                    print_error(f"Tool Calling 실패: {e}")
-                    # Fallback to traditional mode
-                    if RICH_AVAILABLE:
-                        console.print("[dim]기존 방식으로 재시도...[/dim]")
-                    use_tool_calling = False
-            
-            if use_tool_calling:
-                # Display results
-                console.print("[bold green]🤖 AI 답변:[/bold green]")
-                console.print()
-                console.print(Markdown(answer_text))
-                console.print()
-                
-                if tool_results and (args.verbose or args.debug):
-                    console.print("[bold cyan]📊 호출된 도구:[/bold cyan]")
-                    for result in tool_results:
-                        status = "✅" if result.success else "❌"
-                        console.print(f"  {status} [bold]{result.tool_name}[/bold]")
-                        
-                        if args.debug:
-                            if result.arguments:
-                                console.print(f"    [dim]Args: {result.arguments}[/dim]")
-                            res_str = str(result.result)
-                            if len(res_str) > 200:
-                                res_str = res_str[:200] + "..."
-                            console.print(f"    [dim]Result: {res_str}[/dim]")
-                            console.print()
-                
-                return 0
-        else:
-            print("🤖 Tool Calling 모드로 처리 중...")
-            try:
-                answer_text, tool_results = adapter.process_query(query, llm_client=llm_client)
-            except Exception as e:
-                print_error(f"Tool Calling 실패: {e}")
-                use_tool_calling = False
-            
-            if use_tool_calling:
-                print("\n=== AI 답변 ===")
-                print(answer_text)
-                if tool_results and (args.verbose or args.debug):
-                    print("\n📊 호출된 도구:")
-                    for result in tool_results:
-                        status = "✅" if result.success else "❌"
-                        print(f"  {status} {result.tool_name}")
-                        if args.debug:
-                            if result.arguments:
-                                print(f"    Args: {result.arguments}")
-                            res_str = str(result.result)
-                            if len(res_str) > 200:
-                                res_str = res_str[:200] + "..."
-                            print(f"    Result: {res_str}")
-                            print()
-                
-                return 0
+
+    # Prepare Handler
+    handler = QueryHandler(
+        store=store,
+        llm_client=llm_client,
+        function_gemma_client=function_gemma_client,
+        use_reranker=use_reranker,
+    )
     
-    # Fallback to traditional mode (--no-tools or tool calling failed)
+    context = QueryContext(
+        state=state,
+        interactive=interactive,
+        last_regulation=state.get("last_regulation"),
+        last_rule_code=state.get("last_rule_code"),
+    )
+    
+    options = QueryOptions(
+        top_k=args.top_k,
+        include_abolished=getattr(args, "include_abolished", False),
+        use_rerank=use_reranker,
+        force_mode=force_mode,
+        llm_provider=args.provider,
+        llm_model=args.model,
+        llm_base_url=args.base_url,
+        use_function_gemma=use_tool_calling,
+        show_debug=args.debug,
+    )
 
-    # Initialize LLM only if needed
-    llm = None
-    if mode == "ask":
-        if RICH_AVAILABLE:
-            with console.status(
-                "[bold blue]⏳ LLM 클라이언트 초기화 중...[/bold blue]"
-            ):
-                try:
-                    llm = LLMClientAdapter(
-                        provider=args.provider,
-                        model=args.model,
-                        base_url=args.base_url,
-                    )
-                except Exception as e:
-                    print_error(f"LLM 초기화 실패: {e}")
-                    return 1
-        else:
-            try:
-                llm = LLMClientAdapter(
-                    provider=args.provider,
-                    model=args.model,
-                    base_url=args.base_url,
-                )
-            except Exception as e:
-                print_error(f"LLM 초기화 실패: {e}")
-                return 1
-
-    # Step 2: Build Search Interface
-    # SearchUseCase initializes HybridSearcher automatically
-    if RICH_AVAILABLE:
-        status_msg = "[bold blue]🔍 검색 엔진 준비 중...[/bold blue]"
-        with console.status(status_msg):
-            search = SearchUseCase(store, llm_client=llm, use_reranker=use_reranker)
-    else:
-        search = SearchUseCase(store, llm_client=llm, use_reranker=use_reranker)
-
-    # Step 3: Execute Logic based on Mode
-    if mode == "search":
-        # Retrieval Only
-        results = search.search_unique(
-            args.query,
-            top_k=args.top_k,
-            include_abolished=args.include_abolished
-            if hasattr(args, "include_abolished")
-            else False,
-        )
-
-        if args.verbose or args.debug:
-            print_query_rewrite(search, args.query)
-
-        if not results:
-            print_info("검색 결과가 없습니다.")
-            return 0
-
-        # Check if all results have very low scores (irrelevant query)
-        LOW_RELEVANCE_THRESHOLD = 0.05
-        max_score = max(r.score for r in results) if results else 0
-        if max_score < LOW_RELEVANCE_THRESHOLD:
-            print_info("⚠️ 입력하신 검색어와 관련된 규정을 찾기 어렵습니다.")
-            print_info("💡 다른 키워드로 검색해보세요. 예: '휴학', '등록금', '연구년'")
-            return 0
-
-        # Display Results (Search Style)
-        if RICH_AVAILABLE:
-            table = Table(title=f"검색 결과: '{args.query}'")
-            table.add_column("#", style="dim", width=3)
-            table.add_column("규정명", style="cyan")
-            table.add_column("코드", style="magenta")
-            table.add_column("조항", style="green")
-            table.add_column("점수", justify="right", style="magenta")
-
-            for i, r in enumerate(results, 1):
-                path_segments = (
-                    clean_path_segments(r.chunk.parent_path)
-                    if r.chunk.parent_path
-                    else []
-                )
-                path = " > ".join(path_segments[-2:]) if path_segments else ""
-                reg_title = (
-                    r.chunk.parent_path[0] if r.chunk.parent_path else r.chunk.title
-                )
-                table.add_row(
-                    str(i),
-                    str(reg_title or r.chunk.rule_code),
-                    str(r.chunk.rule_code),
-                    str(path or r.chunk.title),
-                    f"{r.score:.2f}",
-                )
-            console.print(table)
-
-            # Print first result detail
-            if results:
-                top = results[0]
-                display_path = build_display_path(
-                    top.chunk.parent_path or [],
-                    top.chunk.text,
-                    top.chunk.title,
-                )
-                display_text = strip_path_prefix(
-                    top.chunk.text, top.chunk.parent_path or []
-                )
-                if display_text != top.chunk.text and display_path:
-                    detail_text = f"{display_path}\n\n{display_text}"
-                else:
-                    detail_text = display_text
-                
-                # Apply indentation formatting
-                detail_text = format_regulation_content(detail_text)
-                
-                if len(detail_text) > 500:
-                    detail_text = detail_text[:500] + "..."
-                if RICH_AVAILABLE:
-                    content = Text(detail_text)
-                else:
-                    content = detail_text
-                    
-                console.print(
-                    Panel(
-                        content,
-                        title=f"[1위] {top.chunk.rule_code}",
-                        border_style="green",
-                    )
-                )
-        else:
-            print(f"\n검색 결과: '{args.query}'")
-            print("-" * 60)
-            for i, r in enumerate(results, 1):
-                reg_title = (
-                    r.chunk.parent_path[0] if r.chunk.parent_path else r.chunk.title
-                )
-                display_text = strip_path_prefix(
-                    r.chunk.text, r.chunk.parent_path or []
-                )
-                print(f"{i}. {reg_title} [{r.chunk.rule_code}] (점수: {r.score:.2f})")
-                print(f"   {display_text[:100]}...")
-
-        if args.feedback and results:
-            _collect_cli_feedback(args.query, results[0].chunk.rule_code)
-        if results:
-            top = results[0]
-            top_regulation = (
-                top.chunk.parent_path[0] if top.chunk.parent_path else top.chunk.title
-            )
-            if explicit_regulation:
-                state["last_regulation"] = explicit_regulation
-            elif explicit_target or not state.get("last_regulation"):
-                state["last_regulation"] = top_regulation
-            elif state.get("last_regulation") == top_regulation:
-                state["last_regulation"] = top_regulation
-            state["last_rule_code"] = top.chunk.rule_code
-            state["last_query"] = raw_query
-            if interactive:
-                summary_text = strip_path_prefix(
-                    top.chunk.text, top.chunk.parent_path or []
-                )
-                summary = f"검색 결과 1위: {top.chunk.rule_code} {summary_text}".strip()
-                _append_history(state, "assistant", summary)
-
-    else:
-        # Ask (LLM Answer) - Streaming by default
-        if RICH_AVAILABLE:
+    # Execute and Stream if it's an AI answer in interactive/ask mode
+    if RICH_AVAILABLE and (force_mode == "ask" or (not force_mode and _decide_search_mode(args) == "ask")):
+        answer_text = ""
+        try:
+            stream_gen = handler.process_query_stream(query, context, options)
             from rich.live import Live
             from rich.text import Text
             
-            # Show step-by-step progress
-            console.print("[dim]🔍 1/3 규정 검색 중...[/dim]")
-            console.print("[dim]🎯 2/3 관련도 재정렬 중...[/dim]")
-            console.print("[dim]🤖 3/3 AI 답변 생성 중...[/dim]")
+            # Initial spacer
             console.print()
             
-            try:
-                # Use streaming API
-                stream_gen = search.ask_stream(
-                    question=raw_query,
-                    top_k=args.top_k,
-                    history_text=history_text or None,
-                    search_query=query,
-                )
-                
-                sources = []
-                confidence = 0.0
-                answer_text = ""
-                
-                # First yield is metadata
-                first_item = next(stream_gen)
-                if first_item.get("type") == "metadata":
-                    sources = first_item.get("sources", [])
-                    confidence = first_item.get("confidence", 0.0)
-                
-                # Stream tokens with Live display
-                console.print("[bold green]🤖 AI 답변:[/bold green]")
-                console.print()
-                
-                with Live(Text(""), console=console, refresh_per_second=10) as live:
-                    for item in stream_gen:
-                        if item.get("type") == "token":
-                            token = item.get("content", "")
-                            answer_text += token
-                            # Update live display with accumulated text
-                            live.update(Markdown(answer_text))
-                
-                console.print()
-                
-            except Exception as e:
-                print_error(f"답변 생성 실패: {e}")
-                return 1
-            
-            # Create Answer object for consistent handling
-            from ..domain.entities import SearchResult
-            answer = type('Answer', (), {
-                'text': answer_text,
-                'sources': sources,
-                'confidence': confidence,
-            })()
-            
-        else:
-            print("🔍 1/3 규정 검색 중...")
-            print("🎯 2/3 관련도 재정렬 중...")
-            print("🤖 3/3 AI 답변 생성 중...")
-            try:
-                # Fallback to non-streaming for non-Rich terminals
-                answer = search.ask(
-                    question=raw_query,
-                    top_k=args.top_k,
-                    history_text=history_text or None,
-                    search_query=query,
-                    debug=args.debug,
-                )
-            except Exception as e:
-                print_error(f"답변 생성 실패: {e}")
-                return 1
+            with Live(Panel(Text("..."), title="💬 AI 답변 준비 중", border_style="dim"), console=console, refresh_per_second=10) as live:
+                for event in stream_gen:
+                    evt_type = event.get("type")
+                    
+                    if evt_type == "progress":
+                        # Optionally show progress above the live panel? 
+                        # For now, let's update title or just ignore for cleaner look
+                        pass
+                    
+                    elif evt_type == "token":
+                        answer_text += event.get("content", "")
+                        live.update(Panel(Markdown(answer_text), title="💬 AI 답변", border_style="green"))
+                        
+                    elif evt_type == "complete":
+                        answer_text = event.get("content", answer_text)
+                        live.update(Panel(Markdown(answer_text), title="💬 AI 답변", border_style="green"))
+                        
+                        # Show sources if available
+                        data = event.get("data", {})
+                        if data.get("sources"):
+                            # We can print sources after the live panel
+                            _print_sources_and_confidence(data.get("sources", []), data.get("confidence", 0.0), args.verbose)
+                            
+                        _update_state_from_result(state, data, raw_query, answer_text, event.get("suggestions", []))
+                        return 0
+                        
+                    elif evt_type == "error":
+                        live.update(Panel(Text(f"⚠️ {event['content']}"), title="❌ 오류", border_style="red"))
+                        return 1
+                        
+                    elif evt_type == "clarification":
+                        live.stop()
+                        _handle_cli_clarification(event)
+                        return 0
+            return 0
+        except Exception as e:
+            print_error(f"처리 중 오류 발생: {e}")
+            return 1
 
-        if args.verbose or args.debug:
-            print_query_rewrite(search, args.query)
+    # Standard non-streaming path
+    result = handler.process_query(query, context, options)
+    
+    if result.type == QueryType.CLARIFICATION:
+        _handle_cli_clarification(result)
+        return 0
+        
+    if not result.success and result.type != QueryType.ERROR:
+        print_info(result.content)
+        return 0
+        
+    if result.type == QueryType.ERROR:
+        print_error(result.content)
+        return 1
 
-        answer_text = normalize_markdown_emphasis(answer.text)
-
-        # Display sources with numbered references
-        if RICH_AVAILABLE and answer.sources:
-            console.print()
-            console.print("[bold cyan]📚 참고 규정:[/bold cyan]")
-
-            # Shared formatting logic
-            norm_scores = normalize_relevance_scores(answer.sources)
-            display_sources = filter_by_relevance(answer.sources, norm_scores)
-
-            for i, result in enumerate(display_sources, 1):
-                chunk = result.chunk
-                reg_name = (
-                    chunk.parent_path[0] if chunk.parent_path else chunk.title
-                )
-                path = build_display_path(
-                    chunk.parent_path, chunk.text, chunk.title
-                )
-                norm_score = norm_scores.get(chunk.id, 0.0)
-                rel_score = int(norm_score * 100)
-                rel_label = get_relevance_label_combined(rel_score)
-                display_text = extract_display_text(chunk.text)
-
-                content_parts = [
-                    f"[bold blue]📖 {reg_name}[/bold blue]",
-                    f"[dim]📍 {path}[/dim]",
-                    "",
-                    display_text,
-                    "",
-                    f"[dim]📋 규정번호: {chunk.rule_code} | 관련도: {rel_score}% {rel_label}[/dim]"
-                    + (
-                        f" [dim]| AI 신뢰도: {result.score:.3f}[/dim]"
-                        if args.verbose
-                        else ""
-                    ),
-                ]
-
-                console.print(
-                    Panel(
-                        "\n".join(content_parts),
-                        title=f"[{i}]",
-                        border_style="blue",
-                    )
-                )
-
-            # Confidence Info
-            console.print()
-            conf_icon, conf_label, conf_detail = get_confidence_info(answer.confidence)
-            console.print(
-                Panel(
-                    f"[bold]{conf_icon} {conf_label}[/bold] (신뢰도 {answer.confidence:.0%})\n\n{conf_detail}",
-                    title="📊 답변 신뢰도",
-                    border_style="dim",
-                )
-            )
-            
-            # Interactive: Allow user to view full regulation by entering number
-            if interactive and display_sources:
-                console.print()
-                console.print("[dim]👉 번호를 입력하면 해당 규정 전문을 볼 수 있습니다 (Enter: 건너뛰기)[/dim]")
-                try:
-                    choice = input().strip()
-                    if choice.isdigit():
-                        idx = int(choice)
-                        if 1 <= idx <= len(display_sources):
-                            selected_chunk = display_sources[idx - 1].chunk
-                            # Show full regulation
-                            from ..application.full_view_usecase import FullViewUseCase
-                            from ..infrastructure.json_loader import JSONDocumentLoader
-                            full_view_uc = FullViewUseCase(JSONDocumentLoader())
-                            view = full_view_uc.get_full_view(selected_chunk.rule_code)
-                            if view:
-                                toc_text = _format_toc(view.toc)
-                                content_text = render_full_view_nodes(view.content)
-                                # Apply indentation
-                                content_text = format_regulation_content(content_text)
-                                
-                                if RICH_AVAILABLE:
-                                    renderable = Group(
-                                        Markdown(toc_text),
-                                        Markdown("### 본문"),
-                                        _text_from_regulation(content_text or '본문이 없습니다.')
-                                    )
-                                    _print_markdown(f"{view.title} 전문", renderable)
-                                else:
-                                    detail = f"{toc_text}\n\n### 본문\n\n{content_text or '본문이 없습니다.'}"
-                                    _print_markdown(f"{view.title} 전문", detail)
-                            else:
-                                print_info(f"규정 전문을 불러오지 못했습니다.")
-                except (KeyboardInterrupt, EOFError):
-                    pass
-
-        elif not RICH_AVAILABLE:
-            print("\n=== AI 답변 ===")
-            print(answer_text)
-            print("\n=== 참고 규정 ===")
-            for i, result in enumerate(answer.sources, 1):
-                print(f"[{i}] {result.chunk.rule_code}: {result.chunk.text[:100]}...")
-
-            if getattr(args, "show_sources", False):
-                print("\n=== 규정 전문 ===")
-                for result in answer.sources:
-                    print(f"\n--- {result.chunk.rule_code} ---")
-                    print(result.chunk.text)
-
-        if args.feedback and answer.sources:
-            _collect_cli_feedback(args.query, answer.sources[0].chunk.rule_code)
-        if answer.sources:
-            top = answer.sources[0].chunk
-            top_regulation = top.parent_path[0] if top.parent_path else top.title
-            if explicit_regulation:
-                state["last_regulation"] = explicit_regulation
-            elif explicit_target or not state.get("last_regulation"):
-                state["last_regulation"] = top_regulation
-            elif state.get("last_regulation") == top_regulation:
-                state["last_regulation"] = top_regulation
-            state["last_rule_code"] = top.rule_code
-        state["last_query"] = raw_query
-        state["last_answer"] = answer_text
-        if interactive:
-            _append_history(state, "assistant", answer_text)
-
+    # Display Result
+    _print_query_result(result, args.verbose)
+    
+    # Update State
+    _update_state_from_result(state, result.data, raw_query, result.content, result.suggestions)
+    
     return 0
+
+def _update_state_from_result(state: dict, data: dict, raw_query: str, content: str, suggestions: list):
+    """Sync state with query result."""
+    state["last_regulation"] = data.get("regulation_title") or data.get("title")
+    state["last_rule_code"] = data.get("rule_code")
+    state["last_query"] = raw_query
+    state["last_answer"] = content
+    state["suggestions"] = suggestions
+
+def _handle_cli_clarification(result_or_event: Any):
+    """Handle clarification requests in CLI."""
+    if isinstance(result_or_event, dict):
+        # Event from stream
+        c_type = result_or_event.get("clarification_type")
+        options = result_or_event.get("options", [])
+        content = result_or_event.get("content", "")
+    else:
+        # QueryResult
+        c_type = result_or_event.clarification_type
+        options = result_or_event.clarification_options
+        content = result_or_event.content
+
+    print_info(content)
+    if c_type == "audience":
+        print("대상을 선택해주세요:")
+        for opt in options:
+            print(f"  - {opt}")
+    elif c_type == "regulation":
+        print("여러 규정이 매칭됩니다. 선택해주세요:")
+        for i, opt in enumerate(options, 1):
+            print(f"  {i}. {opt}")
 
 
 def cmd_search(args) -> int:
@@ -1522,7 +1083,6 @@ def _run_interactive_session(args) -> int:
     from .query_suggestions import (
         format_examples_for_cli,
         format_suggestions_for_cli,
-        get_followup_suggestions,
         get_initial_examples,
     )
 
@@ -1583,25 +1143,16 @@ def _run_interactive_session(args) -> int:
             continue
 
         # Sanitize and validate query before passing to search
-        sanitized = _sanitize_query_input(query)
-        if not sanitized:
-            query = ""
-            continue
-        args.query = sanitized
-        _perform_unified_search(args, state=state, interactive=True)
+        if sanitized:
+            args.query = sanitized
+            _perform_unified_search(args, state=state, interactive=True)
 
-        # 후속 쿼리 제안
-        followups = get_followup_suggestions(
-            sanitized,
-            regulation_title=state.get("last_regulation"),
-            answer_text=state.get("last_answer"),
-        )
-        if followups:
-            current_suggestions = followups
-            print(format_suggestions_for_cli(followups))
-        else:
-            # 제안이 없으면 기본 예시로 복귀
-            current_suggestions = get_initial_examples()
+            # Update suggestions from state (populated by QueryHandler via _perform_unified_search)
+            if state.get("suggestions"):
+                current_suggestions = state["suggestions"]
+            else:
+                # Fallback to initial examples if no specific suggestions provided
+                current_suggestions = get_initial_examples()
 
         query = ""
 

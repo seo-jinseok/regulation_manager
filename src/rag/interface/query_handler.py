@@ -42,6 +42,8 @@ from .formatters import (
     strip_path_prefix,
     format_regulation_content,
 )
+from .query_suggestions import get_followup_suggestions, format_suggestions_for_cli
+
 
 # Optional FunctionGemma imports
 try:
@@ -110,6 +112,7 @@ class QueryResult:
     clarification_options: List[str] = field(default_factory=list)
     # Debug info
     debug_info: str = ""
+    suggestions: List[str] = field(default_factory=list)
 
 
 class QueryHandler:
@@ -256,18 +259,13 @@ class QueryHandler:
         
         query = query.strip()
         
-        # FunctionGemma tool-based processing
-        if options.use_function_gemma and self._function_gemma_adapter:
-            return self._process_with_function_gemma(query, context, options)
-        
-        # Determine mode
-        mode = options.force_mode or decide_search_mode(query)
+        # 1. Structural Pattern Checks (Prioritize over Tool Calling for consistency)
         
         # Check for regulation-only or rule-code-only queries first
         if self._is_overview_query(query):
             result = self.get_regulation_overview(query)
             if result.success:
-                return result
+                return self._enrich_with_suggestions(result, query)
         
         # Check for specific article query (e.g., "교원인사규정 제8조")
         article_match = re.search(r"(?:제)?\s*(\d+)\s*조", query)
@@ -277,7 +275,7 @@ class QueryHandler:
             article_no = int(article_match.group(1))
             result = self.get_article_view(target_regulation, article_no, context)
             if result.type != QueryType.ERROR:
-                return result
+                return self._enrich_with_suggestions(result, query)
         
         # Check for chapter query (e.g., "학칙 제3장")
         chapter_match = re.search(r"(?:제)?\s*(\d+)\s*장", query)
@@ -285,7 +283,7 @@ class QueryHandler:
             chapter_no = int(chapter_match.group(1))
             result = self.get_chapter_view(target_regulation, chapter_no, context)
             if result.type != QueryType.ERROR:
-                return result
+                return self._enrich_with_suggestions(result, query)
         
         # Check for attachment query (별표/별첨/별지)
         attachment_request = parse_attachment_request(
@@ -296,11 +294,23 @@ class QueryHandler:
             reg_query, table_no, label = attachment_request
             result = self.get_attachment_view(reg_query, label, table_no, context)
             if result.type != QueryType.ERROR:
-                return result
+                return self._enrich_with_suggestions(result, query)
+
+        # Determine mode using heuristics
+        mode = options.force_mode or decide_search_mode(query)
         
-        # Full view mode
+        # Full view mode (e.g., "학칙 전문")
         if mode == "full_view":
-            return self.get_full_view(query, context)
+            result = self.get_full_view(query, context)
+            if result.type != QueryType.ERROR:
+                return self._enrich_with_suggestions(result, query)
+        
+        # 2. Tool Calling or Traditional Search/Ask
+        
+        # FunctionGemma tool-based processing
+        if options.use_function_gemma and self._function_gemma_adapter:
+            result = self._process_with_function_gemma(query, context, options)
+            return self._enrich_with_suggestions(result, query)
         
         # Check audience ambiguity
         if options.audience_override is None and self.query_analyzer.is_audience_ambiguous(query):
@@ -314,9 +324,13 @@ class QueryHandler:
         
         # Search or Ask
         if mode == "search":
-            return self.search(query, options)
+            result = self.search(query, options)
         else:
-            return self.ask(query, options, context)
+            result = self.ask(query, options, context)
+
+        # Enrich with suggestions before returning
+        return self._enrich_with_suggestions(result, query)
+
 
     def process_query_stream(
         self,
@@ -337,31 +351,12 @@ class QueryHandler:
         
         query = query.strip()
         
-        # FunctionGemma tool-based processing (Sync -> Event Stream)
-        if options.use_function_gemma and self._function_gemma_adapter:
-            # Yield progress
-            yield {"type": "progress", "content": "🤖 도구 기반 답변 생성 중..."}
-            
-            # Run synchronously (Tool Calling does not support streaming yet)
-            q_result = self._process_with_function_gemma(query, context, options)
-            
-            if q_result.success:
-                 # Yield usage info
-                 if q_result.debug_info:
-                     yield {"type": "progress", "content": f"🛠️ 사용된 도구:\n{q_result.debug_info}"}
-                     
-                 # Yield final answer
-                 yield {"type": "complete", "content": q_result.content, "data": q_result.data}
-                 return
-            else:
-                 yield {"type": "error", "content": q_result.content}
-                 return
-
-        mode = options.force_mode or decide_search_mode(query)
+        # 1. Structural Pattern Checks
         
         # Check for regulation-only or rule-code-only queries first
         if self._is_overview_query(query):
             result = self.get_regulation_overview(query)
+            result = self._enrich_with_suggestions(result, query)
             yield from self._yield_result(result)
             return
 
@@ -373,6 +368,7 @@ class QueryHandler:
             article_no = int(article_match.group(1))
             result = self.get_article_view(target_regulation, article_no, context)
             if result.type != QueryType.ERROR:
+                result = self._enrich_with_suggestions(result, query)
                 yield from self._yield_result(result)
                 return
         
@@ -382,6 +378,7 @@ class QueryHandler:
             chapter_no = int(chapter_match.group(1))
             result = self.get_chapter_view(target_regulation, chapter_no, context)
             if result.type != QueryType.ERROR:
+                result = self._enrich_with_suggestions(result, query)
                 yield from self._yield_result(result)
                 return
 
@@ -394,15 +391,46 @@ class QueryHandler:
             reg_query, table_no, label = attachment_request
             result = self.get_attachment_view(reg_query, label, table_no, context)
             if result.type != QueryType.ERROR:
+                result = self._enrich_with_suggestions(result, query)
                 yield from self._yield_result(result)
                 return
+        
+        # Determine mode
+        mode = options.force_mode or decide_search_mode(query)
         
         # Full view mode
         if mode == "full_view":
             result = self.get_full_view(query, context)
-            yield from self._yield_result(result)
-            return
+            if result.type != QueryType.ERROR:
+                result = self._enrich_with_suggestions(result, query)
+                yield from self._yield_result(result)
+                return
         
+        # 2. Tool Calling or Traditional Search/Ask
+        
+        # FunctionGemma tool-based processing (Sync -> Event Stream)
+        if options.use_function_gemma and self._function_gemma_adapter:
+            # Yield progress
+            yield {"type": "progress", "content": "🤖 도구 기반 답변 생성 중..."}
+            
+            # Run synchronously (Tool Calling does not support streaming yet)
+            q_result = self._process_with_function_gemma(query, context, options)
+            
+            if q_result.success:
+                # Enrich with suggestions
+                q_result = self._enrich_with_suggestions(q_result, query)
+                
+                # Yield usage info
+                if q_result.debug_info:
+                    yield {"type": "progress", "content": f"🛠️ 사용된 도구:\n{q_result.debug_info}"}
+                    
+                # Yield final answer
+                yield {"type": "complete", "content": q_result.content, "data": q_result.data, "suggestions": q_result.suggestions}
+                return
+            else:
+                yield {"type": "error", "content": q_result.content}
+                return
+
         # Check audience ambiguity
         if options.audience_override is None and self.query_analyzer.is_audience_ambiguous(query):
             yield {
@@ -418,10 +446,47 @@ class QueryHandler:
             # Search is synchronous for now, treat as instant result
             yield {"type": "progress", "content": "🔍 규정 검색 중..."}
             result = self.search(query, options)
+            result = self._enrich_with_suggestions(result, query)
             yield from self._yield_result(result)
         else:
             # Ask - Streaming
-            yield from self.ask_stream(query, options, context)
+            # We can't easily enrich the stream yet without intercepting tokens,
+            # but we can yield suggestions at the end.
+            for event in self.ask_stream(query, options, context):
+                if event.get("type") == "complete":
+                    # For completed streaming questions, we can enrich the final content
+                    temp_res = QueryResult(
+                        type=QueryType.ASK,
+                        success=True,
+                        content=event["content"],
+                        data=event.get("data", {}),
+                    )
+                    temp_res = self._enrich_with_suggestions(temp_res, query)
+                    event["content"] = temp_res.content
+                    event["suggestions"] = temp_res.suggestions
+                yield event
+
+    def _enrich_with_suggestions(self, result: QueryResult, query: str) -> QueryResult:
+        """Calculate and append followup suggestions to result."""
+        if result.type in (QueryType.CLARIFICATION, QueryType.ERROR):
+            return result
+        
+        reg_title = result.data.get("regulation_title") or result.data.get("title")
+        suggestions = get_followup_suggestions(
+            query=query,
+            regulation_title=reg_title,
+            answer_text=result.content if result.type == QueryType.ASK else None,
+        )
+        
+        if suggestions:
+            result.suggestions = suggestions
+            # Append formatted suggestions to content for standard display
+            suggestion_text = format_suggestions_for_cli(suggestions)
+            if suggestion_text:
+                result.content += "\n\n" + suggestion_text
+                
+        return result
+
 
     def _yield_result(self, result: QueryResult):
         """Helper to yield a QueryResult as stream events."""
@@ -444,7 +509,7 @@ class QueryHandler:
                 "rule_code": result.data.get("rule_code"),
                 "regulation_title": result.data.get("title") or result.data.get("regulation_title")
             }
-            yield {"type": "complete", "content": result.content, "data": result.data}
+            yield {"type": "complete", "content": result.content, "data": result.data, "suggestions": result.suggestions}
             if result.state_update:
                 yield {"type": "state", "update": result.state_update}
 

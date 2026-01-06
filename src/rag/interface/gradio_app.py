@@ -563,22 +563,10 @@ def _process_with_handler(
     else:
         llm_client = MockLLMClient()
     
-    # Initialize FunctionGemmaAdapter if tools enabled
-    function_gemma_adapter = None
-    if use_tools and FUNCTION_GEMMA_AVAILABLE:
-        try:
-            # Use same llm_client for tool execution (if openai mode)
-            function_gemma_adapter = FunctionGemmaAdapter(
-                llm_client=llm_client,
-                api_mode="auto"
-            )
-        except Exception:
-            pass
-
     handler = QueryHandler(
         store=store_for_query,
         llm_client=llm_client,
-        function_gemma_adapter=function_gemma_adapter,
+        function_gemma_client=llm_client if use_tools else None,
         use_reranker=True, # Default to True for Web UI
     )
     
@@ -976,20 +964,10 @@ def create_app(
         else:
             llm_client = MockLLMClient()
 
-        function_gemma_adapter = None
-        if use_tools and FUNCTION_GEMMA_AVAILABLE:
-            try:
-                function_gemma_adapter = FunctionGemmaAdapter(
-                    llm_client=llm_client,
-                    api_mode="auto"
-                )
-            except Exception:
-                pass
-        
         handler = QueryHandler(
             store=store_for_query,
             llm_client=llm_client,
-            function_gemma_adapter=function_gemma_adapter,
+            function_gemma_client=llm_client if use_tools else None,
             use_reranker=True, # Default true for web
         )
         
