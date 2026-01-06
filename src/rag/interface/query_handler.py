@@ -937,12 +937,18 @@ class QueryHandler:
         
         content_text = render_full_view_nodes(view.content)
         content_text = format_regulation_content(content_text)
-        addenda_text = render_full_view_nodes(view.addenda)
+        
+        # Abbreviate addenda if there are many items (e.g., historical changes)
+        addenda_text = render_full_view_nodes(view.addenda, max_items=10)
         addenda_text = format_regulation_content(addenda_text)
         
         full_content = f"## 📖 {view.title}\n\n{toc_text}\n\n---\n\n### 본문\n\n{content_text or '본문이 없습니다.'}"
         if addenda_text:
-            full_content += f"\n\n---\n\n### 부칙\n\n{addenda_text}"
+            # Avoid redundant "부칙" title if rendered text already starts with one
+            if re.match(r"^#+\s*부\s*칙", addenda_text.strip()):
+                full_content += f"\n\n---\n\n{addenda_text}"
+            else:
+                full_content += f"\n\n---\n\n### 부칙\n\n{addenda_text}"
         
         return QueryResult(
             type=QueryType.FULL_VIEW,

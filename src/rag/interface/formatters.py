@@ -406,15 +406,41 @@ def _inject_tables(text: str, metadata: Dict[str, object]) -> str:
     return re.sub(r"\[TABLE:(\d+)\]", replace, text)
 
 
-def render_full_view_nodes(nodes: List[dict], depth: int = 0) -> str:
+def render_full_view_nodes(
+    nodes: List[dict],
+    depth: int = 0,
+    max_items: int = 0,
+) -> str:
     """
     Render regulation nodes for full-view display.
 
     Uses inline formatting for numbered 항/호/목 to avoid line breaks after
     display numbers (e.g., "1. 교수 : 정").
+
+    Args:
+        nodes: List of regulation nodes to render.
+        depth: Current recursion depth for heading levels.
+        max_items: If > 0 and len(nodes) > max_items, abbreviates the middle part.
     """
+    if not nodes:
+        return ""
+
+    display_nodes = nodes
+    abbreviated = False
+    
+    # Abbreviate if too many items at this level (e.g., many 부칙 items)
+    if max_items > 0 and len(nodes) > max_items:
+        # Show first few and last one
+        top_k = min(5, max_items // 2)
+        display_nodes = nodes[:top_k] + [{"type": "abbreviation"}] + [nodes[-1]]
+        abbreviated = True
+
     lines = []
-    for node in nodes:
+    for node in display_nodes:
+        if node.get("type") == "abbreviation":
+            lines.append(f"\n*... (중략: {len(nodes) - (len(display_nodes) - 1)}개 항목) ...*\n")
+            continue
+
         display_no = str(node.get("display_no") or "").strip()
         title = str(node.get("title") or "").strip()
         text = str(node.get("text") or "").strip()
@@ -437,6 +463,7 @@ def render_full_view_nodes(nodes: List[dict], depth: int = 0) -> str:
 
         children = node.get("children", []) or []
         if children:
+            # We don't abbreviate sub-levels by default unless they are very deep
             lines.append(render_full_view_nodes(children, depth + 1))
 
     return "\n\n".join([line for line in lines if line])
