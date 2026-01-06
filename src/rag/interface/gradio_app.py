@@ -1236,6 +1236,7 @@ def create_app(
             store=store,
             llm_client=llm_client,
             use_reranker=True, # Default true for web
+            function_gemma_client=llm_client, # Use same client for tools if needed
         )
 
         options = QueryOptions(
