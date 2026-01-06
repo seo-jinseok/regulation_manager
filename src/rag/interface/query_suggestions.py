@@ -59,6 +59,8 @@ DEFAULT_FOLLOWUPS = [
     "{regulation} 전문 보기",
     "{regulation} 별표 보기",
     "{regulation} 관련 다른 규정은?",
+    "{regulation} 요약해줘",
+    "{regulation} 개정 이력은?",
 ]
 
 
@@ -103,9 +105,8 @@ def get_followup_suggestions(
         # 완전 일치
         if normalized_suggestion == normalized_query:
             return True
-        # 핵심 키워드가 동일한 경우 (예: "전문 보기" vs "전문")
-        # 쿼리가 제안에 포함되거나 제안이 쿼리에 포함되는 경우
-        if normalized_suggestion in normalized_query or normalized_query in normalized_suggestion:
+        # If suggestion is a substring of query, it's likely redundant (narrowing)
+        if normalized_suggestion in normalized_query:
             return True
         return False
 

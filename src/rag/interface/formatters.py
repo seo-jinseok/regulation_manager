@@ -464,6 +464,60 @@ def normalize_markdown_emphasis(text: str) -> str:
     return normalized
 
 
+def format_regulation_content(text: str) -> str:
+    """
+    Format regulation content with proper indentation for CLI display.
+    
+    Applies hierarchical indentation:
+    - Paragraph (①, ②...): 0 spaces
+    - Subparagraph (1., 2....): 2 spaces
+    - Item (가., 나....): 4 spaces
+    - Subitem (1), (2)...: 6 spaces
+    - Subitem (가), (나)...: 8 spaces
+    """
+    if not text:
+        return text
+
+    lines = text.splitlines()
+    formatted = []
+    
+    # Regex patterns for hierarchy
+    p_paragraph = re.compile(r"^\s*([①-⑮])")
+    # Match "1." or "1 " (digit + dot OR space)
+    p_subparagraph = re.compile(r"^\s*(\d+(?:\.|\s))")
+    # Match "가." or "가 " (char + dot OR space)
+    p_item = re.compile(r"^\s*([가-하](?:\.|\s))")
+    p_subitem_num = re.compile(r"^\s*(\(\d+\))")
+    p_subitem_char = re.compile(r"^\s*(\([가-하]\))")
+
+    for line in lines:
+        stripped = line.lstrip()
+        if not stripped:
+            formatted.append("")
+            continue
+            
+        if p_paragraph.match(stripped):
+            # Paragraph: No indent
+            formatted.append(stripped)
+        elif p_subparagraph.match(stripped):
+            # Subparagraph: 1 Ideographic Space
+            formatted.append("\u3000" + stripped)
+        elif p_item.match(stripped):
+            # Item: 2 Ideographic Spaces
+            formatted.append("\u3000\u3000" + stripped)
+        elif p_subitem_num.match(stripped):
+            # Subitem (1): 3 Ideographic Spaces
+            formatted.append("\u3000\u3000\u3000" + stripped)
+        elif p_subitem_char.match(stripped):
+            # Subitem (가): 4 Ideographic Spaces
+            formatted.append("\u3000\u3000\u3000\u3000" + stripped)
+        else:
+            # Continuation line
+            formatted.append(line)
+
+    return "\n".join(formatted)
+
+
 # ============================================================================
 # Confidence Info
 # ============================================================================

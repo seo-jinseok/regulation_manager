@@ -46,6 +46,7 @@ from .formatters import (
     clean_path_segments,
     extract_display_text,
     filter_by_relevance,
+    format_regulation_content,
     get_confidence_info,
     get_relevance_label_combined,
     infer_attachment_label,
@@ -532,6 +533,7 @@ def _print_query_result(result: QueryResult, verbose: bool = False) -> None:
                 print(f"  {i}. {opt}")
         return
     
+
     # Map result types to titles
     title_map = {
         QueryType.OVERVIEW: "📋 규정 개요",
@@ -550,7 +552,11 @@ def _print_query_result(result: QueryResult, verbose: bool = False) -> None:
         reg_title = result.data.get("regulation_title") or result.data.get("title")
         title = f"{title} - {reg_title}"
     
-    _print_markdown(title, result.content)
+    content = result.content
+    if result.type in (QueryType.ARTICLE, QueryType.CHAPTER, QueryType.FULL_VIEW):
+        content = format_regulation_content(content)
+
+    _print_markdown(title, content)
 
     # Print debug info if available
     if result.debug_info:
@@ -1148,9 +1154,13 @@ def _perform_unified_search(
                     top.chunk.text, top.chunk.parent_path or []
                 )
                 if display_text != top.chunk.text and display_path:
-                    detail_text = f"{display_path}\n{display_text}"
+                    detail_text = f"{display_path}\n\n{display_text}"
                 else:
                     detail_text = display_text
+                
+                # Apply indentation formatting
+                detail_text = format_regulation_content(detail_text)
+                
                 if len(detail_text) > 500:
                     detail_text = detail_text[:500] + "..."
                 console.print(
@@ -1347,6 +1357,8 @@ def _perform_unified_search(
                             if view:
                                 toc_text = _format_toc(view.toc)
                                 content_text = render_full_view_nodes(view.content)
+                                # Apply indentation
+                                content_text = format_regulation_content(content_text)
                                 detail = f"{toc_text}\n\n### 본문\n\n{content_text or '본문이 없습니다.'}"
                                 _print_markdown(f"{view.title} 전문", detail)
                             else:
