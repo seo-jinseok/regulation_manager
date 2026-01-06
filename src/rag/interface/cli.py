@@ -870,6 +870,7 @@ def _perform_unified_search(
     # Unified Search: Check for Regulation Overview
     # (Matches QueryHandler.process_query logic)
     if (REGULATION_ONLY_PATTERN.match(query) or RULE_CODE_PATTERN.match(query)) and mode == "search":
+        # Pass json_path if available in args, otherwise QueryHandler relies on defaults/env
         handler = QueryHandler()
         result = handler.get_regulation_overview(query)
         
@@ -891,6 +892,8 @@ def _perform_unified_search(
                      f"{result.data.get('title')} 규정 개요를 표시했습니다."
                  )
              return 0
+        elif not result.success and args.debug:
+             print_info(f"규정 개요 검색 실패 (Fallback to Search): {result.content}")
 
     if mode == "full_view":
         full_view = FullViewUseCase(JSONDocumentLoader())

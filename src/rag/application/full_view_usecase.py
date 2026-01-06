@@ -498,8 +498,16 @@ class FullViewUseCase:
                 p
                 for p in output_dir.rglob("*.json")
                 if not p.name.endswith("_metadata.json")
+                and not p.name.endswith("_plan.json")
+                and not p.name.startswith("improvement_")
             ]
             if json_files:
+                # Prioritize '규정집.json' if it exists
+                target = next((p for p in json_files if "규정집" in p.name), None)
+                if target:
+                   self.json_path = str(target)
+                   return self.json_path
+
                 latest = max(json_files, key=lambda p: p.stat().st_mtime)
                 self.json_path = str(latest)
                 return self.json_path
