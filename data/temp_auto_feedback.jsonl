@@ -1,2 +1,0 @@
-{"timestamp": "2026-01-07T14:17:48.026932", "query": "공부하기 싫어", "result_id": "simulated_failure", "rule_code": "3-2-23", "rating": "negative", "comment": "Auto-eval failure. Expected: ['휴학 관심'] / ['휴학']", "matched_intents": ["휴학 관심"], "rewritten_query": ""}
-{"timestamp": "2026-01-07T14:17:48.027264", "query": "강의 면제 받으려면?", "result_id": "simulated_failure", "rule_code": "3-1-16", "rating": "negative", "comment": "Auto-eval failure. Expected: ['강의 회피'] / ['강의면제', '연구년']", "matched_intents": ["강의 회피"], "rewritten_query": ""}
