@@ -432,8 +432,8 @@ class QueryAnalyzer:
                 final_keywords = self._merge_keywords(rewritten_keywords, intent_keywords)
             
             if not final_keywords.strip():
-                 # Final safety net
-                 final_keywords = self.expand_query(normalized_query)
+                 # Final safety net: Treat as failure to trigger fallback
+                 raise ValueError("Empty keywords from LLM")
 
             result = QueryRewriteResult(
                 original=query,
