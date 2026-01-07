@@ -183,7 +183,7 @@ class QueryAnalyzer:
             0.4,
             0.6,
         ),  # Slightly favor semantic, but still consider keywords
-        QueryType.INTENT: (0.35, 0.65),  # Intent queries favor semantic search (reverted from 0.8)
+        QueryType.INTENT: (0.4, 0.6),  # Intent queries favor semantic search (adjusted from 0.35)
         QueryType.GENERAL: (0.5, 0.5),  # Balanced default (increased BM25 from 0.3)
     }
 
@@ -214,6 +214,7 @@ class QueryAnalyzer:
             ["퇴직", "사직", "명예퇴직"],
         ),
         (re.compile(r"(수업|강의).*안.*하.*싶"), ["휴강", "보강", "강의"]),
+        (re.compile(r"연구.*(부정|신고).*싶"), ["연구윤리", "부정행위", "신고"]),
         (re.compile(r".*싶어"), ["희망", "원함"]),  # General desire pattern (lowest priority)
         # New patterns added for specific failure cases
         (re.compile(r"장학금.*(받|타|신청).*싶"), ["장학금", "신청", "지급"]),

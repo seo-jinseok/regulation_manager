@@ -147,7 +147,8 @@
                 "등록금"
             ],
             "expected_rule_codes": [
-                "3-3-4"
+                "3-3-4",
+                "3-2-43"
             ],
             "min_relevance_score": 0.05
         },
@@ -180,7 +181,8 @@
                 "신고"
             ],
             "expected_rule_codes": [
-                "3-1-13"
+                "3-1-13",
+                "3-1-2"
             ],
             "min_relevance_score": 0.05
         },
