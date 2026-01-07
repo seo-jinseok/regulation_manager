@@ -183,7 +183,7 @@ class QueryAnalyzer:
             0.4,
             0.6,
         ),  # Slightly favor semantic, but still consider keywords
-        QueryType.INTENT: (0.35, 0.65),  # Intent queries favor semantic search to capture user intent better
+        QueryType.INTENT: (0.35, 0.65),  # Intent queries favor semantic search (reverted from 0.8)
         QueryType.GENERAL: (0.5, 0.5),  # Balanced default (increased BM25 from 0.3)
     }
 
