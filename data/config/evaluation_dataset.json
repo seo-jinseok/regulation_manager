@@ -83,7 +83,8 @@
                 "명예퇴직"
             ],
             "expected_rule_codes": [
-                "1-0-1"
+                "1-0-1",
+                "3-1-26"
             ],
             "min_relevance_score": 0.0
         },
@@ -99,7 +100,11 @@
                 "안식년",
                 "연구휴직"
             ],
-            "expected_rule_codes": [],
+            "expected_rule_codes": [
+                "3-1-24",
+                "3-1-5",
+                "3-1-81"
+            ],
             "min_relevance_score": 0.05
         },
         {
@@ -141,7 +146,9 @@
                 "장학",
                 "등록금"
             ],
-            "expected_rule_codes": [],
+            "expected_rule_codes": [
+                "3-3-4"
+            ],
             "min_relevance_score": 0.05
         },
         {
@@ -172,7 +179,9 @@
                 "부정행위",
                 "신고"
             ],
-            "expected_rule_codes": [],
+            "expected_rule_codes": [
+                "3-1-13"
+            ],
             "min_relevance_score": 0.05
         },
         {
@@ -203,7 +212,10 @@
                 "해외출장",
                 "학회"
             ],
-            "expected_rule_codes": [],
+            "expected_rule_codes": [
+                "3-1-81",
+                "3-1-29"
+            ],
             "min_relevance_score": 0.3,
             "notes": "띄어쓰기 변형 테스트"
         },
@@ -217,7 +229,9 @@
             "expected_keywords": [
                 "휴학"
             ],
-            "expected_rule_codes": [],
+            "expected_rule_codes": [
+                "2-1-1"
+            ],
             "min_relevance_score": 0.3,
             "notes": "간접 의도 표현 테스트"
         },
@@ -232,7 +246,9 @@
                 "강의면제",
                 "연구년"
             ],
-            "expected_rule_codes": [],
+            "expected_rule_codes": [
+                "3-1-5"
+            ],
             "min_relevance_score": 0.3,
             "notes": "강의 면제 관련 쿼리"
         },

@@ -135,10 +135,10 @@ class TestQueryAnalyzer:
         assert dense_w == 0.6
 
     def test_get_weights_intent(self, analyzer: QueryAnalyzer):
-        """INTENT는 균형 잡힌 가중치 (0.5, 0.5)를 가짐 (키워드 매칭 중요성 반영)"""
+        """INTENT는 의미적 검색 중요 (0.35, 0.65)를 가짐 (사용자 의도 파악 중요)"""
         bm25_w, dense_w = analyzer.get_weights("학교에 가기 싫어")
-        assert bm25_w == 0.5
-        assert dense_w == 0.5
+        assert bm25_w == 0.35
+        assert dense_w == 0.65
 
     def test_get_weights_general(self, analyzer: QueryAnalyzer):
         """GENERAL은 균형 가중치 (0.5, 0.5)"""

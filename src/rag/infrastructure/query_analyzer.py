@@ -183,7 +183,7 @@ class QueryAnalyzer:
             0.4,
             0.6,
         ),  # Slightly favor semantic, but still consider keywords
-        QueryType.INTENT: (0.5, 0.5),  # Intent queries often contain specific keywords, so balanced is better
+        QueryType.INTENT: (0.35, 0.65),  # Intent queries favor semantic search to capture user intent better
         QueryType.GENERAL: (0.5, 0.5),  # Balanced default (increased BM25 from 0.3)
     }
 
@@ -862,22 +862,29 @@ class QueryAnalyzer:
                 if pattern.search(haystack):
                     score += 2
             # Trigger matching with normalization (handles whitespace/ending variations)
+            # Triggers are more specific than patterns, so give them higher score
             for trigger in rule.triggers:
                 normalized_trigger = self._normalize_for_matching(trigger)
                 if normalized_trigger and normalized_trigger in normalized_query:
-                    score += 1
+                    # Exact match (normalized trigger equals normalized query) gets bonus
+                    if normalized_trigger == normalized_query:
+                        score += 4  # Exact match: highest priority
+                    else:
+                        score += 2  # Partial match: same as pattern
             
             # Note: We do NOT match on rule.keywords here. 
             # Keywords are for query expansion (output), not for intent detection (input).
             # Using keywords for detection causes false positives (e.g. "장학금" keyword matching "장학금 규정")
 
             if score > 0:
+                # Prefer external intents (from intents.json) over legacy built-in patterns
+                is_legacy = rule.intent_id.startswith("legacy_")
                 matches.append(
                     IntentMatch(
                         intent_id=rule.intent_id,
                         label=rule.label or rule.intent_id,
                         keywords=rule.keywords,
-                        score=score,
+                        score=score if not is_legacy else score - 1,  # Penalize legacy patterns
                     )
                 )
 
