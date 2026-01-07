@@ -142,17 +142,23 @@ class QueryHandler:
         self.query_analyzer = QueryAnalyzer()
         self._last_query_rewrite = None
         
+        # FunctionGemma setup
+        self._function_gemma_adapter = function_gemma_adapter
+        if FUNCTION_GEMMA_AVAILABLE and not self._function_gemma_adapter:
+            if function_gemma_client:
+                # Check if function_gemma_client is already a FunctionGemmaAdapter
+                if hasattr(function_gemma_client, 'process_query') and hasattr(function_gemma_client, '_tool_executor'):
+                    # It's already an adapter, use it directly
+                    self._function_gemma_adapter = function_gemma_client
+                else:
+                    # It's a raw LLM client, create adapter
+                    self._setup_function_gemma(function_gemma_client)
+    
     def _normalize_query(self, query: str) -> str:
         """Normalize input query to NFC for consistent matching."""
         if not query:
             return ""
         return unicodedata.normalize("NFC", query)
-
-    # FunctionGemma setup
-        self._function_gemma_adapter = function_gemma_adapter
-        if FUNCTION_GEMMA_AVAILABLE and not self._function_gemma_adapter:
-            if function_gemma_client:
-                self._setup_function_gemma(function_gemma_client)
     
     def _setup_function_gemma(self, function_gemma_client) -> None:
         """Initialize FunctionGemma adapter with tool executor."""

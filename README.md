@@ -599,6 +599,50 @@ flowchart LR
 - 출처 규정 번호를 함께 명시하세요.
 ```
 
+### 4️⃣ 고급 RAG 기법
+
+시스템은 최신 RAG 연구를 반영하여 다음과 같은 고급 기법을 적용합니다.
+
+#### Agentic RAG (Tool Calling)
+
+LLM이 도구를 선택하고 실행하는 에이전트 기반 RAG입니다.
+
+| 도구 | 설명 |
+|------|------|
+| `search_regulations` | 규정 검색 (인텐트 확장 적용) |
+| `get_regulation_detail` | 특정 규정 상세 조회 |
+| `generate_answer` | 최종 답변 생성 |
+
+**인텐트 분석 힌트**: Tool Calling 시 `QueryAnalyzer`가 쿼리를 분석하여 LLM 시스템 프롬프트에 힌트를 삽입합니다.
+
+```text
+[의도 분석] 사용자의 진짜 의도는 '휴직, 휴가, 연구년' 관련일 수 있습니다.
+[대상] 교수/교원
+[검색 키워드] 나는 교수인데 학교에 가기 싫어 휴직 휴가 연구년 안식년
+```
+
+#### Corrective RAG
+
+검색 결과의 관련성을 평가하고, 낮으면 쿼리를 확장하여 재검색합니다.
+
+```
+초기 검색 → 관련성 평가 → [낮으면] 쿼리 확장 → 재검색 → 결과 병합
+```
+
+**평가 기준**:
+- Top 결과 점수 (50%)
+- 키워드 오버랩 (30%)
+- 결과 다양성 (20%)
+
+#### Self-RAG (선택적)
+
+LLM이 검색 필요성과 결과 품질을 자체 평가합니다.
+
+> **참고**: Self-RAG는 추가 LLM 호출이 필요하여 기본적으로 비활성화되어 있습니다.
+
+> **상세한 파이프라인 문서는 [docs/QUERY_PIPELINE.md](./docs/QUERY_PIPELINE.md)를 참고하세요.**
+
+
 ---
 
 ## 환경 설정
@@ -748,4 +792,6 @@ uv add <package>
 | [QUICKSTART.md](./QUICKSTART.md) | 단계별 설치 및 첫 사용 가이드 | 모든 사용자 |
 | [LLM_GUIDE.md](./LLM_GUIDE.md) | Ollama, OpenAI, Gemini 등 LLM 설정 상세 | 관리자, 개발자 |
 | [SCHEMA_REFERENCE.md](./SCHEMA_REFERENCE.md) | JSON 출력 필드 상세 명세 | 개발자 |
+| [docs/QUERY_PIPELINE.md](./docs/QUERY_PIPELINE.md) | 쿼리 처리 파이프라인 상세 | 개발자, AI 에이전트 |
 | [AGENTS.md](./AGENTS.md) | Clean Architecture, 코딩 규칙, TDD 가이드 | 기여자, AI 에이전트 |
+

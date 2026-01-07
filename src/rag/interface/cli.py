@@ -927,6 +927,7 @@ def _perform_unified_search(
         tool_mode = getattr(args, "tool_mode", "auto")
         function_gemma_client = FunctionGemmaAdapter(
             tool_executor=executor,
+            query_analyzer=analyzer,  # Pass analyzer for intent-aware prompts
             api_mode=tool_mode,
             llm_client=llm_client,
         )

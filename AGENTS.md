@@ -111,18 +111,27 @@ regulation_manager/
 │       │   ├── value_objects.py    # SearchFilter, SyncResult
 │       │   └── repositories.py     # IVectorStore, ILLMClient 인터페이스
 │       ├── application/
-│       │   ├── search_usecase.py   # 검색/질문 로직
+│       │   ├── search_usecase.py   # 검색/질문 로직, Corrective RAG 통합
+│       │   ├── full_view_usecase.py # 규정 전문 조회 로직
 │       │   └── sync_usecase.py     # 동기화 로직
 │       ├── infrastructure/
 │       │   ├── chroma_store.py     # ChromaDB 벡터 저장소
 │       │   ├── hybrid_search.py    # BM25 + Dense, QueryAnalyzer
+│       │   ├── query_analyzer.py   # 쿼리 분석, 인텐트/동의어 확장
 │       │   ├── reranker.py         # BGE Reranker
+│       │   ├── retrieval_evaluator.py  # Corrective RAG 관련성 평가
+│       │   ├── self_rag.py         # Self-RAG 자체 평가 메커니즘
+│       │   ├── function_gemma_adapter.py # LLM Tool Calling 어댑터
+│       │   ├── tool_executor.py    # 도구 실행기
+│       │   ├── tool_definitions.py # 도구 정의 (search_regulations 등)
 │       │   ├── llm_adapter.py      # LLM 클라이언트 어댑터
+│       │   ├── patterns.py         # 정규식 패턴 정의
 │       │   └── json_loader.py      # JSON → Chunk 변환
 │       └── interface/
 │           ├── unified_cli.py      # 통합 CLI 진입점
 │           ├── cli.py              # CLI 로직 (search, sync, status, reset)
 │           ├── query_handler.py    # 쿼리 처리 통합 핸들러 (CLI/Web/MCP 공용)
+│           ├── chat_logic.py       # 대화 로직 (후속 질문 처리)
 │           ├── formatters.py       # 출력 포맷터 (Rich, Markdown)
 │           ├── gradio_app.py       # Gradio Web UI
 │           └── mcp_server.py       # MCP Server (FastMCP)
@@ -138,6 +147,7 @@ regulation_manager/
         ├── synonyms.json       # 동의어 사전 (167개 용어)
         └── intents.json        # 인텐트 규칙 (51개 규칙)
 ```
+
 
 ---
 
@@ -180,24 +190,205 @@ regulation_manager/
 
 ## 핵심 컴포넌트
 
-### 검색 파이프라인 (Ask/Search)
+### 쿼리 처리 파이프라인 (Query Processing Pipeline)
 
+사용자 쿼리가 입력되어 최종 답변이 출력되기까지의 전체 흐름입니다.
+
+#### 1단계: 초기화 (CLI/Web UI)
+
+```mermaid
+graph TD
+    A[사용자 입력] --> B[ChromaVectorStore 로드]
+    B --> C[LLMClientAdapter 초기화]
+    C --> D{Tool Calling 사용?}
+    D -->|Yes| E[QueryAnalyzer 생성]
+    E --> F[ToolExecutor 생성]
+    F --> G[FunctionGemmaAdapter 생성]
+    D -->|No| H[Skip]
+    G --> I[QueryHandler 생성]
+    H --> I
 ```
-Query → QueryAnalyzer → Hybrid Search → Audience Filter → BGE Reranker → LLM 답변
-         ↓                ↓                  ↓                ↓              ↓
-    유형/대상 분석      BM25 + Dense      대상 불일치        Cross-Encoder    Context 구성
-    동의어 확장        RRF 융합          감점 처리          재정렬          답변 생성
+
+**핵심 파일:**
+- `interface/cli.py`: CLI 초기화 및 사용자 입력 처리
+- `interface/gradio_app.py`: Web UI 초기화
+- `interface/query_handler.py`: 쿼리 라우팅 및 결과 통합
+
+#### 2단계: 쿼리 라우팅 (QueryHandler.process_query_stream)
+
+```mermaid
+graph TD
+    A["query 입력"] --> B["NFC 정규화"]
+    B --> C{쿼리 유형 판별}
+    C -->|"규정명만 (학칙)"| D[get_regulation_overview]
+    C -->|"조항 요청 (제5조)"| E[get_article_view]
+    C -->|"장 요청 (제2장)"| F[get_chapter_view]
+    C -->|"첨부 요청 (별표1)"| G[get_attachment_view]
+    C -->|"전문 요청"| H[get_full_view]
+    C -->|"일반 질문"| I{Tool Calling?}
+    I -->|Yes| J["_process_with_function_gemma"]
+    I -->|No| K{모드?}
+    K -->|search| L[search]
+    K -->|ask| M[ask_stream]
 ```
 
-**핵심 파일**:
+**쿼리 유형 판별 패턴** (`infrastructure/patterns.py`):
+| 패턴 | 예시 | 처리 방식 |
+|------|------|----------|
+| `REGULATION_ONLY_PATTERN` | "교원인사규정" | 규정 개요 반환 |
+| `RULE_CODE_PATTERN` | "3-1-24" | 해당 규정 검색 |
+| `REGULATION_ARTICLE_PATTERN` | "학칙 제15조" | 특정 조항 반환 |
+| 첨부 요청 | "별표 1", "서식 2" | 첨부 문서 반환 |
+| 전문 요청 | "학칙 전문" | 전체 규정 텍스트 |
 
-| 파일 | 주요 함수/클래스 |
-|------|-----------------|
-| `application/search_usecase.py` | `search()`, `search_unique()`, `ask()` |
-| `infrastructure/hybrid_search.py` | `HybridSearcher`, `QueryAnalyzer`, `Audience` |
-| `infrastructure/reranker.py` | `BGEReranker` |
+#### 3단계: Tool Calling 경로 (Agentic RAG)
+
+LLM이 도구를 선택하고 `ToolExecutor`가 실행하는 에이전트 기반 RAG입니다.
+
+```mermaid
+sequenceDiagram
+    participant U as 사용자
+    participant QH as QueryHandler
+    participant FGA as FunctionGemmaAdapter
+    participant LLM as LLM (Tool Calling)
+    participant TE as ToolExecutor
+    participant QA as QueryAnalyzer
+    participant SUC as SearchUseCase
+
+    U->>QH: "학교에 가기 싫어"
+    QH->>FGA: process_query(query)
+    Note over FGA: _build_analysis_context() 호출
+    FGA->>QA: 인텐트/청중 분석
+    QA-->>FGA: "[검색 키워드] 휴직 휴가 연구년"
+    FGA->>LLM: 시스템 프롬프트 + 분석 힌트 + 쿼리
+    LLM-->>FGA: Tool Call: search_regulations(...)
+    FGA->>TE: execute("search_regulations", args)
+    TE->>QA: expand_query(query)
+    TE->>SUC: search(expanded_query)
+    SUC-->>TE: 검색 결과
+    TE-->>FGA: ToolResult
+    FGA->>LLM: 결과 전달, generate_answer 요청
+    LLM-->>FGA: 최종 답변
+    FGA-->>QH: (answer, tool_results)
+    QH-->>U: 최종 답변 출력
+```
+
+**핵심 파일:**
+| 파일 | 역할 |
+|------|------|
+| `infrastructure/function_gemma_adapter.py` | LLM Tool Calling 관리, 인텐트 힌트 삽입 |
+| `infrastructure/tool_executor.py` | 도구 실행, 쿼리 확장 적용 |
+| `infrastructure/tool_definitions.py` | 사용 가능한 도구 정의 |
+
+**시스템 프롬프트 구조:**
+```
+당신은 대학 규정 전문가입니다...
+
+[의도 분석] 사용자의 진짜 의도는 '휴직, 휴가, 연구년' 관련일 수 있습니다.
+[대상] 교수/교원
+[검색 키워드] 나는 교수인데 학교에 가기 싫어 휴직 휴가 연구년 안식년
+
+작업 순서:
+1. 위 분석 결과를 참고하여 search_regulations 도구로 관련 규정을 검색합니다.
+   - [검색 키워드]가 제공된 경우, 해당 키워드를 query에 포함하세요.
+2. 검색 결과를 바탕으로 generate_answer 도구를 호출하여 최종 답변을 생성합니다.
+```
+
+#### 4단계: 전통적 검색/Ask 경로 (Non-Tool Calling)
+
+```mermaid
+sequenceDiagram
+    participant U as 사용자
+    participant QH as QueryHandler
+    participant SUC as SearchUseCase
+    participant QA as QueryAnalyzer
+    participant HS as HybridSearcher
+    participant RE as RetrievalEvaluator
+    participant RR as BGEReranker
+    participant LLM as LLM
+
+    U->>QH: "교원 연구년 자격은?"
+    QH->>SUC: search() 또는 ask_stream()
+    SUC->>QA: expand_query + rewrite_query
+    SUC->>HS: hybrid_search(expanded_query)
+    Note over HS: BM25 + Dense → RRF 융합
+    HS-->>SUC: 초기 검색 결과
+    SUC->>RE: needs_correction(query, results)?
+    alt 관련성 낮음
+        RE-->>SUC: True
+        SUC->>QA: expand_query(query)
+        SUC->>HS: hybrid_search(expanded_query)
+        Note over SUC: Corrective RAG
+    end
+    SUC->>RR: rerank(results)
+    RR-->>SUC: 재정렬된 결과
+    SUC->>LLM: generate_stream(question, context)
+    LLM-->>SUC: 토큰 스트림
+    SUC-->>QH: 토큰 이벤트
+    QH-->>U: 실시간 출력
+```
+
+**핵심 파일:**
+| 파일 | 역할 |
+|------|------|
+| `application/search_usecase.py` | 검색 로직, Corrective RAG 통합 |
+| `infrastructure/hybrid_search.py` | BM25 + Dense 하이브리드 검색 |
+| `infrastructure/reranker.py` | BGE Cross-Encoder 재정렬 |
+| `infrastructure/retrieval_evaluator.py` | 검색 결과 관련성 평가 (Corrective RAG) |
+
+---
+
+### 고급 RAG 기법
+
+#### Corrective RAG
+
+검색 결과의 관련성을 평가하고, 낮으면 쿼리를 확장하여 재검색합니다.
+
+```python
+# infrastructure/retrieval_evaluator.py
+class RetrievalEvaluator:
+    RELEVANCE_THRESHOLD = 0.4
+    
+    def needs_correction(self, query, results) -> bool:
+        score = self.evaluate(query, results)
+        return score < self.RELEVANCE_THRESHOLD
+```
+
+**평가 기준:**
+- Top 결과 점수 (50%)
+- 키워드 오버랩 (30%)
+- 결과 다양성 (20%)
+
+#### Self-RAG
+
+LLM이 검색 필요성과 결과 품질을 자체 평가합니다.
+
+```python
+# infrastructure/self_rag.py
+class SelfRAGEvaluator:
+    def needs_retrieval(self, query) -> bool: ...
+    def evaluate_relevance(self, query, results) -> tuple: ...
+    def evaluate_support(self, query, context, answer) -> str: ...
+```
+
+> **참고:** Self-RAG는 추가 LLM 호출이 필요하여 기본적으로 비활성화되어 있습니다.
+
+#### 인텐트 확장 (Intent Expansion)
+
+자연어 의도 표현을 검색 키워드로 변환합니다.
+
+| 원본 쿼리 | 확장 결과 |
+|-----------|----------|
+| 학교 가기 싫어 | 학교 가기 싫어 **휴직 휴가 연구년 안식년** |
+| 그만두고 싶어 | 그만두고 싶어 **퇴직 사직 명예퇴직** |
+| 장학금 받고 싶어 | 장학금 받고 싶어 **장학금 신청 지급** |
+
+**설정 파일:** `data/config/intents.json`, `data/config/synonyms.json`
+
+---
 
 ### 주요 데이터 구조
+
 
 ```python
 # domain/entities.py
@@ -276,10 +467,16 @@ uv run pytest tests/rag/ -v
 | 변경 대상 | 영향 범위 | 필수 조치 |
 |-----------|----------|----------|
 | `SearchUseCase` | CLI, Web UI, MCP Server | 통합 테스트 실행 |
-| `QueryAnalyzer` | 검색 품질 | 검색 테스트 케이스 확인 |
+| `QueryAnalyzer` | 검색 품질, 인텐트 확장 | 검색 테스트 케이스 확인 |
 | `Reranker` | 재정렬 정확도 | 보너스 점수 로직 검증 |
+| `FunctionGemmaAdapter` | Tool Calling, LLM 프롬프트 | 도구 호출 시나리오 테스트 |
+| `ToolExecutor` | 도구 실행, 쿼리 확장 | 인텐트 확장 테스트 |
+| `RetrievalEvaluator` | Corrective RAG 트리거 | 임계값 조정 시 검색 품질 확인 |
+| `SelfRAGEvaluator` | LLM 자체 평가 | 추가 LLM 호출 비용 고려 |
+| `QueryHandler` | 모든 쿼리 처리 | CLI/Web 양쪽 테스트 |
 | `domain/entities.py` | 전체 시스템 | 모든 테스트 실행 |
 | `sync_usecase.py` | 데이터 무결성 | 증분 동기화 테스트 |
+
 
 ---
 
@@ -318,31 +515,105 @@ RAG_INTENTS_PATH=data/config/intents.json
 | [QUICKSTART.md](./QUICKSTART.md) | 빠른 시작 가이드 |
 | [SCHEMA_REFERENCE.md](./SCHEMA_REFERENCE.md) | JSON 스키마 명세 |
 | [LLM_GUIDE.md](./LLM_GUIDE.md) | LLM 설정 가이드 |
+| [docs/QUERY_PIPELINE.md](./docs/QUERY_PIPELINE.md) | 쿼리 처리 파이프라인 상세 |
 
 ---
 
 ## AI 에이전트별 설정
 
-### Gemini CLI
+이 문서는 다양한 AI 에이전트에서 범용적으로 사용됩니다.
+
+### 파일 구조
+
+```
+regulation_manager/
+├── AGENTS.md                          # 📌 정본 (Canonical Source)
+├── GEMINI.md                          # → AGENTS.md 심볼릭 링크
+├── CLAUDE.md                          # → AGENTS.md 심볼릭 링크
+├── .github/
+│   └── copilot-instructions.md        # GitHub Copilot 전용
+├── .cursor/
+│   └── rules/
+│       └── regulation_manager.mdc     # Cursor AI 전용
+└── docs/
+    └── QUERY_PIPELINE.md              # 상세 파이프라인 문서
+```
+
+### Gemini CLI / Antigravity
+
+프로젝트 루트의 `GEMINI.md`를 자동으로 읽습니다.
 
 ```bash
-ln -s AGENTS.md GEMINI.md  # 심볼릭 링크 생성
+# 심볼릭 링크 확인/생성
+ls -la GEMINI.md
+# lrwxr-xr-x  GEMINI.md -> AGENTS.md
+
+# 없으면 생성
+ln -sf AGENTS.md GEMINI.md
 ```
 
 ### GitHub Copilot
 
-`.github/copilot-instructions.md` 파일 생성:
-
-```markdown
-See AGENTS.md for project context and coding guidelines.
-```
+`.github/copilot-instructions.md` 파일을 읽습니다. 이 파일은 AGENTS.md를 참조하며 빠른 요약을 제공합니다.
 
 ### Cursor
 
-프로젝트 루트의 `AGENTS.md`를 자동 인식합니다. 또는 `.cursor/rules/regulations.mdc` 파일을 생성하세요.
+`.cursor/rules/regulation_manager.mdc` 파일을 읽습니다. 또는 프로젝트 루트의 `AGENTS.md`도 자동 인식됩니다.
 
-### Claude Code
+### Claude Code / Claude Desktop
+
+프로젝트 루트의 `CLAUDE.md`를 읽습니다.
 
 ```bash
-ln -s AGENTS.md CLAUDE.md
+# 심볼릭 링크 확인/생성
+ls -la CLAUDE.md
+# lrwxr-xr-x  CLAUDE.md -> AGENTS.md
+
+# 없으면 생성
+ln -sf AGENTS.md CLAUDE.md
 ```
+
+### Codeium / Windsurf
+
+프로젝트 루트의 `AGENTS.md`를 자동 인식합니다.
+
+### OpenAI Codex / ChatGPT
+
+직접 인식하지 않으므로, 대화 시작 시 AGENTS.md 내용을 붙여넣거나 참조하세요.
+
+---
+
+## 문서 유지보수 (AI 에이전트 필독)
+
+> [!IMPORTANT]
+> **이 섹션은 AI 에이전트가 문서를 수정할 때 반드시 따라야 하는 지침입니다.**
+
+### 정본 관리
+
+`AGENTS.md`는 **정본(Canonical Source)**입니다.
+
+- `GEMINI.md`, `CLAUDE.md` → 심볼릭 링크이므로 **자동 동기화**됨
+- `.github/copilot-instructions.md`, `.cursor/rules/regulation_manager.mdc` → **별도 파일이므로 수동 동기화 필요**
+
+### AI 에이전트 수정 규칙
+
+`AGENTS.md`의 **핵심 내용**이 변경되면, 다음 파일들도 **함께 업데이트**하세요:
+
+1. **`.github/copilot-instructions.md`** - GitHub Copilot용 빠른 참조
+2. **`.cursor/rules/regulation_manager.mdc`** - Cursor AI용 규칙 파일
+
+특히 다음 항목이 변경되면 반드시 동기화하세요:
+- 프로젝트 구조 (`프로젝트 구조` 섹션)
+- 핵심 컴포넌트 목록 (`핵심 컴포넌트` 섹션)
+- 개발 원칙 및 금지 사항 (`개발 표준` 섹션)
+- 주요 명령어 (`명령어 레퍼런스` 섹션)
+
+### 동기화 예시
+
+```markdown
+# AGENTS.md 수정 후
+1. .github/copilot-instructions.md의 "Key Components" 테이블 업데이트
+2. .cursor/rules/regulation_manager.mdc의 "핵심 컴포넌트" 테이블 업데이트
+```
+
+

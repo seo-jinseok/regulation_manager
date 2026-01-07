@@ -148,6 +148,10 @@ class ToolExecutor:
         top_k = args.get("top_k", 5)
         audience_str = args.get("audience", "all")
 
+        # Apply intent/synonym expansion for better recall on colloquial queries
+        if self._query_analyzer:
+            query = self._query_analyzer.expand_query(query)
+
         # Convert audience string to enum
         from ..infrastructure.query_analyzer import Audience
 

@@ -24,6 +24,7 @@ from ..infrastructure.patterns import (
 # Forward references for type hints
 if TYPE_CHECKING:
     from ..infrastructure.hybrid_search import Audience, ScoredDocument
+    from ..infrastructure.retrieval_evaluator import RetrievalEvaluator
 
 
 def _extract_regulation_only_query(query: str) -> Optional[str]:
@@ -159,6 +160,10 @@ class SearchUseCase:
         self._last_query_rewrite: Optional[QueryRewriteInfo] = None
         self._reranker = reranker
         self._reranker_initialized = reranker is not None
+        
+        # Corrective RAG components
+        self._retrieval_evaluator = None
+        self._corrective_rag_enabled = True
 
     @property
     def hybrid_searcher(self) -> Optional[IHybridSearcher]:
@@ -490,6 +495,12 @@ class SearchUseCase:
         if self.use_reranker and boosted_results:
             boosted_results = self._apply_reranking(boosted_results, scoring_query_text, top_k)
 
+        # Corrective RAG: Check if results need correction
+        if self._corrective_rag_enabled and boosted_results:
+            boosted_results = self._apply_corrective_rag(
+                query_text, boosted_results, filter, top_k, include_abolished, audience_override
+            )
+
         # Deduplicate by article (One Chunk per Article)
         return self._deduplicate_by_article(boosted_results, top_k)
 
@@ -714,6 +725,84 @@ class SearchUseCase:
                     SearchResult(chunk=original.chunk, score=score, rank=i + 1)
                 )
         return final_results
+
+    def _apply_corrective_rag(
+        self,
+        query_text: str,
+        results: List[SearchResult],
+        filter: Optional[SearchFilter],
+        top_k: int,
+        include_abolished: bool,
+        audience_override: Optional["Audience"],
+    ) -> List[SearchResult]:
+        """
+        Apply Corrective RAG: evaluate results and re-retrieve if needed.
+        
+        If the initial results have low relevance, attempt to:
+        1. Expand the query using intent/synonym detection
+        2. Re-run the search with expanded query
+        3. Merge and re-rank combined results
+        """
+        # Lazy initialize evaluator
+        if self._retrieval_evaluator is None:
+            from ..infrastructure.retrieval_evaluator import RetrievalEvaluator
+            self._retrieval_evaluator = RetrievalEvaluator()
+        
+        # Evaluate current results
+        if not self._retrieval_evaluator.needs_correction(query_text, results):
+            return results  # Results are good enough
+        
+        # Try to get expanded query
+        if not self.hybrid_searcher:
+            return results  # No analyzer available
+        
+        analyzer = self.hybrid_searcher._query_analyzer
+        expanded_query = analyzer.expand_query(query_text)
+        
+        if expanded_query == query_text:
+            # No expansion available, try LLM rewrite if we haven't already
+            try:
+                rewrite_info = analyzer.rewrite_query_with_info(query_text)
+                if rewrite_info.rewritten and rewrite_info.rewritten != query_text:
+                    expanded_query = rewrite_info.rewritten
+                else:
+                    return results  # No alternative query available
+            except Exception:
+                return results
+        
+        # Re-search with expanded query (disable corrective RAG to avoid recursion)
+        self._corrective_rag_enabled = False
+        try:
+            corrected_results = self._search_general(
+                expanded_query, filter, top_k, include_abolished, audience_override
+            )
+        finally:
+            self._corrective_rag_enabled = True
+        
+        # Merge results: prioritize corrected results but keep unique originals
+        seen_ids = set()
+        merged = []
+        
+        # Add corrected results first
+        for r in corrected_results:
+            if r.chunk.id not in seen_ids:
+                seen_ids.add(r.chunk.id)
+                merged.append(r)
+        
+        # Add original results that weren't in corrected set
+        for r in results:
+            if r.chunk.id not in seen_ids:
+                seen_ids.add(r.chunk.id)
+                # Slightly lower score for non-corrected results
+                merged.append(
+                    SearchResult(chunk=r.chunk, score=r.score * 0.8, rank=len(merged) + 1)
+                )
+        
+        # Re-sort by score
+        merged.sort(key=lambda x: -x.score)
+        
+        return merged[:top_k]
+
 
     def get_last_query_rewrite(self) -> Optional[QueryRewriteInfo]:
         """Return last query rewrite info (if any)."""

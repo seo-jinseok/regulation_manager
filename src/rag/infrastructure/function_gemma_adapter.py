@@ -19,6 +19,7 @@ import requests
 
 from .tool_definitions import TOOL_DEFINITIONS, get_tools_prompt
 from .tool_executor import ToolExecutor, ToolResult
+from .query_analyzer import QueryAnalyzer, Audience
 
 # Try to import mlx-lm for Apple Silicon optimization
 try:
@@ -99,6 +100,7 @@ class FunctionGemmaAdapter:
         self,
         llm_client=None,
         tool_executor: Optional[ToolExecutor] = None,
+        query_analyzer: Optional[QueryAnalyzer] = None,
         max_iterations: int = 5,
         model: str = None,
         base_url: str = None,
@@ -124,6 +126,7 @@ class FunctionGemmaAdapter:
         """
         self._llm_client = llm_client
         self._tool_executor = tool_executor
+        self._query_analyzer = query_analyzer
         self._max_iterations = max_iterations
         
         # Load from environment if not provided
@@ -146,6 +149,43 @@ class FunctionGemmaAdapter:
     def set_tool_executor(self, tool_executor: ToolExecutor) -> None:
         """Set the tool executor."""
         self._tool_executor = tool_executor
+
+    def set_query_analyzer(self, query_analyzer: QueryAnalyzer) -> None:
+        """Set the query analyzer."""
+        self._query_analyzer = query_analyzer
+
+    def _build_analysis_context(self, query: str) -> str:
+        """Build context from QueryAnalyzer for LLM system prompt."""
+        if not self._query_analyzer:
+            return ""
+        
+        hints = []
+        
+        # Intent analysis
+        intent_matches = self._query_analyzer._match_intents(query)
+        if intent_matches:
+            keywords = []
+            for m in intent_matches[:2]:
+                keywords.extend(m.keywords[:3])
+            if keywords:
+                hints.append(f"[의도 분석] 사용자의 진짜 의도는 '{', '.join(keywords)}' 관련일 수 있습니다.")
+        
+        # Audience detection
+        audience = self._query_analyzer.detect_audience(query)
+        if audience != Audience.ALL:
+            audience_map = {
+                Audience.STUDENT: "학생",
+                Audience.FACULTY: "교수/교원",
+                Audience.STAFF: "직원",
+            }
+            hints.append(f"[대상] {audience_map.get(audience, audience.value)}")
+        
+        # Query expansion
+        expanded = self._query_analyzer.expand_query(query)
+        if expanded != query:
+            hints.append(f"[검색 키워드] {expanded}")
+        
+        return "\n".join(hints)
 
     def _resolve_api_mode(self, mode: str) -> str:
         """Resolve API mode based on availability."""
@@ -384,11 +424,18 @@ class FunctionGemmaAdapter:
         
         tool_results: List[ToolResult] = []
         
-        # System prompt for guiding tool usage
-        system_prompt = """당신은 대학 규정 전문가입니다. 사용자의 질문에 답하기 위해 제공된 도구를 사용하세요.
+        # Build intent analysis context
+        analysis_context = self._build_analysis_context(query)
+        
+        # System prompt for guiding tool usage with intent hints
+        system_prompt = f"""당신은 대학 규정 전문가입니다. 사용자의 질문에 답하기 위해 제공된 도구를 사용하세요.
+
+{analysis_context}
 
 작업 순서:
-1. search_regulations 도구로 관련 규정을 검색합니다.
+1. 위 분석 결과를 참고하여 search_regulations 도구로 관련 규정을 검색합니다.
+   - [검색 키워드]가 제공된 경우, 해당 키워드를 query에 포함하세요.
+   - 예: 사용자가 "학교 가기 싫어"라고 해도 [검색 키워드]가 "휴직 휴가 연구년"이면 해당 키워드로 검색하세요.
 2. 검색 결과를 바탕으로 generate_answer 도구를 호출하여 최종 답변을 생성합니다.
 
 중요: 검색 결과를 받은 후에는 반드시 generate_answer를 호출하여 사용자에게 친절한 답변을 제공하세요."""
