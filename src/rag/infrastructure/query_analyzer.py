@@ -224,19 +224,26 @@ class QueryAnalyzer:
     INTENT_MAX_MATCHES = 3
 
     # LLM Query Rewriting prompt
-    QUERY_REWRITE_PROMPT = """당신은 사용자의 질문을 검색용 키워드로 변환하는 AI 조교입니다.
-특히 한국어 사용자의 의도적 오타, 구어체, 띄어쓰기 오류를 교정하여 검색 품질을 높여야 합니다.
+    QUERY_REWRITE_PROMPT = """당신은 대학 규정 검색 시스템의 전처리 에이전트입니다.
+사용자의 불완전한 질문(오타, 구어체, 비문)을 **표준적인 문장**으로 교정하고, 검색에 필요한 **핵심 키워드**를 추출해야 합니다.
+
+입력: 사용자의 자연어 질문
+출력: JSON 형식
 
 지침:
-1. 사용자의 오타나 구어체를 표준어로 교정한 후 핵심 키워드를 추출하세요.
-   - 예: "휴학하고 시퍼" -> "휴학 희망"
-   - 예: "강의면제 바드려면" -> "강의 면제 신청"
-   - 예: "장학금 타고 시퍼요" -> "장학금 수혜 조건"
-2. 검색에 불필요한 조사, 어미, 감탄사는 제거하세요.
-3. 오직 공백으로 구분된 핵심 단어들만 출력하세요. (설명 금지)
+1. **normalized**: 사용자의 질문을 문법에 맞는 표준어 문장으로 교정하세요.
+   - 오타 수정 ("밫고 시퍼" -> "받고 싶어")
+   - 조사는 유지하되, 문장의 의미를 명확히 하세요.
+2. **keywords**: 검색 엔진에 입력할 핵심 단어 리스트를 추출하세요. (조사/어미 제거)
 
-출력 형식:
-키워드1 키워드2 키워드3"""
+예시:
+입력: "장학금 밫고 시퍼"
+출력:
+{
+  "normalized": "장학금 받고 싶어",
+  "keywords": ["장학금", "신청", "지급"]
+}
+"""
 
     def __init__(
         self,
@@ -349,16 +356,17 @@ class QueryAnalyzer:
                 matched_intents=list(cached.matched_intents),
             )
 
-        intent_matches = self._match_intents(query)
-        intent_keywords = self._intent_keywords_from_matches(intent_matches)
-        used_intent = bool(intent_matches)
-        matched_intents = [m.label or m.intent_id for m in intent_matches]
-
-        # No LLM client: fall back to synonym expansion
+        # No LLM client: fall back to rule-based legacy flow
         if not self._llm_client:
+            intent_matches = self._match_intents(query)
+            intent_keywords = self._intent_keywords_from_matches(intent_matches)
+            used_intent = bool(intent_matches)
+            matched_intents = [m.label or m.intent_id for m in intent_matches]
+            
             cleaned = self.clean_query(query)
             used_synonyms = bool(self._get_synonym_expansions(cleaned))
             rewritten = self.expand_query(query)
+            
             result = QueryRewriteResult(
                 original=query,
                 rewritten=rewritten,
@@ -373,7 +381,7 @@ class QueryAnalyzer:
             self._cache[query] = result
             return result
 
-        # Call LLM for rewriting
+        # Call LLM for normalization & keyword extraction
         try:
             response = self._llm_client.generate(
                 system_prompt=self.QUERY_REWRITE_PROMPT,
@@ -381,26 +389,55 @@ class QueryAnalyzer:
                 temperature=0.0,
             )
             
-            # Post-process response
-            rewritten = self._clean_llm_response(response)
+            # Parse JSON response
+            import json
+            normalized_query = query # Default to original
+            rewritten_keywords = ""
             
-            # Robust length limit: Search keywords shouldn't be excessively long
-            # If the response is more than 200 chars or 30 words, it's likely a hallucination
-            if len(rewritten) > 200 or len(rewritten.split()) > 30:
-                # Take only the first few words as a safety measure
-                rewritten = " ".join(rewritten.split()[:10])
+            # Simple JSON extraction wrapper
+            try:
+                # Remove Markdown code blocks if present
+                clean_json = response.strip()
+                if clean_json.startswith("```json"):
+                    clean_json = clean_json[7:]
+                if clean_json.endswith("```"):
+                    clean_json = clean_json[:-3]
+                
+                data = json.loads(clean_json.strip())
+                normalized_query = data.get("normalized", query)
+                keywords = data.get("keywords", [])
+                if isinstance(keywords, list):
+                    rewritten_keywords = " ".join(keywords)
+                else:
+                    rewritten_keywords = str(keywords)
+            except json.JSONDecodeError:
+                # Fallback if JSON parsing fails but LLM returned text
+                # Try to salvage if it's just a keyword list
+                normalized_query = query
+                rewritten_keywords = self._clean_llm_response(response)
 
-            # Collapse multiple spaces
-            rewritten = " ".join(rewritten.split())
+            # Robustness check
+            if len(rewritten_keywords) > 200:
+                rewritten_keywords = " ".join(rewritten_keywords.split()[:10])
 
-            if not rewritten:
-                from ..exceptions import HybridSearchError
-                raise HybridSearchError("LLM returned empty rewrite")
+            # Now, use the NORMALIZED query for intent matching
+            intent_matches = self._match_intents(normalized_query)
+            intent_keywords = self._intent_keywords_from_matches(intent_matches)
+            used_intent = bool(intent_matches)
+            matched_intents = [m.label or m.intent_id for m in intent_matches]
+            
+            # Merge LLM keywords with Intent keywords
+            final_keywords = rewritten_keywords
             if intent_keywords:
-                rewritten = self._merge_keywords(rewritten, intent_keywords)
+                final_keywords = self._merge_keywords(rewritten_keywords, intent_keywords)
+            
+            if not final_keywords.strip():
+                 # Final safety net
+                 final_keywords = self.expand_query(normalized_query)
+
             result = QueryRewriteResult(
                 original=query,
-                rewritten=rewritten,
+                rewritten=final_keywords,
                 method="llm",
                 from_cache=False,
                 used_llm=True,
@@ -411,8 +448,12 @@ class QueryAnalyzer:
             )
             self._cache[query] = result
             return result
+            
         except Exception:
             # On any error, fall back to synonym expansion
+            intent_matches = self._match_intents(query)
+            matched_intents = [m.label or m.intent_id for m in intent_matches]
+            
             cleaned = self.clean_query(query)
             used_synonyms = bool(self._get_synonym_expansions(cleaned))
             rewritten = self.expand_query(query)
@@ -422,7 +463,7 @@ class QueryAnalyzer:
                 method="rules",
                 from_cache=False,
                 used_llm=False,
-                used_intent=used_intent,
+                used_intent=bool(intent_matches),
                 used_synonyms=used_synonyms,
                 fallback=True,
                 matched_intents=matched_intents,
