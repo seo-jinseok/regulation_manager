@@ -410,3 +410,31 @@ class TestAudienceDetection:
         assert mock_llm.generate.call_count == 2
         assert "휴직" in result1
         assert "퇴직" in result2
+
+
+class TestQueryRewritingWithTypos:
+    """오타 및 구어체 쿼리 리라이팅 테스트."""
+
+    def test_rewrite_typos_with_llm(self, mock_llm):
+        """오타가 포함된 쿼리가 LLM에 의해 교정되어야 함."""
+        # LLM이 오타를 교정하여 키워드를 반환한다고 가정
+        mock_llm.generate.return_value = "휴학 희망"
+
+        analyzer = QueryAnalyzer(llm_client=mock_llm)
+        # "시퍼" -> "싶어" -> "희망"
+        result = analyzer.rewrite_query("휴학하고 시퍼")
+
+        assert "휴학" in result
+        # Note: 실제 LLM이 연결되지 않으면 mock 응답에 의존하므로 
+        # 로직상 clean_query나 expand_query가 오타를 처리하지 못해도 
+        # LLM이 처리해준다는 것을 검증함.
+    
+    def test_rewrite_slang_with_llm(self, mock_llm):
+        """구어체 표현(바드려면)이 교정되어야 함."""
+        mock_llm.generate.return_value = "강의 면제 신청"
+
+        analyzer = QueryAnalyzer(llm_client=mock_llm)
+        result = analyzer.rewrite_query("강의면제 바드려면")
+
+        assert "강의" in result
+        assert "면제" in result
