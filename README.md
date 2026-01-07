@@ -640,7 +640,7 @@ LLM이 검색 필요성과 결과 품질을 자체 평가합니다.
 
 > **참고**: Self-RAG는 추가 LLM 호출이 필요하여 기본적으로 비활성화되어 있습니다.
 
-> **상세한 파이프라인 문서는 [docs/QUERY_PIPELINE.md](./docs/QUERY_PIPELINE.md)를 참고하세요.**
+> **상세한 파이프라인 문서는 [QUERY_PIPELINE.md](./QUERY_PIPELINE.md)를 참고하세요.**
 
 
 ---
@@ -792,6 +792,6 @@ uv add <package>
 | [QUICKSTART.md](./QUICKSTART.md) | 단계별 설치 및 첫 사용 가이드 | 모든 사용자 |
 | [LLM_GUIDE.md](./LLM_GUIDE.md) | Ollama, OpenAI, Gemini 등 LLM 설정 상세 | 관리자, 개발자 |
 | [SCHEMA_REFERENCE.md](./SCHEMA_REFERENCE.md) | JSON 출력 필드 상세 명세 | 개발자 |
-| [docs/QUERY_PIPELINE.md](./docs/QUERY_PIPELINE.md) | 쿼리 처리 파이프라인 상세 | 개발자, AI 에이전트 |
+| [QUERY_PIPELINE.md](./QUERY_PIPELINE.md) | 쿼리 처리 파이프라인 상세 | 개발자, AI 에이전트 |
 | [AGENTS.md](./AGENTS.md) | Clean Architecture, 코딩 규칙, TDD 가이드 | 기여자, AI 에이전트 |
 

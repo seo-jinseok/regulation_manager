@@ -515,7 +515,7 @@ RAG_INTENTS_PATH=data/config/intents.json
 | [QUICKSTART.md](./QUICKSTART.md) | 빠른 시작 가이드 |
 | [SCHEMA_REFERENCE.md](./SCHEMA_REFERENCE.md) | JSON 스키마 명세 |
 | [LLM_GUIDE.md](./LLM_GUIDE.md) | LLM 설정 가이드 |
-| [docs/QUERY_PIPELINE.md](./docs/QUERY_PIPELINE.md) | 쿼리 처리 파이프라인 상세 |
+| [QUERY_PIPELINE.md](./QUERY_PIPELINE.md) | 쿼리 처리 파이프라인 상세 |
 
 ---
 
@@ -530,6 +530,7 @@ regulation_manager/
 ├── AGENTS.md                          # 📌 정본 (Canonical Source)
 ├── GEMINI.md                          # → AGENTS.md 심볼릭 링크
 ├── CLAUDE.md                          # → AGENTS.md 심볼릭 링크
+├── QUERY_PIPELINE.md                  # 쿼리 처리 파이프라인 상세
 ├── .github/
 │   └── copilot-instructions.md        # GitHub Copilot 전용
 ├── .cursor/

@@ -70,4 +70,4 @@ User Query → NFC Normalize → Route by Type → [Tool Calling | Traditional S
 
 ---
 
-For detailed pipeline documentation, see [docs/QUERY_PIPELINE.md](../docs/QUERY_PIPELINE.md).
+For detailed pipeline documentation, see [QUERY_PIPELINE.md](../QUERY_PIPELINE.md).
