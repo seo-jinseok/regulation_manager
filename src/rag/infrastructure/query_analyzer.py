@@ -725,6 +725,10 @@ class QueryAnalyzer:
         """Flatten keywords from matched intents (top-N)."""
         keywords: List[str] = []
         for match in matches[: self.INTENT_MAX_MATCHES]:
+            # Add label as high-level keywords (e.g., "장학금 관심")
+            if match.label:
+                label_terms = [t.strip() for t in match.label.split() if t.strip()]
+                keywords = self._merge_token_list(keywords, label_terms)
             keywords = self._merge_token_list(keywords, match.keywords)
         return keywords
 
