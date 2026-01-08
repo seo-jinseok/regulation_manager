@@ -300,6 +300,296 @@
             "expected_rule_codes": [],
             "min_relevance_score": 0.3,
             "notes": "학생 컨텍스트 감지 테스트"
+        },
+        {
+            "id": "tuition_payment_01",
+            "category": "등록금",
+            "query": "등록금 분할 납부하고 싶어",
+            "expected_intents": ["등록 문제"],
+            "expected_keywords": ["등록금", "분할납부", "등록금납부"],
+            "expected_rule_codes": [],
+            "min_relevance_score": 0.3
+        },
+        {
+            "id": "credit_transfer_01",
+            "category": "학점",
+            "query": "다른 학교에서 들은 학점 인정받을 수 있어?",
+            "expected_intents": ["학점인정 관심"],
+            "expected_keywords": ["학점인정", "학점교류"],
+            "expected_rule_codes": [],
+            "min_relevance_score": 0.3
+        },
+        {
+            "id": "transfer_admission_01",
+            "category": "편입",
+            "query": "편입학 자격이 어떻게 돼?",
+            "expected_intents": ["편입 관심"],
+            "expected_keywords": ["편입", "편입학"],
+            "expected_rule_codes": [],
+            "min_relevance_score": 0.3
+        },
+        {
+            "id": "major_change_01",
+            "category": "전과",
+            "query": "다른 학과로 전과하고 싶어",
+            "expected_intents": ["전과 관심"],
+            "expected_keywords": ["전과", "전과신청", "학과변경"],
+            "expected_rule_codes": [],
+            "min_relevance_score": 0.3
+        },
+        {
+            "id": "double_major_01",
+            "category": "복수전공",
+            "query": "복수전공 신청하려면?",
+            "expected_intents": ["복수전공 관심"],
+            "expected_keywords": ["복수전공", "이중전공"],
+            "expected_rule_codes": [],
+            "min_relevance_score": 0.3
+        },
+        {
+            "id": "reinstatement_01",
+            "category": "복학",
+            "query": "휴학 후 복학 절차가 어떻게 돼?",
+            "expected_intents": ["복학 관련"],
+            "expected_keywords": ["복학", "복학신청", "복학절차"],
+            "expected_rule_codes": [],
+            "min_relevance_score": 0.3
+        },
+        {
+            "id": "expulsion_prevention_01",
+            "category": "학적",
+            "query": "학사경고 3번 받으면 제적이야?",
+            "expected_intents": ["제적 우려"],
+            "expected_keywords": ["제적", "학사경고", "퇴학"],
+            "expected_rule_codes": [],
+            "min_relevance_score": 0.2
+        },
+        {
+            "id": "thesis_submission_01",
+            "category": "논문",
+            "query": "졸업논문 제출 기한이 언제야?",
+            "expected_intents": ["논문 도움"],
+            "expected_keywords": ["논문", "졸업논문", "논문제출"],
+            "expected_rule_codes": [],
+            "min_relevance_score": 0.3
+        },
+        {
+            "id": "early_graduation_01",
+            "category": "졸업",
+            "query": "조기졸업 신청 자격이 어떻게 돼?",
+            "expected_intents": ["조기졸업 관심"],
+            "expected_keywords": ["조기졸업", "졸업요건"],
+            "expected_rule_codes": [],
+            "min_relevance_score": 0.3
+        },
+        {
+            "id": "graduation_delay_01",
+            "category": "졸업",
+            "query": "취업 준비로 졸업 미루고 싶어",
+            "expected_intents": ["졸업유예 관심"],
+            "expected_keywords": ["졸업유예", "졸업연기"],
+            "expected_rule_codes": [],
+            "min_relevance_score": 0.3
+        },
+        {
+            "id": "course_registration_01",
+            "category": "수강",
+            "query": "수강신청 기간이 언제야?",
+            "expected_intents": ["수강 관련"],
+            "expected_keywords": ["수강신청", "수강정정"],
+            "expected_rule_codes": [],
+            "min_relevance_score": 0.3
+        },
+        {
+            "id": "internship_01",
+            "category": "현장실습",
+            "query": "현장실습 학점 인정받을 수 있어?",
+            "expected_intents": ["인턴십 관심"],
+            "expected_keywords": ["현장실습", "인턴십", "실습학점"],
+            "expected_rule_codes": [],
+            "min_relevance_score": 0.3
+        },
+        {
+            "id": "exchange_student_01",
+            "category": "교환학생",
+            "query": "교환학생 지원하고 싶어",
+            "expected_intents": ["교환학생 관심"],
+            "expected_keywords": ["교환학생", "국제교류"],
+            "expected_rule_codes": [],
+            "min_relevance_score": 0.3
+        },
+        {
+            "id": "certificate_issue_01",
+            "category": "증명서",
+            "query": "성적증명서 발급받으려면?",
+            "expected_intents": ["증명서 발급"],
+            "expected_keywords": ["증명서", "성적증명서"],
+            "expected_rule_codes": [],
+            "min_relevance_score": 0.3
+        },
+        {
+            "id": "disability_support_01",
+            "category": "장애지원",
+            "query": "장애학생 학습지원 신청하고 싶어",
+            "expected_intents": ["장애학생 지원"],
+            "expected_keywords": ["장애학생", "장애학생지원", "학습도우미"],
+            "expected_rule_codes": [],
+            "min_relevance_score": 0.3
+        },
+        {
+            "id": "parental_leave_01",
+            "category": "육아휴직",
+            "query": "육아휴직 신청하려면?",
+            "expected_intents": ["육아휴직 관심"],
+            "expected_keywords": ["육아휴직", "출산휴가"],
+            "expected_rule_codes": [],
+            "min_relevance_score": 0.3
+        },
+        {
+            "id": "sick_leave_01",
+            "category": "병가",
+            "query": "아파서 병가 쓰고 싶어",
+            "expected_intents": ["병가 관련"],
+            "expected_keywords": ["병가", "휴직"],
+            "expected_rule_codes": [],
+            "min_relevance_score": 0.3
+        },
+        {
+            "id": "promotion_01",
+            "category": "승진",
+            "query": "교수 승진 요건이 뭐야?",
+            "expected_intents": ["승진 관심"],
+            "expected_keywords": ["승진", "진급", "정교수"],
+            "expected_rule_codes": ["3-1-5"],
+            "min_relevance_score": 0.3
+        },
+        {
+            "id": "salary_inquiry_01",
+            "category": "급여",
+            "query": "호봉 승급은 언제 돼?",
+            "expected_intents": ["급여 관심"],
+            "expected_keywords": ["호봉", "승급", "보수"],
+            "expected_rule_codes": [],
+            "min_relevance_score": 0.3
+        },
+        {
+            "id": "research_funding_01",
+            "category": "연구비",
+            "query": "교내 연구비 신청하고 싶어",
+            "expected_intents": ["연구비 관련"],
+            "expected_keywords": ["연구비", "연구과제", "교내연구비"],
+            "expected_rule_codes": [],
+            "min_relevance_score": 0.3
+        },
+        {
+            "id": "overseas_study_01",
+            "category": "해외연수",
+            "query": "해외 연수 지원받을 수 있어?",
+            "expected_intents": ["해외 연수 관심"],
+            "expected_keywords": ["해외파견", "해외연수"],
+            "expected_rule_codes": [],
+            "min_relevance_score": 0.3
+        },
+        {
+            "id": "disciplinary_01",
+            "category": "징계",
+            "query": "징계 절차가 어떻게 돼?",
+            "expected_intents": ["징계 관련"],
+            "expected_keywords": ["징계", "징계위원회", "징계처분"],
+            "expected_rule_codes": [],
+            "min_relevance_score": 0.3
+        },
+        {
+            "id": "facility_use_01",
+            "category": "시설이용",
+            "query": "강의실 예약하고 싶어",
+            "expected_intents": ["시설 이용 관련"],
+            "expected_keywords": ["시설사용", "강의실", "시설예약"],
+            "expected_rule_codes": [],
+            "min_relevance_score": 0.3
+        },
+        {
+            "id": "parking_01",
+            "category": "주차",
+            "query": "교내 주차 등록하려면?",
+            "expected_intents": ["주차 관련"],
+            "expected_keywords": ["주차", "주차등록", "차량등록"],
+            "expected_rule_codes": [],
+            "min_relevance_score": 0.3
+        },
+        {
+            "id": "dormitory_01",
+            "category": "기숙사",
+            "query": "생활관 입사 신청하고 싶어",
+            "expected_intents": ["기숙사 관련"],
+            "expected_keywords": ["기숙사", "생활관"],
+            "expected_rule_codes": [],
+            "min_relevance_score": 0.3
+        },
+        {
+            "id": "online_class_01",
+            "category": "원격수업",
+            "query": "원격수업 규정이 어떻게 돼?",
+            "expected_intents": ["원격수업 관련"],
+            "expected_keywords": ["원격수업", "온라인수업"],
+            "expected_rule_codes": [],
+            "min_relevance_score": 0.3
+        },
+        {
+            "id": "startup_support_01",
+            "category": "창업",
+            "query": "학생 창업 지원받을 수 있어?",
+            "expected_intents": ["창업 관심"],
+            "expected_keywords": ["창업", "창업지원"],
+            "expected_rule_codes": [],
+            "min_relevance_score": 0.3
+        },
+        {
+            "id": "employment_support_01",
+            "category": "취업",
+            "query": "취업 지원 프로그램이 있어?",
+            "expected_intents": ["취업 관심"],
+            "expected_keywords": ["취업", "취업지원"],
+            "expected_rule_codes": [],
+            "min_relevance_score": 0.3
+        },
+        {
+            "id": "bullying_report_01",
+            "category": "직장내괴롭힘",
+            "query": "직장 내 괴롭힘 신고하고 싶어",
+            "expected_intents": ["갑질/괴롭힘 신고"],
+            "expected_keywords": ["괴롭힘", "인권", "고충처리"],
+            "expected_rule_codes": [],
+            "min_relevance_score": 0.3
+        },
+        {
+            "id": "academic_warning_01",
+            "category": "학사경고",
+            "query": "학사경고 받았는데 어떡해?",
+            "expected_intents": ["학사경고 관련"],
+            "expected_keywords": ["학사경고", "학업부진", "재수강"],
+            "expected_rule_codes": [],
+            "min_relevance_score": 0.3
+        },
+        {
+            "id": "student_complaint_faculty_01",
+            "category": "학생권리",
+            "query": "교수가 과제 기한 너무 짧게 줬어",
+            "expected_intents": ["교수 행동 불만 (학생)"],
+            "expected_keywords": ["인권센터", "학생고충"],
+            "expected_rule_codes": [],
+            "min_relevance_score": 0.1,
+            "notes": "교수-학생 갈등 시나리오"
+        },
+        {
+            "id": "natural_question_01",
+            "category": "자연어",
+            "query": "학교 다니면서 알바해도 돼?",
+            "expected_intents": ["근로/아르바이트"],
+            "expected_keywords": ["학업", "근로", "겸직"],
+            "expected_rule_codes": [],
+            "min_relevance_score": 0.1,
+            "notes": "일반적인 자연어 질문"
         }
     ]
 }
