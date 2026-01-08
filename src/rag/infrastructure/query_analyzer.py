@@ -157,15 +157,16 @@ class QueryAnalyzer:
         "장학",
         "등록금",
         "학점",
+        "과제",
     ]
     STAFF_KEYWORDS = ["직원", "행정", "사무", "참사", "주사", "승진", "전보"]
     AMBIGUOUS_AUDIENCE_KEYWORDS = ["징계", "처분", "위반", "제재", "윤리", "고충"]
 
     # Context keywords for better audience detection
     STUDENT_CONTEXT_KEYWORDS = [
-        "공부", "수업", "과제", "시험", "학점",
+        "공부", "수업", "시험", "학점",
         "F", "학사경고", "휴학", "자퇴", "졸업",
-        "장학금", "등록금", "기숙사", "생활관",
+        "장학금", "등록금", "기숙사", "생활관", "창업",
     ]
     FACULTY_CONTEXT_KEYWORDS = [
         "강의", "연구", "논문", "연구년", "승진",
@@ -183,7 +184,7 @@ class QueryAnalyzer:
             0.4,
             0.6,
         ),  # Slightly favor semantic, but still consider keywords
-        QueryType.INTENT: (0.4, 0.6),  # Intent queries favor semantic search (adjusted from 0.35)
+        QueryType.INTENT: (0.6, 0.4),  # Intent queries favor exact keyword match (keywords injected)
         QueryType.GENERAL: (0.5, 0.5),  # Balanced default (increased BM25 from 0.3)
     }
 
@@ -220,6 +221,11 @@ class QueryAnalyzer:
         (re.compile(r"장학금.*(받|타|신청).*싶"), ["장학금", "신청", "지급"]),
         (re.compile(r"(학회|출장).*(가|참석).*싶"), ["국외여비", "출장", "학회"]),
         (re.compile(r"(공부|학업).*하기.*싫"), ["휴학", "자퇴"]),
+        # 2026-01-08 Improvements
+        (re.compile(r"(졸업|학업).*(미루|연기|늦추).*싶"), ["학사학위취득유예", "졸업유예"]),
+        (re.compile(r"(아파|병|편찮).*결석.*(쓰|하|싶)"), ["유고결석", "병가"]),
+        (re.compile(r"(강의실|교실|공간).*(빌리|대여|예약|쓰).*싶"), ["시설물사용", "대관"]),
+        (re.compile(r"창업.*(지원|하고).*싶"), ["창업", "창업지원"]),
     ]
     INTENT_MAX_MATCHES = 3
 
