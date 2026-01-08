@@ -50,11 +50,10 @@ def test_tool_calling_integration(mock_gradio_components, mock_handler):
         pass
 
 def test_query_handler_initialization_with_tools():
-    """Verify QueryHandler receives FunctionGemmaAdapter when tools enabled."""
+    """Verify QueryHandler receives function_gemma_client when tools enabled."""
     from src.rag.interface.gradio_app import _process_with_handler
     
     with patch('src.rag.interface.gradio_app.QueryHandler') as MockHandlerCls, \
-         patch('src.rag.interface.gradio_app.FunctionGemmaAdapter') as MockAdapterCls, \
          patch('src.rag.interface.gradio_app.LLMClientAdapter'), \
          patch('src.rag.interface.gradio_app.ChromaVectorStore'):
         
@@ -73,19 +72,15 @@ def test_query_handler_initialization_with_tools():
             state={}
         )
         
-        # Verify Adapter was created
-        MockAdapterCls.assert_called_once()
-        
-        # Verify Handler was created with adapter
+        # Verify Handler was created with function_gemma_client (not None)
         call_args = MockHandlerCls.call_args
-        assert call_args.kwargs['function_gemma_adapter'] is not None
+        assert call_args.kwargs.get('function_gemma_client') is not None
 
 def test_query_handler_initialization_without_tools():
-    """Verify QueryHandler receives None for adapter when tools disabled."""
+    """Verify QueryHandler receives None for function_gemma_client when tools disabled."""
     from src.rag.interface.gradio_app import _process_with_handler
     
     with patch('src.rag.interface.gradio_app.QueryHandler') as MockHandlerCls, \
-         patch('src.rag.interface.gradio_app.FunctionGemmaAdapter') as MockAdapterCls, \
          patch('src.rag.interface.gradio_app.LLMClientAdapter'), \
          patch('src.rag.interface.gradio_app.ChromaVectorStore'):
         
@@ -104,9 +99,6 @@ def test_query_handler_initialization_without_tools():
             state={}
         )
         
-        # Verify Adapter was NOT created
-        MockAdapterCls.assert_not_called()
-        
-        # Verify Handler received None
+        # Verify Handler received None for function_gemma_client
         call_args = MockHandlerCls.call_args
-        assert call_args.kwargs['function_gemma_adapter'] is None
+        assert call_args.kwargs.get('function_gemma_client') is None

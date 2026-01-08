@@ -1,0 +1,368 @@
+/* ============================================
+   Modern 2025 UI Theme
+   - Glassmorphism with subtle blur
+   - Minimalist color palette
+   - Smooth micro-animations
+   ============================================ */
+
+:root {
+    /* Primary palette - elegant emerald green */
+    --primary: #10b981;
+    --primary-light: #34d399;
+    --primary-dark: #059669;
+    
+    /* Neutral palette - sophisticated grays */
+    --bg-base: #0f0f0f;
+    --bg-elevated: #1a1a1a;
+    --bg-surface: rgba(255, 255, 255, 0.03);
+    --bg-glass: rgba(255, 255, 255, 0.05);
+    
+    /* Text colors */
+    --text-primary: #fafafa;
+    --text-secondary: #a3a3a3;
+    --text-muted: #737373;
+    
+    /* Accent colors */
+    --accent-purple: #a855f7;
+    --accent-blue: #3b82f6;
+    --accent-amber: #f59e0b;
+    
+    /* Borders and shadows */
+    --border-subtle: rgba(255, 255, 255, 0.06);
+    --border-glass: rgba(255, 255, 255, 0.1);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+    
+    /* Animation timing */
+    --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Global dark theme */
+.gradio-container {
+    background: var(--bg-base) !important;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+}
+
+.dark {
+    --background-fill-primary: var(--bg-base) !important;
+}
+
+/* ============================================
+   Header - Clean & Minimal
+   ============================================ */
+.header-container {
+    text-align: center;
+    padding: 32px 24px 24px;
+}
+
+.header-title {
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: -0.025em;
+    margin: 0;
+}
+
+.header-subtitle {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-top: 8px;
+    font-weight: 400;
+}
+
+/* ============================================
+   Chat Container - Glassmorphism
+   ============================================ */
+.chatbot {
+    background: var(--bg-elevated) !important;
+    border: 1px solid var(--border-subtle) !important;
+    border-radius: 16px !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+}
+
+/* Message bubbles - modern rounded */
+.message {
+    border-radius: 16px !important;
+    padding: 14px 18px !important;
+    margin: 6px 0 !important;
+    font-size: 0.95rem !important;
+    line-height: 1.6 !important;
+    transition: transform 0.15s var(--ease-smooth) !important;
+}
+
+.message.user {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%) !important;
+    color: white !important;
+    margin-left: 15% !important;
+    box-shadow: var(--shadow-sm) !important;
+}
+
+.message.bot {
+    background: var(--bg-glass) !important;
+    border: 1px solid var(--border-glass) !important;
+    color: var(--text-primary) !important;
+    backdrop-filter: blur(10px) !important;
+}
+
+/* ============================================
+   Input Area - Sleek & Modern
+   ============================================ */
+.input-container textarea {
+    background: var(--bg-surface) !important;
+    border: 1px solid var(--border-subtle) !important;
+    border-radius: 12px !important;
+    color: var(--text-primary) !important;
+    padding: 14px 16px !important;
+    font-size: 0.95rem !important;
+    transition: all 0.2s var(--ease-smooth) !important;
+}
+
+.input-container textarea:focus {
+    border-color: var(--primary) !important;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15) !important;
+    outline: none !important;
+}
+
+.input-container textarea::placeholder {
+    color: var(--text-muted) !important;
+}
+
+/* ============================================
+   Buttons - Minimal with Hover Effects
+   ============================================ */
+button.primary {
+    background: var(--primary) !important;
+    border: none !important;
+    border-radius: 10px !important;
+    color: white !important;
+    font-weight: 500 !important;
+    padding: 10px 20px !important;
+    transition: all 0.2s var(--ease-smooth) !important;
+}
+
+button.primary:hover {
+    background: var(--primary-light) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3) !important;
+}
+
+button.secondary {
+    background: var(--bg-glass) !important;
+    border: 1px solid var(--border-glass) !important;
+    border-radius: 10px !important;
+    color: var(--text-secondary) !important;
+    font-weight: 500 !important;
+    transition: all 0.2s var(--ease-smooth) !important;
+}
+
+button.secondary:hover {
+    background: rgba(255, 255, 255, 0.08) !important;
+    color: var(--text-primary) !important;
+    border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+/* ============================================
+   Example Cards - Glass Effect
+   ============================================ */
+.example-btn {
+    background: var(--bg-glass) !important;
+    border: 1px solid var(--border-glass) !important;
+    border-radius: 10px !important;
+    color: var(--text-secondary) !important;
+    font-size: 0.85rem !important;
+    padding: 10px 14px !important;
+    transition: all 0.2s var(--ease-smooth) !important;
+    backdrop-filter: blur(8px) !important;
+}
+
+.example-btn:hover {
+    background: rgba(255, 255, 255, 0.08) !important;
+    color: var(--text-primary) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: var(--shadow-md) !important;
+    border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+/* ============================================
+   Sidebar Settings - Clean Layout
+   ============================================ */
+.settings-panel {
+    background: var(--bg-elevated) !important;
+    border: 1px solid var(--border-subtle) !important;
+    border-radius: 14px !important;
+    padding: 20px !important;
+}
+
+.settings-panel label {
+    color: var(--text-secondary) !important;
+    font-size: 0.85rem !important;
+    font-weight: 500 !important;
+}
+
+/* Accordion - Subtle styling */
+.accordion {
+    background: transparent !important;
+    border: 1px solid var(--border-subtle) !important;
+    border-radius: 10px !important;
+}
+
+.accordion .label-wrap {
+    background: var(--bg-surface) !important;
+    border-radius: 10px !important;
+    padding: 12px 16px !important;
+}
+
+/* Slider - Modern track */
+input[type="range"] {
+    accent-color: var(--primary) !important;
+}
+
+/* Checkbox - Subtle */
+input[type="checkbox"] {
+    accent-color: var(--primary) !important;
+    border-radius: 4px !important;
+}
+
+/* Radio buttons */
+.radio-group label {
+    background: var(--bg-surface) !important;
+    border: 1px solid var(--border-subtle) !important;
+    border-radius: 8px !important;
+    padding: 8px 12px !important;
+    transition: all 0.15s var(--ease-smooth) !important;
+}
+
+.radio-group label:hover {
+    background: var(--bg-glass) !important;
+}
+
+.radio-group label.selected {
+    border-color: var(--primary) !important;
+    background: rgba(16, 185, 129, 0.1) !important;
+}
+
+/* ============================================
+   Tabs - Minimal underline style
+   ============================================ */
+.tabs {
+    border-bottom: 1px solid var(--border-subtle) !important;
+}
+
+.tabitem {
+    background: transparent !important;
+    color: var(--text-secondary) !important;
+    border: none !important;
+    padding: 12px 20px !important;
+    font-weight: 500 !important;
+    transition: color 0.2s var(--ease-smooth) !important;
+}
+
+.tabitem:hover {
+    color: var(--text-primary) !important;
+}
+
+.tabitem.selected {
+    color: var(--primary) !important;
+    border-bottom: 2px solid var(--primary) !important;
+}
+
+/* ============================================
+   Dropdown & Textbox - Consistent styling
+   ============================================ */
+select, input[type="text"], .textbox input {
+    background: var(--bg-surface) !important;
+    border: 1px solid var(--border-subtle) !important;
+    border-radius: 8px !important;
+    color: var(--text-primary) !important;
+    padding: 10px 12px !important;
+}
+
+select:focus, input:focus {
+    border-color: var(--primary) !important;
+    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.15) !important;
+}
+
+/* ============================================
+   Markdown Content - Readable typography
+   ============================================ */
+.markdown-text {
+    color: var(--text-primary) !important;
+    line-height: 1.7 !important;
+}
+
+.markdown-text h1, .markdown-text h2, .markdown-text h3 {
+    color: var(--text-primary) !important;
+    font-weight: 600 !important;
+    letter-spacing: -0.025em !important;
+}
+
+.markdown-text code {
+    background: var(--bg-glass) !important;
+    border-radius: 4px !important;
+    padding: 2px 6px !important;
+    font-size: 0.9em !important;
+}
+
+.markdown-text pre {
+    background: var(--bg-elevated) !important;
+    border: 1px solid var(--border-subtle) !important;
+    border-radius: 8px !important;
+    padding: 12px 16px !important;
+}
+
+.markdown-text a {
+    color: var(--primary-light) !important;
+    text-decoration: none !important;
+}
+
+.markdown-text a:hover {
+    text-decoration: underline !important;
+}
+
+/* ============================================
+   Status indicators
+   ============================================ */
+.status-success {
+    color: var(--primary) !important;
+}
+
+.status-warning {
+    color: var(--accent-amber) !important;
+}
+
+.status-info {
+    color: var(--accent-blue) !important;
+}
+
+/* ============================================
+   Animations - Subtle & Smooth
+   ============================================ */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-in {
+    animation: fadeIn 0.3s var(--ease-smooth) forwards;
+}
+
+/* Scrollbar - Minimal */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+}

@@ -28,8 +28,11 @@ class TestQueryAnalyzer:
     """Tests for QueryAnalyzer query pattern detection."""
 
     @pytest.fixture
-    def analyzer(self) -> QueryAnalyzer:
-        return QueryAnalyzer()
+    def analyzer(self, monkeypatch) -> QueryAnalyzer:
+        # Ensure tests are isolated from environment variables
+        monkeypatch.delenv("RAG_SYNONYMS_PATH", raising=False)
+        monkeypatch.delenv("RAG_INTENTS_PATH", raising=False)
+        return QueryAnalyzer(synonyms_path=None, intents_path=None)
 
     # --- Article Reference Detection ---
 

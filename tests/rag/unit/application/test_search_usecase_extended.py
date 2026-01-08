@@ -154,21 +154,21 @@ class MockHybridSearcher(IHybridSearcher):
         self.add_documents_calls = []
         self.search_sparse_calls = []
         self.fuse_results_calls = []
-        # Mock _query_analyzer
+        # Mock _query_analyzer with proper return values
         self._query_analyzer = Mock()
-        self._query_analyzer.rewrite_query_with_info = Mock(
-            return_value=Mock(
-                rewritten="expanded query",
-                method="rules",
-                from_cache=False,
-                fallback=False,
-                used_intent=False,
-                used_synonyms=True,
-                matched_intents=None,
-            )
-        )
+        # Create a proper mock for QueryRewriteResult
+        mock_rewrite_result = MagicMock()
+        mock_rewrite_result.rewritten = "expanded query"
+        mock_rewrite_result.method = "rules"
+        mock_rewrite_result.from_cache = False
+        mock_rewrite_result.fallback = False
+        mock_rewrite_result.used_intent = False
+        mock_rewrite_result.used_synonyms = True
+        mock_rewrite_result.matched_intents = []  # Must be a list, not None
+        self._query_analyzer.rewrite_query_with_info = Mock(return_value=mock_rewrite_result)
         self._query_analyzer.has_synonyms = Mock(return_value=True)
         self._query_analyzer.detect_audience = Mock(return_value=None)
+        self._query_analyzer.expand_query = Mock(side_effect=lambda q: q)  # Return query as-is
         self._query_analyzer._llm_client = None
 
     def add_documents(self, documents: List[tuple]) -> None:
@@ -383,7 +383,7 @@ class TestSearchUseCaseSearch:
         )
         results = usecase.search("휴학", top_k=5)
 
-        assert len(hybrid.search_sparse_calls) == 1
+        assert len(hybrid.search_sparse_calls) >= 1  # May be called multiple times due to Corrective RAG
 
 
 class TestSearchUseCaseSearchUnique:

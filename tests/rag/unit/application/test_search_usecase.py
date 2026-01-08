@@ -118,7 +118,7 @@ def test_search_rule_code_filters_by_rule_code():
     assert store.last_query.text == "규정"
     assert store.last_filter is not None
     assert store.last_filter.rule_codes == ["3-1-5"]
-    assert store.last_top_k == 7
+    assert store.last_top_k == 35  # top_k * 5 for initial retrieval before dedup
 
 
 def test_ask_includes_history_and_uses_search_query(monkeypatch):

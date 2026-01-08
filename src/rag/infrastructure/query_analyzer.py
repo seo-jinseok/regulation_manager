@@ -484,17 +484,25 @@ class QueryAnalyzer:
         if ARTICLE_PATTERN.search(query):
             return QueryType.ARTICLE_REFERENCE
 
-        # Check for intent expressions before academic keywords
-        if self.has_intent(query):
-            return QueryType.INTENT
-
-        # Check for regulation name patterns
+        # Check for regulation name patterns (OO규정, OO학칙, etc.)
         if self.REGULATION_PATTERN.search(query):
             return QueryType.REGULATION_NAME
 
-        # Check for academic keywords (treat like regulation names for balanced search)
+        # Intent markers: expressions like "싶어", "싫어" indicate user intent
+        # These should be checked BEFORE academic keywords
+        intent_markers = ["싶어", "싫어", "하고싶", "받고싶", "가고싶"]
+        has_intent_marker = any(marker in query for marker in intent_markers)
+        
+        if has_intent_marker and self.has_intent(query):
+            return QueryType.INTENT
+
+        # Check for academic keywords (treat like regulation names)
         if any(keyword in query for keyword in self.ACADEMIC_KEYWORDS):
             return QueryType.REGULATION_NAME
+
+        # Check for intent expressions (fallback for other intent patterns)
+        if self.has_intent(query):
+            return QueryType.INTENT
 
         # Check for natural language questions
         if any(marker in query for marker in self.QUESTION_MARKERS):
