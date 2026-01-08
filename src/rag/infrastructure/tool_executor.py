@@ -183,14 +183,46 @@ class ToolExecutor:
         }
 
     def _handle_get_article(self, args: Dict[str, Any]) -> Dict[str, Any]:
-        """Handle get_article tool."""
-        # Delegate to QueryHandler's get_article_view
+        """Handle get_article tool with direct article lookup."""
         regulation = args["regulation"]
         article_no = args["article_no"]
-        # TODO: Implement direct article lookup
-        # For now, use search as a fallback
-        query = f"{regulation} 제{article_no}조"
-        return self._handle_search_regulations({"query": query, "top_k": 3})
+        
+        # Use FullViewUseCase for direct article lookup
+        from ..application.full_view_usecase import FullViewUseCase
+        from ..infrastructure.json_loader import JSONDocumentLoader
+        
+        full_view_usecase = FullViewUseCase(JSONDocumentLoader())
+        matches = full_view_usecase.find_matches(regulation)
+        
+        if not matches:
+            # Fallback to search if no direct match
+            query = f"{regulation} 제{article_no}조"
+            return self._handle_search_regulations({"query": query, "top_k": 3})
+        
+        # Use first match (or refine later for multiple matches)
+        selected = matches[0]
+        article_node = full_view_usecase.get_article_view(selected.rule_code, article_no)
+        
+        if not article_node:
+            return {
+                "found": False,
+                "regulation": regulation,
+                "article_no": article_no,
+                "error": f"{selected.title}에서 제{article_no}조를 찾을 수 없습니다.",
+            }
+        
+        # Render article content
+        from ..interface.formatters import render_full_view_nodes
+        content = render_full_view_nodes([article_node])
+        
+        return {
+            "found": True,
+            "regulation": selected.title,
+            "rule_code": selected.rule_code,
+            "article_no": article_no,
+            "title": article_node.get("title", f"제{article_no}조"),
+            "content": content[:1500] + "..." if len(content) > 1500 else content,
+        }
 
     def _handle_get_chapter(self, args: Dict[str, Any]) -> Dict[str, Any]:
         """Handle get_chapter tool."""
