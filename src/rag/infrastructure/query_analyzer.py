@@ -158,6 +158,9 @@ class QueryAnalyzer:
         "등록금",
         "학점",
         "과제",
+        "창업",
+        "아르바이트",
+        "알바",
     ]
     STAFF_KEYWORDS = ["직원", "행정", "사무", "참사", "주사", "승진", "전보"]
     AMBIGUOUS_AUDIENCE_KEYWORDS = ["징계", "처분", "위반", "제재", "윤리", "고충"]
@@ -184,7 +187,7 @@ class QueryAnalyzer:
             0.4,
             0.6,
         ),  # Slightly favor semantic, but still consider keywords
-        QueryType.INTENT: (0.6, 0.4),  # Intent queries favor exact keyword match (keywords injected)
+        QueryType.INTENT: (0.7, 0.3),  # Intent queries favor exact keyword match (keywords injected)
         QueryType.GENERAL: (0.5, 0.5),  # Balanced default (increased BM25 from 0.3)
     }
 
@@ -216,7 +219,8 @@ class QueryAnalyzer:
         ),
         (re.compile(r"(수업|강의).*안.*하.*싶"), ["휴강", "보강", "강의"]),
         (re.compile(r"연구.*(부정|신고).*싶"), ["연구윤리", "부정행위", "신고"]),
-        (re.compile(r".*싶어"), ["희망", "원함"]),  # General desire pattern (lowest priority)
+        # 2026-01-08: REMOVED broad 'want' pattern to reduce noise
+        # (re.compile(r".*싶어"), ["희망", "원함"]), 
         # New patterns added for specific failure cases
         (re.compile(r"장학금.*(받|타|신청).*싶"), ["장학금", "신청", "지급"]),
         (re.compile(r"(학회|출장).*(가|참석).*싶"), ["국외여비", "출장", "학회"]),
