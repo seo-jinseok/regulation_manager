@@ -138,10 +138,10 @@ class TestQueryAnalyzer:
         assert dense_w == 0.6
 
     def test_get_weights_intent(self, analyzer: QueryAnalyzer):
-        """INTENT는 의미적 검색 중요 (0.7, 0.3)를 가짐 (사용자 의도 파악 중요)"""
+        """INTENT는 균형 잡힌 가중치 (0.6, 0.4)를 가짐 (키워드 주입됨)"""
         bm25_w, dense_w = analyzer.get_weights("학교에 가기 싫어")
-        assert bm25_w == 0.7
-        assert dense_w == 0.3
+        assert bm25_w == 0.6
+        assert dense_w == 0.4
 
     def test_detects_new_intents(self, analyzer: QueryAnalyzer):
         """새로 추가된 의도 패턴 감지 확인"""

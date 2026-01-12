@@ -41,11 +41,18 @@ class BM25:
     BM25 parameters:
     - k1: Term frequency saturation (default: 1.5)
     - b: Document length normalization (default: 0.75)
+    - tokenize_mode: "simple" (regex-based) or "morpheme" (Korean morphological analysis)
     """
 
-    def __init__(self, k1: float = 1.5, b: float = 0.75):
+    def __init__(
+        self,
+        k1: float = 1.5,
+        b: float = 0.75,
+        tokenize_mode: str = "simple",
+    ):
         self.k1 = k1
         self.b = b
+        self.tokenize_mode = tokenize_mode
         self.doc_lengths: Dict[str, int] = {}
         self.avg_doc_length: float = 0.0
         self.doc_count: int = 0
@@ -55,11 +62,62 @@ class BM25:
         self.doc_metadata: Dict[str, Dict] = {}  # NEW: Store metadata
 
     def _tokenize(self, text: str) -> List[str]:
-        """Tokenize text into terms."""
-        # Simple Korean + English tokenizer
+        """Tokenize text into terms based on tokenize_mode."""
+        if self.tokenize_mode == "morpheme":
+            return self._tokenize_morpheme(text)
+        return self._tokenize_simple(text)
+
+    def _tokenize_simple(self, text: str) -> List[str]:
+        """Simple regex-based tokenizer for Korean + English."""
         text = text.lower()
         # Split on whitespace and punctuation, keep Korean characters
         tokens = re.findall(r"[가-힣]+|[a-z0-9]+", text)
+        return tokens
+
+    def _tokenize_morpheme(self, text: str) -> List[str]:
+        """
+        Korean morphological analysis tokenizer.
+        
+        Splits compound Korean words for better recall.
+        Falls back to simple tokenizer if no morpheme analyzer available.
+        """
+        text = text.lower()
+        tokens = []
+        
+        # 기본 토큰 추출
+        base_tokens = re.findall(r"[가-힣]+|[a-z0-9]+", text)
+        
+        # 한글 복합어 분리 패턴 (간단한 규칙 기반)
+        # 실제로는 형태소 분석기(KoNLPy 등)를 사용할 수 있음
+        compound_patterns = [
+            # 접미사 패턴: ~신청, ~규정, ~절차, ~처리
+            (r"(.+?)(신청|규정|절차|처리|관리|운영|지원|위원회)$", [1, 2]),
+            # 접두사 패턴: 육아~, 연구~, 교원~
+            (r"^(육아|연구|교원|학생|직원|교직원)(.+)$", [1, 2]),
+        ]
+        
+        for token in base_tokens:
+            if len(token) <= 2:
+                # 짧은 토큰은 그대로 추가
+                tokens.append(token)
+                continue
+                
+            # 복합어 분리 시도
+            split_found = False
+            for pattern, groups in compound_patterns:
+                match = re.match(pattern, token)
+                if match:
+                    for g in groups:
+                        part = match.group(g)
+                        if part and len(part) >= 2:
+                            tokens.append(part)
+                    split_found = True
+                    break
+            
+            if not split_found:
+                # 분리 실패 시 원본 토큰 추가
+                tokens.append(token)
+        
         return tokens
 
     def add_documents(self, documents: List[Tuple[str, str, Dict]]) -> None:
@@ -176,6 +234,7 @@ class HybridSearcher(IHybridSearcher):
         dense_weight: float = 0.7,
         rrf_k: int = 60,
         use_dynamic_weights: bool = True,
+        use_dynamic_rrf_k: bool = False,
         synonyms_path: Optional[str] = None,
         intents_path: Optional[str] = None,
     ):
@@ -187,12 +246,14 @@ class HybridSearcher(IHybridSearcher):
             dense_weight: Default weight for dense scores (default: 0.7).
             rrf_k: RRF ranking constant (default: 60).
             use_dynamic_weights: Enable query-based dynamic weighting (default: True).
+            use_dynamic_rrf_k: Enable query-based dynamic RRF k value (default: False).
         """
         self.bm25 = BM25()
         self.bm25_weight = bm25_weight
         self.dense_weight = dense_weight
         self.rrf_k = rrf_k
         self.use_dynamic_weights = use_dynamic_weights
+        self.use_dynamic_rrf_k = use_dynamic_rrf_k
         if synonyms_path is None:
             try:
                 from ..config import get_config
@@ -230,6 +291,41 @@ class HybridSearcher(IHybridSearcher):
         """
         self.bm25.add_documents(documents)
 
+    def get_dynamic_rrf_k(self, query_text: str) -> int:
+        """
+        Get dynamic RRF k value based on query type.
+
+        Lower k values prioritize top-ranked documents more strongly,
+        which is useful for precise queries (article references).
+        Higher k values give more balanced ranking across positions,
+        better for exploratory natural language queries.
+
+        Args:
+            query_text: The search query.
+
+        Returns:
+            RRF k value (30-80 range).
+        """
+        if not self.use_dynamic_rrf_k:
+            return self.rrf_k
+
+        query_type = self._query_analyzer.analyze(query_text)
+
+        # 조문 참조: 정확한 매칭 중요 → 낮은 k (30-40)
+        if query_type == QueryType.ARTICLE_REFERENCE:
+            return 35
+
+        # 규정명 검색: 중간 k
+        if query_type == QueryType.REGULATION_NAME:
+            return 45
+
+        # 자연어 질문 / 의도 기반: 다양한 결과 필요 → 높은 k (60-80)
+        if query_type in (QueryType.NATURAL_QUESTION, QueryType.INTENT):
+            return 70
+
+        # 기본값 (GENERAL)
+        return self.rrf_k
+
     def fuse_results(
         self,
         sparse_results: List[ScoredDocument],
@@ -244,7 +340,7 @@ class HybridSearcher(IHybridSearcher):
             sparse_results: Results from BM25 search.
             dense_results: Results from dense/embedding search.
             top_k: Maximum number of results.
-            query_text: Optional query for dynamic weight calculation.
+            query_text: Optional query for dynamic weight and k calculation.
                 If provided and use_dynamic_weights is True, weights are
                 automatically adjusted based on query characteristics.
 
@@ -257,18 +353,24 @@ class HybridSearcher(IHybridSearcher):
         else:
             bm25_w, dense_w = self.bm25_weight, self.dense_weight
 
+        # Determine RRF k: dynamic or static
+        if query_text:
+            effective_k = self.get_dynamic_rrf_k(query_text)
+        else:
+            effective_k = self.rrf_k
+
         scores: Dict[str, float] = defaultdict(float)
         doc_data: Dict[str, ScoredDocument] = {}
 
         # Add sparse results with RRF scoring
         for rank, doc in enumerate(sparse_results, start=1):
-            rrf_score = 1 / (self.rrf_k + rank)
+            rrf_score = 1 / (effective_k + rank)
             scores[doc.doc_id] += bm25_w * rrf_score
             doc_data[doc.doc_id] = doc
 
         # Add dense results with RRF scoring
         for rank, doc in enumerate(dense_results, start=1):
-            rrf_score = 1 / (self.rrf_k + rank)
+            rrf_score = 1 / (effective_k + rank)
             scores[doc.doc_id] += dense_w * rrf_score
             if doc.doc_id not in doc_data:
                 doc_data[doc.doc_id] = doc

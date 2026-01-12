@@ -217,3 +217,75 @@ class BGEReranker(IReranker):
             (r.doc_id, r.content, r.score, r.metadata)
             for r in results
         ]
+
+    def rerank_with_context(
+        self,
+        query: str,
+        documents: List[Tuple[str, str, dict]],
+        context: Optional[dict] = None,
+        top_k: int = 10,
+    ) -> List[tuple]:
+        """
+        Rerank documents using BGE cross-encoder with metadata context boosting.
+
+        Args:
+            query: The search query.
+            documents: List of (doc_id, content, metadata) tuples.
+            context: Optional context dict with:
+                - target_regulation: Boost documents from this regulation.
+                - target_audience: Boost documents for this audience.
+                - regulation_boost: Boost factor for matching regulation (default: 0.15).
+                - audience_boost: Boost factor for matching audience (default: 0.1).
+            top_k: Maximum number of results to return.
+
+        Returns:
+            List of (doc_id, content, score, metadata) tuples sorted by relevance.
+        """
+        if not documents:
+            return []
+
+        context = context or {}
+
+        # Get base reranked results
+        results = rerank(query, documents, top_k=len(documents))  # Get all, then filter
+
+        # Apply context-based boosting
+        target_regulation = context.get("target_regulation")
+        target_audience = context.get("target_audience")
+        regulation_boost = context.get("regulation_boost", 0.15)
+        audience_boost = context.get("audience_boost", 0.1)
+
+        boosted_results = []
+        for r in results:
+            boosted_score = r.score
+            metadata = r.metadata
+
+            # Boost matching regulation
+            if target_regulation:
+                doc_regulation = metadata.get("regulation_title") or metadata.get("규정명", "")
+                if target_regulation.lower() in doc_regulation.lower():
+                    boosted_score = min(1.0, boosted_score + regulation_boost)
+
+            # Boost matching audience
+            if target_audience:
+                doc_audience = metadata.get("audience", "all")
+                if doc_audience == target_audience or doc_audience == "all":
+                    boosted_score = min(1.0, boosted_score + audience_boost)
+
+            boosted_results.append(
+                RerankedResult(
+                    doc_id=r.doc_id,
+                    content=r.content,
+                    score=boosted_score,
+                    original_rank=r.original_rank,
+                    metadata=r.metadata,
+                )
+            )
+
+        # Re-sort by boosted score
+        boosted_results.sort(key=lambda x: x.score, reverse=True)
+
+        return [
+            (r.doc_id, r.content, r.score, r.metadata)
+            for r in boosted_results[:top_k]
+        ]

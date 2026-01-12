@@ -187,7 +187,7 @@ class QueryAnalyzer:
             0.4,
             0.6,
         ),  # Slightly favor semantic, but still consider keywords
-        QueryType.INTENT: (0.7, 0.3),  # Intent queries favor exact keyword match (keywords injected)
+        QueryType.INTENT: (0.6, 0.4),  # Intent queries: balanced with slight BM25 favor (keywords injected)
         QueryType.GENERAL: (0.5, 0.5),  # Balanced default (increased BM25 from 0.3)
     }
 
@@ -230,6 +230,21 @@ class QueryAnalyzer:
         (re.compile(r"(아파|병|편찮).*결석.*(쓰|하|싶)"), ["유고결석", "병가"]),
         (re.compile(r"(강의실|교실|공간).*(빌리|대여|예약|쓰).*싶"), ["시설물사용", "대관"]),
         (re.compile(r"창업.*(지원|하고).*싶"), ["창업", "창업지원"]),
+        # 2026-01-12 Improvements for failed queries
+        (re.compile(r"(수강신청|수강).*(기간|언제)"), ["수강신청", "수강신청기간", "학사일정"]),
+        (re.compile(r"(편입학|편입).*(자격|요건|조건|어떻게)"), ["편입", "편입학", "편입요건"]),
+        (re.compile(r"학사경고.*(3|세|셋|삼).*(번|회|차).*(제적|퇴학)"), ["학사경고", "제적", "학적유지"]),
+        (re.compile(r"(육아|출산).*(휴직|휴가).*(신청|하려)"), ["육아휴직", "출산휴가", "휴직신청"]),
+        (re.compile(r"(아파|병|몸이).*(병가|휴가).*(쓰|신청|하)"), ["병가", "휴직", "휴가"]),
+        (re.compile(r"징계.*(절차|과정|어떻게)"), ["징계", "징계절차", "징계위원회"]),
+        (re.compile(r"(교수|선생님).*(과제|기한|마감).*(짧|빡|불합리)"), ["학생고충", "수업권", "학생상담"]),
+        # 2026-01-12 Additional patterns for remaining failures
+        (re.compile(r"(장학금|장학).*(받|타|신청|어떻게)"), ["장학금", "장학", "장학금신청"]),
+        (re.compile(r"(편입|편입학).*(자격|요건|어떻게|돼)"), ["편입", "편입학", "편입자격"]),
+        (re.compile(r"(육아|육아휴직).*(신청|하려면|어떻게)"), ["육아휴직", "휴직", "휴직신청"]),
+        (re.compile(r"(병가|병).*(쓰고|신청|싶어)"), ["병가", "휴가", "휴직"]),
+        (re.compile(r"(강의실|시설).*(예약|빌리|쓰)"), ["시설사용", "시설예약", "대관"]),
+        (re.compile(r"(창업|학생창업).*(지원|받|어떻게)"), ["창업", "창업지원", "학생창업"]),
     ]
     INTENT_MAX_MATCHES = 3
 
@@ -901,6 +916,12 @@ class QueryAnalyzer:
     def _normalize_for_matching(self, text: str) -> str:
         """
         Normalize text for flexible intent matching.
+        
+        Handles:
+        - Whitespace removal
+        - Common polite/formal endings (요, 습니다, etc.)
+        - Question forms (하려면, 어떻게 돼, 언제야, etc.)
+        - Variations of desire expressions (싶어요, 싶은데, etc.)
         """
         if not text:
             return ""
@@ -908,8 +929,16 @@ class QueryAnalyzer:
         text = unicodedata.normalize("NFC", text)
         # Remove all whitespace
         normalized = re.sub(r'\s+', '', text)
-        # Remove common polite/formal endings for flexibility
-        normalized = re.sub(r'(요|습니다|니다|세요|줘|주세요|할까요|하나요|인가요)$', '', normalized)
+        # Remove common polite/formal endings for flexibility (extended list)
+        # Order matters: longer patterns first
+        normalized = re.sub(
+            r'(어떻게돼\?*|어떻게해\?*|언제야\?*|뭐야\?*|인가요\?*|할까요\?*|하나요\?*|'
+            r'하려면\?*|신청하려면\?*|받으려면\?*|되려면\?*|가려면\?*|'
+            r'싶은데|싶어요|싶습니다|싶어|'
+            r'습니다|니다|세요|줘|주세요|요|\?|!)$', 
+            '', 
+            normalized
+        )
         return normalized
 
     def _match_intents(self, query: str) -> List[IntentMatch]:
