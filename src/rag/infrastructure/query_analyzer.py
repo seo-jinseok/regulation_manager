@@ -134,7 +134,7 @@ class QueryAnalyzer:
         "?",
     ]
 
-    # Audience keywords
+    # Audience keywords - explicit mention of target group
     FACULTY_KEYWORDS = [
         "교수",
         "교원",
@@ -144,11 +144,17 @@ class QueryAnalyzer:
         "연구년",
         "책임시수",
         "업적평가",
+        "교수인데",
+        "교원인데",
+        "나는 교수",
+        "저는 교수",
+        "교수로서",
+        "교원으로서",
     ]
     STUDENT_KEYWORDS = [
         "학생",
         "학부",
-        "대학원",
+        "대학원생",  # 대학원생은 학생으로 분류
         "수강",
         "성적",
         "졸업",
@@ -161,8 +167,11 @@ class QueryAnalyzer:
         "창업",
         "아르바이트",
         "알바",
+        "학생인데",
+        "나는 학생",
+        "저는 학생",
     ]
-    STAFF_KEYWORDS = ["직원", "행정", "사무", "참사", "주사", "승진", "전보"]
+    STAFF_KEYWORDS = ["직원", "행정", "사무", "참사", "주사", "승진", "전보", "직원인데"]
     AMBIGUOUS_AUDIENCE_KEYWORDS = ["징계", "처분", "위반", "제재", "윤리", "고충"]
 
     # Context keywords for better audience detection
@@ -170,10 +179,13 @@ class QueryAnalyzer:
         "공부", "수업", "시험", "학점",
         "F", "학사경고", "휴학", "자퇴", "졸업",
         "장학금", "등록금", "기숙사", "생활관", "창업",
+        "학사경고", "제적", "재수강", "성적이의", "이의제기",
     ]
     FACULTY_CONTEXT_KEYWORDS = [
         "강의", "연구", "논문", "연구년", "승진",
         "교수", "책임시수", "업적", "안식년", "학회",
+        "파견", "연구비", "연구보조비", "호봉", "정년",
+        "교원연구년", "교원휴직", "해외파견",
     ]
 
     # Weight presets for each query type: (bm25_weight, dense_weight)
