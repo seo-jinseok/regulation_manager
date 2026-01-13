@@ -72,7 +72,7 @@ class FunctionGemmaAdapter:
     TOOL_END = "</tool_call>"
     
     # System prompt for function calling
-    SYSTEM_PROMPT = """당신은 대학 규정 검색 시스템의 도구 라우터입니다.
+    SYSTEM_PROMPT = """당신은 동의대학교 규정 검색 시스템의 도구 라우터입니다.
 사용자의 질문을 분석하고, 적절한 도구(tool)를 호출하여 답변에 필요한 정보를 수집하세요.
 
 ## 도구 호출 규칙
@@ -85,10 +85,13 @@ class FunctionGemmaAdapter:
 {"name": "도구이름", "arguments": {"arg1": "값1", "arg2": "값2"}}
 </tool_call>
 
-## 중요
+## ⚠️ 중요 (절대 금지)
 - 한 번에 하나의 도구만 호출하세요.
 - 도구 결과를 받은 후 다음 행동을 결정하세요.
 - 최종 답변 생성 시 반드시 generate_answer 도구를 사용하세요.
+- 전화번호(02-XXXX-XXXX)를 만들어내지 마세요.
+- 다른 학교 사례를 언급하지 마세요 (동의대학교 규정만 답변).
+- 규정에 없는 숫자/기한을 생성하지 마세요.
 """
 
     
@@ -382,10 +385,17 @@ class FunctionGemmaAdapter:
         self, question: str, context: str, llm_client=None
     ) -> str:
         """Generate answer using base LLM (not FunctionGemma)."""
+        anti_hallucination = """\n\n⚠️ 답변 원칙 (반드시 준수):
+1. 컨텍스트에 있는 구체적인 수치(평점평균, 학점, 기간 등)를 그대로 인용하여 답변하세요.
+2. "제N조", "제N항" 등 조항 번호를 반드시 명시하세요.
+3. 컨텍스트에 명시된 내용 외의 정보를 추측하거나 생성하지 마세요.
+4. 절대 금지: 전화번호 생성, 다른 학교 사례 언급, 규정에 없는 숫자/등급(C-, B+ 등) 생성.
+5. 정말 관련 정보가 없을 때만 "확인되지 않습니다"라고 답변하세요."""
+        
         # Try provided client first
         if llm_client:
             return llm_client.generate(
-                system_prompt="당신은 대학 규정을 설명하는 전문가입니다. 컨텍스트를 바탕으로 질문에 답변하세요.",
+                system_prompt="당신은 동의대학교 규정을 설명하는 전문가입니다. 컨텍스트를 바탕으로 질문에 답변하세요." + anti_hallucination,
                 user_message=f"질문: {question}\n\n컨텍스트:\n{context}",
                 temperature=0.0,
             )
@@ -395,7 +405,7 @@ class FunctionGemmaAdapter:
             payload = {
                 "model": os.getenv("LLM_MODEL", "eeve-korean-instruct-7b-v2.0-preview-mlx"),
                 "messages": [
-                    {"role": "system", "content": "당신은 대학 규정을 설명하는 전문가입니다."},
+                    {"role": "system", "content": "당신은 동의대학교 규정을 설명하는 전문가입니다." + anti_hallucination},
                     {"role": "user", "content": f"질문: {question}\n\n컨텍스트:\n{context}\n\n답변:"}
                 ],
                 "temperature": 0,
@@ -428,7 +438,7 @@ class FunctionGemmaAdapter:
         analysis_context = self._build_analysis_context(query)
         
         # System prompt for guiding tool usage with intent hints
-        system_prompt = f"""당신은 대학 규정 전문가입니다. 사용자의 질문에 답하기 위해 제공된 도구를 사용하세요.
+        system_prompt = f"""당신은 동의대학교 규정 전문가입니다. 사용자의 질문에 답하기 위해 제공된 도구를 사용하세요.
 
 {analysis_context}
 
@@ -438,7 +448,15 @@ class FunctionGemmaAdapter:
    - 예: 사용자가 "학교 가기 싫어"라고 해도 [검색 키워드]가 "휴직 휴가 연구년"이면 해당 키워드로 검색하세요.
 2. 검색 결과를 바탕으로 generate_answer 도구를 호출하여 최종 답변을 생성합니다.
 
-중요: 검색 결과를 받은 후에는 반드시 generate_answer를 호출하여 사용자에게 친절한 답변을 제공하세요."""
+⚠️ 답변 원칙 (중요):
+1. 검색 결과에 관련 정보가 있으면 반드시 구체적으로 답변하세요 (조항 번호, 기준, 기간 포함).
+2. 검색 결과를 받은 후에는 반드시 generate_answer를 호출하여 친절하고 구체적인 답변을 제공하세요.
+3. 절대 금지:
+   - 전화번호(02-XXXX-XXXX) 생성 → "학교 홈페이지에서 확인하세요"로 대체
+   - 다른 학교 사례 언급 → 동의대학교 규정만 답변
+   - 규정에 없는 숫자/비율/기한 생성
+   - "대학마다 다릅니다", "일반적으로" 같은 회피성 표현
+4. 정말로 관련 규정이 검색되지 않았을 때만 "확인되지 않습니다"라고 답변하세요."""
 
         messages = [
             {"role": "system", "content": system_prompt},
@@ -519,7 +537,7 @@ class FunctionGemmaAdapter:
                         answer_payload = {
                             "model": self._model,
                             "messages": [
-                                {"role": "system", "content": "당신은 대학 규정을 설명하는 전문가입니다. 주어진 컨텍스트를 바탕으로 질문에 정확하고 친절하게 답변하세요."},
+                                {"role": "system", "content": "당신은 동의대학교 규정을 설명하는 전문가입니다. 컨텍스트에 관련 정보가 있으면 조항 번호와 구체적 기준을 포함하여 상세히 답변하세요. ⚠️ 절대 금지: 전화번호 생성, 다른 학교 사례 언급, 규정에 없는 숫자 생성. 정말 관련 정보가 없을 때만 '확인되지 않습니다'라고 답변."},
                                 {"role": "user", "content": f"질문: {question}\n\n컨텍스트:\n{context}\n\n위 컨텍스트를 바탕으로 답변해주세요."}
                             ],
                             "temperature": 0,
