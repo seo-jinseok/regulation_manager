@@ -33,6 +33,7 @@ from ..infrastructure.hybrid_search import Audience, QueryAnalyzer
 from ..infrastructure.json_loader import JSONDocumentLoader
 from .chat_logic import (
     attachment_label_variants,
+    expand_followup_query,
     extract_regulation_title,
     parse_attachment_request,
 )
@@ -40,9 +41,11 @@ from .common import decide_search_mode
 from .formatters import (
     clean_path_segments,
     normalize_relevance_scores,
+    filter_by_relevance,
     render_full_view_nodes,
     strip_path_prefix,
     format_regulation_content,
+    normalize_markdown_emphasis,
 )
 from .query_suggestions import get_followup_suggestions, format_suggestions_for_cli
 
@@ -564,6 +567,15 @@ class QueryHandler:
         
         yield {"type": "progress", "content": "🔍 규정 검색 중..."}
         
+        # Handle multi-turn context expansion
+        search_query = question
+        if context.last_regulation:
+            expanded = expand_followup_query(question, context.last_regulation)
+            if expanded != question:
+                search_query = expanded
+                if options.show_debug:
+                    yield {"type": "progress", "content": f"🔄 문맥 반영: {search_query}"}
+        
         # Use SearchUseCase.ask_stream
         for event in search_usecase.ask_stream(
             question=question,
@@ -571,6 +583,7 @@ class QueryHandler:
             include_abolished=options.include_abolished,
             audience_override=options.audience_override,
             history_text=history_text,
+            search_query=search_query,
         ):
              yield event
         
@@ -1138,6 +1151,16 @@ class QueryHandler:
             if history_lines:
                 history_text = "\n".join(history_lines)
         
+        # Handle multi-turn context expansion
+        search_query = question
+        if context.last_regulation:
+            expanded = expand_followup_query(question, context.last_regulation)
+            if expanded != question:
+                search_query = expanded
+                # Log expansion for debug
+                if options.show_debug:
+                    print(f"[DEBUG] Context expansion: '{question}' -> '{search_query}'")
+
         try:
             answer = search_usecase.ask(
                 question=question,
@@ -1145,6 +1168,7 @@ class QueryHandler:
                 include_abolished=options.include_abolished,
                 audience_override=options.audience_override,
                 history_text=history_text,
+                search_query=search_query,
             )
         except Exception as e:
             return QueryResult(

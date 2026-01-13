@@ -713,17 +713,29 @@ class SearchUseCase:
         reg_name_lower = reg_name.lower()
 
         if audience == Audience.FACULTY:
-            is_student_reg = "학생" in reg_name_lower and "교원" not in reg_name_lower
+            # Penalize student-specific regulations
+            is_student_reg = any(
+                k in reg_name_lower for k in ["학생", "학사", "장학", "수강", "졸업", "동아리"]
+            )
+            # But don't penalize if it explicitly mentions faculty/staff
+            is_student_reg = is_student_reg and not any(
+                k in reg_name_lower for k in ["교원", "직원", "교수", "인사"]
+            )
+            
             if is_student_reg:
-                return score * 0.5
+                return score * 0.4  # Strong penalty
+
         elif audience == Audience.STUDENT:
+            # Penalize faculty/staff-specific regulations
             is_faculty_reg = any(
                 k in reg_name_lower
-                for k in ["교원", "직원", "인사", "복무", "업적", "채용"]
+                for k in ["교원", "직원", "인사", "복무", "업적", "채용", "연구년", "조교"]
             )
+            # But don't penalize if it explicitly mentions students
             is_faculty_reg = is_faculty_reg and "학생" not in reg_name_lower
+            
             if is_faculty_reg:
-                return score * 0.5
+                return score * 0.4  # Strong penalty
 
         return score
 
