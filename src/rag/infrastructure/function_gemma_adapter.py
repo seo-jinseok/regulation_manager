@@ -134,7 +134,9 @@ class FunctionGemmaAdapter:
         
         # Load from environment if not provided
         self._model = model or os.getenv("LLM_MODEL", "functiongemma")
-        self._base_url = base_url or os.getenv("LLM_BASE_URL", "http://localhost:1234")
+        raw_base_url = base_url or os.getenv("LLM_BASE_URL", "http://localhost:1234")
+        # Normalize base_url: remove trailing /v1 if present (we add it in API calls)
+        self._base_url = raw_base_url.rstrip("/").removesuffix("/v1")
         self._mlx_model_id = mlx_model
         
         # MLX model/tokenizer (lazy loaded)
@@ -144,6 +146,22 @@ class FunctionGemmaAdapter:
         # Determine API mode
         self._api_mode = self._resolve_api_mode(api_mode)
         print(f"[DEBUG] FunctionGemmaAdapter initialized. tool_executor={self._tool_executor}, api_mode={self._api_mode}")
+
+    def _get_api_headers(self) -> dict:
+        """Get headers for API calls, including Authorization if needed."""
+        headers = {"Content-Type": "application/json"}
+        
+        # Add API key for cloud providers
+        if "openrouter.ai" in self._base_url:
+            api_key = os.getenv("OPENROUTER_API_KEY")
+            if api_key:
+                headers["Authorization"] = f"Bearer {api_key}"
+        elif "api.openai.com" in self._base_url:
+            api_key = os.getenv("OPENAI_API_KEY")
+            if api_key:
+                headers["Authorization"] = f"Bearer {api_key}"
+        
+        return headers
 
     def set_llm_client(self, llm_client) -> None:
         """Set the LLM client."""
@@ -202,6 +220,10 @@ class FunctionGemmaAdapter:
             return "text"
         
         # Auto mode: try to detect best available
+        
+        # 0. Check for cloud providers (OpenRouter, OpenAI) - use openai mode
+        if "openrouter.ai" in self._base_url or "api.openai.com" in self._base_url:
+            return "openai"
         
         # 1. Prefer OpenAI-compatible server (LM Studio/vLLM) as it handles templates reliably
         try:
@@ -385,12 +407,17 @@ class FunctionGemmaAdapter:
         self, question: str, context: str, llm_client=None
     ) -> str:
         """Generate answer using base LLM (not FunctionGemma)."""
-        anti_hallucination = """\n\n⚠️ 답변 원칙 (반드시 준수):
+        anti_hallucination = """\n\n📌 출처 표기 원칙 (필수):
+1. 모든 조항 인용 시 반드시 "규정명 + 제N조"를 함께 명시하세요.
+   - 좋은 예: "직원복무규정 제26조에 따르면...", "학칙 제15조 ②항에서는..."
+   - 나쁜 예: "제26조에 따르면..." (규정명 누락 ❌)
+2. 컨텍스트에 표시된 [규정명] 또는 regulation_title을 반드시 활용하세요.
+
+⚠️ 답변 원칙 (반드시 준수):
 1. 컨텍스트에 있는 구체적인 수치(평점평균, 학점, 기간 등)를 그대로 인용하여 답변하세요.
-2. "제N조", "제N항" 등 조항 번호를 반드시 명시하세요.
-3. 컨텍스트에 명시된 내용 외의 정보를 추측하거나 생성하지 마세요.
-4. 절대 금지: 전화번호 생성, 다른 학교 사례 언급, 규정에 없는 숫자/등급(C-, B+ 등) 생성.
-5. 정말 관련 정보가 없을 때만 "확인되지 않습니다"라고 답변하세요."""
+2. 컨텍스트에 명시된 내용 외의 정보를 추측하거나 생성하지 마세요.
+3. 절대 금지: 전화번호 생성, 다른 학교 사례 언급, 규정에 없는 숫자/등급(C-, B+ 등) 생성.
+4. 정말 관련 정보가 없을 때만 "확인되지 않습니다"라고 답변하세요."""
         
         # Try provided client first
         if llm_client:
@@ -413,7 +440,7 @@ class FunctionGemmaAdapter:
             resp = requests.post(
                 f"{self._base_url}/v1/chat/completions",
                 json=payload,
-                headers={"Content-Type": "application/json"},
+                headers=self._get_api_headers(),
                 timeout=120,
             )
             resp.raise_for_status()
@@ -479,7 +506,7 @@ class FunctionGemmaAdapter:
                 resp = requests.post(
                     f"{self._base_url}/v1/chat/completions",
                     json=payload,
-                    headers={"Content-Type": "application/json"},
+                    headers=self._get_api_headers(),
                     timeout=120,
                 )
                 resp.raise_for_status()
@@ -534,10 +561,20 @@ class FunctionGemmaAdapter:
                         question = args.get("question", query)
                         
                         # Make a simple completion request (no tools)
+                        answer_system = """당신은 동의대학교 규정을 설명하는 전문가입니다.
+
+📌 출처 표기 원칙 (필수):
+1. 모든 조항 인용 시 반드시 "「규정명」 제N조"를 함께 명시하세요.
+   - 좋은 예: "「직원복무규정」 제26조에 따르면..."
+   - 나쁜 예: "제26조에 따르면..." (규정명 누락 ❌)
+2. 컨텍스트의 regulation_title 또는 parent_path에서 규정명을 확인하세요.
+
+⚠️ 절대 금지: 전화번호 생성, 다른 학교 사례 언급, 규정에 없는 숫자 생성.
+정말 관련 정보가 없을 때만 '확인되지 않습니다'라고 답변."""
                         answer_payload = {
                             "model": self._model,
                             "messages": [
-                                {"role": "system", "content": "당신은 동의대학교 규정을 설명하는 전문가입니다. 컨텍스트에 관련 정보가 있으면 조항 번호와 구체적 기준을 포함하여 상세히 답변하세요. ⚠️ 절대 금지: 전화번호 생성, 다른 학교 사례 언급, 규정에 없는 숫자 생성. 정말 관련 정보가 없을 때만 '확인되지 않습니다'라고 답변."},
+                                {"role": "system", "content": answer_system},
                                 {"role": "user", "content": f"질문: {question}\n\n컨텍스트:\n{context}\n\n위 컨텍스트를 바탕으로 답변해주세요."}
                             ],
                             "temperature": 0,
@@ -547,7 +584,7 @@ class FunctionGemmaAdapter:
                             answer_resp = requests.post(
                                 f"{self._base_url}/v1/chat/completions",
                                 json=answer_payload,
-                                headers={"Content-Type": "application/json"},
+                                headers=self._get_api_headers(),
                                 timeout=120,
                             )
                             answer_resp.raise_for_status()

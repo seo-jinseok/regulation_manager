@@ -173,9 +173,11 @@ class ToolExecutor:
             "count": len(results),
             "results": [
                 {
+                    "regulation_title": r.chunk.parent_path[0] if r.chunk.parent_path else r.chunk.title,
                     "title": r.chunk.title,
                     "text": r.chunk.text[:500] + "..." if len(r.chunk.text) > 500 else r.chunk.text,
                     "rule_code": r.chunk.rule_code,
+                    "parent_path": " > ".join(r.chunk.parent_path),
                     "score": round(r.score, 3),
                 }
                 for r in results
@@ -370,6 +372,13 @@ class ToolExecutor:
 
         system_prompt = """당신은 동의대학교 규정을 설명하는 전문가입니다.
 주어진 컨텍스트를 바탕으로 질문에 정확하고 친절하게 답변하세요.
+
+📌 출처 표기 원칙 (필수):
+1. 모든 조항 인용 시 반드시 "규정명 + 제N조"를 함께 명시하세요.
+   - 좋은 예: "직원복무규정 제26조에 따르면...", "학칙 제15조 ②항에서는..."
+   - 나쁜 예: "제26조에 따르면..." (규정명 누락 ❌)
+2. 컨텍스트에 표시된 [규정명] 또는 regulation_title을 반드시 활용하세요.
+3. 여러 규정을 인용할 경우, 각각 출처를 명시하세요.
 
 ⚠️ 절대 금지 사항:
 1. 전화번호/연락처를 만들어내지 마세요 (예: 02-XXXX-XXXX 금지). 연락처는 "학교 홈페이지에서 확인하세요"라고 안내하세요.

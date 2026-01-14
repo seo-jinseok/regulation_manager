@@ -212,6 +212,8 @@ class QueryHandler:
             
             # Build debug info from tool results
             debug_lines = []
+            regulation_title = None
+            
             for result in tool_results:
                 status = "✅" if result.success else "❌"
                 debug_msg = f"{status} **{result.tool_name}**"
@@ -230,6 +232,14 @@ class QueryHandler:
                 debug_msg += f"\n   🔸 Result: {res_str}"
                 
                 debug_lines.append(debug_msg)
+                
+                # Extract regulation_title from search_regulations results
+                if result.tool_name == "search_regulations" and result.success:
+                    if isinstance(result.result, dict) and "results" in result.result:
+                        for r in result.result["results"]:
+                            if r.get("regulation_title"):
+                                regulation_title = r["regulation_title"]
+                                break
             
             debug_info = "\n\n".join(debug_lines) if options.show_debug else ""
             
@@ -240,6 +250,7 @@ class QueryHandler:
                 data={
                     "tool_results": [r.to_dict() for r in tool_results],
                     "used_function_gemma": True,
+                    "regulation_title": regulation_title,
                 },
                 debug_info=debug_info,
             )
