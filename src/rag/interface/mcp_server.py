@@ -39,7 +39,7 @@ from .formatters import (
     filter_by_relevance,
     normalize_relevance_scores,
 )
-from .query_handler import QueryHandler, QueryOptions, QueryType
+from .query_handler import QueryHandler, QueryType
 
 # Initialize MCP server with metadata
 mcp = FastMCP(

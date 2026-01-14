@@ -132,7 +132,7 @@ def expand_followup_query(message: str, context: Optional[str]) -> str:
     """Expand follow-up queries with last context when safe."""
     message = unicodedata.normalize("NFC", message) if message else ""
     context = unicodedata.normalize("NFC", context) if context else ""
-    
+
     if not context:
         return message
 
@@ -236,7 +236,7 @@ _TRAILING_PARTICLE_PATTERN = re.compile(r"(의|을|를|은|는|이|가|에|에�
 def extract_regulation_title(text: str) -> Optional[str]:
     if not text:
         return None
-    
+
     text = unicodedata.normalize("NFC", text)
 
     matches = list(_REGULATION_PATTERN.finditer(text))

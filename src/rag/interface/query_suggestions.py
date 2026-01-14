@@ -100,7 +100,7 @@ def get_followup_suggestions(
         최대 3개의 후속 쿼리 제안
     """
     suggestions: List[str] = []
-    
+
     # 현재 쿼리 정규화 (공백 정리, 소문자)
     normalized_query = query.lower().strip()
 

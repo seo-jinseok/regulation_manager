@@ -11,6 +11,7 @@ from src.rag.interface.formatters import (
     clean_path_segments,
     extract_display_text,
     filter_by_relevance,
+    format_search_result_with_explanation,
     get_confidence_info,
     get_relevance_label,
     get_relevance_label_combined,
@@ -559,3 +560,161 @@ class TestBuildDisplayPath:
             chunk_title="제목",
         )
         assert result == "규정명 > 부칙"
+
+
+# ============================================================================
+# format_search_result_with_explanation tests
+# ============================================================================
+
+
+@dataclass
+class MockKeyword:
+    """Mock Keyword with term and weight."""
+    term: str
+    weight: float = 1.0
+
+
+@dataclass
+class MockChunkWithKeywords:
+    """Mock Chunk with keywords for explanation tests."""
+    id: str
+    text: str = ""
+    title: str = ""
+    parent_path: Optional[List[str]] = None
+    keywords: Optional[List[MockKeyword]] = None
+    level: Optional[str] = None
+
+
+@dataclass
+class MockSearchResultWithKeywords:
+    """Mock SearchResult for explanation tests."""
+    chunk: MockChunkWithKeywords
+    score: float
+
+
+class TestFormatSearchResultWithExplanation:
+    def test_empty_keywords(self):
+        """No keywords should return basic explanation."""
+        chunk = MockChunkWithKeywords(
+            id="1",
+            text="내용",
+            parent_path=["교원인사규정", "제1장"],
+        )
+        result = MockSearchResultWithKeywords(chunk=chunk, score=0.8)
+
+        explanation, matched = format_search_result_with_explanation(result, "검색어")
+
+        assert matched == ""
+        assert "교원인사규정" in explanation or "제1장" in explanation
+
+    def test_matched_keywords_extracted(self):
+        """Keywords matching query should be extracted."""
+        chunk = MockChunkWithKeywords(
+            id="1",
+            text="연구년 신청 절차",
+            keywords=[
+                MockKeyword(term="연구년"),
+                MockKeyword(term="신청"),
+                MockKeyword(term="휴직"),  # Not in query
+            ],
+            parent_path=["교원인사규정"],
+        )
+        result = MockSearchResultWithKeywords(chunk=chunk, score=0.8)
+
+        explanation, matched = format_search_result_with_explanation(result, "연구년 신청")
+
+        assert "연구년" in matched
+        assert "신청" in matched
+        assert "휴직" not in matched
+        assert "💡 매칭 키워드:" in explanation
+
+    def test_partial_keyword_match(self):
+        """Partial match between keyword and query should work."""
+        chunk = MockChunkWithKeywords(
+            id="1",
+            text="내용",
+            keywords=[MockKeyword(term="연구년제")],
+            parent_path=[],
+        )
+        result = MockSearchResultWithKeywords(chunk=chunk, score=0.8)
+
+        # "연구년" is part of "연구년제"
+        explanation, matched = format_search_result_with_explanation(result, "연구년")
+
+        assert "연구년제" in matched
+
+    def test_path_info_included(self):
+        """Path info should be included in explanation."""
+        chunk = MockChunkWithKeywords(
+            id="1",
+            text="내용",
+            parent_path=["교원인사규정", "제2장", "연구년제"],
+        )
+        result = MockSearchResultWithKeywords(chunk=chunk, score=0.8)
+
+        explanation, _ = format_search_result_with_explanation(result, "검색어")
+
+        # Last 2 segments should appear
+        assert "연구년제" in explanation
+
+    def test_show_score_includes_confidence(self):
+        """With show_score=True, AI confidence should appear."""
+        chunk = MockChunkWithKeywords(
+            id="1",
+            text="내용",
+            parent_path=["규정"],
+        )
+        result = MockSearchResultWithKeywords(chunk=chunk, score=0.8)
+
+        explanation, _ = format_search_result_with_explanation(result, "검색어", show_score=True)
+
+        assert "🎯 AI 신뢰도:" in explanation
+        assert "0.800" in explanation
+
+    def test_keyword_limit_applied(self):
+        """Keywords should be limited to 5."""
+        chunk = MockChunkWithKeywords(
+            id="1",
+            text="내용",
+            keywords=[MockKeyword(term=f"키워드{i}") for i in range(10)],
+            parent_path=[],
+        )
+        result = MockSearchResultWithKeywords(chunk=chunk, score=0.8)
+
+        # Query that matches all keywords
+        explanation, matched = format_search_result_with_explanation(
+            result, "키워드0 키워드1 키워드2 키워드3 키워드4 키워드5 키워드6"
+        )
+
+        # Should have at most 5 keywords
+        keyword_count = matched.count(",") + 1 if matched else 0
+        assert keyword_count <= 5
+
+    def test_empty_path_returns_basic_explanation(self):
+        """Empty path should still return valid explanation."""
+        chunk = MockChunkWithKeywords(
+            id="1",
+            text="내용",
+            parent_path=[],
+        )
+        result = MockSearchResultWithKeywords(chunk=chunk, score=0.5)
+
+        explanation, matched = format_search_result_with_explanation(result, "검색어")
+
+        # Should return fallback
+        assert explanation == "관련 내용"
+        assert matched == ""
+
+    def test_case_insensitive_keyword_match(self):
+        """Keyword matching should be case-insensitive."""
+        chunk = MockChunkWithKeywords(
+            id="1",
+            text="내용",
+            keywords=[MockKeyword(term="Research")],
+            parent_path=[],
+        )
+        result = MockSearchResultWithKeywords(chunk=chunk, score=0.8)
+
+        explanation, matched = format_search_result_with_explanation(result, "research")
+
+        assert "Research" in matched

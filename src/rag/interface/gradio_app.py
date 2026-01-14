@@ -12,7 +12,6 @@ Usage:
 
 import argparse
 import os
-import shutil
 from datetime import datetime
 from pathlib import Path
 from typing import List, Optional, Tuple
@@ -31,7 +30,6 @@ try:
 except ImportError:
     GRADIO_AVAILABLE = False
 
-from ...main import run_pipeline
 from ..application.full_view_usecase import FullViewUseCase, TableMatch
 from ..application.search_usecase import QueryRewriteInfo, SearchUseCase
 from ..application.sync_usecase import SyncUseCase
@@ -40,9 +38,9 @@ from ..domain.value_objects import SearchFilter
 from ..infrastructure.chroma_store import ChromaVectorStore
 from ..infrastructure.hybrid_search import Audience, QueryAnalyzer
 from ..infrastructure.json_loader import JSONDocumentLoader
-from ..infrastructure.json_loader import JSONDocumentLoader
 from ..infrastructure.llm_adapter import LLMClientAdapter
 from ..infrastructure.llm_client import MockLLMClient
+
 try:
     from ..infrastructure.function_gemma_adapter import FunctionGemmaAdapter
     FUNCTION_GEMMA_AVAILABLE = True
@@ -51,7 +49,6 @@ except ImportError:
     FunctionGemmaAdapter = None
 
 from .chat_logic import (
-    attachment_label_variants,
     build_history_context,
     expand_followup_query,
     extract_regulation_title,
@@ -64,19 +61,16 @@ from .chat_logic import (
 from .formatters import (
     clean_path_segments,
     filter_by_relevance,
-    get_confidence_info,
+    format_search_result_with_explanation,
     get_relevance_label_combined,
     infer_attachment_label,
-    infer_regulation_title_from_tables,
     normalize_markdown_emphasis,
     normalize_markdown_table,
     normalize_relevance_scores,
-    render_full_view_nodes,
     strip_path_prefix,
 )
 from .link_formatter import extract_and_format_references, format_as_markdown_links
-from .query_handler import QueryContext, QueryHandler, QueryOptions, QueryResult, QueryType
-from ..infrastructure.patterns import REGULATION_ONLY_PATTERN, RULE_CODE_PATTERN
+from .query_handler import QueryContext, QueryHandler, QueryOptions, QueryResult
 
 # Default paths
 DEFAULT_DB_PATH = "data/chroma_db"
@@ -191,7 +185,7 @@ def _process_with_handler(
     """Process query using QueryHandler."""
     db_path_value = target_db_path or default_db_path
     store_for_query = ChromaVectorStore(persist_directory=db_path_value)
-    
+
     # Initialize LLM client
     llm_client = None
     if not use_mock_llm:
@@ -205,14 +199,14 @@ def _process_with_handler(
             pass  # Will use search only if LLM fails
     else:
         llm_client = MockLLMClient()
-    
+
     handler = QueryHandler(
         store=store_for_query,
         llm_client=llm_client,
         function_gemma_client=llm_client if use_tools else None,
         use_reranker=True, # Default to True for Web UI
     )
-    
+
     context = QueryContext(
         state=state,
         history=history,
@@ -220,7 +214,7 @@ def _process_with_handler(
         last_regulation=state.get("last_regulation"),
         last_rule_code=state.get("last_rule_code"),
     )
-    
+
     options = QueryOptions(
         top_k=top_k,
         include_abolished=include_abolished,
@@ -230,7 +224,7 @@ def _process_with_handler(
         llm_model=llm_model,
         llm_base_url=llm_base_url,
     )
-    
+
     return handler.process_query(query, context, options)
 
 def create_app(
@@ -348,7 +342,7 @@ def create_app(
             return "목차 정보가 없습니다."
         return "### 목차\n" + "\n".join([f"- {t}" for t in toc])
 
-    def _build_sources_markdown(results, show_debug: bool) -> str:
+    def _build_sources_markdown(results, query: str, show_debug: bool) -> str:
         sources_md = ["### 📚 참고 규정\n"]
         norm_scores = normalize_relevance_scores(results) if results else {}
         display_sources = filter_by_relevance(results, norm_scores) if results else []
@@ -365,17 +359,21 @@ def create_app(
             rel_label = get_relevance_label_combined(rel_pct)
             score_info = f" | AI 신뢰도: {r.score:.3f}" if show_debug else ""
             snippet = strip_path_prefix(r.chunk.text, r.chunk.parent_path or [])
-            
+
             # Format regulation references in snippet as links (visual only for now)
             # We use a dummy link that doesn't go anywhere but looks like a link
             snippet_with_links = format_as_markdown_links(
-                snippet, 
+                snippet,
                 extract_and_format_references(snippet, "markdown")[0],
                 link_template="#"
             )
 
+            # 매칭 설명 추가
+            explanation, _ = format_search_result_with_explanation(r, query, show_score=show_debug)
+
             sources_md.append(f"""#### [{i}] {reg_name}
 **경로:** {path}
+**매칭 정보:** {explanation}
 
 {snippet_with_links[:500]}{"..." if len(snippet_with_links) > 500 else ""}
 
@@ -435,7 +433,7 @@ def create_app(
         )
 
         answer_text = normalize_markdown_emphasis(answer.text)
-        sources_text = _build_sources_markdown(answer.sources, show_debug)
+        sources_text = _build_sources_markdown(answer.sources, question, show_debug)
         debug_text = ""
         if show_debug:
             debug_text = _format_query_rewrite_debug(
@@ -520,14 +518,14 @@ def create_app(
                     sources = item["sources"]
                     # Progress: LLM generating
                     yield {"type": "progress", "content": "🔍 1/3 규정 검색 중...\n🎯 2/3 관련도 재정렬 중...\n🤖 3/3 AI 답변 생성 중..."}
-                    
+
                     if sources:
                         top_chunk = sources[0].chunk
                         rule_code = top_chunk.rule_code
                         regulation_title = top_chunk.parent_path[0] if top_chunk.parent_path else top_chunk.title
                 elif item["type"] == "token":
                     yield {"type": "token", "content": item["content"]}
-        except Exception as e:
+        except Exception:
             # Fallback to non-streaming
             answer = search_with_llm.ask(
                 question,
@@ -546,7 +544,7 @@ def create_app(
             yield {"type": "token", "content": answer.text}
 
         # Send sources and debug info at the end
-        sources_text = _build_sources_markdown(sources, show_debug)
+        sources_text = _build_sources_markdown(sources, question, show_debug)
         if show_debug:
             debug_text = _format_query_rewrite_debug(
                 search_with_llm.get_last_query_rewrite()
@@ -584,7 +582,7 @@ def create_app(
 
         # Prepare arguments
         audience_override = _parse_audience(target_sel) if target_sel != "자동" else None
-        
+
         # Build history context if enabled
         history_context = []
         if use_context:
@@ -593,7 +591,7 @@ def create_app(
         # New logic inline here:
         db_path_value = db_path_val or db_path
         store_for_query = ChromaVectorStore(persist_directory=db_path_value)
-        
+
         llm_client = None
         if not use_mock_llm:
             try:
@@ -613,7 +611,7 @@ def create_app(
             function_gemma_client=llm_client if use_tools else None,
             use_reranker=True, # Default true for web
         )
-        
+
         context = QueryContext(
             state=state,
             history=history_context,
@@ -621,7 +619,7 @@ def create_app(
             last_regulation=state.get("last_regulation"),
             last_rule_code=state.get("last_rule_code"),
         )
-        
+
         options = QueryOptions(
             top_k=top_k,
             include_abolished=abolished,
@@ -643,36 +641,36 @@ def create_app(
         current_response = ""
         current_debug = ""
         sources_text = ""
-        
+
         for event in handler.process_query_stream(msg, context, options):
             evt_type = event["type"]
 
             if evt_type == "progress":
                 history[-1] = {"role": "assistant", "content": event["content"]}
                 yield history, "", current_debug, state
-            
+
             elif evt_type == "token":
                 current_response += event["content"]
                 history[-1]["content"] = current_response
                 yield history, "", current_debug, state
-                
+
             elif evt_type == "sources":
                 sources_text = event["content"]
-            
+
             elif evt_type == "debug":
                 current_debug += f"\n{event['content']}"
                 yield history, "", current_debug, state # Yield debug updates immediately
-                
+
             elif evt_type == "metadata":
                 if event.get("rule_code"):
                     state["last_rule_code"] = event["rule_code"]
                 if event.get("regulation_title"):
                     state["last_regulation"] = event["regulation_title"]
-            
+
             elif evt_type == "state":
                 # explicit state update
                 state.update(event["update"])
-                
+
             elif evt_type == "clarification":
                 clarification_type = event["clarification_type"]
                 clarification_options = event["options"]
@@ -685,13 +683,13 @@ def create_app(
                     "table_no": event.get("table_no"),
                     "label": event.get("label"),
                 }
-                
+
                 clarified_content = format_clarification(clarification_type, clarification_options)
                 history[-1] = {"role": "assistant", "content": clarified_content}
-                
+
                 yield history, "", current_debug, state
                 return # Stop processing, waiting for user clarification
-            
+
             elif evt_type == "error":
                 history[-1] = {"role": "assistant", "content": f"⚠️ {event['content']}"}
                 yield history, "", current_debug, state
@@ -700,7 +698,7 @@ def create_app(
             elif evt_type == "complete":
                 # Final non-streaming content (e.g. Overview, Search Table) or final LLM answer
                 content = event["content"]
-                
+
                 # If it's an LLM answer, sources might be separate.
                 # For search results, sources are usually part of the content.
                 if sources_text and "---" not in content[-50:]: # Avoid duplication if sources already appended
@@ -839,7 +837,7 @@ def create_app(
         # Initialize QueryHandler
         db_path_value = target_db_path or "data/chroma_db"
         store = ChromaVectorStore(persist_directory=db_path_value)
-        
+
         llm_client = None
         if use_mock_llm: # Captured from create_app scope
             llm_client = MockLLMClient()
@@ -889,14 +887,14 @@ def create_app(
         answer_text = ""
         sources_text = ""
         debug_text = ""
-        
+
         for event in handler.process_query_stream(query, context, options):
             evt_type = event["type"]
-            
+
             if evt_type == "progress":
                 history[-1] = {"role": "assistant", "content": event["content"]}
                 yield history, details, debug_text, state
-            
+
             elif evt_type == "token":
                 # Accumulate text for streaming
                 if not answer_text:
@@ -904,23 +902,23 @@ def create_app(
                 answer_text += event["content"]
                 history[-1] = {"role": "assistant", "content": answer_text}
                 yield history, details, debug_text, state
-                
+
             elif evt_type == "sources":
                 sources_text = event["content"]
-            
+
             elif evt_type == "debug":
                 debug_text = event["content"]
-                
+
             elif evt_type == "metadata":
                 if event.get("rule_code"):
                     state["last_rule_code"] = event["rule_code"]
                 if event.get("regulation_title"):
                     state["last_regulation"] = event["regulation_title"]
-            
+
             elif evt_type == "state":
                 # explicit state update
                 state.update(event["update"])
-                
+
             elif evt_type == "clarification":
                 # QueryHandler returns clarification_type, options, and a generic content message.
                 # We need to format it with buttons for the UI.
@@ -935,13 +933,13 @@ def create_app(
                     "table_no": event.get("table_no"),
                     "label": event.get("label"),
                 }
-                
+
                 clarified_content = format_clarification(clarification_type, clarification_options)
                 history[-1] = {"role": "assistant", "content": clarified_content}
-                
+
                 yield history, details, debug_text, state
                 return # Stop processing, waiting for user clarification
-            
+
             elif evt_type == "error":
                 history[-1] = {"role": "assistant", "content": f"⚠️ {event['content']}"}
                 yield history, details, debug_text, state
@@ -950,7 +948,7 @@ def create_app(
             elif evt_type == "complete":
                 # Final non-streaming content (e.g. Overview, Search Table) or final LLM answer
                 content = event["content"]
-                
+
                 # If it's an LLM answer, sources might be separate.
                 # For search results, sources are usually part of the content.
                 if sources_text and "---" not in content[-50:]: # Avoid duplication if sources already appended
@@ -1063,8 +1061,10 @@ def create_app(
                             height=500,
                             show_label=False,
                             value=[{"role": "assistant", "content": "👋 안녕하세요! 대학 규정을 검색하거나 질문할 수 있습니다.\n\n💡 아래 예시 버튼을 클릭하거나 직접 질문을 입력해주세요."}],
+                            avatar_images=("👤", "🤖"),
+                            bubble_full_width=False,
                         )
-                        
+
                         # Input area
                         with gr.Row():
                             chat_input = gr.Textbox(
@@ -1080,7 +1080,7 @@ def create_app(
                                 scale=1,
                                 min_width=80,
                             )
-                        
+
                         # Example queries as clickable cards
                         gr.Markdown("### 💡 예시 질문")
                         with gr.Row():
@@ -1090,7 +1090,7 @@ def create_app(
                         with gr.Row():
                             ex4 = gr.Button("📋 학칙 별표 1", size="sm")
                             ex5 = gr.Button("😢 학교 그만두고 싶어요", size="sm")
-                        
+
                         # 대화 초기화 버튼을 예시 버튼과 분리
                         gr.Markdown("---")
                         chat_clear = gr.Button("🗑️ 대화 초기화", variant="secondary", size="sm")
@@ -1098,7 +1098,7 @@ def create_app(
                     # Settings sidebar
                     with gr.Column(scale=1):
                         gr.Markdown("### ⚙️ 설정")
-                        
+
                         chat_top_k = gr.Slider(
                             minimum=1, maximum=20, value=5, step=1,
                             label="결과 수"
@@ -1121,7 +1121,7 @@ def create_app(
                         chat_debug = gr.Checkbox(
                             label="디버그 출력", value=False
                         )
-                        
+
                         with gr.Accordion("🤖 LLM 설정", open=False):
                             chat_llm_p = gr.Dropdown(
                                 choices=LLM_PROVIDERS,
@@ -1136,10 +1136,10 @@ def create_app(
                                 value=DEFAULT_LLM_BASE_URL,
                                 label="Base URL"
                             )
-                        
+
                         # Detail panel은 숨김 처리 (채팅창에 직접 표시)
                         chat_detail = gr.Markdown(visible=False)
-                        
+
                         with gr.Accordion("🔧 디버그", open=False):
                             chat_debug_out = gr.Markdown()
 
@@ -1171,7 +1171,7 @@ def create_app(
                 def confirm_navigation(state, direction):
                     history = state.get("nav_history", [])
                     index = state.get("nav_index", -1)
-                    
+
                     new_index = index + direction
                     if 0 <= new_index < len(history):
                         state["nav_index"] = new_index
@@ -1186,35 +1186,35 @@ def create_app(
                     # Update History for Navigation
                     # Logic: If query changes effectively (new search or view), apend to history
                     # We need to capture the FINAL state to update navigation
-                    
+
                     # Store previous state to detect change
                     prev_query = state.get("last_query")
                     prev_mode = state.get("last_mode")
-                    
+
                     final_state = state
                     for result in chat_respond(msg, history, state, top_k, abolished, llm_p, llm_m, llm_b, db, target, context, use_tools, debug):
                         # Unpack result and add empty string for input clear
                         hist, detail, dbg, st = result
                         final_state = st
                         yield hist, detail, dbg, st, ""
-                    
+
                     # After generation, update navigation history if meaningful change
                     curr_query = final_state.get("last_query")
                     curr_mode = final_state.get("last_mode")
-                    
+
                     if curr_query and (curr_query != prev_query or curr_mode != prev_mode):
                         # Append to history
                         nav_history = final_state.get("nav_history", [])
                         nav_index = final_state.get("nav_index", -1)
-                        
+
                         # If we were back in history, truncate future
                         if nav_index < len(nav_history) - 1:
                             nav_history = nav_history[:nav_index + 1]
-                        
+
                         nav_history.append((curr_mode, curr_query, final_state.get("last_regulation")))
                         final_state["nav_history"] = nav_history
                         final_state["nav_index"] = len(nav_history) - 1
-                        
+
                         yield hist, detail, dbg, final_state, ""
 
                 def on_back_click(history, state, top_k, abolished, llm_p, llm_m, llm_b, db, target, context, use_tools, debug):
@@ -1225,7 +1225,7 @@ def create_app(
                              yield res
                      else:
                          yield history, "", "", state, ""
-                
+
                 def on_forward_click(history, state, top_k, abolished, llm_p, llm_m, llm_b, db, target, context, use_tools, debug):
                      query, new_state = confirm_navigation(state, 1)
                      if query:
@@ -1245,7 +1245,7 @@ def create_app(
                         nav_index = st.get("nav_index", -1)
                         has_back = nav_index > 0
                         has_forward = nav_index < len(nav_history) - 1
-                        
+
                         yield hist, detail, dbg, st, inp, gr.update(interactive=has_back), gr.update(interactive=has_forward)
 
                 chat_send.click(
@@ -1286,7 +1286,7 @@ def create_app(
                     ],
                     outputs=[chat_bot, chat_detail, chat_debug_out, chat_state, chat_input, btn_back, btn_forward],
                 )
-                
+
                 # Wire up Back/Forward
                 btn_back.click(
                     fn=on_back_click,
@@ -1359,7 +1359,6 @@ def create_app(
 
 def main():
     """Launch Gradio app."""
-    import argparse
 
     parser = argparse.ArgumentParser(description="규정집 RAG 웹 UI")
     parser.add_argument("--port", type=int, default=7860, help="서버 포트")

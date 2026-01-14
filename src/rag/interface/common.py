@@ -1,5 +1,5 @@
-from typing import Optional
 import unicodedata
+from typing import Optional
 
 
 def decide_search_mode(query: str, force_mode: Optional[str] = None) -> str:

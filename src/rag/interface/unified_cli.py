@@ -260,7 +260,7 @@ def _add_search_parser(subparsers):
         action="store_true",
         help="관련 규정 전문 출력 (답변 생성 시)",
     )
-    
+
     # Tool calling is now DEFAULT (FunctionGemma for routing, base LLM for answers)
     parser.add_argument(
         "--no-tools",
@@ -710,13 +710,14 @@ def cmd_reset(args) -> int:
 def cmd_serve(args) -> int:
     """Execute serve command - start Web UI or MCP Server."""
     import os
-    
+
     # Enable warmup for server modes
     os.environ["WARMUP_ON_INIT"] = "true"
-    
+
     if args.web:
         import gradio as gr
-        from .gradio_app import create_app, CUSTOM_CSS
+
+        from .gradio_app import CUSTOM_CSS, create_app
 
         app = create_app(db_path=args.db_path)
         app.launch(

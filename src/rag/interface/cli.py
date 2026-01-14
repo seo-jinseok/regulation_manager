@@ -17,7 +17,7 @@ import os
 import re
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 # Enable readline for better interactive input handling (backspace, arrow keys, etc.)
 try:
@@ -35,31 +35,22 @@ except ImportError:
 
 # Formatters for output formatting
 from .chat_logic import (
-    attachment_label_variants,
-    build_history_context,
     expand_followup_query,
-    extract_regulation_title,
-    has_explicit_target,
-    parse_attachment_request,
 )
 from .formatters import (
     build_display_path,
-    clean_path_segments,
     extract_display_text,
-    filter_by_relevance,
     format_regulation_content,
+    format_search_result_with_explanation,
     get_confidence_info,
-    get_relevance_label_combined,
-    infer_attachment_label,
-    infer_regulation_title_from_tables,
-    normalize_markdown_emphasis,
-    normalize_markdown_table,
-    normalize_relevance_scores,
-    render_full_view_nodes,
-    strip_path_prefix,
 )
-from .query_handler import QueryContext, QueryHandler, QueryOptions, QueryResult, QueryType
-from ..infrastructure.patterns import REGULATION_ONLY_PATTERN, RULE_CODE_PATTERN
+from .query_handler import (
+    QueryContext,
+    QueryHandler,
+    QueryOptions,
+    QueryResult,
+    QueryType,
+)
 
 # Rich for pretty output (optional)
 try:
@@ -100,7 +91,7 @@ def print_error(msg: str) -> None:
         print(f"[ERROR] {msg}")
 
 
-def _print_sources_and_confidence(sources: list, confidence: float, verbose: bool = False):
+def _print_sources_and_confidence(sources: list, confidence: float, verbose: bool = False, query: str = ""):
     """Print sources and confidence panel."""
     if not sources:
         return
@@ -116,6 +107,7 @@ def _print_sources_and_confidence(sources: list, confidence: float, verbose: boo
                 text = src.get("text", "")
                 score = src.get("score", 0.0)
                 path = src.get("path", "")
+                explanation = ""
             else:
                 chunk = src.chunk
                 title = chunk.parent_path[0] if chunk.parent_path else chunk.title
@@ -123,10 +115,13 @@ def _print_sources_and_confidence(sources: list, confidence: float, verbose: boo
                 text = extract_display_text(chunk.text)
                 score = src.score
                 path = build_display_path(chunk.parent_path, chunk.text, chunk.title)
+                # 매칭 설명 추가
+                explanation, _ = format_search_result_with_explanation(src, query, show_score=verbose)
 
             content_parts = [
                 f"[bold blue]📖 {title}[/bold blue]",
                 f"[dim]📍 {path}[/dim]" if path else "",
+                f"[yellow]💡 {explanation}[/yellow]" if explanation else "",
                 "",
                 text[:500] + "..." if len(text) > 500 else text,
                 "",
@@ -569,7 +564,7 @@ def _print_markdown(title: str, text: object) -> None:
         renderable = text
         if isinstance(text, str):
             renderable = Markdown(text)
-            
+
         console.print()
         console.print(Panel(renderable, title=title, border_style="green"))
     else:
@@ -581,12 +576,12 @@ def _text_from_regulation(formatted_text: str) -> object:
     """Convert formatted regulation text to Rich Text with header styling."""
     if not RICH_AVAILABLE:
         return formatted_text
-        
+
     text_obj = Text()
-    
+
     # Regex for markdown header: whitespace, 1-6 hashes, whitespace, text
     header_pattern = re.compile(r"^\s*(#{1,6})\s+(.*)")
-    
+
     for line in formatted_text.splitlines():
         match = header_pattern.match(line)
         if match:
@@ -599,16 +594,16 @@ def _text_from_regulation(formatted_text: str) -> object:
     return text_obj
 
 
-def _print_query_result(result: QueryResult, verbose: bool = False) -> None:
+def _print_query_result(result: QueryResult, verbose: bool = False, query: str = "") -> None:
     """Print QueryHandler result to CLI."""
     if not result.success:
         print_error(result.content)
         return
-    
+
     if result.type == QueryType.ERROR:
         print_error(result.content)
         return
-    
+
     if result.type == QueryType.CLARIFICATION:
         # Handle clarification requests
         if result.clarification_type == "audience":
@@ -620,7 +615,7 @@ def _print_query_result(result: QueryResult, verbose: bool = False) -> None:
             for i, opt in enumerate(result.clarification_options, 1):
                 print(f"  {i}. {opt}")
         return
-    
+
     # Map result types to titles
     title_map = {
         QueryType.OVERVIEW: "📋 규정 개요",
@@ -631,30 +626,30 @@ def _print_query_result(result: QueryResult, verbose: bool = False) -> None:
         QueryType.SEARCH: "🔍 검색 결과",
         QueryType.ASK: "💬 AI 답변",
     }
-    
+
     title = title_map.get(result.type, "결과")
-    
+
     # Add regulation info to title if available
     if result.data.get("regulation_title") or result.data.get("title"):
         reg_title = result.data.get("regulation_title") or result.data.get("title")
         title = f"{title} - {reg_title}"
-    
+
     content = result.content
-    
+
     # Custom rendering for SEARCH to preserve indentation
     if result.type == QueryType.SEARCH and RICH_AVAILABLE:
         from rich.console import Group
-        
+
         # Split content into Table part and Top Result part
         # We rely on the "---" separator we added in QueryHandler
         parts = result.content.split("\n\n---\n\n")
-        
+
         renderables = []
-        
+
         # 1. Result Table
         if parts:
             renderables.append(Markdown(parts[0]))
-            
+
         # 2. Top Result Detail
         if len(parts) > 1:
             top_part = parts[1]
@@ -662,24 +657,24 @@ def _print_query_result(result: QueryResult, verbose: bool = False) -> None:
             # QueryHandler adds metadata lines starting with "**" or "###"
             # And then the text.
             # We want to find where the text starts.
-            
+
             # Simple heuristic: Split by double newline, find the chunk text.
-            # In QueryHandler: 
+            # In QueryHandler:
             # content += f"### 🏆 1위 결과: ...\n\n"
             # content += f"**규정명:** ...\n\n"
             # content += f"**경로:** ...\n\n{top_text}"
-            
+
             # We can parse this manually or just render metadata as Markdown and Text as Text.
             # Let's extract metadata lines vs text lines.
-            
+
             lines = top_part.splitlines()
             metadata_lines = []
             text_lines = []
             is_text = False
-            
+
             for line in lines:
                 if not is_text:
-                    if not line.strip(): 
+                    if not line.strip():
                         continue
                     if line.startswith("###") or line.startswith("**"):
                         metadata_lines.append(line)
@@ -688,11 +683,11 @@ def _print_query_result(result: QueryResult, verbose: bool = False) -> None:
                         text_lines.append(line)
                 else:
                     text_lines.append(line)
-            
+
             if metadata_lines:
                 renderables.append(Markdown("\n".join(metadata_lines)))
                 renderables.append(Text("\n")) # Spacer
-                
+
             if text_lines:
                 raw_text = "\n".join(text_lines)
                 formatted_text = format_regulation_content(raw_text)
@@ -711,7 +706,7 @@ def _print_query_result(result: QueryResult, verbose: bool = False) -> None:
     if result.type == QueryType.ASK:
         sources = result.data.get("sources", [])
         confidence = result.data.get("confidence", 0.0)
-        _print_sources_and_confidence(sources, confidence, verbose)
+        _print_sources_and_confidence(sources, confidence, verbose, query=query)
 
     # Print debug info if available
     if result.debug_info:
@@ -779,7 +774,7 @@ def _print_regulation_overview(overview, other_matches: Optional[list] = None) -
             print(f"  - {ch.display_no} {ch.title}{article_info}")
         if overview.has_addenda:
             print("\n부칙 있음")
-        
+
         if other_matches:
             print("\n❓ 혹시 다음 규정을 찾으셨나요?")
             for m in other_matches:
@@ -872,30 +867,31 @@ def _perform_unified_search(
 ) -> int:
     """Core logic for unified search/ask."""
     from rich.panel import Panel
-    from ..infrastructure.chroma_store import ChromaVectorStore
-    from ..infrastructure.llm_adapter import LLMClientAdapter
-    from ..infrastructure.function_gemma_adapter import FunctionGemmaAdapter
-    from ..infrastructure.tool_executor import ToolExecutor
-    from ..infrastructure.query_analyzer import QueryAnalyzer
+
     from ..application.search_usecase import SearchUseCase
+    from ..infrastructure.chroma_store import ChromaVectorStore
+    from ..infrastructure.function_gemma_adapter import FunctionGemmaAdapter
+    from ..infrastructure.llm_adapter import LLMClientAdapter
+    from ..infrastructure.query_analyzer import QueryAnalyzer
+    from ..infrastructure.tool_executor import ToolExecutor
 
     state = state or {}
     raw_query = _sanitize_query_input(args.query)
     query = raw_query
-    
+
     if interactive and query:
         context_hint = state.get("last_regulation") or state.get("last_query")
         query = expand_followup_query(query, context_hint)
-    
+
     query = _sanitize_query_input(query)
     if not query:
         if interactive:
             return 0
         print_error("검색어를 입력해주세요.")
         return 1
-    
+
     args.query = query
-    
+
     # Initialize components
     store = ChromaVectorStore(persist_directory=args.db_path)
     if store.count() == 0:
@@ -904,7 +900,7 @@ def _perform_unified_search(
 
     use_reranker = not getattr(args, "no_rerank", False)
     use_tool_calling = not getattr(args, "no_tools", False)
-    
+
     # Initialize LLM Client
     llm_client = None
     try:
@@ -939,14 +935,14 @@ def _perform_unified_search(
         function_gemma_client=function_gemma_client,
         use_reranker=use_reranker,
     )
-    
+
     context = QueryContext(
         state=state,
         interactive=interactive,
         last_regulation=state.get("last_regulation"),
         last_rule_code=state.get("last_rule_code"),
     )
-    
+
     options = QueryOptions(
         top_k=args.top_k,
         include_abolished=getattr(args, "include_abolished", False),
@@ -966,40 +962,40 @@ def _perform_unified_search(
             stream_gen = handler.process_query_stream(query, context, options)
             from rich.live import Live
             from rich.text import Text
-            
+
             # Initial spacer
             console.print()
-            
+
             with Live(Panel(Text("..."), title="💬 AI 답변 준비 중", border_style="dim"), console=console, refresh_per_second=10) as live:
                 for event in stream_gen:
                     evt_type = event.get("type")
-                    
+
                     if evt_type == "progress":
-                        # Optionally show progress above the live panel? 
+                        # Optionally show progress above the live panel?
                         # For now, let's update title or just ignore for cleaner look
                         pass
-                    
+
                     elif evt_type == "token":
                         answer_text += event.get("content", "")
                         live.update(Panel(Markdown(answer_text), title="💬 AI 답변", border_style="green"))
-                        
+
                     elif evt_type == "complete":
                         answer_text = event.get("content", answer_text)
                         live.update(Panel(Markdown(answer_text), title="💬 AI 답변", border_style="green"))
-                        
+
                         # Show sources if available
                         data = event.get("data", {})
                         if data.get("sources"):
                             # We can print sources after the live panel
-                            _print_sources_and_confidence(data.get("sources", []), data.get("confidence", 0.0), args.verbose)
-                            
+                            _print_sources_and_confidence(data.get("sources", []), data.get("confidence", 0.0), args.verbose, query=raw_query)
+
                         _update_state_from_result(state, data, raw_query, answer_text, event.get("suggestions", []))
                         return 0
-                        
+
                     elif evt_type == "error":
                         live.update(Panel(Text(f"⚠️ {event['content']}"), title="❌ 오류", border_style="red"))
                         return 1
-                        
+
                     elif evt_type == "clarification":
                         live.stop()
                         _handle_cli_clarification(event)
@@ -1011,25 +1007,25 @@ def _perform_unified_search(
 
     # Standard non-streaming path
     result = handler.process_query(query, context, options)
-    
+
     if result.type == QueryType.CLARIFICATION:
         _handle_cli_clarification(result)
         return 0
-        
+
     if not result.success and result.type != QueryType.ERROR:
         print_info(result.content)
         return 0
-        
+
     if result.type == QueryType.ERROR:
         print_error(result.content)
         return 1
 
     # Display Result
-    _print_query_result(result, args.verbose)
-    
+    _print_query_result(result, args.verbose, query=raw_query)
+
     # Update State
     _update_state_from_result(state, result.data, raw_query, result.content, result.suggestions)
-    
+
     return 0
 
 def _update_state_from_result(state: dict, data: dict, raw_query: str, content: str, suggestions: list):
@@ -1083,7 +1079,6 @@ def _run_interactive_session(args) -> int:
     """Run an interactive CLI session with conversational turns."""
     from .query_suggestions import (
         format_examples_for_cli,
-        format_suggestions_for_cli,
         get_initial_examples,
     )
 

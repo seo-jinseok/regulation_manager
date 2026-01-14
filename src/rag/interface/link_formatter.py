@@ -95,7 +95,7 @@ def extract_regulation_references(text: str) -> List[RegulationRef]:
                 if dist < min_dist:
                     min_dist = dist
                     best_ref = ref
-            
+
         if best_ref:
             best_ref.rule_code = rule_code
             attached = True

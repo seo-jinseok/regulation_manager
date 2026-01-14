@@ -438,11 +438,11 @@ def render_full_view_nodes(
 
     display_nodes = nodes
     total_count = len(nodes)
-    
+
     # Smart Abbreviation: Detect repetitive implementation date patterns
     # If more than 5 items and many are implementation dates, we can be more aggressive
     repetitive_indices = [i for i, n in enumerate(nodes) if _is_repetitive_pattern(n)]
-    
+
     # If we have many repetitive items (>= 3), abbreviate them specifically
     if len(repetitive_indices) >= 5 and max_items > 0:
         # Keep first 2 and last 1 of the whole list, OR respect max_items
@@ -533,7 +533,7 @@ def format_regulation_content(text: str) -> str:
 
     lines = text.splitlines()
     formatted = []
-    
+
     # Regex patterns for hierarchy
     p_paragraph = re.compile(r"^\s*([①-⑮])")
     # Match "1." or "1 " (digit + dot OR space)
@@ -548,11 +548,11 @@ def format_regulation_content(text: str) -> str:
         if not stripped:
             formatted.append("")
             continue
-        
+
         # Normalize "제 N조" -> "제N조"
         clean_line = re.sub(r"제\s+(\d+)조", r"제\1조", line)
         stripped = clean_line.lstrip()
-        
+
         # Normalize "1 ???" -> "1. ???" (Add dot if missing for numbering)
         # Check if line starts with number followed by space (and NO dot)
         match_num = re.match(r"^(\s*)(\d+)\s+([^.])", clean_line)
@@ -560,8 +560,8 @@ def format_regulation_content(text: str) -> str:
              prefix_space = match_num.group(1)
              number = match_num.group(2)
              rest = match_num.group(3)
-             full_rest = clean_line[match_num.end(2):] 
-             
+             full_rest = clean_line[match_num.end(2):]
+
              # Apply generally for regulation numbering (typically 1-3 digits)
              if len(number) <= 3:
                   clean_line = f"{prefix_space}{number}. {full_rest.lstrip()}"
@@ -624,3 +624,97 @@ def get_confidence_info(confidence: float) -> Tuple[str, str, str]:
             "낮음",
             "관련 규정을 찾기 어렵습니다. 학교 행정실이나 규정집을 직접 확인하세요.",
         )
+
+
+# ============================================================================
+# Search Result Explanation
+# ============================================================================
+
+
+def format_search_result_with_explanation(
+    result: "SearchResult",
+    query: str,
+    show_score: bool = False,
+) -> Tuple[str, str]:
+    """
+    Generate explanation for why a search result matched.
+    
+    Args:
+        result: SearchResult object with chunk and score.
+        query: Original search query.
+        show_score: Whether to include raw AI score (for debug).
+    
+    Returns:
+        Tuple of (explanation_line, matched_keywords_str).
+        - explanation_line: Single line with icons and metadata.
+        - matched_keywords_str: Comma-separated matched keywords.
+    
+    Example:
+        ("💡 매칭 키워드: 연구년, 신청 | 📄 제15조 | 교원인사규정 > 연구년제", "연구년, 신청")
+    """
+    parts = []
+    matched_keywords = []
+
+    # 1. Extract matched keywords from chunk.keywords that appear in query
+    if hasattr(result.chunk, 'keywords') and result.chunk.keywords:
+        query_lower = query.lower()
+        for kw in result.chunk.keywords:
+            term = kw.term if hasattr(kw, 'term') else str(kw)
+            # Check if keyword or any part of it is in query
+            if term.lower() in query_lower or any(
+                q_word in term.lower() for q_word in query_lower.split()
+            ):
+                matched_keywords.append(term)
+
+    matched_keywords_str = ", ".join(matched_keywords[:5])  # Limit to 5 keywords
+
+    if matched_keywords_str:
+        parts.append(f"💡 매칭 키워드: {matched_keywords_str}")
+
+    # 2. Extract article number if ARTICLE level
+    if hasattr(result.chunk, 'level'):
+        from ..domain.entities import ChunkLevel
+        if result.chunk.level == ChunkLevel.ARTICLE:
+            import re
+            article_no = None
+
+            # Priority 1: Use display_no if present (e.g., "제15조")
+            display_no = getattr(result.chunk, 'display_no', None)
+            if display_no:
+                display_match = re.search(r'제\s*(\d+)\s*조', display_no)
+                if display_match:
+                    article_no = display_match.group(1)
+
+            # Priority 2: Fall back to parsing title
+            if not article_no:
+                title = getattr(result.chunk, 'title', "") or ""
+                title_match = re.search(r'제\s*(\d+)\s*조', title)
+                if title_match:
+                    article_no = title_match.group(1)
+
+            # Priority 3: Fall back to parsing text
+            if not article_no:
+                text = getattr(result.chunk, 'text', "") or ""
+                text_match = re.search(r'제\s*(\d+)\s*조', text)
+                if text_match:
+                    article_no = text_match.group(1)
+
+            if article_no:
+                parts.append(f"📄 제{article_no}조")
+
+    # 3. Build path info
+    if hasattr(result.chunk, 'parent_path') and result.chunk.parent_path:
+        path_segments = clean_path_segments(result.chunk.parent_path)
+        # Show last 2 segments for brevity
+        path_short = " > ".join(path_segments[-2:]) if len(path_segments) > 1 else (path_segments[0] if path_segments else "")
+        if path_short:
+            parts.append(path_short)
+
+    # 4. Add AI confidence score if debug mode
+    if show_score:
+        parts.append(f"🎯 AI 신뢰도: {result.score:.3f}")
+
+    # Combine parts with separator
+    explanation = " | ".join(parts) if parts else "관련 내용"
+
+    return explanation, matched_keywords_str
