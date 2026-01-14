@@ -370,6 +370,39 @@ uv run regulation search "휴학" -v
 
 ---
 
+## 고급 설정
+
+### 성능 최적화
+
+첫 검색이 느린 경우(2~3초) 다음 옵션을 사용해 최적화할 수 있습니다:
+
+#### 1. BM25 인덱스 캐시
+
+BM25 인덱스를 디스크에 저장하여 재시작 시 인덱스 빌드 시간을 단축합니다:
+
+```bash
+# .env 파일에 추가
+BM25_INDEX_CACHE_PATH=data/bm25_index.pkl
+```
+
+#### 2. 서버 모드 자동 Warmup
+
+`serve` 명령은 자동으로 백그라운드에서 컴포넌트를 미리 초기화합니다:
+
+```bash
+uv run regulation serve --web   # 자동으로 warmup 활성화
+```
+
+#### 3. CLI에서 수동 Warmup
+
+환경변수로 warmup을 활성화할 수 있습니다:
+
+```bash
+WARMUP_ON_INIT=true uv run regulation
+```
+
+---
+
 ## 관련 문서
 
 | 문서 | 설명 |

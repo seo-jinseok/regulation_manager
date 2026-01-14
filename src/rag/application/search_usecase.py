@@ -4,7 +4,10 @@ Search Use Case for Regulation RAG System.
 Provides search functionality with optional LLM-based Q&A.
 """
 
+import logging
+import os
 import re
+import threading
 import unicodedata
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, List, Optional
@@ -20,6 +23,8 @@ from ..infrastructure.patterns import (
     RULE_CODE_PATTERN,
     normalize_article_token,
 )
+
+logger = logging.getLogger(__name__)
 
 # Forward references for type hints
 if TYPE_CHECKING:
@@ -142,6 +147,7 @@ class SearchUseCase:
         hybrid_searcher: Optional[IHybridSearcher] = None,
         use_hybrid: Optional[bool] = None,
         reranker: Optional[IReranker] = None,
+        enable_warmup: Optional[bool] = None,
     ):
         """
         Initialize search use case.
@@ -153,6 +159,7 @@ class SearchUseCase:
             hybrid_searcher: Optional HybridSearcher (auto-created if None and use_hybrid=True).
             use_hybrid: Whether to use hybrid search (default: from config).
             reranker: Optional reranker implementation (auto-created if None and use_reranker=True).
+            enable_warmup: Whether to warmup in background (default: WARMUP_ON_INIT env).
         """
         # Use config defaults if not explicitly specified
         from ..config import get_config
@@ -174,6 +181,23 @@ class SearchUseCase:
         # Corrective RAG components
         self._retrieval_evaluator = None
         self._corrective_rag_enabled = True
+        
+        # Background warmup
+        if enable_warmup is None:
+            enable_warmup = os.environ.get("WARMUP_ON_INIT", "").lower() == "true"
+        if enable_warmup:
+            threading.Thread(target=self._warmup, daemon=True).start()
+
+    def _warmup(self) -> None:
+        """Pre-initialize components in background for faster first query."""
+        try:
+            logger.info("Starting background warmup...")
+            self._ensure_hybrid_searcher()
+            if self.use_reranker:
+                self._ensure_reranker()
+            logger.info("Background warmup completed.")
+        except Exception as e:
+            logger.warning(f"Background warmup failed: {e}")
 
     @property
     def hybrid_searcher(self) -> Optional[IHybridSearcher]:
@@ -187,12 +211,18 @@ class SearchUseCase:
         if self._hybrid_initialized:
             return
 
+        from ..config import get_config
         from ..infrastructure.hybrid_search import HybridSearcher
+
+        config = get_config()
+        index_cache_path = None
+        if config.bm25_index_cache_path_resolved:
+            index_cache_path = str(config.bm25_index_cache_path_resolved)
 
         # Get all documents from store for BM25 indexing
         documents = self.store.get_all_documents()
         if documents:
-            self._hybrid_searcher = HybridSearcher()
+            self._hybrid_searcher = HybridSearcher(index_cache_path=index_cache_path)
             self._hybrid_searcher.add_documents(documents)
             # Set LLM client for query rewriting if available
             if self.llm:
@@ -747,10 +777,7 @@ class SearchUseCase:
         candidate_k: Optional[int] = None,
     ) -> List[SearchResult]:
         """Apply cross-encoder reranking to results."""
-        if not self._reranker_initialized:
-            from ..infrastructure.reranker import BGEReranker
-            self._reranker = BGEReranker()
-            self._reranker_initialized = True
+        self._ensure_reranker()
 
         if candidate_k is None:
             candidate_k = top_k * 2
@@ -769,6 +796,15 @@ class SearchUseCase:
                     SearchResult(chunk=original.chunk, score=score, rank=i + 1)
                 )
         return final_results
+
+    def _ensure_reranker(self) -> None:
+        """Initialize reranker if not already initialized."""
+        if not self._reranker_initialized:
+            from ..infrastructure.reranker import BGEReranker, warmup_reranker
+            self._reranker = BGEReranker()
+            # Pre-load the actual FlagEmbedding model to avoid cold start
+            warmup_reranker()
+            self._reranker_initialized = True
 
     def _apply_corrective_rag(
         self,

@@ -176,6 +176,16 @@ def clear_reranker():
     _reranker = None
 
 
+def warmup_reranker(model_name: Optional[str] = None) -> None:
+    """
+    Pre-load the reranker model for faster first query.
+    
+    Args:
+        model_name: Optional model name. Defaults to bge-reranker-v2-m3.
+    """
+    get_reranker(model_name)
+
+
 class BGEReranker(IReranker):
     """
     BGE cross-encoder reranker implementation.

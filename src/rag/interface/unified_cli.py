@@ -709,6 +709,11 @@ def cmd_reset(args) -> int:
 
 def cmd_serve(args) -> int:
     """Execute serve command - start Web UI or MCP Server."""
+    import os
+    
+    # Enable warmup for server modes
+    os.environ["WARMUP_ON_INIT"] = "true"
+    
     if args.web:
         import gradio as gr
         from .gradio_app import create_app, CUSTOM_CSS

@@ -6,6 +6,7 @@ Tests cover:
 - Score normalization
 - Metadata preservation
 - Edge cases (empty input, single document)
+- Warmup functionality
 """
 
 import pytest
@@ -16,6 +17,8 @@ from src.rag.infrastructure.reranker import (
     BGEReranker,
     RerankedResult,
     rerank,
+    clear_reranker,
+    warmup_reranker,
 )
 
 
@@ -270,3 +273,69 @@ class TestRerankerEdgeCases:
         
         result = rerank("별표 1", docs, top_k=2)
         assert len(result) == 2
+
+
+class TestRerankerWarmup:
+    """Test reranker warmup functionality."""
+
+    def test_warmup_reranker_sets_global_instance(self):
+        """warmup_reranker가 전역 reranker 인스턴스를 설정하는지 확인"""
+        import src.rag.infrastructure.reranker as reranker_module
+        
+        # 초기화 전 상태 확인을 위해 clear
+        clear_reranker()
+        assert reranker_module._reranker is None
+        
+        # warmup 호출 (실제 모델 로드를 피하기 위해 FlagEmbedding 모듈 mock)
+        with patch.dict("sys.modules", {"FlagEmbedding": MagicMock()}):
+            # get_reranker 내부의 import를 mock하기 위해 모듈 수준에서 처리
+            mock_flag_module = MagicMock()
+            mock_instance = MagicMock()
+            mock_flag_module.FlagReranker.return_value = mock_instance
+            
+            with patch.dict("sys.modules", {"FlagEmbedding": mock_flag_module}):
+                # 기존 캐시된 인스턴스를 지우고 새로 로드
+                clear_reranker()
+                warmup_reranker()
+                
+                # 전역 인스턴스가 설정되었는지 확인
+                assert reranker_module._reranker is mock_instance
+        
+        # 정리
+        clear_reranker()
+
+    def test_clear_reranker_resets_global_instance(self):
+        """clear_reranker가 전역 인스턴스를 리셋하는지 확인"""
+        import src.rag.infrastructure.reranker as reranker_module
+        
+        # mock 인스턴스 설정
+        reranker_module._reranker = MagicMock()
+        assert reranker_module._reranker is not None
+        
+        # clear 호출
+        clear_reranker()
+        
+        # 리셋되었는지 확인
+        assert reranker_module._reranker is None
+
+    def test_warmup_reranker_is_idempotent(self):
+        """warmup_reranker가 여러 번 호출해도 안전한지 확인"""
+        import src.rag.infrastructure.reranker as reranker_module
+        
+        clear_reranker()
+        
+        # FlagEmbedding 모듈 mock
+        mock_flag_module = MagicMock()
+        mock_instance = MagicMock()
+        mock_flag_module.FlagReranker.return_value = mock_instance
+        
+        with patch.dict("sys.modules", {"FlagEmbedding": mock_flag_module}):
+            # 여러 번 호출
+            warmup_reranker()
+            warmup_reranker()
+            warmup_reranker()
+            
+            # 첫 번째 호출에서만 생성되어야 함
+            assert mock_flag_module.FlagReranker.call_count == 1
+        
+        clear_reranker()

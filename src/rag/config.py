@@ -60,6 +60,9 @@ class RAGConfig:
     feedback_log_path: str = "data/feedback_log.jsonl"
     evaluation_dataset_path: str = "data/config/evaluation_dataset.json"
     regulation_keywords_path: str = "data/config/regulation_keywords.json"
+    bm25_index_cache_path: Optional[str] = field(
+        default_factory=lambda: os.getenv("BM25_INDEX_CACHE_PATH")
+    )
 
     # Supported LLM providers
     llm_providers: List[str] = field(
@@ -122,6 +125,13 @@ class RAGConfig:
     def regulation_keywords_path_resolved(self) -> Path:
         """Get absolute path to regulation keywords file."""
         return Path(self.regulation_keywords_path).resolve()
+
+    @property
+    def bm25_index_cache_path_resolved(self) -> Optional[Path]:
+        """Get absolute path to BM25 index cache file if configured."""
+        if not self.bm25_index_cache_path:
+            return None
+        return Path(self.bm25_index_cache_path).resolve()
 
 
 # Global configuration instance (singleton)

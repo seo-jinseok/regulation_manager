@@ -363,3 +363,119 @@ class TestDynamicRRFk:
         # k가 낮을수록 상위 순위의 점수 차이가 커짐
         # RRF score = 1/(k+rank), k가 작을수록 점수 높음
         assert result_dynamic[0].score > 0
+
+
+class TestBM25IndexPersistence:
+    """Test BM25 index save/load functionality."""
+
+    def test_save_index_creates_file(self, tmp_path):
+        """save_index()가 파일을 생성하는지 확인"""
+        bm25 = BM25()
+        documents = [
+            ("doc1", "교원인사규정 휴직 신청", {}),
+            ("doc2", "학생 장학금 지급 규정", {}),
+        ]
+        bm25.add_documents(documents)
+        
+        cache_path = tmp_path / "bm25_index.pkl"
+        bm25.save_index(str(cache_path))
+        
+        assert cache_path.exists()
+        assert cache_path.stat().st_size > 0
+
+    def test_load_index_restores_searchability(self, tmp_path):
+        """load_index()가 검색 기능을 복원하는지 확인"""
+        # 1. 인덱스 빌드 및 저장
+        bm25_original = BM25()
+        documents = [
+            ("doc1", "교원인사규정 휴직 신청 절차", {}),
+            ("doc2", "학생 장학금 지급 규정 기준", {}),
+            ("doc3", "연구비 사용 지침 안내", {}),
+        ]
+        bm25_original.add_documents(documents)
+        
+        cache_path = tmp_path / "bm25_index.pkl"
+        bm25_original.save_index(str(cache_path))
+        
+        # 2. 새 인스턴스에서 로드
+        bm25_loaded = BM25()
+        success = bm25_loaded.load_index(str(cache_path))
+        
+        assert success is True
+        
+        # 3. 검색이 동일하게 작동하는지 확인
+        original_results = bm25_original.search("휴직 신청", top_k=3)
+        loaded_results = bm25_loaded.search("휴직 신청", top_k=3)
+        
+        assert len(original_results) == len(loaded_results)
+        assert [r.doc_id for r in original_results] == [r.doc_id for r in loaded_results]
+        for orig, loaded in zip(original_results, loaded_results):
+            assert abs(orig.score - loaded.score) < 0.001
+
+    def test_load_index_returns_false_for_missing_file(self):
+        """존재하지 않는 파일에 대해 load_index가 False를 반환하는지 확인"""
+        bm25 = BM25()
+        success = bm25.load_index("/nonexistent/path/index.pkl")
+        assert success is False
+
+    def test_load_index_preserves_all_attributes(self, tmp_path):
+        """load_index가 모든 인덱스 속성을 복원하는지 확인"""
+        bm25_original = BM25(k1=1.5, b=0.8)
+        documents = [
+            ("doc1", "테스트 문서 내용", {"meta": "value"}),
+        ]
+        bm25_original.add_documents(documents)
+        
+        cache_path = tmp_path / "bm25_index.pkl"
+        bm25_original.save_index(str(cache_path))
+        
+        bm25_loaded = BM25()
+        bm25_loaded.load_index(str(cache_path))
+        
+        # 모든 속성이 복원되었는지 확인
+        assert bm25_loaded.k1 == bm25_original.k1
+        assert bm25_loaded.b == bm25_original.b
+        assert bm25_loaded.doc_count == bm25_original.doc_count
+        assert bm25_loaded.avg_doc_length == bm25_original.avg_doc_length
+        assert bm25_loaded.documents == bm25_original.documents
+        assert bm25_loaded.doc_metadata == bm25_original.doc_metadata
+
+
+class TestHybridSearcherIndexCache:
+    """Test HybridSearcher index cache functionality."""
+
+    def test_add_documents_saves_to_cache(self, tmp_path):
+        """add_documents가 index_cache_path에 캐시를 저장하는지 확인"""
+        cache_path = tmp_path / "hybrid_bm25.pkl"
+        searcher = HybridSearcher(index_cache_path=str(cache_path))
+        
+        documents = [
+            ("doc1", "교원 휴직 규정", {}),
+            ("doc2", "학생 장학금 규정", {}),
+        ]
+        searcher.add_documents(documents)
+        
+        assert cache_path.exists()
+
+    def test_add_documents_loads_from_cache(self, tmp_path):
+        """add_documents가 기존 캐시에서 로드하는지 확인"""
+        cache_path = tmp_path / "hybrid_bm25.pkl"
+        
+        # 1. 첫 번째 searcher - 캐시 생성
+        searcher1 = HybridSearcher(index_cache_path=str(cache_path))
+        documents = [
+            ("doc1", "교원 휴직 규정", {}),
+            ("doc2", "학생 장학금 규정", {}),
+        ]
+        searcher1.add_documents(documents)
+        
+        # 2. 두 번째 searcher - 캐시에서 로드 (새 문서 리스트 전달해도 무시됨)
+        searcher2 = HybridSearcher(index_cache_path=str(cache_path))
+        new_documents = [
+            ("doc3", "다른 내용", {}),  # 이 문서는 추가되지 않아야 함
+        ]
+        searcher2.add_documents(new_documents)
+        
+        # 캐시에서 로드했으므로 원래 문서만 검색 가능
+        assert searcher2.bm25.doc_count == 2
+        assert "doc1" in searcher2.bm25.documents

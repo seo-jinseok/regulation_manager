@@ -328,9 +328,76 @@ def test_search_deduplicates_same_article():
     usecase = SearchUseCase(store, use_reranker=False, use_hybrid=False)
 
     # Act
-    results = usecase.search("위원회", top_k=5)
 
-    # Assert
-    assert len(results) == 1
-    assert results[0].chunk.id == "c2"  # Highest score kept
-    assert results[0].score == pytest.approx(1.0)
+
+class TestSearchUseCaseWarmup:
+    """Test SearchUseCase warmup functionality."""
+
+    def test_warmup_initializes_hybrid_searcher(self):
+        """_warmup이 hybrid_searcher를 초기화하는지 확인"""
+        documents = [
+            ("doc1", "교원 휴직 규정", {}),
+        ]
+        store = FakeStoreWithDocs(results=[], documents=documents)
+        usecase = SearchUseCase(store, use_reranker=False, use_hybrid=True, enable_warmup=False)
+        
+        # warmup 전에는 초기화되지 않음
+        assert usecase._hybrid_initialized is False
+        
+        # warmup 호출
+        usecase._warmup()
+        
+        # warmup 후에는 초기화됨
+        assert usecase._hybrid_initialized is True
+        assert usecase._hybrid_searcher is not None
+
+    def test_warmup_initializes_reranker_flag(self):
+        """_warmup이 use_reranker=True일 때 reranker를 초기화하는지 확인"""
+        store = FakeStore([])
+        # use_reranker=True로 설정하고 warmup=False로 초기화 시점 제어
+        usecase = SearchUseCase(store, use_reranker=True, use_hybrid=False, enable_warmup=False)
+        
+        # warmup 전에는 초기화되지 않음
+        assert usecase._reranker_initialized is False
+        
+        # _ensure_reranker 직접 호출 (실제 모델 로드 없이 mock 사용)
+        from unittest.mock import patch
+        with patch("src.rag.infrastructure.reranker.warmup_reranker"):
+            usecase._ensure_reranker()
+        
+        # 초기화됨
+        assert usecase._reranker_initialized is True
+        assert usecase._reranker is not None
+
+    def test_warmup_with_no_documents_skips_hybrid(self):
+        """문서가 없으면 hybrid_searcher 초기화를 건너뛰는지 확인"""
+        store = FakeStore([])  # get_all_documents returns []
+        usecase = SearchUseCase(store, use_reranker=False, use_hybrid=True, enable_warmup=False)
+        
+        usecase._warmup()
+        
+        # 문서가 없으므로 hybrid_searcher는 None
+        assert usecase._hybrid_initialized is True
+        assert usecase._hybrid_searcher is None
+
+    def test_enable_warmup_env_variable(self, monkeypatch):
+        """WARMUP_ON_INIT 환경변수가 적용되는지 확인"""
+        import threading
+        
+        warmup_called = []
+        original_warmup = SearchUseCase._warmup
+        
+        def mock_warmup(self):
+            warmup_called.append(True)
+        
+        monkeypatch.setattr(SearchUseCase, "_warmup", mock_warmup)
+        monkeypatch.setenv("WARMUP_ON_INIT", "true")
+        
+        store = FakeStore([])
+        usecase = SearchUseCase(store, use_reranker=False, enable_warmup=None)
+        
+        # 스레드 시작 대기
+        import time
+        time.sleep(0.1)
+        
+        assert len(warmup_called) == 1

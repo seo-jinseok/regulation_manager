@@ -214,8 +214,71 @@ class BM25:
         self.term_doc_freq.clear()
         self.inverted_index.clear()
         self.documents.clear()
+        self.doc_metadata.clear()
         self.avg_doc_length = 0.0
         self.doc_count = 0
+
+    def save_index(self, path: str) -> None:
+        """
+        Save BM25 index to disk using pickle.
+        
+        Args:
+            path: File path to save the index.
+        """
+        import pickle
+        from pathlib import Path
+        
+        index_data = {
+            'inverted_index': dict(self.inverted_index),
+            'doc_lengths': self.doc_lengths,
+            'term_doc_freq': dict(self.term_doc_freq),
+            'documents': self.documents,
+            'doc_metadata': self.doc_metadata,
+            'avg_doc_length': self.avg_doc_length,
+            'doc_count': self.doc_count,
+            'k1': self.k1,
+            'b': self.b,
+            'tokenize_mode': self.tokenize_mode,
+        }
+        
+        Path(path).parent.mkdir(parents=True, exist_ok=True)
+        with open(path, 'wb') as f:
+            pickle.dump(index_data, f, protocol=pickle.HIGHEST_PROTOCOL)
+
+    def load_index(self, path: str) -> bool:
+        """
+        Load BM25 index from disk.
+        
+        Args:
+            path: File path to load the index from.
+            
+        Returns:
+            True if loaded successfully, False otherwise.
+        """
+        import pickle
+        from pathlib import Path
+        
+        if not Path(path).exists():
+            return False
+        
+        try:
+            with open(path, 'rb') as f:
+                index_data = pickle.load(f)
+            
+            self.inverted_index = defaultdict(dict, index_data['inverted_index'])
+            self.doc_lengths = index_data['doc_lengths']
+            self.term_doc_freq = defaultdict(int, index_data['term_doc_freq'])
+            self.documents = index_data['documents']
+            self.doc_metadata = index_data['doc_metadata']
+            self.avg_doc_length = index_data['avg_doc_length']
+            self.doc_count = index_data['doc_count']
+            self.k1 = index_data['k1']
+            self.b = index_data['b']
+            self.tokenize_mode = index_data['tokenize_mode']
+            
+            return True
+        except Exception:
+            return False
 
 
 class HybridSearcher(IHybridSearcher):
@@ -237,6 +300,7 @@ class HybridSearcher(IHybridSearcher):
         use_dynamic_rrf_k: bool = False,
         synonyms_path: Optional[str] = None,
         intents_path: Optional[str] = None,
+        index_cache_path: Optional[str] = None,
     ):
         """
         Initialize hybrid searcher.
@@ -247,6 +311,7 @@ class HybridSearcher(IHybridSearcher):
             rrf_k: RRF ranking constant (default: 60).
             use_dynamic_weights: Enable query-based dynamic weighting (default: True).
             use_dynamic_rrf_k: Enable query-based dynamic RRF k value (default: False).
+            index_cache_path: Path to cache BM25 index (default: None).
         """
         self.bm25 = BM25()
         self.bm25_weight = bm25_weight
@@ -254,6 +319,7 @@ class HybridSearcher(IHybridSearcher):
         self.rrf_k = rrf_k
         self.use_dynamic_weights = use_dynamic_weights
         self.use_dynamic_rrf_k = use_dynamic_rrf_k
+        self.index_cache_path = index_cache_path
         if synonyms_path is None:
             try:
                 from ..config import get_config
@@ -286,10 +352,22 @@ class HybridSearcher(IHybridSearcher):
         """
         Add documents to the BM25 index.
 
+        If index_cache_path is set and cache exists, loads from cache.
+        Otherwise builds index and saves to cache.
+
         Args:
             documents: List of (doc_id, content, metadata) tuples.
         """
+        # Try loading from cache
+        if self.index_cache_path and self.bm25.load_index(self.index_cache_path):
+            return
+        
+        # Build index
         self.bm25.add_documents(documents)
+        
+        # Save to cache
+        if self.index_cache_path:
+            self.bm25.save_index(self.index_cache_path)
 
     def get_dynamic_rrf_k(self, query_text: str) -> int:
         """
