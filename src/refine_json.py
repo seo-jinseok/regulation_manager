@@ -51,9 +51,8 @@ def clean_preamble_and_get_title(doc, index):
             break
 
     if not title:
-        print(
-            f"[DEBUG] Title extraction failed for index {index}. Preamble:\n---\n{preamble}\n---"
-        )
+        # Title extraction failed - use fallback
+        pass
 
     return title, preamble
 
@@ -239,7 +238,7 @@ def main():
     with open(OUTPUT_PATH, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
-    print(f"Saved refined JSON to {OUTPUT_PATH}")
+    # Output message removed for production cleanup
 
 
 if __name__ == "__main__":

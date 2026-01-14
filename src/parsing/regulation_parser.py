@@ -113,7 +113,9 @@ class RegulationParser:
                 chapter_match = re.match(r"^(제\s*\d+\s*[장편])\s*(.*)", line)
             if chapter_match:
                 chapter_no = chapter_match.group(1).strip()
-                chapter_title = chapter_match.group(2).strip() if chapter_match.group(2) else ""
+                chapter_title = (
+                    chapter_match.group(2).strip() if chapter_match.group(2) else ""
+                )
                 # Reconstruct clean chapter line
                 current_chapter = f"{chapter_no} {chapter_title}".strip()
                 current_section = None

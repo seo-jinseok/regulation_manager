@@ -215,6 +215,7 @@ class IDocumentLoader(ABC):
         """
         pass
 
+
 class ILLMClient(ABC):
     """
     Abstract interface for LLM interactions.

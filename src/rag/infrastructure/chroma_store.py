@@ -5,7 +5,6 @@ Provides vector storage and hybrid search using ChromaDB.
 Supports dense (embedding) and sparse (keyword) retrieval.
 """
 
-import json
 import os
 from typing import List, Optional, Set
 
@@ -290,7 +289,7 @@ class ChromaVectorStore(IVectorStore):
 
     def _metadata_to_chunk(self, id_: str, document: str, metadata: dict) -> Chunk:
         """Convert stored metadata back to Chunk entity.
-        
+
         Delegates to Chunk.from_metadata() to avoid code duplication.
         """
         return Chunk.from_metadata(id_, document, metadata)

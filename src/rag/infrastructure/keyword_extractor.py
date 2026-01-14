@@ -126,11 +126,13 @@ class KeywordExtractor:
     def _default_json_path(self) -> str:
         """Get default regulation JSON path."""
         from ..config import get_config
+
         return str(get_config().json_path_resolved)
 
     def _default_output_path(self) -> str:
         """Get default output path for extracted keywords."""
         from ..config import get_config
+
         return str(get_config().regulation_keywords_path_resolved)
 
     def extract_keywords(self) -> ExtractionResult:

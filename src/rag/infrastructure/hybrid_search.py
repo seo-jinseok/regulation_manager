@@ -12,11 +12,7 @@ from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 from ..domain.repositories import IHybridSearcher
 from .query_analyzer import (
-    Audience,
-    IntentMatch,
-    IntentRule,
     QueryAnalyzer,
-    QueryRewriteResult,
     QueryType,
 )
 
@@ -77,16 +73,16 @@ class BM25:
     def _tokenize_morpheme(self, text: str) -> List[str]:
         """
         Korean morphological analysis tokenizer.
-        
+
         Splits compound Korean words for better recall.
         Falls back to simple tokenizer if no morpheme analyzer available.
         """
         text = text.lower()
         tokens = []
-        
+
         # 기본 토큰 추출
         base_tokens = re.findall(r"[가-힣]+|[a-z0-9]+", text)
-        
+
         # 한글 복합어 분리 패턴 (간단한 규칙 기반)
         # 실제로는 형태소 분석기(KoNLPy 등)를 사용할 수 있음
         compound_patterns = [
@@ -95,13 +91,13 @@ class BM25:
             # 접두사 패턴: 육아~, 연구~, 교원~
             (r"^(육아|연구|교원|학생|직원|교직원)(.+)$", [1, 2]),
         ]
-        
+
         for token in base_tokens:
             if len(token) <= 2:
                 # 짧은 토큰은 그대로 추가
                 tokens.append(token)
                 continue
-                
+
             # 복합어 분리 시도
             split_found = False
             for pattern, groups in compound_patterns:
@@ -113,11 +109,11 @@ class BM25:
                             tokens.append(part)
                     split_found = True
                     break
-            
+
             if not split_found:
                 # 분리 실패 시 원본 토큰 추가
                 tokens.append(token)
-        
+
         return tokens
 
     def add_documents(self, documents: List[Tuple[str, str, Dict]]) -> None:
@@ -221,61 +217,61 @@ class BM25:
     def save_index(self, path: str) -> None:
         """
         Save BM25 index to disk using pickle.
-        
+
         Args:
             path: File path to save the index.
         """
         import pickle
         from pathlib import Path
-        
+
         index_data = {
-            'inverted_index': dict(self.inverted_index),
-            'doc_lengths': self.doc_lengths,
-            'term_doc_freq': dict(self.term_doc_freq),
-            'documents': self.documents,
-            'doc_metadata': self.doc_metadata,
-            'avg_doc_length': self.avg_doc_length,
-            'doc_count': self.doc_count,
-            'k1': self.k1,
-            'b': self.b,
-            'tokenize_mode': self.tokenize_mode,
+            "inverted_index": dict(self.inverted_index),
+            "doc_lengths": self.doc_lengths,
+            "term_doc_freq": dict(self.term_doc_freq),
+            "documents": self.documents,
+            "doc_metadata": self.doc_metadata,
+            "avg_doc_length": self.avg_doc_length,
+            "doc_count": self.doc_count,
+            "k1": self.k1,
+            "b": self.b,
+            "tokenize_mode": self.tokenize_mode,
         }
-        
+
         Path(path).parent.mkdir(parents=True, exist_ok=True)
-        with open(path, 'wb') as f:
+        with open(path, "wb") as f:
             pickle.dump(index_data, f, protocol=pickle.HIGHEST_PROTOCOL)
 
     def load_index(self, path: str) -> bool:
         """
         Load BM25 index from disk.
-        
+
         Args:
             path: File path to load the index from.
-            
+
         Returns:
             True if loaded successfully, False otherwise.
         """
         import pickle
         from pathlib import Path
-        
+
         if not Path(path).exists():
             return False
-        
+
         try:
-            with open(path, 'rb') as f:
+            with open(path, "rb") as f:
                 index_data = pickle.load(f)
-            
-            self.inverted_index = defaultdict(dict, index_data['inverted_index'])
-            self.doc_lengths = index_data['doc_lengths']
-            self.term_doc_freq = defaultdict(int, index_data['term_doc_freq'])
-            self.documents = index_data['documents']
-            self.doc_metadata = index_data['doc_metadata']
-            self.avg_doc_length = index_data['avg_doc_length']
-            self.doc_count = index_data['doc_count']
-            self.k1 = index_data['k1']
-            self.b = index_data['b']
-            self.tokenize_mode = index_data['tokenize_mode']
-            
+
+            self.inverted_index = defaultdict(dict, index_data["inverted_index"])
+            self.doc_lengths = index_data["doc_lengths"]
+            self.term_doc_freq = defaultdict(int, index_data["term_doc_freq"])
+            self.documents = index_data["documents"]
+            self.doc_metadata = index_data["doc_metadata"]
+            self.avg_doc_length = index_data["avg_doc_length"]
+            self.doc_count = index_data["doc_count"]
+            self.k1 = index_data["k1"]
+            self.b = index_data["b"]
+            self.tokenize_mode = index_data["tokenize_mode"]
+
             return True
         except Exception:
             return False
@@ -361,10 +357,10 @@ class HybridSearcher(IHybridSearcher):
         # Try loading from cache
         if self.index_cache_path and self.bm25.load_index(self.index_cache_path):
             return
-        
+
         # Build index
         self.bm25.add_documents(documents)
-        
+
         # Save to cache
         if self.index_cache_path:
             self.bm25.save_index(self.index_cache_path)

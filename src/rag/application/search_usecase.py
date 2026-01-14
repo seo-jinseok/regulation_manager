@@ -28,8 +28,8 @@ logger = logging.getLogger(__name__)
 
 # Forward references for type hints
 if TYPE_CHECKING:
-    from ..infrastructure.hybrid_search import Audience, ScoredDocument
-    from ..infrastructure.retrieval_evaluator import RetrievalEvaluator
+    from ..infrastructure.query_analyzer import Audience
+    from ..infrastructure.hybrid_search import ScoredDocument
 
 
 def _extract_regulation_only_query(query: str) -> Optional[str]:
@@ -69,7 +69,6 @@ def _extract_regulation_article_query(query: str) -> Optional[tuple]:
     return None
 
 
-
 def _coerce_query_text(value: object) -> str:
     if value is None:
         return ""
@@ -80,37 +79,56 @@ def _coerce_query_text(value: object) -> str:
     return str(value)
 
 
-# System prompt for regulation Q&A
-REGULATION_QA_PROMPT = """당신은 동의대학교 규정 전문가입니다.
+def _load_prompt(prompt_key: str) -> str:
+    """
+    Load prompt from prompts.json.
+
+    Args:
+        prompt_key: Key in prompts.json (e.g., "regulation_qa")
+
+    Returns:
+        Prompt text
+    """
+    import json as json_module
+    from pathlib import Path
+
+    prompts_path = (
+        Path(__file__).parent.parent.parent.parent / "data" / "config" / "prompts.json"
+    )
+
+    try:
+        with open(prompts_path, "r", encoding="utf-8") as f:
+            prompts = json_module.load(f)
+        return prompts.get(prompt_key, {}).get("prompt", "")
+    except Exception as e:
+        # Fallback to hardcoded prompt if file not found
+        logger.warning(
+            f"Failed to load prompt from {prompts_path}: {e}. Using fallback."
+        )
+        return _get_fallback_regulation_qa_prompt()
+
+
+def _get_fallback_regulation_qa_prompt() -> str:
+    """Fallback prompt if prompts.json is not available."""
+    return """당신은 동의대학교 규정 전문가입니다.
 주어진 규정 내용을 바탕으로 사용자의 질문에 **상세하고 친절하게** 답변하세요.
 
 ## ⚠️ 절대 금지 사항 (할루시네이션 방지)
 1. **전화번호/연락처 생성 금지**: 절대로 "02-XXXX-XXXX", "02-1234-5678" 등 전화번호를 만들어내지 마세요.
-   - 연락처가 필요하면: "정확한 연락처는 학교 홈페이지에서 확인하시기 바랍니다."라고 답변하세요.
 2. **다른 학교 사례 인용 금지**: 한국외국어대학교, 서울대학교 등 다른 학교 규정이나 사례를 절대 언급하지 마세요.
-   - 이 시스템은 **동의대학교** 규정만 다룹니다.
 3. **규정에 없는 수치/비율 생성 금지**: "40%", "30일 이내" 등 규정에 명시되지 않은 숫자를 만들어내지 마세요.
 4. **일반론 회피 금지**: "대학마다 다를 수 있습니다", "일반적으로..." 등 회피성 답변을 하지 마세요.
-   - 규정에 없으면: "해당 내용은 제공된 규정에서 확인되지 않습니다. 담당 부서에 문의하시기 바랍니다."라고 답변하세요.
-
-## 핵심원칙: 대상 및 적용 범위 확인
-- **질문의 대상**과 **규정의 적용 대상**이 일치하는지 확인하십시오.
-- 불일치 시 기계적인 경고보다는 **자연스러운 맥락**에서 언급하세요.
-- 예: "**교수님**...?" 질문에 **학생 규정**만 있는 경우 -> "해당 내용은 학생 규정에 근거한 것이므로, 교원에게는 다르게 적용될 수 있습니다." (O) / "대상 불일치! 경고!" (X)
 
 ## 기본 원칙
 - **반드시 제공된 규정 내용에 명시된 사항만 답변하세요.**
-- 규정에 없는 내용은 절대 추측하거나 일반적인 관행을 언급하지 마세요.
-- 규정에 절차·결정 주체·승인 단계가 명시된 경우에만 언급하십시오.
+- 규정에 없는 내용은 절대 추측하거나 일반적인 관행을 언급하지 마세요."""
 
-## 답변 지침
-1. **명확한 근거 제시**: 관련 조항 번호와 규정명을 함께 언급하세요. 경로/번호 표기는 제공된 텍스트를 그대로 사용하세요.
-2. **대상 구분**: 질문 대상(교원/직원/학생)과 규정 대상이 다를 경우, 해당 규정이 참조용임을 자연스럽게 밝히세요. (예: "직원 규정을 참고하면...", "교원 규정에는 명시되지 않았으나 일반 원칙상...")
-3. **과잉 해석 금지**: "정치적 발언"이 규정에 없으면 "직접적인 규정은 확인되지 않으나..."와 같이 사실대로 서술하세요.
-4. **폐지 규정 주의**: 폐지된 규정은 현행 규정이 아님을 주의하세요.
-5. **가독성**: 마크다운 형식(번호 목록, 굵은 글씨 등)을 사용하여 가독성을 높이세요.
-6. **모르면 인정**: 검색 결과에 정보가 없으면 "해당 정보는 검색 결과에서 확인되지 않습니다"라고 솔직히 답변하세요.
-"""
+
+# System prompt for regulation Q&A (loaded from prompts.json)
+# System prompt for regulation Q&A (loaded from prompts.json)
+REGULATION_QA_PROMPT = (
+    _load_prompt("regulation_qa") or _get_fallback_regulation_qa_prompt()
+)
 
 
 @dataclass(frozen=True)
@@ -177,11 +195,11 @@ class SearchUseCase:
         self._last_query_rewrite: Optional[QueryRewriteInfo] = None
         self._reranker = reranker
         self._reranker_initialized = reranker is not None
-        
+
         # Corrective RAG components
         self._retrieval_evaluator = None
         self._corrective_rag_enabled = True
-        
+
         # Background warmup
         if enable_warmup is None:
             enable_warmup = os.environ.get("WARMUP_ON_INIT", "").lower() == "true"
@@ -254,7 +272,7 @@ class SearchUseCase:
         query_text = _coerce_query_text(query_text).strip()
         if not query_text:
             return []
-            
+
         query_text = unicodedata.normalize("NFC", query_text)
 
         # 1. Rule code pattern (e.g., "3-1-24")
@@ -384,7 +402,9 @@ class SearchUseCase:
         # Get chunks from this regulation
         rule_filter = self._build_rule_code_filter(filter, target_rule_code)
         all_chunks = self.store.search(
-            Query(text=f"{reg_name} {article_ref}", include_abolished=include_abolished),
+            Query(
+                text=f"{reg_name} {article_ref}", include_abolished=include_abolished
+            ),
             rule_filter,
             500,
         )
@@ -401,11 +421,15 @@ class SearchUseCase:
 
             if normalized_article in text_articles:
                 filtered_results.append(
-                    SearchResult(chunk=r.chunk, score=1.0, rank=len(filtered_results) + 1)
+                    SearchResult(
+                        chunk=r.chunk, score=1.0, rank=len(filtered_results) + 1
+                    )
                 )
             elif any(normalized_article in ta for ta in text_articles):
                 filtered_results.append(
-                    SearchResult(chunk=r.chunk, score=0.8, rank=len(filtered_results) + 1)
+                    SearchResult(
+                        chunk=r.chunk, score=0.8, rank=len(filtered_results) + 1
+                    )
                 )
 
         filtered_results.sort(key=lambda x: -x.score)
@@ -463,14 +487,14 @@ class SearchUseCase:
             # 1. Generate deduplication key
             # Key format: (rule_code, article_identifier)
             # If no article identifier found, use (rule_code, chunk_id) to allow unique non-article chunks.
-            
+
             chunk = result.chunk
             article_key = None
 
             # Check title first
             if chunk.level == ChunkLevel.ARTICLE:
                 article_key = chunk.title
-            
+
             # Check parent path if not found in title (or if level is paragraph)
             # We look for the "Article" node in the parent path
             if not article_key and chunk.parent_path:
@@ -480,9 +504,9 @@ class SearchUseCase:
                     if ARTICLE_PATTERN.match(path_item):
                         article_key = path_item
                         break
-            
+
             if article_key:
-                # Normalize key to handle slight variations if needed, 
+                # Normalize key to handle slight variations if needed,
                 # strictly we use the string as is assuming consistent naming in same reg
                 key = (chunk.rule_code, article_key)
             else:
@@ -494,7 +518,7 @@ class SearchUseCase:
                 unique_results.append(result)
                 if len(unique_results) >= top_k:
                     break
-        
+
         return unique_results
 
     def _search_general(
@@ -510,7 +534,9 @@ class SearchUseCase:
         query, rewritten_query_text = self._perform_query_rewriting(
             query_text, include_abolished
         )
-        scoring_query_text = self._select_scoring_query(query_text, rewritten_query_text)
+        scoring_query_text = self._select_scoring_query(
+            query_text, rewritten_query_text
+        )
 
         # Detect audience
         audience = self._detect_audience(query_text, audience_override)
@@ -518,11 +544,11 @@ class SearchUseCase:
         # Determine recall multiplier based on query type
         is_intent = False
         if self._last_query_rewrite and (
-            self._last_query_rewrite.used_intent or 
-            self._last_query_rewrite.method == "llm"
+            self._last_query_rewrite.used_intent
+            or self._last_query_rewrite.method == "llm"
         ):
             is_intent = True
-        
+
         # Increase recall for intent/llm queries to ensure correct candidates are found
         fetch_k = top_k * 6 if is_intent else top_k * 3
 
@@ -531,7 +557,12 @@ class SearchUseCase:
 
         # Apply hybrid search if available
         results = self._apply_hybrid_search(
-            dense_results, query_text, rewritten_query_text, filter, include_abolished, fetch_k // 2
+            dense_results,
+            query_text,
+            rewritten_query_text,
+            filter,
+            include_abolished,
+            fetch_k // 2,
         )
 
         # Apply score bonuses
@@ -545,12 +576,19 @@ class SearchUseCase:
         # Apply reranking if enabled
         if self.use_reranker and boosted_results:
             rerank_k = top_k * 5 if is_intent else top_k * 2
-            boosted_results = self._apply_reranking(boosted_results, scoring_query_text, top_k, candidate_k=rerank_k)
+            boosted_results = self._apply_reranking(
+                boosted_results, scoring_query_text, top_k, candidate_k=rerank_k
+            )
 
         # Corrective RAG: Check if results need correction
         if self._corrective_rag_enabled and boosted_results:
             boosted_results = self._apply_corrective_rag(
-                query_text, boosted_results, filter, top_k, include_abolished, audience_override
+                query_text,
+                boosted_results,
+                filter,
+                top_k,
+                include_abolished,
+                audience_override,
             )
 
         # Deduplicate by article (One Chunk per Article)
@@ -589,7 +627,9 @@ class SearchUseCase:
             if used_synonyms is None:
                 used_synonyms = analyzer.has_synonyms(query_text)
             if rewritten_query_text and rewritten_query_text != query_text:
-                used_synonyms = used_synonyms or analyzer.has_synonyms(rewritten_query_text)
+                used_synonyms = used_synonyms or analyzer.has_synonyms(
+                    rewritten_query_text
+                )
 
         self._last_query_rewrite = QueryRewriteInfo(
             original=query_text,
@@ -632,7 +672,9 @@ class SearchUseCase:
         from ..infrastructure.hybrid_search import ScoredDocument
 
         sparse_query_text = rewritten_query_text or query_text
-        sparse_results = self.hybrid_searcher.search_sparse(sparse_query_text, top_k * 3)
+        sparse_results = self.hybrid_searcher.search_sparse(
+            sparse_query_text, top_k * 3
+        )
         sparse_results = self._filter_sparse_results(
             sparse_results, filter=filter, include_abolished=include_abolished
         )
@@ -664,6 +706,7 @@ class SearchUseCase:
                 )
             else:
                 from ..domain.entities import Chunk
+
                 chunk = Chunk.from_metadata(doc.doc_id, doc.content, doc.metadata)
                 results.append(SearchResult(chunk=chunk, score=doc.score, rank=i + 1))
 
@@ -687,7 +730,7 @@ class SearchUseCase:
             text_lower = r.chunk.text.lower()
             matches = sum(1 for term in query_terms if term in text_lower)
             bonus = matches * 0.1
-            
+
             # Fundamental regulation priority (Increased to 0.3 to meet evaluation thresholds)
             if r.chunk.rule_code in fundamental_codes:
                 bonus += 0.3
@@ -737,7 +780,7 @@ class SearchUseCase:
         if not audience:
             return score
 
-        from ..infrastructure.hybrid_search import Audience
+        from ..infrastructure.query_analyzer import Audience
 
         reg_name = chunk.parent_path[0] if chunk.parent_path else chunk.title
         reg_name_lower = reg_name.lower()
@@ -745,13 +788,14 @@ class SearchUseCase:
         if audience == Audience.FACULTY:
             # Penalize student-specific regulations
             is_student_reg = any(
-                k in reg_name_lower for k in ["학생", "학사", "장학", "수강", "졸업", "동아리"]
+                k in reg_name_lower
+                for k in ["학생", "학사", "장학", "수강", "졸업", "동아리"]
             )
             # But don't penalize if it explicitly mentions faculty/staff
             is_student_reg = is_student_reg and not any(
                 k in reg_name_lower for k in ["교원", "직원", "교수", "인사"]
             )
-            
+
             if is_student_reg:
                 return score * 0.4  # Strong penalty
 
@@ -759,11 +803,20 @@ class SearchUseCase:
             # Penalize faculty/staff-specific regulations
             is_faculty_reg = any(
                 k in reg_name_lower
-                for k in ["교원", "직원", "인사", "복무", "업적", "채용", "연구년", "조교"]
+                for k in [
+                    "교원",
+                    "직원",
+                    "인사",
+                    "복무",
+                    "업적",
+                    "채용",
+                    "연구년",
+                    "조교",
+                ]
             )
             # But don't penalize if it explicitly mentions students
             is_faculty_reg = is_faculty_reg and "학생" not in reg_name_lower
-            
+
             if is_faculty_reg:
                 return score * 0.4  # Strong penalty
 
@@ -801,6 +854,7 @@ class SearchUseCase:
         """Initialize reranker if not already initialized."""
         if not self._reranker_initialized:
             from ..infrastructure.reranker import BGEReranker, warmup_reranker
+
             self._reranker = BGEReranker()
             # Pre-load the actual FlagEmbedding model to avoid cold start
             warmup_reranker()
@@ -817,7 +871,7 @@ class SearchUseCase:
     ) -> List[SearchResult]:
         """
         Apply Corrective RAG: evaluate results and re-retrieve if needed.
-        
+
         If the initial results have low relevance, attempt to:
         1. Expand the query using intent/synonym detection
         2. Re-run the search with expanded query
@@ -826,19 +880,20 @@ class SearchUseCase:
         # Lazy initialize evaluator
         if self._retrieval_evaluator is None:
             from ..infrastructure.retrieval_evaluator import RetrievalEvaluator
+
             self._retrieval_evaluator = RetrievalEvaluator()
-        
+
         # Evaluate current results
         if not self._retrieval_evaluator.needs_correction(query_text, results):
             return results  # Results are good enough
-        
+
         # Try to get expanded query
         if not self.hybrid_searcher:
             return results  # No analyzer available
-        
+
         analyzer = self.hybrid_searcher._query_analyzer
         expanded_query = analyzer.expand_query(query_text)
-        
+
         if expanded_query == query_text:
             # No expansion available, try LLM rewrite if we haven't already
             try:
@@ -849,7 +904,7 @@ class SearchUseCase:
                     return results  # No alternative query available
             except Exception:
                 return results
-        
+
         # Re-search with expanded query (disable corrective RAG to avoid recursion)
         self._corrective_rag_enabled = False
         try:
@@ -858,31 +913,32 @@ class SearchUseCase:
             )
         finally:
             self._corrective_rag_enabled = True
-        
+
         # Merge results: prioritize corrected results but keep unique originals
         seen_ids = set()
         merged = []
-        
+
         # Add corrected results first
         for r in corrected_results:
             if r.chunk.id not in seen_ids:
                 seen_ids.add(r.chunk.id)
                 merged.append(r)
-        
+
         # Add original results that weren't in corrected set
         for r in results:
             if r.chunk.id not in seen_ids:
                 seen_ids.add(r.chunk.id)
                 # Slightly lower score for non-corrected results
                 merged.append(
-                    SearchResult(chunk=r.chunk, score=r.score * 0.8, rank=len(merged) + 1)
+                    SearchResult(
+                        chunk=r.chunk, score=r.score * 0.8, rank=len(merged) + 1
+                    )
                 )
-        
+
         # Re-sort by score
         merged.sort(key=lambda x: -x.score)
-        
-        return merged[:top_k]
 
+        return merged[:top_k]
 
     def get_last_query_rewrite(self) -> Optional[QueryRewriteInfo]:
         """Return last query rewrite info (if any)."""
@@ -1031,6 +1087,7 @@ class SearchUseCase:
         """
         if not self.llm:
             from ..exceptions import ConfigurationError
+
             raise ConfigurationError("LLM client not configured. Use search() instead.")
 
         # Get relevant chunks
@@ -1062,10 +1119,10 @@ class SearchUseCase:
         user_message = self._build_user_message(question, context, history_text)
 
         if debug:
-            print("\n" + "=" * 40 + " DEBUG: PROMPT " + "=" * 40)
-            print(f"[System]\n{REGULATION_QA_PROMPT}\n")
-            print(f"[User]\n{user_message}")
-            print("=" * 95 + "\n")
+            logger.debug("=" * 40 + " PROMPT " + "=" * 40)
+            logger.debug(f"[System]\n{REGULATION_QA_PROMPT}\n")
+            logger.debug(f"[User]\n{user_message}")
+            logger.debug("=" * 80)
 
         answer_text = self.llm.generate(
             system_prompt=REGULATION_QA_PROMPT,
@@ -1113,10 +1170,11 @@ class SearchUseCase:
         """
         if not self.llm:
             from ..exceptions import ConfigurationError
+
             raise ConfigurationError("LLM client not configured. Use search() instead.")
 
         # Check if llm_client supports streaming
-        if not hasattr(self.llm, 'stream_generate'):
+        if not hasattr(self.llm, "stream_generate"):
             # Fallback to non-streaming
             answer = self.ask(
                 question=question,
@@ -1127,7 +1185,11 @@ class SearchUseCase:
                 history_text=history_text,
                 search_query=search_query,
             )
-            yield {"type": "metadata", "sources": answer.sources, "confidence": answer.confidence}
+            yield {
+                "type": "metadata",
+                "sources": answer.sources,
+                "confidence": answer.confidence,
+            }
             yield {"type": "token", "content": answer.text}
             return
 
@@ -1143,7 +1205,10 @@ class SearchUseCase:
 
         if not results:
             yield {"type": "metadata", "sources": [], "confidence": 0.0}
-            yield {"type": "token", "content": "관련 규정을 찾을 수 없습니다. 다른 검색어로 시도해주세요."}
+            yield {
+                "type": "token",
+                "content": "관련 규정을 찾을 수 없습니다. 다른 검색어로 시도해주세요.",
+            }
             return
 
         # Filter out low-signal headings
@@ -1157,7 +1222,11 @@ class SearchUseCase:
         confidence = self._compute_confidence(filtered_results)
 
         # First yield: metadata (sources and confidence)
-        yield {"type": "metadata", "sources": filtered_results, "confidence": confidence}
+        yield {
+            "type": "metadata",
+            "sources": filtered_results,
+            "confidence": confidence,
+        }
 
         # Stream LLM response token by token
         for token in self.llm.stream_generate(

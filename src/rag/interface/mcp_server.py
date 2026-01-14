@@ -31,7 +31,7 @@ except ImportError:
 
 from ..application.full_view_usecase import FullViewUseCase
 from ..config import get_config
-from ..infrastructure.hybrid_search import Audience, QueryAnalyzer
+from ..infrastructure.query_analyzer import Audience, QueryAnalyzer
 from ..infrastructure.json_loader import JSONDocumentLoader
 from .common import decide_search_mode
 from .formatters import (

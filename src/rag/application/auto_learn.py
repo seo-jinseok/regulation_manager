@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 class ImprovementSuggestion:
     """
     A suggested improvement based on feedback analysis.
-    
+
     Types:
         - intent: intents.json에 트리거 추가
         - synonym: synonyms.json에 동의어 추가
@@ -79,10 +79,12 @@ class AutoLearnUseCase:
 
     def _default_intents_path(self) -> str:
         from ..config import get_config
+
         return str(get_config().intents_path_resolved or "data/config/intents.json")
 
     def _default_synonyms_path(self) -> str:
         from ..config import get_config
+
         return str(get_config().synonyms_path_resolved or "data/config/synonyms.json")
 
     def analyze_feedback(self) -> AnalysisResult:
@@ -282,7 +284,7 @@ class AutoLearnUseCase:
     ) -> List[ImprovementSuggestion]:
         """
         Analyze failure patterns to suggest code-level improvements.
-        
+
         Detects patterns that indicate need for:
         - QueryAnalyzer pattern logic changes
         - Weight preset adjustments
@@ -290,11 +292,12 @@ class AutoLearnUseCase:
         - Architectural changes
         """
         suggestions = []
-        
+
         # Pattern 1: Intent triggers match but wrong results
         # → Indicates weight preset or reranker issues
         intent_matched_failures = [
-            (q, entries) for q, entries in query_groups.items()
+            (q, entries)
+            for q, entries in query_groups.items()
             if any(e.matched_intents for e in entries)
         ]
         if len(intent_matched_failures) >= 3:
@@ -315,7 +318,7 @@ class AutoLearnUseCase:
                     affected_queries=[q for q, _ in intent_matched_failures[:5]],
                 )
             )
-        
+
         # Pattern 2: Similar query patterns failing repeatedly
         # → Indicates missing pattern in QueryAnalyzer
         pattern_keywords = ["싶어", "하고", "어떻게", "뭐야", "알려줘"]
@@ -324,7 +327,7 @@ class AutoLearnUseCase:
             for kw in pattern_keywords:
                 if kw in query:
                     keyword_failures.setdefault(kw, []).append(query)
-        
+
         for kw, queries in keyword_failures.items():
             if len(queries) >= 3:
                 suggestions.append(
@@ -344,7 +347,7 @@ class AutoLearnUseCase:
                         affected_queries=queries[:5],
                     )
                 )
-        
+
         # Pattern 3: Audience-related failures
         # → Indicates audience detection logic issues
         audience_keywords = ["학생", "교수", "교원", "직원", "교직원"]
@@ -354,7 +357,7 @@ class AutoLearnUseCase:
                 if kw in query:
                     audience_failures.append(query)
                     break
-        
+
         if len(audience_failures) >= 2:
             suggestions.append(
                 ImprovementSuggestion(
@@ -372,7 +375,7 @@ class AutoLearnUseCase:
                     affected_queries=audience_failures[:5],
                 )
             )
-        
+
         # Pattern 4: High failure rate overall
         # → Indicates potential architectural issues
         if len(query_groups) >= 10:
@@ -395,7 +398,7 @@ class AutoLearnUseCase:
                     affected_queries=list(query_groups.keys())[:10],
                 )
             )
-        
+
         return suggestions[:5]
 
     def suggest_with_llm(self, query: str) -> Optional[ImprovementSuggestion]:

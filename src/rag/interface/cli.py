@@ -91,7 +91,9 @@ def print_error(msg: str) -> None:
         print(f"[ERROR] {msg}")
 
 
-def _print_sources_and_confidence(sources: list, confidence: float, verbose: bool = False, query: str = ""):
+def _print_sources_and_confidence(
+    sources: list, confidence: float, verbose: bool = False, query: str = ""
+):
     """Print sources and confidence panel."""
     if not sources:
         return
@@ -116,7 +118,9 @@ def _print_sources_and_confidence(sources: list, confidence: float, verbose: boo
                 score = src.score
                 path = build_display_path(chunk.parent_path, chunk.text, chunk.title)
                 # 매칭 설명 추가
-                explanation, _ = format_search_result_with_explanation(src, query, show_score=verbose)
+                explanation, _ = format_search_result_with_explanation(
+                    src, query, show_score=verbose
+                )
 
             content_parts = [
                 f"[bold blue]📖 {title}[/bold blue]",
@@ -125,7 +129,7 @@ def _print_sources_and_confidence(sources: list, confidence: float, verbose: boo
                 "",
                 text[:500] + "..." if len(text) > 500 else text,
                 "",
-                f"[dim]📋 규정번호: {rule_code} | AI 유사도: {score:.3f}[/dim]"
+                f"[dim]📋 규정번호: {rule_code} | AI 유사도: {score:.3f}[/dim]",
             ]
 
             console.print(
@@ -481,8 +485,12 @@ def create_parser() -> argparse.ArgumentParser:
         choices=providers,
         help="LLM 프로바이더",
     )
-    suggest_parser.add_argument("--model", type=str, default=default_model, help="모델명")
-    suggest_parser.add_argument("--base-url", type=str, default=default_base_url, help="로컬 서버 URL")
+    suggest_parser.add_argument(
+        "--model", type=str, default=default_model, help="모델명"
+    )
+    suggest_parser.add_argument(
+        "--base-url", type=str, default=default_base_url, help="로컬 서버 URL"
+    )
 
     # synonym add <term> <synonym>
     add_syn_parser = synonym_subparsers.add_parser("add", help="동의어 수동 추가")
@@ -496,7 +504,9 @@ def create_parser() -> argparse.ArgumentParser:
 
     # synonym list [term]
     list_syn_parser = synonym_subparsers.add_parser("list", help="동의어 목록 조회")
-    list_syn_parser.add_argument("term", nargs="?", help="특정 용어만 조회 (생략 시 전체)")
+    list_syn_parser.add_argument(
+        "term", nargs="?", help="특정 용어만 조회 (생략 시 전체)"
+    )
 
     return parser
 
@@ -585,16 +595,18 @@ def _text_from_regulation(formatted_text: str) -> object:
     for line in formatted_text.splitlines():
         match = header_pattern.match(line)
         if match:
-             # Extract title part
-             # We ignore header level for CLI logic, just bold cyan
-             title = match.group(2)
-             text_obj.append(title + "\n", style="bold cyan")
+            # Extract title part
+            # We ignore header level for CLI logic, just bold cyan
+            title = match.group(2)
+            text_obj.append(title + "\n", style="bold cyan")
         else:
             text_obj.append(line + "\n")
     return text_obj
 
 
-def _print_query_result(result: QueryResult, verbose: bool = False, query: str = "") -> None:
+def _print_query_result(
+    result: QueryResult, verbose: bool = False, query: str = ""
+) -> None:
     """Print QueryHandler result to CLI."""
     if not result.success:
         print_error(result.content)
@@ -686,7 +698,7 @@ def _print_query_result(result: QueryResult, verbose: bool = False, query: str =
 
             if metadata_lines:
                 renderables.append(Markdown("\n".join(metadata_lines)))
-                renderables.append(Text("\n")) # Spacer
+                renderables.append(Text("\n"))  # Spacer
 
             if text_lines:
                 raw_text = "\n".join(text_lines)
@@ -712,10 +724,17 @@ def _print_query_result(result: QueryResult, verbose: bool = False, query: str =
     if result.debug_info:
         if RICH_AVAILABLE:
             console.print()
-            console.print(Panel(Markdown(result.debug_info), title="🔧 실행 과정 (Debug)", border_style="yellow"))
+            console.print(
+                Panel(
+                    Markdown(result.debug_info),
+                    title="🔧 실행 과정 (Debug)",
+                    border_style="yellow",
+                )
+            )
         else:
             print("\n[실행 과정 (Debug)]")
             print(result.debug_info)
+
 
 def _print_regulation_overview(overview, other_matches: Optional[list] = None) -> None:
     """Print regulation overview in a nice format."""
@@ -726,8 +745,12 @@ def _print_regulation_overview(overview, other_matches: Optional[list] = None) -
         lines = []
 
         # Status info
-        status_label = "✅ 시행중" if overview.status == RegulationStatus.ACTIVE else "❌ 폐지"
-        lines.append(f"**상태**: {status_label} | **총 조항 수**: {overview.article_count}개")
+        status_label = (
+            "✅ 시행중" if overview.status == RegulationStatus.ACTIVE else "❌ 폐지"
+        )
+        lines.append(
+            f"**상태**: {status_label} | **총 조항 수**: {overview.article_count}개"
+        )
         lines.append("")
 
         # Table of contents
@@ -747,7 +770,9 @@ def _print_regulation_overview(overview, other_matches: Optional[list] = None) -
         # Next action hint
         lines.append("")
         lines.append("---")
-        lines.append(f"💡 특정 조항 검색: `{overview.title} 제N조` 또는 `{overview.rule_code} 제N조`")
+        lines.append(
+            f"💡 특정 조항 검색: `{overview.title} 제N조` 또는 `{overview.rule_code} 제N조`"
+        )
 
         if other_matches:
             lines.append("")
@@ -766,7 +791,9 @@ def _print_regulation_overview(overview, other_matches: Optional[list] = None) -
         )
     else:
         print(f"\n=== {overview.title} ({overview.rule_code}) ===")
-        status_label = "시행중" if overview.status == RegulationStatus.ACTIVE else "폐지"
+        status_label = (
+            "시행중" if overview.status == RegulationStatus.ACTIVE else "폐지"
+        )
         print(f"상태: {status_label} | 총 조항 수: {overview.article_count}개")
         print("\n목차:")
         for ch in overview.chapters:
@@ -956,7 +983,9 @@ def _perform_unified_search(
     )
 
     # Execute and Stream if it's an AI answer in interactive/ask mode
-    if RICH_AVAILABLE and (force_mode == "ask" or (not force_mode and _decide_search_mode(args) == "ask")):
+    if RICH_AVAILABLE and (
+        force_mode == "ask" or (not force_mode and _decide_search_mode(args) == "ask")
+    ):
         answer_text = ""
         try:
             stream_gen = handler.process_query_stream(query, context, options)
@@ -966,7 +995,11 @@ def _perform_unified_search(
             # Initial spacer
             console.print()
 
-            with Live(Panel(Text("..."), title="💬 AI 답변 준비 중", border_style="dim"), console=console, refresh_per_second=10) as live:
+            with Live(
+                Panel(Text("..."), title="💬 AI 답변 준비 중", border_style="dim"),
+                console=console,
+                refresh_per_second=10,
+            ) as live:
                 for event in stream_gen:
                     evt_type = event.get("type")
 
@@ -977,23 +1010,52 @@ def _perform_unified_search(
 
                     elif evt_type == "token":
                         answer_text += event.get("content", "")
-                        live.update(Panel(Markdown(answer_text), title="💬 AI 답변", border_style="green"))
+                        live.update(
+                            Panel(
+                                Markdown(answer_text),
+                                title="💬 AI 답변",
+                                border_style="green",
+                            )
+                        )
 
                     elif evt_type == "complete":
                         answer_text = event.get("content", answer_text)
-                        live.update(Panel(Markdown(answer_text), title="💬 AI 답변", border_style="green"))
+                        live.update(
+                            Panel(
+                                Markdown(answer_text),
+                                title="💬 AI 답변",
+                                border_style="green",
+                            )
+                        )
 
                         # Show sources if available
                         data = event.get("data", {})
                         if data.get("sources"):
                             # We can print sources after the live panel
-                            _print_sources_and_confidence(data.get("sources", []), data.get("confidence", 0.0), args.verbose, query=raw_query)
+                            _print_sources_and_confidence(
+                                data.get("sources", []),
+                                data.get("confidence", 0.0),
+                                args.verbose,
+                                query=raw_query,
+                            )
 
-                        _update_state_from_result(state, data, raw_query, answer_text, event.get("suggestions", []))
+                        _update_state_from_result(
+                            state,
+                            data,
+                            raw_query,
+                            answer_text,
+                            event.get("suggestions", []),
+                        )
                         return 0
 
                     elif evt_type == "error":
-                        live.update(Panel(Text(f"⚠️ {event['content']}"), title="❌ 오류", border_style="red"))
+                        live.update(
+                            Panel(
+                                Text(f"⚠️ {event['content']}"),
+                                title="❌ 오류",
+                                border_style="red",
+                            )
+                        )
                         return 1
 
                     elif evt_type == "clarification":
@@ -1024,17 +1086,23 @@ def _perform_unified_search(
     _print_query_result(result, args.verbose, query=raw_query)
 
     # Update State
-    _update_state_from_result(state, result.data, raw_query, result.content, result.suggestions)
+    _update_state_from_result(
+        state, result.data, raw_query, result.content, result.suggestions
+    )
 
     return 0
 
-def _update_state_from_result(state: dict, data: dict, raw_query: str, content: str, suggestions: list):
+
+def _update_state_from_result(
+    state: dict, data: dict, raw_query: str, content: str, suggestions: list
+):
     """Sync state with query result."""
     state["last_regulation"] = data.get("regulation_title") or data.get("title")
     state["last_rule_code"] = data.get("rule_code")
     state["last_query"] = raw_query
     state["last_answer"] = content
     state["suggestions"] = suggestions
+
 
 def _handle_cli_clarification(result_or_event: Any):
     """Handle clarification requests in CLI."""
@@ -1296,7 +1364,9 @@ def cmd_synonym(args) -> int:
     elif args.synonym_cmd == "add":
         # Add synonym manually
         if service.add_synonym(args.term, args.synonym):
-            print_success(f"'{args.synonym}'이(가) '{args.term}'의 동의어로 추가되었습니다.")
+            print_success(
+                f"'{args.synonym}'이(가) '{args.term}'의 동의어로 추가되었습니다."
+            )
         else:
             print_info(f"'{args.synonym}'은(는) 이미 '{args.term}'의 동의어입니다.")
         return 0
@@ -1304,7 +1374,9 @@ def cmd_synonym(args) -> int:
     elif args.synonym_cmd == "remove":
         # Remove synonym
         if service.remove_synonym(args.term, args.synonym):
-            print_success(f"'{args.synonym}'이(가) '{args.term}'의 동의어에서 제거되었습니다.")
+            print_success(
+                f"'{args.synonym}'이(가) '{args.term}'의 동의어에서 제거되었습니다."
+            )
         else:
             print_error(f"'{args.synonym}'은(는) '{args.term}'의 동의어가 아닙니다.")
             return 1
@@ -1326,7 +1398,9 @@ def cmd_synonym(args) -> int:
         # Show existing synonyms if any
         existing = service.get_synonyms(args.term)
         if existing:
-            print_info(f"현재 '{args.term}'의 동의어 ({len(existing)}개): {', '.join(existing)}")
+            print_info(
+                f"현재 '{args.term}'의 동의어 ({len(existing)}개): {', '.join(existing)}"
+            )
             print()
 
         # Generate candidates
@@ -1384,6 +1458,7 @@ def cmd_synonym(args) -> int:
         return 0
 
     return 1
+
 
 def main(argv: Optional[list] = None) -> int:
     """Main entry point."""

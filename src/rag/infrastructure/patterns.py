@@ -18,14 +18,10 @@ ARTICLE_PATTERN: Pattern[str] = re.compile(
 )
 
 # Matches article numbers more loosely (with optional 제)
-ARTICLE_LOOSE_PATTERN: Pattern[str] = re.compile(
-    r"(?:제)?\s*(\d+)\s*조"
-)
+ARTICLE_LOOSE_PATTERN: Pattern[str] = re.compile(r"(?:제)?\s*(\d+)\s*조")
 
 # Matches any hierarchical reference: 제N조, 제N항, 제N장, 제N절
-HIERARCHY_PATTERN: Pattern[str] = re.compile(
-    r"(?:제)?\s*\d+\s*[조항장절]"
-)
+HIERARCHY_PATTERN: Pattern[str] = re.compile(r"(?:제)?\s*\d+\s*[조항장절]")
 
 # ====================
 # Regulation Name Patterns
@@ -78,6 +74,7 @@ SUBSECTION_PATTERN: Pattern[str] = re.compile(r"^(제\s*(\d+)\s*관)\s*(.*)")
 # Utility Functions
 # ====================
 
+
 def normalize_article_token(token: str) -> str:
     """Remove all whitespace from article reference token.
 
@@ -99,10 +96,7 @@ def extract_article_references(text: str) -> set:
     Returns:
         Set of normalized article reference strings.
     """
-    return {
-        normalize_article_token(match)
-        for match in ARTICLE_PATTERN.findall(text)
-    }
+    return {normalize_article_token(match) for match in ARTICLE_PATTERN.findall(text)}
 
 
 def remove_article_references(text: str) -> str:

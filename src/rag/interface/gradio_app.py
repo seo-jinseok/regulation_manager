@@ -36,27 +36,21 @@ from ..application.sync_usecase import SyncUseCase
 from ..domain.entities import RegulationStatus
 from ..domain.value_objects import SearchFilter
 from ..infrastructure.chroma_store import ChromaVectorStore
-from ..infrastructure.hybrid_search import Audience, QueryAnalyzer
+from ..infrastructure.query_analyzer import Audience, QueryAnalyzer
 from ..infrastructure.json_loader import JSONDocumentLoader
 from ..infrastructure.llm_adapter import LLMClientAdapter
 from ..infrastructure.llm_client import MockLLMClient
 
 try:
     from ..infrastructure.function_gemma_adapter import FunctionGemmaAdapter
+
     FUNCTION_GEMMA_AVAILABLE = True
 except ImportError:
     FUNCTION_GEMMA_AVAILABLE = False
     FunctionGemmaAdapter = None
 
 from .chat_logic import (
-    build_history_context,
-    expand_followup_query,
-    extract_regulation_title,
     format_clarification,
-    has_explicit_target,
-    parse_attachment_request,
-    resolve_audience_choice,
-    resolve_regulation_choice,
 )
 from .formatters import (
     clean_path_segments,
@@ -95,8 +89,8 @@ def _load_custom_css() -> str:
     .chatbot { border-radius: 16px !important; }
     """
 
-CUSTOM_CSS = _load_custom_css()
 
+CUSTOM_CSS = _load_custom_css()
 
 
 def _format_query_rewrite_debug(info: Optional[QueryRewriteInfo]) -> str:
@@ -164,6 +158,7 @@ def _format_query_rewrite_debug(info: Optional[QueryRewriteInfo]) -> str:
 def _decide_search_mode_ui(query: str) -> str:
     """Auto-detect search mode without manual selection."""
     from .common import decide_search_mode
+
     return decide_search_mode(query, None)
 
 
@@ -204,7 +199,7 @@ def _process_with_handler(
         store=store_for_query,
         llm_client=llm_client,
         function_gemma_client=llm_client if use_tools else None,
-        use_reranker=True, # Default to True for Web UI
+        use_reranker=True,  # Default to True for Web UI
     )
 
     context = QueryContext(
@@ -226,6 +221,7 @@ def _process_with_handler(
     )
 
     return handler.process_query(query, context, options)
+
 
 def create_app(
     db_path: str = DEFAULT_DB_PATH,
@@ -306,8 +302,6 @@ def create_app(
     query_analyzer = QueryAnalyzer()
     full_view_usecase = FullViewUseCase(JSONDocumentLoader())
 
-
-
     def _parse_audience(selection: str) -> Optional[Audience]:
         if selection == "교수":
             return Audience.FACULTY
@@ -365,11 +359,13 @@ def create_app(
             snippet_with_links = format_as_markdown_links(
                 snippet,
                 extract_and_format_references(snippet, "markdown")[0],
-                link_template="#"
+                link_template="#",
             )
 
             # 매칭 설명 추가
-            explanation, _ = format_search_result_with_explanation(r, query, show_score=show_debug)
+            explanation, _ = format_search_result_with_explanation(
+                r, query, show_score=show_debug
+            )
 
             sources_md.append(f"""#### [{i}] {reg_name}
 **경로:** {path}
@@ -464,7 +460,7 @@ def create_app(
     ):
         """
         Streaming version of _run_ask_once.
-        
+
         Yields:
             dict: Contains type ('progress', 'token', 'sources', 'debug', 'metadata')
                   and corresponding content.
@@ -474,7 +470,7 @@ def create_app(
         if store_for_ask.count() == 0:
             yield {
                 "type": "error",
-                "content": "데이터베이스가 비어 있습니다. CLI에서 'regulation sync'를 실행하세요."
+                "content": "데이터베이스가 비어 있습니다. CLI에서 'regulation sync'를 실행하세요.",
             }
             return
 
@@ -496,7 +492,10 @@ def create_app(
             filter = SearchFilter(status=RegulationStatus.ACTIVE)
 
         # Progress: Reranking
-        yield {"type": "progress", "content": "🔍 1/3 규정 검색 중...\n🎯 2/3 관련도 재정렬 중..."}
+        yield {
+            "type": "progress",
+            "content": "🔍 1/3 규정 검색 중...\n🎯 2/3 관련도 재정렬 중...",
+        }
 
         sources = []
         rule_code = ""
@@ -517,12 +516,19 @@ def create_app(
                 if item["type"] == "metadata":
                     sources = item["sources"]
                     # Progress: LLM generating
-                    yield {"type": "progress", "content": "🔍 1/3 규정 검색 중...\n🎯 2/3 관련도 재정렬 중...\n🤖 3/3 AI 답변 생성 중..."}
+                    yield {
+                        "type": "progress",
+                        "content": "🔍 1/3 규정 검색 중...\n🎯 2/3 관련도 재정렬 중...\n🤖 3/3 AI 답변 생성 중...",
+                    }
 
                     if sources:
                         top_chunk = sources[0].chunk
                         rule_code = top_chunk.rule_code
-                        regulation_title = top_chunk.parent_path[0] if top_chunk.parent_path else top_chunk.title
+                        regulation_title = (
+                            top_chunk.parent_path[0]
+                            if top_chunk.parent_path
+                            else top_chunk.title
+                        )
                 elif item["type"] == "token":
                     yield {"type": "token", "content": item["content"]}
         except Exception:
@@ -540,7 +546,11 @@ def create_app(
             if sources:
                 top_chunk = sources[0].chunk
                 rule_code = top_chunk.rule_code
-                regulation_title = top_chunk.parent_path[0] if top_chunk.parent_path else top_chunk.title
+                regulation_title = (
+                    top_chunk.parent_path[0]
+                    if top_chunk.parent_path
+                    else top_chunk.title
+                )
             yield {"type": "token", "content": answer.text}
 
         # Send sources and debug info at the end
@@ -552,7 +562,11 @@ def create_app(
 
         yield {"type": "sources", "content": sources_text}
         yield {"type": "debug", "content": debug_text}
-        yield {"type": "metadata", "rule_code": rule_code, "regulation_title": regulation_title}
+        yield {
+            "type": "metadata",
+            "rule_code": rule_code,
+            "regulation_title": regulation_title,
+        }
 
     # Main chat function (stateful)
     def chat_respond(
@@ -573,15 +587,19 @@ def create_app(
         """Handle chat interaction with streaming."""
         if not msg.strip():
             # Show helpful message for empty input
-            history.append({
-                "role": "assistant",
-                "content": "💡 검색어를 입력해주세요. 예시: '휴학 신청 절차', '교원 연구년 자격은?'"
-            })
+            history.append(
+                {
+                    "role": "assistant",
+                    "content": "💡 검색어를 입력해주세요. 예시: '휴학 신청 절차', '교원 연구년 자격은?'",
+                }
+            )
             yield history, "", "", state
             return
 
         # Prepare arguments
-        audience_override = _parse_audience(target_sel) if target_sel != "자동" else None
+        audience_override = (
+            _parse_audience(target_sel) if target_sel != "자동" else None
+        )
 
         # Build history context if enabled
         history_context = []
@@ -609,7 +627,7 @@ def create_app(
             store=store_for_query,
             llm_client=llm_client,
             function_gemma_client=llm_client if use_tools else None,
-            use_reranker=True, # Default true for web
+            use_reranker=True,  # Default true for web
         )
 
         context = QueryContext(
@@ -659,7 +677,12 @@ def create_app(
 
             elif evt_type == "debug":
                 current_debug += f"\n{event['content']}"
-                yield history, "", current_debug, state # Yield debug updates immediately
+                yield (
+                    history,
+                    "",
+                    current_debug,
+                    state,
+                )  # Yield debug updates immediately
 
             elif evt_type == "metadata":
                 if event.get("rule_code"):
@@ -678,22 +701,26 @@ def create_app(
                 state["pending"] = {
                     "type": clarification_type,
                     "options": clarification_options,
-                    "query": msg, # Use original message for pending query
-                    "mode": event.get("mode", "search"), # Default to search if mode not specified by handler
+                    "query": msg,  # Use original message for pending query
+                    "mode": event.get(
+                        "mode", "search"
+                    ),  # Default to search if mode not specified by handler
                     "table_no": event.get("table_no"),
                     "label": event.get("label"),
                 }
 
-                clarified_content = format_clarification(clarification_type, clarification_options)
+                clarified_content = format_clarification(
+                    clarification_type, clarification_options
+                )
                 history[-1] = {"role": "assistant", "content": clarified_content}
 
                 yield history, "", current_debug, state
-                return # Stop processing, waiting for user clarification
+                return  # Stop processing, waiting for user clarification
 
             elif evt_type == "error":
                 history[-1] = {"role": "assistant", "content": f"⚠️ {event['content']}"}
                 yield history, "", current_debug, state
-                return # Stop processing on error
+                return  # Stop processing on error
 
             elif evt_type == "complete":
                 # Final non-streaming content (e.g. Overview, Search Table) or final LLM answer
@@ -701,11 +728,16 @@ def create_app(
 
                 # If it's an LLM answer, sources might be separate.
                 # For search results, sources are usually part of the content.
-                if sources_text and "---" not in content[-50:]: # Avoid duplication if sources already appended
-                     content += "\n\n---\n\n" + sources_text
+                if (
+                    sources_text and "---" not in content[-50:]
+                ):  # Avoid duplication if sources already appended
+                    content += "\n\n---\n\n" + sources_text
 
-                history[-1] = {"role": "assistant", "content": normalize_markdown_emphasis(content)}
-                state["last_query"] = msg # Update last_query with the original message
+                history[-1] = {
+                    "role": "assistant",
+                    "content": normalize_markdown_emphasis(content),
+                }
+                state["last_query"] = msg  # Update last_query with the original message
                 # State updates for last_regulation/last_rule_code are handled by 'metadata' event
                 # or by the state update from QueryHandler.
                 yield history, "", current_debug, state
@@ -714,256 +746,6 @@ def create_app(
         # (e.g., if only progress updates were sent and then nothing more)
         # This also ensures the last state is yielded.
         yield history, "", current_debug, state
-
-    # Main chat function (stateful)
-    def chat_respond_old(
-        message: str,
-        history: List[dict],
-        state: dict,
-        top_k: int,
-        include_abolished: bool,
-        llm_provider: str,
-        llm_model: str,
-        llm_base_url: str,
-        target_db_path: str,
-        target_audience: str,
-        use_context: bool,
-        show_debug: bool,
-    ):
-        history = history or []
-        state = state or {}
-        state.setdefault("audience", None)
-        state.setdefault("pending", None)
-        state.setdefault("last_query", None)
-        state.setdefault("last_mode", None)
-        state.setdefault("last_regulation", None)
-        state.setdefault("last_rule_code", None)
-        details = ""
-        debug_text = ""
-
-        history = history or []
-        if not message or not message.strip():
-            # Show helpful message for empty input
-            history.append({
-                "role": "assistant",
-                "content": "💡 검색어를 입력해주세요. 예시: '휴학 신청 절차', '교원 연구년 자격은?'"
-            })
-            yield history, details, debug_text, state
-            return # Added return here to match new chat_respond behavior
-        if history and isinstance(history[0], (list, tuple)):
-            normalized = []
-            for user_text, assistant_text in history:
-                normalized.append({"role": "user", "content": user_text})
-                normalized.append({"role": "assistant", "content": assistant_text})
-            history = normalized
-        history_context = build_history_context(history)
-        explicit_target = has_explicit_target(message)
-        explicit_regulation = extract_regulation_title(message)
-
-        history.append({"role": "user", "content": message})
-
-        audience_override = _parse_audience(target_audience)
-        explicit_audience = resolve_audience_choice(message)
-        if audience_override:
-            state["audience"] = target_audience
-        elif explicit_audience:
-            state["audience"] = explicit_audience
-
-        pending = state.get("pending")
-        attachment_query = None
-        attachment_no = None
-        attachment_label = None
-        attachment_requested = False
-        if pending:
-            if pending["type"] == "audience":
-                choice = resolve_audience_choice(message) or state.get("audience")
-                if not choice:
-                    response = format_clarification("audience", pending["options"])
-                    history.append({"role": "assistant", "content": response})
-                    yield history, details, debug_text, state
-                    return # Added return
-                state["audience"] = choice
-                state["pending"] = None
-                query = pending["query"]
-                mode = pending["mode"]
-            elif pending["type"] == "regulation":
-                choice = resolve_regulation_choice(message, pending["options"])
-                if not choice:
-                    response = format_clarification("regulation", pending["options"])
-                    history.append({"role": "assistant", "content": response})
-                    yield history, details, debug_text, state
-                    return # Added return
-                state["pending"] = None
-                query = choice
-                mode = "full_view"
-            elif pending["type"] == "regulation_table":
-                choice = resolve_regulation_choice(message, pending["options"])
-                if not choice:
-                    response = format_clarification("regulation", pending["options"])
-                    history.append({"role": "assistant", "content": response})
-                    yield history, details, debug_text, state
-                    return # Added return
-                state["pending"] = None
-                attachment_query = choice
-                attachment_no = pending.get("table_no")
-                attachment_label = pending.get("label")
-                attachment_requested = True
-                query = choice
-                mode = "attachment"
-            else:
-                state["pending"] = None
-                query = message
-                mode = _decide_search_mode_ui(message)
-        else:
-            context_hint = None
-            if use_context:
-                context_hint = state.get("last_regulation") or state.get("last_query")
-            query = expand_followup_query(message, context_hint)
-            mode = _decide_search_mode_ui(query)
-            attachment_request = parse_attachment_request(
-                query,
-                state.get("last_regulation") if use_context else None,
-            )
-            if attachment_request:
-                attachment_query, attachment_no, attachment_label = attachment_request
-                attachment_requested = True
-                query = attachment_query
-                mode = "attachment"
-
-
-
-            mode = None # Let QueryHandler decide
-
-        # Initialize QueryHandler
-        db_path_value = target_db_path or "data/chroma_db"
-        store = ChromaVectorStore(persist_directory=db_path_value)
-
-        llm_client = None
-        if use_mock_llm: # Captured from create_app scope
-            llm_client = MockLLMClient()
-        else:
-            try:
-                llm_client = LLMClientAdapter(
-                    provider=llm_provider,
-                    model=llm_model or None,
-                    base_url=llm_base_url or None,
-                )
-            except Exception:
-                pass # Handler handles None client for search, but for Ask it triggers error
-
-        handler = QueryHandler(
-            store=store,
-            llm_client=llm_client,
-            use_reranker=True, # Default true for web
-            function_gemma_client=llm_client, # Use same client for tools if needed
-        )
-
-        options = QueryOptions(
-            top_k=top_k,
-            include_abolished=include_abolished,
-            audience_override=_parse_audience(state.get("audience")),
-            force_mode=mode if pending else None, # Only force if mode was determined by pending resolution
-            show_debug=show_debug,
-            llm_provider=llm_provider,
-            llm_model=llm_model,
-            llm_base_url=llm_base_url,
-        )
-
-        context = QueryContext(
-            state=state,
-            history=history,
-            interactive=True,
-            last_regulation=state.get("last_regulation"),
-            last_rule_code=state.get("last_rule_code"),
-        )
-
-        # Initialize assistant message for streaming
-        history.append({
-            "role": "assistant",
-            "content": "🔍 1/3 규정 검색 중..."
-        })
-
-        # Processing loop
-        answer_text = ""
-        sources_text = ""
-        debug_text = ""
-
-        for event in handler.process_query_stream(query, context, options):
-            evt_type = event["type"]
-
-            if evt_type == "progress":
-                history[-1] = {"role": "assistant", "content": event["content"]}
-                yield history, details, debug_text, state
-
-            elif evt_type == "token":
-                # Accumulate text for streaming
-                if not answer_text:
-                    history[-1] = {"role": "assistant", "content": ""}
-                answer_text += event["content"]
-                history[-1] = {"role": "assistant", "content": answer_text}
-                yield history, details, debug_text, state
-
-            elif evt_type == "sources":
-                sources_text = event["content"]
-
-            elif evt_type == "debug":
-                debug_text = event["content"]
-
-            elif evt_type == "metadata":
-                if event.get("rule_code"):
-                    state["last_rule_code"] = event["rule_code"]
-                if event.get("regulation_title"):
-                    state["last_regulation"] = event["regulation_title"]
-
-            elif evt_type == "state":
-                # explicit state update
-                state.update(event["update"])
-
-            elif evt_type == "clarification":
-                # QueryHandler returns clarification_type, options, and a generic content message.
-                # We need to format it with buttons for the UI.
-                clarification_type = event["clarification_type"]
-                clarification_options = event["options"]
-
-                state["pending"] = {
-                    "type": clarification_type,
-                    "options": clarification_options,
-                    "query": query,
-                    "mode": event.get("mode", "search"), # Default to search if mode not specified by handler
-                    "table_no": event.get("table_no"),
-                    "label": event.get("label"),
-                }
-
-                clarified_content = format_clarification(clarification_type, clarification_options)
-                history[-1] = {"role": "assistant", "content": clarified_content}
-
-                yield history, details, debug_text, state
-                return # Stop processing, waiting for user clarification
-
-            elif evt_type == "error":
-                history[-1] = {"role": "assistant", "content": f"⚠️ {event['content']}"}
-                yield history, details, debug_text, state
-                return # Stop processing on error
-
-            elif evt_type == "complete":
-                # Final non-streaming content (e.g. Overview, Search Table) or final LLM answer
-                content = event["content"]
-
-                # If it's an LLM answer, sources might be separate.
-                # For search results, sources are usually part of the content.
-                if sources_text and "---" not in content[-50:]: # Avoid duplication if sources already appended
-                     content += "\n\n---\n\n" + sources_text
-
-                history[-1] = {"role": "assistant", "content": normalize_markdown_emphasis(content)}
-                state["last_query"] = query
-                # State updates for last_regulation/last_rule_code are handled by 'metadata' event
-                # or by the state update from QueryHandler.
-                yield history, details, debug_text, state
-
-        # Final yield to ensure everything is settled, especially if no 'complete' event was sent
-        # (e.g., if only progress updates were sent and then nothing more)
-        # This also ensures the last state is yielded.
-        yield history, details, debug_text, state
 
     def record_web_feedback(query, rule_code, rating, comment):
         """Record feedback from Web UI."""
@@ -1052,7 +834,9 @@ def create_app(
                         # Navigation Buttons
                         with gr.Row():
                             btn_back = gr.Button("◀ 뒤로", size="sm", interactive=False)
-                            btn_forward = gr.Button("앞으로 ▶", size="sm", interactive=False)
+                            btn_forward = gr.Button(
+                                "앞으로 ▶", size="sm", interactive=False
+                            )
                             # Spacer
                             gr.HTML("<div style='flex-grow: 1;'></div>")
 
@@ -1060,7 +844,12 @@ def create_app(
                             label="",
                             height=500,
                             show_label=False,
-                            value=[{"role": "assistant", "content": "👋 안녕하세요! 대학 규정을 검색하거나 질문할 수 있습니다.\n\n💡 아래 예시 버튼을 클릭하거나 직접 질문을 입력해주세요."}],
+                            value=[
+                                {
+                                    "role": "assistant",
+                                    "content": "👋 안녕하세요! 대학 규정을 검색하거나 질문할 수 있습니다.\n\n💡 아래 예시 버튼을 클릭하거나 직접 질문을 입력해주세요.",
+                                }
+                            ],
                             avatar_images=("👤", "🤖"),
                             bubble_full_width=False,
                         )
@@ -1084,7 +873,9 @@ def create_app(
                         # Example queries as clickable cards
                         gr.Markdown("### 💡 예시 질문")
                         with gr.Row():
-                            ex1 = gr.Button("🎓 휴학 신청 절차가 어떻게 되나요?", size="sm")
+                            ex1 = gr.Button(
+                                "🎓 휴학 신청 절차가 어떻게 되나요?", size="sm"
+                            )
                             ex2 = gr.Button("📖 교원인사규정 전문", size="sm")
                             ex3 = gr.Button("🔍 교원 연구년", size="sm")
                         with gr.Row():
@@ -1093,15 +884,16 @@ def create_app(
 
                         # 대화 초기화 버튼을 예시 버튼과 분리
                         gr.Markdown("---")
-                        chat_clear = gr.Button("🗑️ 대화 초기화", variant="secondary", size="sm")
+                        chat_clear = gr.Button(
+                            "🗑️ 대화 초기화", variant="secondary", size="sm"
+                        )
 
                     # Settings sidebar
                     with gr.Column(scale=1):
                         gr.Markdown("### ⚙️ 설정")
 
                         chat_top_k = gr.Slider(
-                            minimum=1, maximum=20, value=5, step=1,
-                            label="결과 수"
+                            minimum=1, maximum=20, value=5, step=1, label="결과 수"
                         )
                         chat_abolished = gr.Checkbox(
                             label="폐지 규정 포함", value=False
@@ -1111,16 +903,13 @@ def create_app(
                             value="자동",
                             label="대상 선택",
                         )
-                        chat_context = gr.Checkbox(
-                            label="대화 문맥 활용", value=True
-                        )
+                        chat_context = gr.Checkbox(label="대화 문맥 활용", value=True)
                         chat_use_tools = gr.Checkbox(
-                             label="🛠️ Tool Calling 사용", value=True,
-                             info="FunctionGemma를 사용하여 보다 정확한 답변을 제공합니다."
+                            label="🛠️ Tool Calling 사용",
+                            value=True,
+                            info="FunctionGemma를 사용하여 보다 정확한 답변을 제공합니다.",
                         )
-                        chat_debug = gr.Checkbox(
-                            label="디버그 출력", value=False
-                        )
+                        chat_debug = gr.Checkbox(label="디버그 출력", value=False)
 
                         with gr.Accordion("🤖 LLM 설정", open=False):
                             chat_llm_p = gr.Dropdown(
@@ -1129,12 +918,10 @@ def create_app(
                                 label="Provider",
                             )
                             chat_llm_m = gr.Textbox(
-                                value=DEFAULT_LLM_MODEL,
-                                label="Model"
+                                value=DEFAULT_LLM_MODEL, label="Model"
                             )
                             chat_llm_b = gr.Textbox(
-                                value=DEFAULT_LLM_BASE_URL,
-                                label="Base URL"
+                                value=DEFAULT_LLM_BASE_URL, label="Base URL"
                             )
 
                         # Detail panel은 숨김 처리 (채팅창에 직접 표시)
@@ -1165,7 +952,7 @@ def create_app(
                     return (
                         gr.update(interactive=has_back),
                         gr.update(interactive=has_forward),
-                        state
+                        state,
                     )
 
                 def confirm_navigation(state, direction):
@@ -1182,7 +969,21 @@ def create_app(
                 db_state = gr.State(db_path)
 
                 # Event handlers
-                def on_submit(msg, history, state, top_k, abolished, llm_p, llm_m, llm_b, db, target, context, use_tools, debug):
+                def on_submit(
+                    msg,
+                    history,
+                    state,
+                    top_k,
+                    abolished,
+                    llm_p,
+                    llm_m,
+                    llm_b,
+                    db,
+                    target,
+                    context,
+                    use_tools,
+                    debug,
+                ):
                     # Update History for Navigation
                     # Logic: If query changes effectively (new search or view), apend to history
                     # We need to capture the FINAL state to update navigation
@@ -1192,7 +993,21 @@ def create_app(
                     prev_mode = state.get("last_mode")
 
                     final_state = state
-                    for result in chat_respond(msg, history, state, top_k, abolished, llm_p, llm_m, llm_b, db, target, context, use_tools, debug):
+                    for result in chat_respond(
+                        msg,
+                        history,
+                        state,
+                        top_k,
+                        abolished,
+                        llm_p,
+                        llm_m,
+                        llm_b,
+                        db,
+                        target,
+                        context,
+                        use_tools,
+                        debug,
+                    ):
                         # Unpack result and add empty string for input clear
                         hist, detail, dbg, st = result
                         final_state = st
@@ -1202,42 +1017,128 @@ def create_app(
                     curr_query = final_state.get("last_query")
                     curr_mode = final_state.get("last_mode")
 
-                    if curr_query and (curr_query != prev_query or curr_mode != prev_mode):
+                    if curr_query and (
+                        curr_query != prev_query or curr_mode != prev_mode
+                    ):
                         # Append to history
                         nav_history = final_state.get("nav_history", [])
                         nav_index = final_state.get("nav_index", -1)
 
                         # If we were back in history, truncate future
                         if nav_index < len(nav_history) - 1:
-                            nav_history = nav_history[:nav_index + 1]
+                            nav_history = nav_history[: nav_index + 1]
 
-                        nav_history.append((curr_mode, curr_query, final_state.get("last_regulation")))
+                        nav_history.append(
+                            (curr_mode, curr_query, final_state.get("last_regulation"))
+                        )
                         final_state["nav_history"] = nav_history
                         final_state["nav_index"] = len(nav_history) - 1
 
                         yield hist, detail, dbg, final_state, ""
 
-                def on_back_click(history, state, top_k, abolished, llm_p, llm_m, llm_b, db, target, context, use_tools, debug):
-                     query, new_state = confirm_navigation(state, -1)
-                     if query:
-                         # Re-run query
-                         for res in on_submit(query, history, new_state, top_k, abolished, llm_p, llm_m, llm_b, db, target, context, use_tools, debug):
-                             yield res
-                     else:
-                         yield history, "", "", state, ""
+                def on_back_click(
+                    history,
+                    state,
+                    top_k,
+                    abolished,
+                    llm_p,
+                    llm_m,
+                    llm_b,
+                    db,
+                    target,
+                    context,
+                    use_tools,
+                    debug,
+                ):
+                    query, new_state = confirm_navigation(state, -1)
+                    if query:
+                        # Re-run query
+                        for res in on_submit(
+                            query,
+                            history,
+                            new_state,
+                            top_k,
+                            abolished,
+                            llm_p,
+                            llm_m,
+                            llm_b,
+                            db,
+                            target,
+                            context,
+                            use_tools,
+                            debug,
+                        ):
+                            yield res
+                    else:
+                        yield history, "", "", state, ""
 
-                def on_forward_click(history, state, top_k, abolished, llm_p, llm_m, llm_b, db, target, context, use_tools, debug):
-                     query, new_state = confirm_navigation(state, 1)
-                     if query:
-                          for res in on_submit(query, history, new_state, top_k, abolished, llm_p, llm_m, llm_b, db, target, context, use_tools, debug):
-                             yield res
-                     else:
-                         yield history, "", "", state, ""
+                def on_forward_click(
+                    history,
+                    state,
+                    top_k,
+                    abolished,
+                    llm_p,
+                    llm_m,
+                    llm_b,
+                    db,
+                    target,
+                    context,
+                    use_tools,
+                    debug,
+                ):
+                    query, new_state = confirm_navigation(state, 1)
+                    if query:
+                        for res in on_submit(
+                            query,
+                            history,
+                            new_state,
+                            top_k,
+                            abolished,
+                            llm_p,
+                            llm_m,
+                            llm_b,
+                            db,
+                            target,
+                            context,
+                            use_tools,
+                            debug,
+                        ):
+                            yield res
+                    else:
+                        yield history, "", "", state, ""
 
                 # Redefine on_submit to include button updates
-                def on_submit_with_nav(msg, history, state, top_k, abolished, llm_p, llm_m, llm_b, db, target, context, use_tools, debug):
-                     # Wrap the generator
-                    gen = on_submit(msg, history, state, top_k, abolished, llm_p, llm_m, llm_b, db, target, context, use_tools, debug)
+                def on_submit_with_nav(
+                    msg,
+                    history,
+                    state,
+                    top_k,
+                    abolished,
+                    llm_p,
+                    llm_m,
+                    llm_b,
+                    db,
+                    target,
+                    context,
+                    use_tools,
+                    debug,
+                ):
+                    # Wrap the generator
+                    gen = on_submit(
+                        msg,
+                        history,
+                        state,
+                        top_k,
+                        abolished,
+                        llm_p,
+                        llm_m,
+                        llm_b,
+                        db,
+                        target,
+                        context,
+                        use_tools,
+                        debug,
+                    )
                     for res in gen:
                         hist, detail, dbg, st, inp = res
                         # Calc button state
@@ -1246,7 +1147,15 @@ def create_app(
                         has_back = nav_index > 0
                         has_forward = nav_index < len(nav_history) - 1
 
-                        yield hist, detail, dbg, st, inp, gr.update(interactive=has_back), gr.update(interactive=has_forward)
+                        yield (
+                            hist,
+                            detail,
+                            dbg,
+                            st,
+                            inp,
+                            gr.update(interactive=has_back),
+                            gr.update(interactive=has_forward),
+                        )
 
                 chat_send.click(
                     fn=on_submit_with_nav,
@@ -1265,7 +1174,15 @@ def create_app(
                         chat_use_tools,
                         chat_debug,
                     ],
-                    outputs=[chat_bot, chat_detail, chat_debug_out, chat_state, chat_input, btn_back, btn_forward],
+                    outputs=[
+                        chat_bot,
+                        chat_detail,
+                        chat_debug_out,
+                        chat_state,
+                        chat_input,
+                        btn_back,
+                        btn_forward,
+                    ],
                 )
                 chat_input.submit(
                     fn=on_submit_with_nav,
@@ -1284,23 +1201,69 @@ def create_app(
                         chat_use_tools,
                         chat_debug,
                     ],
-                    outputs=[chat_bot, chat_detail, chat_debug_out, chat_state, chat_input, btn_back, btn_forward],
+                    outputs=[
+                        chat_bot,
+                        chat_detail,
+                        chat_debug_out,
+                        chat_state,
+                        chat_input,
+                        btn_back,
+                        btn_forward,
+                    ],
                 )
 
                 # Wire up Back/Forward
                 btn_back.click(
                     fn=on_back_click,
                     inputs=[
-                        chat_bot, chat_state, chat_top_k, chat_abolished, chat_llm_p, chat_llm_m, chat_llm_b, db_state, chat_target, chat_context, chat_use_tools, chat_debug
+                        chat_bot,
+                        chat_state,
+                        chat_top_k,
+                        chat_abolished,
+                        chat_llm_p,
+                        chat_llm_m,
+                        chat_llm_b,
+                        db_state,
+                        chat_target,
+                        chat_context,
+                        chat_use_tools,
+                        chat_debug,
                     ],
-                    outputs=[chat_bot, chat_detail, chat_debug_out, chat_state, chat_input, btn_back, btn_forward]
+                    outputs=[
+                        chat_bot,
+                        chat_detail,
+                        chat_debug_out,
+                        chat_state,
+                        chat_input,
+                        btn_back,
+                        btn_forward,
+                    ],
                 )
                 btn_forward.click(
                     fn=on_forward_click,
                     inputs=[
-                        chat_bot, chat_state, chat_top_k, chat_abolished, chat_llm_p, chat_llm_m, chat_llm_b, db_state, chat_target, chat_context, chat_use_tools, chat_debug
+                        chat_bot,
+                        chat_state,
+                        chat_top_k,
+                        chat_abolished,
+                        chat_llm_p,
+                        chat_llm_m,
+                        chat_llm_b,
+                        db_state,
+                        chat_target,
+                        chat_context,
+                        chat_use_tools,
+                        chat_debug,
                     ],
-                    outputs=[chat_bot, chat_detail, chat_debug_out, chat_state, chat_input, btn_back, btn_forward]
+                    outputs=[
+                        chat_bot,
+                        chat_detail,
+                        chat_debug_out,
+                        chat_state,
+                        chat_input,
+                        btn_back,
+                        btn_forward,
+                    ],
                 )
 
                 chat_clear.click(
@@ -1325,7 +1288,9 @@ def create_app(
                 def fill_example(example_text):
                     return example_text
 
-                ex1.click(fn=lambda: "휴학 신청 절차가 어떻게 되나요?", outputs=[chat_input])
+                ex1.click(
+                    fn=lambda: "휴학 신청 절차가 어떻게 되나요?", outputs=[chat_input]
+                )
                 ex2.click(fn=lambda: "교원인사규정 전문", outputs=[chat_input])
                 ex3.click(fn=lambda: "교원 연구년", outputs=[chat_input])
                 ex4.click(fn=lambda: "학칙 별표 1", outputs=[chat_input])

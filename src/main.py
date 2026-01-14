@@ -83,7 +83,7 @@ def _build_pipeline_signature(rules_hash: str, llm_signature: str) -> str:
 
 
 # --- Helper dataclasses for pipeline context ---
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Callable, List
 
 

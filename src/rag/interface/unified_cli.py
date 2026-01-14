@@ -34,6 +34,7 @@ except ImportError:
 def _get_default_llm_settings():
     """Get default LLM settings from centralized config."""
     from ..config import get_config
+
     config = get_config()
     return (
         config.llm_providers,
@@ -872,6 +873,7 @@ def cmd_synonym(args) -> int:
     from .cli import cmd_synonym as _cmd_synonym
 
     return _cmd_synonym(args)
+
 
 # =============================================================================
 # Entry Point

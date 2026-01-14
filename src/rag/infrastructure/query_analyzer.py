@@ -9,7 +9,6 @@ import json
 import os
 import re
 import unicodedata
-from collections import defaultdict
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
@@ -171,21 +170,59 @@ class QueryAnalyzer:
         "나는 학생",
         "저는 학생",
     ]
-    STAFF_KEYWORDS = ["직원", "행정", "사무", "참사", "주사", "승진", "전보", "직원인데"]
+    STAFF_KEYWORDS = [
+        "직원",
+        "행정",
+        "사무",
+        "참사",
+        "주사",
+        "승진",
+        "전보",
+        "직원인데",
+    ]
     AMBIGUOUS_AUDIENCE_KEYWORDS = ["징계", "처분", "위반", "제재", "윤리", "고충"]
 
     # Context keywords for better audience detection
     STUDENT_CONTEXT_KEYWORDS = [
-        "공부", "수업", "시험", "학점",
-        "F", "학사경고", "휴학", "자퇴", "졸업",
-        "장학금", "등록금", "기숙사", "생활관", "창업",
-        "학사경고", "제적", "재수강", "성적이의", "이의제기",
+        "공부",
+        "수업",
+        "시험",
+        "학점",
+        "F",
+        "학사경고",
+        "휴학",
+        "자퇴",
+        "졸업",
+        "장학금",
+        "등록금",
+        "기숙사",
+        "생활관",
+        "창업",
+        "학사경고",
+        "제적",
+        "재수강",
+        "성적이의",
+        "이의제기",
     ]
     FACULTY_CONTEXT_KEYWORDS = [
-        "강의", "연구", "논문", "연구년", "승진",
-        "교수", "책임시수", "업적", "안식년", "학회",
-        "파견", "연구비", "연구보조비", "호봉", "정년",
-        "교원연구년", "교원휴직", "해외파견",
+        "강의",
+        "연구",
+        "논문",
+        "연구년",
+        "승진",
+        "교수",
+        "책임시수",
+        "업적",
+        "안식년",
+        "학회",
+        "파견",
+        "연구비",
+        "연구보조비",
+        "호봉",
+        "정년",
+        "교원연구년",
+        "교원휴직",
+        "해외파견",
     ]
 
     # Weight presets for each query type: (bm25_weight, dense_weight)
@@ -199,7 +236,10 @@ class QueryAnalyzer:
             0.4,
             0.6,
         ),  # Slightly favor semantic, but still consider keywords
-        QueryType.INTENT: (0.6, 0.4),  # Intent queries: balanced with slight BM25 favor (keywords injected)
+        QueryType.INTENT: (
+            0.6,
+            0.4,
+        ),  # Intent queries: balanced with slight BM25 favor (keywords injected)
         QueryType.GENERAL: (0.5, 0.5),  # Balanced default (increased BM25 from 0.3)
     }
 
@@ -232,31 +272,70 @@ class QueryAnalyzer:
         (re.compile(r"(수업|강의).*안.*하.*싶"), ["휴강", "보강", "강의"]),
         (re.compile(r"연구.*(부정|신고).*싶"), ["연구윤리", "부정행위", "신고"]),
         # 2026-01-08: REMOVED broad 'want' pattern to reduce noise
-        # (re.compile(r".*싶어"), ["희망", "원함"]), 
+        # (re.compile(r".*싶어"), ["희망", "원함"]),
         # New patterns added for specific failure cases
         (re.compile(r"장학금.*(받|타|신청).*싶"), ["장학금", "신청", "지급"]),
         (re.compile(r"(학회|출장).*(가|참석).*싶"), ["국외여비", "출장", "학회"]),
         (re.compile(r"(공부|학업).*하기.*싫"), ["휴학", "자퇴"]),
         # 2026-01-08 Improvements
-        (re.compile(r"(졸업|학업).*(미루|연기|늦추).*싶"), ["학사학위취득유예", "졸업유예"]),
+        (
+            re.compile(r"(졸업|학업).*(미루|연기|늦추).*싶"),
+            ["학사학위취득유예", "졸업유예"],
+        ),
         (re.compile(r"(아파|병|편찮).*결석.*(쓰|하|싶)"), ["유고결석", "병가"]),
-        (re.compile(r"(강의실|교실|공간).*(빌리|대여|예약|쓰).*싶"), ["시설물사용", "대관"]),
+        (
+            re.compile(r"(강의실|교실|공간).*(빌리|대여|예약|쓰).*싶"),
+            ["시설물사용", "대관"],
+        ),
         (re.compile(r"창업.*(지원|하고).*싶"), ["창업", "창업지원"]),
         # 2026-01-12 Improvements for failed queries
-        (re.compile(r"(수강신청|수강).*(기간|언제)"), ["수강신청", "수강신청기간", "학사일정"]),
-        (re.compile(r"(편입학|편입).*(자격|요건|조건|어떻게)"), ["편입", "편입학", "편입요건"]),
-        (re.compile(r"학사경고.*(3|세|셋|삼).*(번|회|차).*(제적|퇴학)"), ["학사경고", "제적", "학적유지"]),
-        (re.compile(r"(육아|출산).*(휴직|휴가).*(신청|하려)"), ["육아휴직", "출산휴가", "휴직신청"]),
-        (re.compile(r"(아파|병|몸이).*(병가|휴가).*(쓰|신청|하)"), ["병가", "휴직", "휴가"]),
+        (
+            re.compile(r"(수강신청|수강).*(기간|언제)"),
+            ["수강신청", "수강신청기간", "학사일정"],
+        ),
+        (
+            re.compile(r"(편입학|편입).*(자격|요건|조건|어떻게)"),
+            ["편입", "편입학", "편입요건"],
+        ),
+        (
+            re.compile(r"학사경고.*(3|세|셋|삼).*(번|회|차).*(제적|퇴학)"),
+            ["학사경고", "제적", "학적유지"],
+        ),
+        (
+            re.compile(r"(육아|출산).*(휴직|휴가).*(신청|하려)"),
+            ["육아휴직", "출산휴가", "휴직신청"],
+        ),
+        (
+            re.compile(r"(아파|병|몸이).*(병가|휴가).*(쓰|신청|하)"),
+            ["병가", "휴직", "휴가"],
+        ),
         (re.compile(r"징계.*(절차|과정|어떻게)"), ["징계", "징계절차", "징계위원회"]),
-        (re.compile(r"(교수|선생님).*(과제|기한|마감).*(짧|빡|불합리)"), ["학생고충", "수업권", "학생상담"]),
+        (
+            re.compile(r"(교수|선생님).*(과제|기한|마감).*(짧|빡|불합리)"),
+            ["학생고충", "수업권", "학생상담"],
+        ),
         # 2026-01-12 Additional patterns for remaining failures
-        (re.compile(r"(장학금|장학).*(받|타|신청|어떻게)"), ["장학금", "장학", "장학금신청"]),
-        (re.compile(r"(편입|편입학).*(자격|요건|어떻게|돼)"), ["편입", "편입학", "편입자격"]),
-        (re.compile(r"(육아|육아휴직).*(신청|하려면|어떻게)"), ["육아휴직", "휴직", "휴직신청"]),
+        (
+            re.compile(r"(장학금|장학).*(받|타|신청|어떻게)"),
+            ["장학금", "장학", "장학금신청"],
+        ),
+        (
+            re.compile(r"(편입|편입학).*(자격|요건|어떻게|돼)"),
+            ["편입", "편입학", "편입자격"],
+        ),
+        (
+            re.compile(r"(육아|육아휴직).*(신청|하려면|어떻게)"),
+            ["육아휴직", "휴직", "휴직신청"],
+        ),
         (re.compile(r"(병가|병).*(쓰고|신청|싶어)"), ["병가", "휴가", "휴직"]),
-        (re.compile(r"(강의실|시설).*(예약|빌리|쓰)"), ["시설사용", "시설예약", "대관"]),
-        (re.compile(r"(창업|학생창업).*(지원|받|어떻게)"), ["창업", "창업지원", "학생창업"]),
+        (
+            re.compile(r"(강의실|시설).*(예약|빌리|쓰)"),
+            ["시설사용", "시설예약", "대관"],
+        ),
+        (
+            re.compile(r"(창업|학생창업).*(지원|받|어떻게)"),
+            ["창업", "창업지원", "학생창업"],
+        ),
     ]
     INTENT_MAX_MATCHES = 3
 
@@ -297,7 +376,9 @@ class QueryAnalyzer:
         """
         self._llm_client = llm_client
         self._cache: Dict[str, QueryRewriteResult] = {}  # Query rewrite cache
-        self._synonym_session_cache: Dict[str, List[str]] = {}  # LLM-generated synonym cache
+        self._synonym_session_cache: Dict[
+            str, List[str]
+        ] = {}  # LLM-generated synonym cache
         self._synonyms = self._load_synonyms(synonyms_path)
         self._intent_rules = self._load_intents(intents_path)
 
@@ -340,18 +421,18 @@ class QueryAnalyzer:
             "sure, here are",
             "search keywords:",
         ]
-        
+
         lower_text = text.lower()
         for prefix in prefixes:
             if lower_text.startswith(prefix):
-                text = text[len(prefix):].strip()
+                text = text[len(prefix) :].strip()
                 lower_text = text.lower()
-        
+
         # 4. If there are still colons, might be "Concept: Keyword", take the part after colon
         if ":" in text:
             parts = text.split(":")
             # Only split if it's a short label followed by keywords
-            if len(parts[0]) < 20: 
+            if len(parts[0]) < 20:
                 text = parts[1].strip()
 
         return text.strip()
@@ -374,10 +455,20 @@ class QueryAnalyzer:
         Rewrite query and return detailed metadata.
         """
         if not query:
-             return QueryRewriteResult(original="", rewritten="", method="none", from_cache=False, used_llm=False, used_intent=False, used_synonyms=False, fallback=False, matched_intents=[])
+            return QueryRewriteResult(
+                original="",
+                rewritten="",
+                method="none",
+                from_cache=False,
+                used_llm=False,
+                used_intent=False,
+                used_synonyms=False,
+                fallback=False,
+                matched_intents=[],
+            )
 
         query = unicodedata.normalize("NFC", query)
-        
+
         # Check cache first
         if query in self._cache:
             cached = self._cache[query]
@@ -399,11 +490,11 @@ class QueryAnalyzer:
             intent_keywords = self._intent_keywords_from_matches(intent_matches)
             used_intent = bool(intent_matches)
             matched_intents = [m.label or m.intent_id for m in intent_matches]
-            
+
             cleaned = self.clean_query(query)
             used_synonyms = bool(self._get_synonym_expansions(cleaned))
             rewritten = self.expand_query(query)
-            
+
             result = QueryRewriteResult(
                 original=query,
                 rewritten=rewritten,
@@ -425,12 +516,13 @@ class QueryAnalyzer:
                 user_message=query,
                 temperature=0.0,
             )
-            
+
             # Parse JSON response
             import json
-            normalized_query = query # Default to original
+
+            normalized_query = query  # Default to original
             rewritten_keywords = ""
-            
+
             # Simple JSON extraction wrapper
             try:
                 # Remove Markdown code blocks if present
@@ -439,7 +531,7 @@ class QueryAnalyzer:
                     clean_json = clean_json[7:]
                 if clean_json.endswith("```"):
                     clean_json = clean_json[:-3]
-                
+
                 data = json.loads(clean_json.strip())
                 normalized_query = data.get("normalized", query)
                 keywords = data.get("keywords", [])
@@ -462,15 +554,17 @@ class QueryAnalyzer:
             intent_keywords = self._intent_keywords_from_matches(intent_matches)
             used_intent = bool(intent_matches)
             matched_intents = [m.label or m.intent_id for m in intent_matches]
-            
+
             # Merge LLM keywords with Intent keywords
             final_keywords = rewritten_keywords
             if intent_keywords:
-                final_keywords = self._merge_keywords(rewritten_keywords, intent_keywords)
-            
+                final_keywords = self._merge_keywords(
+                    rewritten_keywords, intent_keywords
+                )
+
             if not final_keywords.strip():
-                 # Final safety net: Treat as failure to trigger fallback
-                 raise ValueError("Empty keywords from LLM")
+                # Final safety net: Treat as failure to trigger fallback
+                raise ValueError("Empty keywords from LLM")
 
             result = QueryRewriteResult(
                 original=query,
@@ -485,12 +579,12 @@ class QueryAnalyzer:
             )
             self._cache[query] = result
             return result
-            
+
         except Exception:
             # On any error, fall back to synonym expansion
             intent_matches = self._match_intents(query)
             matched_intents = [m.label or m.intent_id for m in intent_matches]
-            
+
             cleaned = self.clean_query(query)
             used_synonyms = bool(self._get_synonym_expansions(cleaned))
             rewritten = self.expand_query(query)
@@ -514,9 +608,9 @@ class QueryAnalyzer:
         """
         if not query:
             return QueryType.GENERAL
-            
+
         query = unicodedata.normalize("NFC", query)
-        
+
         # Check for article references (highest priority for exact match)
         if ARTICLE_PATTERN.search(query):
             return QueryType.ARTICLE_REFERENCE
@@ -529,7 +623,7 @@ class QueryAnalyzer:
         # These should be checked BEFORE academic keywords
         intent_markers = ["싶어", "싫어", "하고싶", "받고싶", "가고싶"]
         has_intent_marker = any(marker in query for marker in intent_markers)
-        
+
         if has_intent_marker and self.has_intent(query):
             return QueryType.INTENT
 
@@ -566,7 +660,7 @@ class QueryAnalyzer:
         """Return matching audiences for the query."""
         if not query:
             return [Audience.ALL]
-            
+
         query = unicodedata.normalize("NFC", query)
         query_lower = query.lower()
         matches: List[Audience] = []
@@ -588,7 +682,7 @@ class QueryAnalyzer:
             context_matches.append(Audience.STUDENT)
         if any(k in query_lower for k in self.FACULTY_CONTEXT_KEYWORDS):
             context_matches.append(Audience.FACULTY)
-        
+
         if context_matches:
             return context_matches
 
@@ -928,7 +1022,7 @@ class QueryAnalyzer:
     def _normalize_for_matching(self, text: str) -> str:
         """
         Normalize text for flexible intent matching.
-        
+
         Handles:
         - Whitespace removal
         - Common polite/formal endings (요, 습니다, etc.)
@@ -937,19 +1031,19 @@ class QueryAnalyzer:
         """
         if not text:
             return ""
-        
+
         text = unicodedata.normalize("NFC", text)
         # Remove all whitespace
-        normalized = re.sub(r'\s+', '', text)
+        normalized = re.sub(r"\s+", "", text)
         # Remove common polite/formal endings for flexibility (extended list)
         # Order matters: longer patterns first
         normalized = re.sub(
-            r'(어떻게돼\?*|어떻게해\?*|언제야\?*|뭐야\?*|인가요\?*|할까요\?*|하나요\?*|'
-            r'하려면\?*|신청하려면\?*|받으려면\?*|되려면\?*|가려면\?*|'
-            r'싶은데|싶어요|싶습니다|싶어|'
-            r'습니다|니다|세요|줘|주세요|요|\?|!)$', 
-            '', 
-            normalized
+            r"(어떻게돼\?*|어떻게해\?*|언제야\?*|뭐야\?*|인가요\?*|할까요\?*|하나요\?*|"
+            r"하려면\?*|신청하려면\?*|받으려면\?*|되려면\?*|가려면\?*|"
+            r"싶은데|싶어요|싶습니다|싶어|"
+            r"습니다|니다|세요|줘|주세요|요|\?|!)$",
+            "",
+            normalized,
         )
         return normalized
 
@@ -980,8 +1074,8 @@ class QueryAnalyzer:
                         score += 4  # Exact match: highest priority
                     else:
                         score += 2  # Partial match: same as pattern
-            
-            # Note: We do NOT match on rule.keywords here. 
+
+            # Note: We do NOT match on rule.keywords here.
             # Keywords are for query expansion (output), not for intent detection (input).
             # Using keywords for detection causes false positives (e.g. "장학금" keyword matching "장학금 규정")
 
@@ -993,7 +1087,9 @@ class QueryAnalyzer:
                         intent_id=rule.intent_id,
                         label=rule.label or rule.intent_id,
                         keywords=rule.keywords,
-                        score=score if not is_legacy else score - 1,  # Penalize legacy patterns
+                        score=score
+                        if not is_legacy
+                        else score - 1,  # Penalize legacy patterns
                     )
                 )
 

@@ -176,3 +176,46 @@ uv run regulation serve --mcp              # MCP Server
 - `QUICKSTART.md` - User guide
 - `LLM_GUIDE.md` - LLM configuration
 - `SCHEMA_REFERENCE.md` - JSON schema spec
+
+## Security & Input Validation
+
+### Query Validation
+All user queries are validated in `QueryHandler.validate_query()`:
+- **Max length**: 500 characters
+- **Forbidden patterns**: XSS, SQL injection, template injection
+- **Control characters**: Blocked (except newlines)
+
+```python
+# Validation patterns (src/rag/interface/query_handler.py)
+FORBIDDEN_PATTERNS = [
+    r"<script",           # XSS
+    r"javascript:",       # JavaScript URL
+    r"on\w+\s*=",        # Event handlers
+    r"<iframe",          # Iframe injection
+    r"DROP\s+TABLE",     # SQL injection
+    r"\$\{.*\}",         # Template injection
+    r"\{\{.*\}\}",       # Jinja2 template
+]
+```
+
+### Prompt Management
+LLM prompts are externalized to `data/config/prompts.json`:
+```python
+# Load prompt (src/rag/application/search_usecase.py)
+from src.rag.application.search_usecase import _load_prompt
+prompt = _load_prompt("regulation_qa")
+```
+
+### Logging Best Practices
+- Use `logging.getLogger(__name__)` instead of `print()`
+- Log levels: `debug` for dev, `info` for operations, `warning/error` for issues
+- Never log sensitive data (API keys, user PII)
+
+```python
+import logging
+logger = logging.getLogger(__name__)
+
+logger.debug("Processing query: %s", query[:50])  # Truncate for safety
+logger.info("Search completed in %.2fs", elapsed)
+logger.error("LLM connection failed: %s", error)
+```

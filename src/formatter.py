@@ -138,6 +138,7 @@ class RegulationFormatter:
             except (ValueError, KeyError, AttributeError) as e:
                 # Metadata extraction is optional; log and continue
                 import logging
+
                 logging.getLogger(__name__).debug(f"Metadata extraction failed: {e}")
                 extracted_metadata = None
 
@@ -634,9 +635,7 @@ class RegulationFormatter:
             )
         else:
             # Fallback if regex fails but value exists
-            return self._create_node(
-                lvl, raw_val, raw_val, None, confidence_score=0.5
-            )
+            return self._create_node(lvl, raw_val, raw_val, None, confidence_score=0.5)
 
     def _build_article_node(self, art: Dict) -> Dict:
         """Build article node with paragraphs, items, and subitems.

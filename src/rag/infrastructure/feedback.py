@@ -64,6 +64,7 @@ class FeedbackCollector:
     def _default_path(self) -> str:
         """Get default feedback log path."""
         from ..config import get_config
+
         return str(get_config().feedback_log_path_resolved)
 
     def _ensure_file_exists(self):

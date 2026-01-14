@@ -5,8 +5,8 @@ Provides regulation-level retrieval for "전문/전체" requests.
 """
 
 import json
-import unicodedata
 import re
+import unicodedata
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional, Tuple
@@ -144,9 +144,7 @@ class FullViewUseCase:
             addenda=addenda,
         )
 
-    def get_article_view(
-        self, identifier: str, article_no: int
-    ) -> Optional[dict]:
+    def get_article_view(self, identifier: str, article_no: int) -> Optional[dict]:
         """Return specific article node by rule_code/title and article number."""
         json_path = self._resolve_json_path()
         if not json_path:
@@ -159,10 +157,10 @@ class FullViewUseCase:
             return None
 
         target_display_no = f"제{article_no}조"
-        
+
         # Traverse content to find the article
         found_node = None
-        
+
         def find_recursive(nodes: List[dict]):
             nonlocal found_node
             if found_node:
@@ -178,28 +176,28 @@ class FullViewUseCase:
                     if "".join(display_no.split()) == target_display_no:
                         found_node = node
                         return
-                
+
                 children = node.get("children", [])
                 if children:
                     find_recursive(children)
 
         find_recursive(doc.get("content", []) or [])
-        
+
         # Also check addenda for articles
         if not found_node:
             find_recursive(doc.get("addenda", []) or [])
-            
+
         return found_node
 
     def get_chapter_node(self, doc: dict, chapter_no: int) -> Optional[dict]:
         """Get a specific chapter node from the regulation."""
         if not doc:
             return None
-        
+
         target_display_no = f"제{chapter_no}장"
-        
+
         found_node = None
-        
+
         def find_recursive(nodes: List[dict]):
             nonlocal found_node
             if found_node:
@@ -215,7 +213,7 @@ class FullViewUseCase:
                     if "".join(display_no.split()) == target_display_no:
                         found_node = node
                         return
-                
+
                 children = node.get("children", [])
                 if children:
                     find_recursive(children)
@@ -398,10 +396,7 @@ class FullViewUseCase:
         if not text:
             return "", None
         cleaned = (
-            text.replace("[", "")
-            .replace("]", "")
-            .replace("<", "")
-            .replace(">", "")
+            text.replace("[", "").replace("]", "").replace("<", "").replace(">", "")
         )
         match = ATTACHMENT_LABEL_PATTERN.search(cleaned)
         if match:
@@ -495,7 +490,7 @@ class FullViewUseCase:
             if json_file:
                 # Apply validation to sync state file
                 if not self._is_valid_json_file(json_file):
-                    pass # Skip plan files from sync state for full view
+                    pass  # Skip plan files from sync state for full view
                 else:
                     file_path = Path(json_file)
                     if file_path.is_absolute() and file_path.exists():
@@ -518,10 +513,17 @@ class FullViewUseCase:
             ]
             if json_files:
                 # Prioritize '규정집.json' if it exists (handle NFD normalization for Mac)
-                target = next((p for p in json_files if "규정집" in unicodedata.normalize("NFC", p.name)), None)
+                target = next(
+                    (
+                        p
+                        for p in json_files
+                        if "규정집" in unicodedata.normalize("NFC", p.name)
+                    ),
+                    None,
+                )
                 if target:
-                   self.json_path = str(target)
-                   return self.json_path
+                    self.json_path = str(target)
+                    return self.json_path
 
                 latest = max(json_files, key=lambda p: p.stat().st_mtime)
                 self.json_path = str(latest)

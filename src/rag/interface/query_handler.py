@@ -14,11 +14,12 @@ Supported query types:
 - Ask: LLM-generated answer with sources
 """
 
+import logging
 import re
 import unicodedata
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from ..application.full_view_usecase import FullViewUseCase
 from ..application.search_usecase import (
@@ -27,8 +28,10 @@ from ..application.search_usecase import (
     SearchUseCase,
 )
 from ..domain.entities import RegulationStatus
-from ..infrastructure.hybrid_search import Audience, QueryAnalyzer
+from ..infrastructure.query_analyzer import Audience, QueryAnalyzer
 from ..infrastructure.json_loader import JSONDocumentLoader
+
+logger = logging.getLogger(__name__)
 from .chat_logic import (
     attachment_label_variants,
     expand_followup_query,
@@ -55,6 +58,7 @@ from .query_suggestions import format_suggestions_for_cli, get_followup_suggesti
 try:
     from ..infrastructure.function_gemma_adapter import FunctionGemmaAdapter
     from ..infrastructure.tool_executor import ToolExecutor
+
     FUNCTION_GEMMA_AVAILABLE = True
 except ImportError:
     FUNCTION_GEMMA_AVAILABLE = False
@@ -64,6 +68,7 @@ except ImportError:
 
 class QueryType(Enum):
     """Query result types."""
+
     OVERVIEW = "overview"
     ARTICLE = "article"
     CHAPTER = "chapter"
@@ -78,6 +83,7 @@ class QueryType(Enum):
 @dataclass
 class QueryContext:
     """Context for query processing."""
+
     state: Dict[str, Any] = field(default_factory=dict)
     history: List[Dict[str, str]] = field(default_factory=list)
     interactive: bool = False
@@ -88,6 +94,7 @@ class QueryContext:
 @dataclass
 class QueryOptions:
     """Options for query processing."""
+
     top_k: int = 5
     force_mode: Optional[str] = None
     include_abolished: bool = False
@@ -105,6 +112,7 @@ class QueryOptions:
 @dataclass
 class QueryResult:
     """Unified query result."""
+
     type: QueryType
     success: bool
     # Markdown formatted content for CLI/Web display
@@ -124,10 +132,23 @@ class QueryResult:
 class QueryHandler:
     """
     Unified query handler for all interfaces.
-    
-    Extracts common logic from CLI's _perform_unified_search and 
+
+    Extracts common logic from CLI's _perform_unified_search and
     Web UI's chat_respond into a single reusable module.
     """
+
+    # Security constants for input validation
+    MAX_QUERY_LENGTH = 500
+    FORBIDDEN_PATTERNS = [
+        r"<script[^>]*>.*?</script>",  # XSS prevention
+        r"javascript:",  # JavaScript URL prevention
+        r"on\w+\s*=",  # Event handler prevention
+        r"DROP\s+TABLE",  # SQL Injection prevention
+        r"DELETE\s+FROM",  # SQL Injection prevention
+        r"\$\{.*\}",  # Template Injection prevention
+        r"<iframe",  # iframe injection prevention
+        r"<embed",  # embed tag prevention
+    ]
 
     def __init__(
         self,
@@ -142,7 +163,9 @@ class QueryHandler:
         self.llm_client = llm_client
         self.use_reranker = use_reranker
         self.loader = JSONDocumentLoader()
-        self.full_view_usecase = FullViewUseCase(loader=self.loader, json_path=json_path)
+        self.full_view_usecase = FullViewUseCase(
+            loader=self.loader, json_path=json_path
+        )
         self.query_analyzer = QueryAnalyzer()
         self._last_query_rewrite = None
 
@@ -151,7 +174,9 @@ class QueryHandler:
         if FUNCTION_GEMMA_AVAILABLE and not self._function_gemma_adapter:
             if function_gemma_client:
                 # Check if function_gemma_client is already a FunctionGemmaAdapter
-                if hasattr(function_gemma_client, 'process_query') and hasattr(function_gemma_client, '_tool_executor'):
+                if hasattr(function_gemma_client, "process_query") and hasattr(
+                    function_gemma_client, "_tool_executor"
+                ):
                     # It's already an adapter, use it directly
                     self._function_gemma_adapter = function_gemma_client
                 else:
@@ -163,6 +188,37 @@ class QueryHandler:
         if not query:
             return ""
         return unicodedata.normalize("NFC", query)
+
+    def validate_query(self, query: str) -> Tuple[bool, str]:
+        """
+        Validate user query for security and format.
+
+        Args:
+            query: Query string to validate
+
+        Returns:
+            (is_valid, error_message) tuple
+            - is_valid: True if validation passed, False otherwise
+            - error_message: User-facing error message if validation failed
+        """
+        # 1. Length validation
+        if len(query) > self.MAX_QUERY_LENGTH:
+            return False, f"쿼리가 너무 깁니다 (최대 {self.MAX_QUERY_LENGTH}자)"
+
+        # 2. Empty query validation
+        if not query or not query.strip():
+            return False, "검색어를 입력해주세요"
+
+        # 3. Security pattern validation
+        for pattern in self.FORBIDDEN_PATTERNS:
+            if re.search(pattern, query, re.IGNORECASE | re.DOTALL):
+                return False, "허용되지 않는 문자가 포함되어 있습니다"
+
+        # 4. Control character validation (except newline, carriage return, tab)
+        if any(ord(c) < 32 and c not in "\n\r\t" for c in query):
+            return False, "허용되지 않는 제어 문자가 포함되어 있습니다"
+
+        return True, ""
 
     def _setup_function_gemma(self, function_gemma_client) -> None:
         """Initialize FunctionGemma adapter with tool executor."""
@@ -189,7 +245,7 @@ class QueryHandler:
             query_analyzer=self.query_analyzer,
             llm_client=self.llm_client,
         )
-        print(f"[DEBUG] _setup_function_gemma: Created tool_executor={tool_executor}")
+        logger.debug(f"_setup_function_gemma: Created tool_executor={tool_executor}")
 
         self._function_gemma_adapter = FunctionGemmaAdapter(
             llm_client=function_gemma_client,
@@ -204,7 +260,7 @@ class QueryHandler:
     ) -> QueryResult:
         """
         Process query using FunctionGemma tool-based approach.
-        
+
         FunctionGemma selects and executes tools, then generates
         the final answer using the base LLM.
         """
@@ -221,6 +277,7 @@ class QueryHandler:
 
                 if result.arguments:
                     import json
+
                     try:
                         args_str = json.dumps(result.arguments, ensure_ascii=False)
                         debug_msg += f"\n   🔹 Args: `{args_str}`"
@@ -263,7 +320,6 @@ class QueryHandler:
                 content=f"FunctionGemma 처리 오류: {str(e)}. 기본 검색을 시도해주세요.",
             )
 
-
     def process_query(
         self,
         query: str,
@@ -272,7 +328,7 @@ class QueryHandler:
     ) -> QueryResult:
         """
         Main entry point for query processing.
-        
+
         Analyzes the query and routes to appropriate handler.
         If use_function_gemma is enabled and adapter is available,
         uses FunctionGemma for tool-based processing.
@@ -281,11 +337,13 @@ class QueryHandler:
         options = options or QueryOptions()
         query = self._normalize_query(query)
 
-        if not query or not query.strip():
+        # Input validation
+        is_valid, error_msg = self.validate_query(query)
+        if not is_valid:
             return QueryResult(
                 type=QueryType.ERROR,
                 success=False,
-                content="검색어를 입력해주세요.",
+                content=f"⚠️ {error_msg}",
             )
 
         query = query.strip()
@@ -344,7 +402,10 @@ class QueryHandler:
             return self._enrich_with_suggestions(result, query)
 
         # Check audience ambiguity
-        if options.audience_override is None and self.query_analyzer.is_audience_ambiguous(query):
+        if (
+            options.audience_override is None
+            and self.query_analyzer.is_audience_ambiguous(query)
+        ):
             return QueryResult(
                 type=QueryType.CLARIFICATION,
                 success=True,
@@ -362,7 +423,6 @@ class QueryHandler:
         # Enrich with suggestions before returning
         return self._enrich_with_suggestions(result, query)
 
-
     def process_query_stream(
         self,
         query: str,
@@ -377,8 +437,10 @@ class QueryHandler:
         options = options or QueryOptions()
         query = self._normalize_query(query)
 
-        if not query or not query.strip():
-            yield {"type": "error", "content": "검색어를 입력해주세요."}
+        # Input validation
+        is_valid, error_msg = self.validate_query(query)
+        if not is_valid:
+            yield {"type": "error", "content": error_msg}
             return
 
         query = query.strip()
@@ -454,22 +516,33 @@ class QueryHandler:
 
                 # Yield usage info
                 if q_result.debug_info:
-                    yield {"type": "progress", "content": f"🛠️ 사용된 도구:\n{q_result.debug_info}"}
+                    yield {
+                        "type": "progress",
+                        "content": f"🛠️ 사용된 도구:\n{q_result.debug_info}",
+                    }
 
                 # Yield final answer
-                yield {"type": "complete", "content": q_result.content, "data": q_result.data, "suggestions": q_result.suggestions}
+                yield {
+                    "type": "complete",
+                    "content": q_result.content,
+                    "data": q_result.data,
+                    "suggestions": q_result.suggestions,
+                }
                 return
             else:
                 yield {"type": "error", "content": q_result.content}
                 return
 
         # Check audience ambiguity
-        if options.audience_override is None and self.query_analyzer.is_audience_ambiguous(query):
+        if (
+            options.audience_override is None
+            and self.query_analyzer.is_audience_ambiguous(query)
+        ):
             yield {
                 "type": "clarification",
                 "clarification_type": "audience",
                 "options": ["교수", "학생", "직원"],
-                "content": "질문 대상을 선택해주세요: 교수, 학생, 직원"
+                "content": "질문 대상을 선택해주세요: 교수, 학생, 직원",
             }
             return
 
@@ -519,7 +592,6 @@ class QueryHandler:
 
         return result
 
-
     def _yield_result(self, result: QueryResult):
         """Helper to yield a QueryResult as stream events."""
         if result.type == QueryType.CLARIFICATION:
@@ -527,7 +599,7 @@ class QueryHandler:
                 "type": "clarification",
                 "clarification_type": result.clarification_type,
                 "options": result.clarification_options,
-                "content": result.content
+                "content": result.content,
             }
         elif result.type == QueryType.ERROR:
             yield {"type": "error", "content": result.content}
@@ -539,9 +611,15 @@ class QueryHandler:
             yield {
                 "type": "metadata",
                 "rule_code": result.data.get("rule_code"),
-                "regulation_title": result.data.get("title") or result.data.get("regulation_title")
+                "regulation_title": result.data.get("title")
+                or result.data.get("regulation_title"),
             }
-            yield {"type": "complete", "content": result.content, "data": result.data, "suggestions": result.suggestions}
+            yield {
+                "type": "complete",
+                "content": result.content,
+                "data": result.data,
+                "suggestions": result.suggestions,
+            }
             if result.state_update:
                 yield {"type": "state", "update": result.state_update}
 
@@ -556,8 +634,11 @@ class QueryHandler:
         context = context or QueryContext()
 
         if self.store is None or self.store.count() == 0 or self.llm_client is None:
-             yield {"type": "error", "content": "시스템이 초기화되지 않았거나 DB가 비어있습니다."}
-             return
+            yield {
+                "type": "error",
+                "content": "시스템이 초기화되지 않았거나 DB가 비어있습니다.",
+            }
+            return
 
         search_usecase = SearchUseCase(
             self.store,
@@ -586,7 +667,10 @@ class QueryHandler:
             if expanded != question:
                 search_query = expanded
                 if options.show_debug:
-                    yield {"type": "progress", "content": f"🔄 문맥 반영: {search_query}"}
+                    yield {
+                        "type": "progress",
+                        "content": f"🔄 문맥 반영: {search_query}",
+                    }
 
         # Use SearchUseCase.ask_stream
         for event in search_usecase.ask_stream(
@@ -597,7 +681,7 @@ class QueryHandler:
             history_text=history_text,
             search_query=search_query,
         ):
-             yield event
+            yield event
 
         self._last_query_rewrite = search_usecase.get_last_query_rewrite()
 
@@ -624,7 +708,9 @@ class QueryHandler:
             candidates = self.loader.find_regulation_candidates(json_path, query)
             if len(candidates) == 1:
                 # Found exactly one match
-                overview = self.loader.get_regulation_overview(json_path, candidates[0][0])
+                overview = self.loader.get_regulation_overview(
+                    json_path, candidates[0][0]
+                )
             elif len(candidates) > 1:
                 # Multiple matches found
                 # Check for exact match (ignoring spaces)
@@ -636,7 +722,9 @@ class QueryHandler:
                         break
 
                 if exact_match:
-                    overview = self.loader.get_regulation_overview(json_path, exact_match[0])
+                    overview = self.loader.get_regulation_overview(
+                        json_path, exact_match[0]
+                    )
                 else:
                     return QueryResult(
                         type=QueryType.CLARIFICATION,
@@ -653,17 +741,21 @@ class QueryHandler:
                 )
 
         if not overview:
-             return QueryResult(
+            return QueryResult(
                 type=QueryType.ERROR,
                 success=False,
                 content="해당 규정을 찾을 수 없습니다.",
             )
 
         # Build markdown content
-        status_label = "✅ 시행중" if overview.status == RegulationStatus.ACTIVE else "❌ 폐지"
+        status_label = (
+            "✅ 시행중" if overview.status == RegulationStatus.ACTIVE else "❌ 폐지"
+        )
         lines = [f"## 📋 {overview.title} ({overview.rule_code})"]
         lines.append("")
-        lines.append(f"**상태**: {status_label} | **총 조항 수**: {overview.article_count}개")
+        lines.append(
+            f"**상태**: {status_label} | **총 조항 수**: {overview.article_count}개"
+        )
         lines.append("")
 
         if overview.chapters:
@@ -680,17 +772,18 @@ class QueryHandler:
 
         lines.append("")
         lines.append("---")
-        lines.append(f"💡 특정 조항 검색: `{overview.title} 제N조` 또는 `{overview.rule_code} 제N조`")
+        lines.append(
+            f"💡 특정 조항 검색: `{overview.title} 제N조` 또는 `{overview.rule_code} 제N조`"
+        )
 
         # Check for similar regulations
         is_regulation_only = REGULATION_ONLY_PATTERN.match(query) is not None
         other_matches = []
         if is_regulation_only:
             all_titles = self.loader.get_regulation_titles(json_path)
-            other_matches = sorted([
-                t for t in all_titles.values()
-                if query in t and t != overview.title
-            ])
+            other_matches = sorted(
+                [t for t in all_titles.values() if query in t and t != overview.title]
+            )
             if other_matches:
                 lines.append("")
                 lines.append("❓ **혹시 다음 규정을 찾으셨나요?**")
@@ -704,7 +797,9 @@ class QueryHandler:
             data={
                 "title": overview.title,
                 "rule_code": overview.rule_code,
-                "status": overview.status.value if hasattr(overview.status, 'value') else str(overview.status),
+                "status": overview.status.value
+                if hasattr(overview.status, "value")
+                else str(overview.status),
                 "article_count": overview.article_count,
                 "chapters": [
                     {
@@ -749,7 +844,9 @@ class QueryHandler:
             )
 
         selected = matches[0]
-        article_node = self.full_view_usecase.get_article_view(selected.rule_code, article_no)
+        article_node = self.full_view_usecase.get_article_view(
+            selected.rule_code, article_no
+        )
 
         if not article_node:
             return QueryResult(
@@ -876,7 +973,9 @@ class QueryHandler:
 
         selected = matches[0]
         label_variants = attachment_label_variants(label)
-        tables = self.full_view_usecase.find_tables(selected.rule_code, table_no, label_variants)
+        tables = self.full_view_usecase.find_tables(
+            selected.rule_code, table_no, label_variants
+        )
 
         if not tables:
             label_text = label or "별표"
@@ -958,10 +1057,9 @@ class QueryHandler:
             )
 
         selected = matches[0]
-        view = (
-            self.full_view_usecase.get_full_view(selected.rule_code)
-            or self.full_view_usecase.get_full_view(selected.title)
-        )
+        view = self.full_view_usecase.get_full_view(
+            selected.rule_code
+        ) or self.full_view_usecase.get_full_view(selected.title)
 
         if not view:
             return QueryResult(
@@ -1060,11 +1158,15 @@ class QueryHandler:
         ]
         for i, r in enumerate(results, 1):
             reg_title = r.chunk.parent_path[0] if r.chunk.parent_path else r.chunk.title
-            path_segments = clean_path_segments(r.chunk.parent_path) if r.chunk.parent_path else []
+            path_segments = (
+                clean_path_segments(r.chunk.parent_path) if r.chunk.parent_path else []
+            )
             path = " > ".join(path_segments[-2:]) if path_segments else r.chunk.title
 
             # 새로 추가: 매칭 설명 생성
-            _, matched_kw = format_search_result_with_explanation(r, query, show_score=False)
+            _, matched_kw = format_search_result_with_explanation(
+                r, query, show_score=False
+            )
             explanation_short = matched_kw if matched_kw else "관련 내용"
 
             table_rows.append(
@@ -1081,7 +1183,9 @@ class QueryHandler:
         )
 
         # 매칭 설명 생성
-        explanation, _ = format_search_result_with_explanation(top, query, show_score=options.show_debug)
+        explanation, _ = format_search_result_with_explanation(
+            top, query, show_score=options.show_debug
+        )
 
         content = "\n".join(table_rows)
         content += f"\n\n---\n\n### 🏆 1위 결과: {top.chunk.rule_code}\n\n"
@@ -1099,16 +1203,20 @@ class QueryHandler:
                 if r.chunk.parent_path
                 else r.chunk.title
             )
-            formatted_results.append({
-                "rank": i,
-                "regulation_name": reg_name,
-                "rule_code": r.chunk.rule_code,
-                "path": path,
-                "text": r.chunk.text,
-                "score": round(r.score, 4),
-            })
+            formatted_results.append(
+                {
+                    "rank": i,
+                    "regulation_name": reg_name,
+                    "rule_code": r.chunk.rule_code,
+                    "path": path,
+                    "text": r.chunk.text,
+                    "score": round(r.score, 4),
+                }
+            )
 
-        top_regulation = top.chunk.parent_path[0] if top.chunk.parent_path else top.chunk.title
+        top_regulation = (
+            top.chunk.parent_path[0] if top.chunk.parent_path else top.chunk.title
+        )
 
         return QueryResult(
             type=QueryType.SEARCH,
@@ -1181,7 +1289,7 @@ class QueryHandler:
                 search_query = expanded
                 # Log expansion for debug
                 if options.show_debug:
-                    print(f"[DEBUG] Context expansion: '{question}' -> '{search_query}'")
+                    logger.debug(f"Context expansion: '{question}' -> '{search_query}'")
 
         try:
             answer = search_usecase.ask(
@@ -1211,7 +1319,9 @@ class QueryHandler:
             display_sources = filter_by_relevance(answer.sources, norm_scores)
 
             for i, r in enumerate(display_sources, 1):
-                reg_name = r.chunk.parent_path[0] if r.chunk.parent_path else r.chunk.title
+                reg_name = (
+                    r.chunk.parent_path[0] if r.chunk.parent_path else r.chunk.title
+                )
                 path = (
                     " > ".join(clean_path_segments(r.chunk.parent_path))
                     if r.chunk.parent_path
@@ -1222,7 +1332,9 @@ class QueryHandler:
                 snippet = strip_path_prefix(r.chunk.text, r.chunk.parent_path or [])
 
                 # 매칭 설명 추가
-                explanation, _ = format_search_result_with_explanation(r, question, show_score=options.show_debug)
+                explanation, _ = format_search_result_with_explanation(
+                    r, question, show_score=options.show_debug
+                )
 
                 sources_md.append(f"""#### [{i}] {reg_name}
 **경로:** {path}
@@ -1245,25 +1357,31 @@ class QueryHandler:
             norm_scores = normalize_relevance_scores(answer.sources)
             display_sources = filter_by_relevance(answer.sources, norm_scores)
             for r in display_sources:
-                reg_name = r.chunk.parent_path[0] if r.chunk.parent_path else r.chunk.title
+                reg_name = (
+                    r.chunk.parent_path[0] if r.chunk.parent_path else r.chunk.title
+                )
                 path = (
                     " > ".join(clean_path_segments(r.chunk.parent_path))
                     if r.chunk.parent_path
                     else r.chunk.title
                 )
-                sources_data.append({
-                    "regulation_name": reg_name,
-                    "rule_code": r.chunk.rule_code,
-                    "path": path,
-                    "text": r.chunk.text,
-                    "relevance_pct": int(norm_scores.get(r.chunk.id, 0.0) * 100),
-                })
+                sources_data.append(
+                    {
+                        "regulation_name": reg_name,
+                        "rule_code": r.chunk.rule_code,
+                        "path": path,
+                        "text": r.chunk.text,
+                        "relevance_pct": int(norm_scores.get(r.chunk.id, 0.0) * 100),
+                    }
+                )
 
         top_regulation = ""
         top_rule_code = ""
         if answer.sources:
             top = answer.sources[0]
-            top_regulation = top.chunk.parent_path[0] if top.chunk.parent_path else top.chunk.title
+            top_regulation = (
+                top.chunk.parent_path[0] if top.chunk.parent_path else top.chunk.title
+            )
             top_rule_code = top.chunk.rule_code
 
         return QueryResult(

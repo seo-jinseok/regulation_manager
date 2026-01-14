@@ -318,5 +318,7 @@ def get_tools_prompt() -> str:
         func = tool["function"]
         params = func.get("parameters", {}).get("properties", {})
         param_names = list(params.keys())
-        lines.append(f"- {func['name']}({', '.join(param_names)}): {func['description']}")
+        lines.append(
+            f"- {func['name']}({', '.join(param_names)}): {func['description']}"
+        )
     return "\n".join(lines)

@@ -77,7 +77,9 @@ def _table_to_grid(table) -> Tuple[List[List[str]], bool]:
 
         col_index = 0
         for cell in cells:
-            while col_index < len(grid[r_index]) and grid[r_index][col_index] is not None:
+            while (
+                col_index < len(grid[r_index]) and grid[r_index][col_index] is not None
+            ):
                 col_index += 1
 
             text = _normalize_cell_text(cell.get_text(" ", strip=True))

@@ -71,7 +71,10 @@ class Preprocessor:
             except (json.JSONDecodeError, OSError, KeyError) as e:
                 # Rules file is optional; use defaults if loading fails
                 import logging
-                logging.getLogger(__name__).debug(f"Failed to load preprocessor rules: {e}")
+
+                logging.getLogger(__name__).debug(
+                    f"Failed to load preprocessor rules: {e}"
+                )
         self.inline_remove_patterns = rules["inline_remove_patterns"]
         self.separator_line_pattern = rules["separator_line_pattern"]
         self.line_remove_patterns = rules["line_remove_patterns"]

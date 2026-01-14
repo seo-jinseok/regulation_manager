@@ -179,7 +179,7 @@ def clear_reranker():
 def warmup_reranker(model_name: Optional[str] = None) -> None:
     """
     Pre-load the reranker model for faster first query.
-    
+
     Args:
         model_name: Optional model name. Defaults to bge-reranker-v2-m3.
     """
@@ -223,10 +223,7 @@ class BGEReranker(IReranker):
             return []
 
         results = rerank(query, documents, top_k)
-        return [
-            (r.doc_id, r.content, r.score, r.metadata)
-            for r in results
-        ]
+        return [(r.doc_id, r.content, r.score, r.metadata) for r in results]
 
     def rerank_with_context(
         self,
@@ -272,7 +269,9 @@ class BGEReranker(IReranker):
 
             # Boost matching regulation
             if target_regulation:
-                doc_regulation = metadata.get("regulation_title") or metadata.get("규정명", "")
+                doc_regulation = metadata.get("regulation_title") or metadata.get(
+                    "규정명", ""
+                )
                 if target_regulation.lower() in doc_regulation.lower():
                     boosted_score = min(1.0, boosted_score + regulation_boost)
 
@@ -296,6 +295,5 @@ class BGEReranker(IReranker):
         boosted_results.sort(key=lambda x: x.score, reverse=True)
 
         return [
-            (r.doc_id, r.content, r.score, r.metadata)
-            for r in boosted_results[:top_k]
+            (r.doc_id, r.content, r.score, r.metadata) for r in boosted_results[:top_k]
         ]

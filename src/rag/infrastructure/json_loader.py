@@ -7,7 +7,6 @@ Supports incremental sync by computing content hashes.
 
 import hashlib
 import json
-import re
 import unicodedata
 from datetime import datetime, timezone
 from pathlib import Path
@@ -132,7 +131,7 @@ class JSONDocumentLoader(IDocumentLoader):
         """Load JSON file with caching."""
         if json_path in self._cache:
             return self._cache[json_path]
-            
+
         with open(json_path, "r", encoding="utf-8") as f:
             data = json.load(f)
             self._cache[json_path] = data
@@ -213,28 +212,32 @@ class JSONDocumentLoader(IDocumentLoader):
 
         return titles
 
-    def find_regulation_candidates(self, json_path: str, query: str) -> List[Tuple[str, str]]:
+    def find_regulation_candidates(
+        self, json_path: str, query: str
+    ) -> List[Tuple[str, str]]:
         """
         Find regulation candidates matching the query.
-        
+
         Args:
             json_path: Path to the regulation JSON file.
             query: Query string (e.g. regulation name).
-            
+
         Returns:
             List of (rule_code, title) tuples.
         """
         all_titles = self.get_regulation_titles(json_path)
         target = self._normalize_title(query)
         candidates = []
-        
+
         for code, title in all_titles.items():
             norm_title = self._normalize_title(title)
             if target in norm_title or norm_title in target:
                 candidates.append((code, title))
-        
+
         # Sort by length difference to prioritize exact-ish matches
-        candidates.sort(key=lambda x: abs(len(self._normalize_title(x[1])) - len(target)))
+        candidates.sort(
+            key=lambda x: abs(len(self._normalize_title(x[1])) - len(target))
+        )
         return candidates
 
     def get_all_regulations(self, json_path: str) -> List[Tuple[str, str]]:
@@ -258,7 +261,7 @@ class JSONDocumentLoader(IDocumentLoader):
             title = doc.get("title", "")
             if rule_code and title:
                 regulations.append((rule_code, title))
-        
+
         return regulations
 
     def get_regulation_doc(
@@ -312,22 +315,22 @@ class JSONDocumentLoader(IDocumentLoader):
         """
         # Try exact match first
         doc = self.get_regulation_doc(json_path, identifier)
-        
+
         # If not found, try robust search (substring matching)
         if not doc:
             all_titles = self.get_regulation_titles(json_path)
             target = self._normalize_title(identifier)
             candidates = []
-            
+
             for code, title in all_titles.items():
                 norm_title = self._normalize_title(title)
                 if target in norm_title or norm_title in target:
                     candidates.append((code, title))
-            
+
             # If exactly one candidate found, use it
             if len(candidates) == 1:
                 return self.get_regulation_overview(json_path, candidates[0][0])
-            
+
             # If multiple candidates, we can't decide (caller will handle or we could return multiple)
             # For now, if we fail to find unique match, return None
             return None

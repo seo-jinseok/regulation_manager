@@ -7,7 +7,7 @@ Acts as a bridge between LLM tool calls and the RAG system's use cases.
 
 import json
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 if TYPE_CHECKING:
     from ..application.search_usecase import SearchUseCase
@@ -98,10 +98,7 @@ class ToolExecutor:
                 )
             result = handler(arguments)
             return ToolResult(
-                tool_name=tool_name, 
-                success=True, 
-                result=result,
-                arguments=arguments
+                tool_name=tool_name, success=True, result=result, arguments=arguments
             )
         except Exception as e:
             return ToolResult(
@@ -109,7 +106,7 @@ class ToolExecutor:
                 success=False,
                 result=None,
                 error=str(e),
-                arguments=arguments
+                arguments=arguments,
             )
 
     def _get_handler(self, tool_name: str):
@@ -173,9 +170,13 @@ class ToolExecutor:
             "count": len(results),
             "results": [
                 {
-                    "regulation_title": r.chunk.parent_path[0] if r.chunk.parent_path else r.chunk.title,
+                    "regulation_title": r.chunk.parent_path[0]
+                    if r.chunk.parent_path
+                    else r.chunk.title,
                     "title": r.chunk.title,
-                    "text": r.chunk.text[:500] + "..." if len(r.chunk.text) > 500 else r.chunk.text,
+                    "text": r.chunk.text[:500] + "..."
+                    if len(r.chunk.text) > 500
+                    else r.chunk.text,
                     "rule_code": r.chunk.rule_code,
                     "parent_path": " > ".join(r.chunk.parent_path),
                     "score": round(r.score, 3),
@@ -188,23 +189,25 @@ class ToolExecutor:
         """Handle get_article tool with direct article lookup."""
         regulation = args["regulation"]
         article_no = args["article_no"]
-        
+
         # Use FullViewUseCase for direct article lookup
         from ..application.full_view_usecase import FullViewUseCase
         from ..infrastructure.json_loader import JSONDocumentLoader
-        
+
         full_view_usecase = FullViewUseCase(JSONDocumentLoader())
         matches = full_view_usecase.find_matches(regulation)
-        
+
         if not matches:
             # Fallback to search if no direct match
             query = f"{regulation} 제{article_no}조"
             return self._handle_search_regulations({"query": query, "top_k": 3})
-        
+
         # Use first match (or refine later for multiple matches)
         selected = matches[0]
-        article_node = full_view_usecase.get_article_view(selected.rule_code, article_no)
-        
+        article_node = full_view_usecase.get_article_view(
+            selected.rule_code, article_no
+        )
+
         if not article_node:
             return {
                 "found": False,
@@ -212,11 +215,12 @@ class ToolExecutor:
                 "article_no": article_no,
                 "error": f"{selected.title}에서 제{article_no}조를 찾을 수 없습니다.",
             }
-        
+
         # Render article content
         from ..interface.formatters import render_full_view_nodes
+
         content = render_full_view_nodes([article_node])
-        
+
         return {
             "found": True,
             "regulation": selected.title,
@@ -248,7 +252,9 @@ class ToolExecutor:
         # Extract overview info from first result
         return {
             "regulation": regulation,
-            "overview": results.get("results", [{}])[0] if results.get("results") else None,
+            "overview": results.get("results", [{}])[0]
+            if results.get("results")
+            else None,
         }
 
     def _handle_get_full_regulation(self, args: Dict[str, Any]) -> Dict[str, Any]:

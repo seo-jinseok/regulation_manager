@@ -1,3 +1,4 @@
+import logging
 import os
 import subprocess
 import tempfile
@@ -5,6 +6,8 @@ from pathlib import Path
 from typing import Callable, List, Optional
 
 from llama_index.core.readers.base import BaseReader
+
+logger = logging.getLogger(__name__)
 from llama_index.core.schema import Document
 
 try:
@@ -57,28 +60,7 @@ class HwpToMarkdownReader(BaseReader):
                 cmd = ["hwp5html", "--html", "--output", str(html_path), str(file)]
 
                 if verbose:
-                    try:
-                        from rich import print
-                        from rich.panel import Panel
-
-                        debug_info = (
-                            f"[bold]명령어:[/bold] {' '.join(cmd)}\n"
-                            f"[bold]입력:[/bold] {file}\n"
-                            f"[bold]임시 출력:[/bold] {tmp_dir}"
-                        )
-                        panel = Panel(
-                            debug_info,
-                            title="[yellow]HWP 변환 디버그 정보[/yellow]",
-                            border_style="yellow",
-                        )
-
-                        if status_callback:
-                            status_callback(panel)
-                        else:
-                            print(panel)
-
-                    except ImportError:
-                        print(f"DEBUG: Executing command: {cmd}")
+                    logger.info(f"Converting {file.name}...")
 
                 # Stream output for user feedback (Suppressed for clean CLI)
                 # print(f"    [hwp5html] Starting conversion for {file.name}...")
@@ -203,13 +185,16 @@ class HwpToMarkdownReader(BaseReader):
                 if md:
                     try:
                         from bs4 import BeautifulSoup
-                        from src.parsing.html_table_converter import convert_html_tables_to_markdown
+
+                        from src.parsing.html_table_converter import (
+                            convert_html_tables_to_markdown,
+                        )
 
                         soup = BeautifulSoup(html_content, "html.parser")
                         tables = soup.find_all("table")
-                        
+
                         replaced_tables_map = {}
-                        
+
                         # Replace tables with unique placeholders
                         for idx, table in enumerate(tables):
                             # Use a UUID-like placeholder intended to survive markdownify
@@ -217,34 +202,38 @@ class HwpToMarkdownReader(BaseReader):
                             # Convert this specific table to robust markdown (handles rowspan)
                             # Note: convert_html_tables_to_markdown expects full HTML string but works with table string
                             # It returns a list of tables found. We expect exactly 1.
-                            
+
                             # We can just use the internal logic or pass the string representation of the table
                             table_html = str(table)
                             robust_md_list = convert_html_tables_to_markdown(table_html)
-                            
+
                             if robust_md_list:
                                 robust_md = robust_md_list[0]
                                 replaced_tables_map[placeholder] = robust_md
                                 # Replace in DOM with pure text placeholder
                                 table.replace_with(soup.new_string(placeholder))
-                        
+
                         # Convert the modified HTML (with placeholders) to Markdown
                         # markdownify will treat placeholders as normal text
                         modified_html = str(soup)
                         markdown_content = md(modified_html, heading_style="ATX")
-                        
+
                         # Restore placeholders with robust Markdown
                         # Iterate by length desc to avoid partial matches (though unlikely with this placeholder)
                         for ph, table_md in replaced_tables_map.items():
                             markdown_content = markdown_content.replace(ph, table_md)
                             # Also replace escaped version (markdownify escapes underscores as \_)
                             escaped_ph = ph.replace("_", "\\_")
-                            markdown_content = markdown_content.replace(escaped_ph, table_md)
-                            
+                            markdown_content = markdown_content.replace(
+                                escaped_ph, table_md
+                            )
+
                     except Exception as e:
                         # Fallback to standard markdownify if anything fails (e.g. import error)
                         if verbose:
-                            print(f"[yellow]Table robust conversion failed: {e}. Falling back to default.[/yellow]")
+                            logger.warning(
+                                f"Table robust conversion failed: {e}. Falling back to default."
+                            )
                         markdown_content = md(html_content, heading_style="ATX")
                 else:
                     markdown_content = html_content  # Fallback
@@ -269,7 +258,8 @@ if __name__ == "__main__":
     # Test block
     import sys
 
+    logging.basicConfig(level=logging.DEBUG)
     if len(sys.argv) > 1:
         reader = HwpToMarkdownReader(keep_html=True)
         docs = reader.load_data(Path(sys.argv[1]))
-        print(docs[0].text[:500])
+        logger.debug(f"Converted text preview: {docs[0].text[:500]}")

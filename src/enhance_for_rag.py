@@ -346,15 +346,15 @@ def build_embedding_text(parent_path: List[str], node: Dict[str, Any]) -> str:
     if parent_path:
         # parent_path[0] is the document title (Regulation Name)
         doc_title = parent_path[0]
-        
+
         # Get remaining segments from the end, excluding the first one if already included
         remaining = parent_path[1:]
         recent_path = remaining[-3:] if len(remaining) > 3 else remaining
-        
+
         # Combine: [Doc Title] + [Last 3 Segments]
         context_segments = [doc_title] + recent_path
         path_segments = _dedupe_path_segments(context_segments)
-        
+
         path_str = " > ".join(path_segments)
         label = build_path_label(node)
         if label:
