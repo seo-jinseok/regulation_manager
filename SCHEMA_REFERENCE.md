@@ -244,13 +244,33 @@ chapter (장)
 |--------|------|------|------|
 | `parent_path` | `Array<string>` | 루트부터 현재 노드까지의 계층 경로 | 검색 결과에 문맥 정보 제공, 필터링 |
 | `full_text` | `string` | 벡터 임베딩용 self-contained 텍스트 | 임베딩 생성 |
-| `embedding_text` | `string` | 임베딩용 순수 본문 텍스트 | 임베딩 생성 |
+| `embedding_text` | `string` | 임베딩용 컨텍스트 강화 텍스트 (아래 참조) | 임베딩 생성 |
 | `chunk_level` | `string` | 검색 청크 레벨 (article, paragraph, item 등) | 청크 필터링 |
 | `is_searchable` | `boolean` | 검색 대상 여부 | 검색 대상 필터링 |
 | `token_count` | `integer` | 임베딩 텍스트의 추정 토큰 수 | 청크 크기 관리 |
 | `keywords` | `Array<Object>` | 본문 핵심 키워드 (`term`, `weight`) | BM25 검색 보조 |
 | `amendment_history` | `Array<Object>` | 개정/신설/삭제 이력 (`date`, `type`) | 이력 추적 |
 | `effective_date` | `string` | 시행일 (YYYY-MM-DD) | 시간 기반 필터링 |
+
+#### embedding_text 필드
+
+벡터 검색을 위한 컨텍스트 강화 텍스트입니다.
+
+**형식**:
+```
+규정명 > 장 > 절 > 관 > 조문번호 제목: 본문
+```
+
+**예시**:
+```
+동의대학교학칙 > 제3장 학사 > 제1절 수업 > 제15조 수업일수: 수업일수는 연간 16주 이상으로 한다.
+```
+
+**특징**:
+- 규정명 (문서 제목) 항상 포함
+- 최근 3개 계층 세그먼트 포함 (장 > 절 > 관 또는 절 > 관 > 조)
+- 중복 세그먼트 자동 제거 (공백 정규화 후 비교)
+- 토큰 수 최적화를 위해 최대 4개 세그먼트로 제한 (규정명 + 3개)
 
 ### 예시 (RAG Enhanced Node)
 

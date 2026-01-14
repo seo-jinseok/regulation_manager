@@ -465,18 +465,20 @@ class TestBuildEmbeddingText:
         assert "수업일수는 연간 16주 이상" in result
 
     def test_truncates_long_path(self):
-        """Test that only last 3 path segments are used."""
+        """Test that only last 3 path segments are used (plus doc title)."""
         from src.enhance_for_rag import build_embedding_text
 
-        parent_path = ["규정", "제1편", "제1장", "제1절", "제1관"]
+        # 6개 세그먼트: 규정명 + 5개 하위
+        parent_path = ["규정", "제1편", "제2편", "제1장", "제1절", "제1관"]
         node = {"text": "내용", "display_no": "제1조", "title": ""}
         result = build_embedding_text(parent_path, node)
-        # Only last 3 segments
-        assert "규정" not in result
-        assert "제1편" not in result
-        assert "제1장" in result
-        assert "제1절" in result
-        assert "제1관" in result
+        # 규정명(규정) + last 3(제1장, 제1절, 제1관) 포함
+        assert "규정" in result      # 문서 제목은 항상 포함
+        assert "제1편" not in result  # 오래된 세그먼트는 제외
+        assert "제2편" not in result  # 오래된 세그먼트는 제외
+        assert "제1장" in result      # last 3 중 첫 번째
+        assert "제1절" in result      # last 3 중 두 번째
+        assert "제1관" in result      # last 3 중 세 번째
 
     def test_empty_text_returns_empty(self):
         """Test that empty text returns empty string."""
@@ -503,6 +505,19 @@ class TestBuildEmbeddingText:
         result = build_embedding_text(parent_path, node)
         assert "부칙 > 부 칙" not in result
         assert "부칙: 내용" in result
+
+    def test_includes_chapter_context(self):
+        """장(chapter) 정보가 포함되는지 테스트"""
+        from src.enhance_for_rag import build_embedding_text
+
+        parent_path = ["동의대학교학칙", "제3장 학사", "제1절 수업", "제2관 학점"]
+        node = {"text": "내용", "display_no": "제15조", "title": "학점인정"}
+        result = build_embedding_text(parent_path, node)
+        assert "동의대학교학칙" in result  # 규정명
+        assert "제3장 학사" in result      # 장
+        assert "제1절 수업" in result      # 절
+        assert "제2관 학점" in result      # 관
+        assert "제15조 학점인정" in result # 조
 
 
 class TestExtractLastRevisionDate:
