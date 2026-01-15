@@ -5,13 +5,20 @@ Implements self-reflection mechanism where the LLM evaluates:
 1. Whether retrieval is needed for a query
 2. Whether retrieved documents are relevant
 3. Whether the generated answer is supported by the context
+
+9 RAG Architectures (#5): Self-RAG adds reflection capabilities to verify
+retrieval necessity and answer grounding, improving response quality.
 """
 
-from typing import TYPE_CHECKING, List, Optional
+import concurrent.futures
+import logging
+from typing import TYPE_CHECKING, List, Optional, Tuple
 
 if TYPE_CHECKING:
     from ..domain.entities import SearchResult
     from ..domain.repositories import ILLMClient
+
+logger = logging.getLogger(__name__)
 
 
 class SelfRAGEvaluator:
@@ -190,6 +197,12 @@ class SelfRAGEvaluator:
 class SelfRAGPipeline:
     """
     Complete Self-RAG pipeline integrating evaluation with search and generation.
+    
+    Features:
+    - Retrieval necessity check: Skip retrieval for simple queries
+    - Relevance filtering: Remove irrelevant results before answer generation
+    - Support verification: Verify answer is grounded in retrieved context
+    - Async support evaluation: Run support check in background for performance
     """
 
     def __init__(
@@ -198,7 +211,8 @@ class SelfRAGPipeline:
         llm_client: Optional["ILLMClient"] = None,
         enable_retrieval_check: bool = True,
         enable_relevance_check: bool = True,
-        enable_support_check: bool = False,  # Expensive, disabled by default
+        enable_support_check: bool = True,  # Now enabled by default
+        async_support_check: bool = True,   # Run support check asynchronously
     ):
         """
         Initialize Self-RAG pipeline.
@@ -208,15 +222,19 @@ class SelfRAGPipeline:
             llm_client: LLM client for evaluation and generation
             enable_retrieval_check: Whether to check if retrieval is needed
             enable_relevance_check: Whether to check result relevance
-            enable_support_check: Whether to check answer support
+            enable_support_check: Whether to check answer support (now default True)
+            async_support_check: Whether to run support check asynchronously
         """
         self._search_usecase = search_usecase
         self._llm_client = llm_client
         self._evaluator = SelfRAGEvaluator(llm_client)
+        self._executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+        self._pending_support_check: Optional[concurrent.futures.Future] = None
 
         self.enable_retrieval_check = enable_retrieval_check
         self.enable_relevance_check = enable_relevance_check
         self.enable_support_check = enable_support_check
+        self.async_support_check = async_support_check
 
     def set_llm_client(self, llm_client: "ILLMClient") -> None:
         """Set LLM client for both evaluation and generation."""
@@ -243,3 +261,90 @@ class SelfRAGPipeline:
         if not self.enable_support_check:
             return "SUPPORTED"
         return self._evaluator.evaluate_support(query, context, answer)
+    
+    def start_async_support_check(
+        self, query: str, context: str, answer: str
+    ) -> Optional[concurrent.futures.Future]:
+        """
+        Start support check in background thread.
+        
+        Returns immediately with a Future that can be checked later.
+        This allows the main response to be sent while support verification runs.
+        
+        Args:
+            query: User's question
+            context: Retrieved context
+            answer: Generated answer
+            
+        Returns:
+            Future object or None if async is disabled
+        """
+        if not self.enable_support_check:
+            return None
+        if not self.async_support_check:
+            # Run synchronously
+            return None
+        
+        try:
+            future = self._executor.submit(
+                self._evaluator.evaluate_support, query, context, answer
+            )
+            self._pending_support_check = future
+            logger.debug("Started async support check")
+            return future
+        except Exception as e:
+            logger.warning(f"Failed to start async support check: {e}")
+            return None
+    
+    def get_async_support_result(
+        self, timeout: float = 5.0
+    ) -> Optional[str]:
+        """
+        Get the result of async support check if available.
+        
+        Args:
+            timeout: Maximum seconds to wait for result
+            
+        Returns:
+            Support level or None if not available/timed out
+        """
+        if self._pending_support_check is None:
+            return None
+        
+        try:
+            result = self._pending_support_check.result(timeout=timeout)
+            self._pending_support_check = None
+            return result
+        except concurrent.futures.TimeoutError:
+            logger.debug("Async support check timed out")
+            return None
+        except Exception as e:
+            logger.warning(f"Async support check failed: {e}")
+            return None
+    
+    def evaluate_results_batch(
+        self, query: str, results: List["SearchResult"]
+    ) -> Tuple[bool, List["SearchResult"], float]:
+        """
+        Evaluate search results in batch for efficiency.
+        
+        Returns:
+            Tuple of (is_relevant, filtered_results, confidence_score)
+        """
+        if not results:
+            return (False, [], 0.0)
+        
+        # Quick heuristic check first (no LLM call)
+        top_score = results[0].score if results else 0.0
+        
+        # If top score is very high, skip LLM evaluation
+        if top_score > 0.8:
+            return (True, results, top_score)
+        
+        # Use LLM for borderline cases
+        if self.enable_relevance_check:
+            is_relevant, filtered = self._evaluator.evaluate_relevance(query, results)
+            confidence = top_score if is_relevant else top_score * 0.5
+            return (is_relevant, filtered, confidence)
+        
+        return (True, results, top_score)

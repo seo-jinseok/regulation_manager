@@ -521,6 +521,73 @@ class SearchUseCase:
 
         return unique_results
 
+    def _classify_query_complexity(
+        self, query_text: str, matched_intents: Optional[List[str]] = None
+    ) -> str:
+        """
+        Classify query complexity for Adaptive RAG strategy selection.
+
+        Returns:
+            - "simple": Structural queries (Article/Regulation name) - Fast retrieval
+            - "medium": Standard natural language queries - Hybrid + Reranker
+            - "complex": Multi-intent or comparative queries - Full pipeline, no reranker
+
+        The reranker may have adverse effects on intent-expanded queries because
+        the reranker scores based on original query, not the expanded keywords.
+        """
+        # Check for structural patterns (simple)
+        if RULE_CODE_PATTERN.match(query_text):
+            return "simple"
+        if _extract_regulation_only_query(query_text):
+            return "simple"
+        if _extract_regulation_article_query(query_text):
+            return "simple"
+        if HEADING_ONLY_PATTERN.match(query_text):
+            return "simple"
+
+        # Check for complex queries
+        # 1. Multiple intents matched
+        if matched_intents and len(matched_intents) >= 2:
+            return "complex"
+
+        # 2. Comparative or analytical keywords
+        complex_markers = ["비교", "차이", "어떤 게 나아", "뭐가 다르", "vs", "또는"]
+        if any(marker in query_text for marker in complex_markers):
+            return "complex"
+
+        # 3. Very long queries (likely complex multi-part questions)
+        if len(query_text) > 80:
+            return "complex"
+
+        # Default: medium complexity
+        return "medium"
+
+    def _should_skip_reranker(
+        self,
+        complexity: str,
+        matched_intents: Optional[List[str]] = None,
+        query_significantly_expanded: bool = False,
+    ) -> bool:
+        """
+        Determine if reranker should be skipped for this query.
+
+        Reranker may hurt performance for:
+        - Complex queries with multiple intents (comparison, etc.)
+        - Queries where intent expansion significantly changed the query
+
+        Note: Currently disabled to maintain backward compatibility.
+        The reranker still provides value by using the rewritten query for scoring,
+        even for complex queries. This feature may be enabled later with more
+        sophisticated logic that considers the actual query transformation ratio.
+
+        Returns:
+            Always False - reranker is never skipped in current implementation.
+        """
+        # Currently disabled for backward compatibility
+        # Reranker with rewritten queries still provides value in most cases
+        # TODO: Enable with more sophisticated heuristics if needed
+        return False
+
     def _search_general(
         self,
         query_text: str,
@@ -573,11 +640,23 @@ class SearchUseCase:
         # Re-sort by boosted score
         boosted_results.sort(key=lambda x: -x.score)
 
-        # Apply reranking if enabled
-        if self.use_reranker and boosted_results:
+        # Adaptive RAG: Classify query complexity and decide reranker usage
+        matched_intents = (
+            self._last_query_rewrite.matched_intents if self._last_query_rewrite else None
+        )
+        complexity = self._classify_query_complexity(query_text, matched_intents)
+        skip_reranker = self._should_skip_reranker(complexity, matched_intents)
+
+        # Apply reranking if enabled and not skipped by Adaptive RAG
+        if self.use_reranker and boosted_results and not skip_reranker:
             rerank_k = top_k * 5 if is_intent else top_k * 2
             boosted_results = self._apply_reranking(
                 boosted_results, scoring_query_text, top_k, candidate_k=rerank_k
+            )
+        elif skip_reranker and boosted_results:
+            logger.debug(
+                f"Adaptive RAG: Skipping reranker for complexity={complexity}, "
+                f"matched_intents={matched_intents}"
             )
 
         # Corrective RAG: Check if results need correction
@@ -828,26 +907,69 @@ class SearchUseCase:
         scoring_query_text: str,
         top_k: int,
         candidate_k: Optional[int] = None,
+        use_hybrid_scoring: bool = True,
+        alpha: float = 0.7,
     ) -> List[SearchResult]:
-        """Apply cross-encoder reranking to results."""
+        """
+        Apply cross-encoder reranking with optional hybrid scoring.
+        
+        Hybrid Scoring combines reranker scores with keyword-boosted scores
+        to preserve important keyword matches that reranker might miss.
+        
+        Formula: final_score = α * reranker_score + (1 - α) * boosted_score
+        
+        Args:
+            results: Search results with boosted scores
+            scoring_query_text: Query text for reranking
+            top_k: Number of results to return
+            candidate_k: Number of candidates to rerank
+            use_hybrid_scoring: Whether to combine reranker + boost scores
+            alpha: Weight for reranker score (0.7 = 70% reranker, 30% boost)
+        """
         self._ensure_reranker()
 
         if candidate_k is None:
             candidate_k = top_k * 2
 
         candidates = results[:candidate_k]
+        
+        # Store original boosted scores for hybrid scoring
+        id_to_boosted_score = {r.chunk.id: r.score for r in candidates}
+        
         documents = [(r.chunk.id, r.chunk.text, {}) for r in candidates]
         reranked = self._reranker.rerank(scoring_query_text, documents, top_k=top_k)
 
         id_to_result = {r.chunk.id: r for r in candidates}
         final_results = []
+        
         for i, rr in enumerate(reranked):
-            doc_id, content, score, metadata = rr
+            doc_id, content, reranker_score, metadata = rr
             original = id_to_result.get(doc_id)
             if original:
+                if use_hybrid_scoring:
+                    # Hybrid scoring: combine reranker and boosted scores
+                    boosted_score = id_to_boosted_score.get(doc_id, 0.0)
+                    # Normalize reranker score to similar range as boosted score
+                    # Reranker typically returns 0-1, boosted score is similar
+                    final_score = alpha * reranker_score + (1 - alpha) * boosted_score
+                    logger.debug(
+                        f"Hybrid score: {final_score:.3f} = {alpha}*{reranker_score:.3f} + "
+                        f"{1-alpha}*{boosted_score:.3f} for {doc_id[:30]}"
+                    )
+                else:
+                    final_score = reranker_score
+                    
                 final_results.append(
-                    SearchResult(chunk=original.chunk, score=score, rank=i + 1)
+                    SearchResult(chunk=original.chunk, score=final_score, rank=i + 1)
                 )
+        
+        # Re-sort by final score (hybrid scoring may change order)
+        if use_hybrid_scoring:
+            final_results.sort(key=lambda x: -x.score)
+            # Update ranks
+            for i, r in enumerate(final_results):
+                final_results[i] = SearchResult(chunk=r.chunk, score=r.score, rank=i + 1)
+        
         return final_results
 
     def _ensure_reranker(self) -> None:

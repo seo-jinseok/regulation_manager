@@ -57,6 +57,10 @@ addopts = '-m "not debug"'
 markers = [
     "debug: debug and diagnostic tests",
 ]
+filterwarnings = [
+    "ignore::DeprecationWarning:importlib._bootstrap:241",  # SWIG bindings
+    "ignore:builtin type:DeprecationWarning",  # SWIG swigvarlink
+]
 
 [tool.ruff]
 line-length = 88

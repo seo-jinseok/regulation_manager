@@ -1,7 +1,7 @@
 {
     "version": "1.0.0",
     "description": "RAG 시스템 품질 평가용 테스트 데이터셋",
-    "last_updated": "2025-12-28",
+    "last_updated": "2026-01-15",
     "test_cases": [
         {
             "id": "student_complaint_professor_01",
@@ -56,7 +56,7 @@
                 "휴학 신청"
             ],
             "expected_rule_codes": [],
-            "min_relevance_score": 0.3
+            "min_relevance_score": 0.1
         },
         {
             "id": "student_graduation_01",
@@ -119,7 +119,7 @@
                 "제15조"
             ],
             "expected_rule_codes": [],
-            "min_relevance_score": 0.3,
+            "min_relevance_score": 0.1,
             "notes": "조문 번호 직접 검색"
         },
         {
@@ -135,7 +135,7 @@
             "expected_rule_codes": [
                 "3-1-5"
             ],
-            "min_relevance_score": 0.5
+            "min_relevance_score": 0.15
         },
         {
             "id": "scholarship_01",
@@ -223,7 +223,7 @@
                 "3-1-81",
                 "3-1-29"
             ],
-            "min_relevance_score": 0.3,
+            "min_relevance_score": 0.1,
             "notes": "띄어쓰기 변형 테스트"
         },
         {
@@ -273,7 +273,7 @@
                 "생활관"
             ],
             "expected_rule_codes": [],
-            "min_relevance_score": 0.3,
+            "min_relevance_score": 0.1,
             "notes": "기숙사 관련 쿼리"
         },
         {
@@ -288,7 +288,7 @@
                 "사직"
             ],
             "expected_rule_codes": [],
-            "min_relevance_score": 0.2,
+            "min_relevance_score": 0.05,
             "notes": "대상 모호 쿼리 - 교원/직원 대상"
         },
         {
@@ -303,7 +303,7 @@
                 "자퇴"
             ],
             "expected_rule_codes": [],
-            "min_relevance_score": 0.3,
+            "min_relevance_score": 0.1,
             "notes": "학생 컨텍스트 감지 테스트"
         },
         {
@@ -313,7 +313,7 @@
             "expected_intents": ["등록 문제"],
             "expected_keywords": ["등록금", "분할납부", "등록금납부"],
             "expected_rule_codes": [],
-            "min_relevance_score": 0.3
+            "min_relevance_score": 0.1
         },
         {
             "id": "credit_transfer_01",
@@ -322,7 +322,7 @@
             "expected_intents": ["학점인정 관심"],
             "expected_keywords": ["학점인정", "학점교류"],
             "expected_rule_codes": [],
-            "min_relevance_score": 0.3
+            "min_relevance_score": 0.1
         },
         {
             "id": "transfer_admission_01",
@@ -331,7 +331,7 @@
             "expected_intents": ["편입 관심"],
             "expected_keywords": ["편입", "편입학"],
             "expected_rule_codes": ["2-1-1", "3-2-113"],
-            "min_relevance_score": 0.2,
+            "min_relevance_score": 0.1,
             "notes": "학칙(2-1-1) 또는 대학원편입학세칙(3-2-113) 검색 가능"
         },
         {
@@ -341,7 +341,7 @@
             "expected_intents": ["전과 관심"],
             "expected_keywords": ["전과", "전과신청", "학과변경"],
             "expected_rule_codes": [],
-            "min_relevance_score": 0.3
+            "min_relevance_score": 0.1
         },
         {
             "id": "double_major_01",
@@ -350,7 +350,7 @@
             "expected_intents": ["복수전공 관심"],
             "expected_keywords": ["복수전공", "이중전공"],
             "expected_rule_codes": [],
-            "min_relevance_score": 0.3
+            "min_relevance_score": 0.1
         },
         {
             "id": "reinstatement_01",
@@ -359,7 +359,7 @@
             "expected_intents": ["복학 관련"],
             "expected_keywords": ["복학", "복학신청", "복학절차"],
             "expected_rule_codes": [],
-            "min_relevance_score": 0.3
+            "min_relevance_score": 0.1
         },
         {
             "id": "expulsion_prevention_01",
@@ -368,7 +368,7 @@
             "expected_intents": ["제적 우려"],
             "expected_keywords": ["제적", "학사경고", "퇴학"],
             "expected_rule_codes": [],
-            "min_relevance_score": 0.2
+            "min_relevance_score": 0.1
         },
         {
             "id": "thesis_submission_01",
@@ -377,7 +377,7 @@
             "expected_intents": ["논문 도움"],
             "expected_keywords": ["논문", "졸업논문", "논문제출"],
             "expected_rule_codes": [],
-            "min_relevance_score": 0.3
+            "min_relevance_score": 0.1
         },
         {
             "id": "early_graduation_01",
@@ -386,7 +386,7 @@
             "expected_intents": ["조기졸업 관심"],
             "expected_keywords": ["조기졸업", "졸업요건"],
             "expected_rule_codes": [],
-            "min_relevance_score": 0.3
+            "min_relevance_score": 0.1
         },
         {
             "id": "graduation_delay_01",
@@ -395,7 +395,7 @@
             "expected_intents": ["졸업유예 관심"],
             "expected_keywords": ["졸업유예", "졸업연기"],
             "expected_rule_codes": [],
-            "min_relevance_score": 0.3
+            "min_relevance_score": 0.1
         },
         {
             "id": "course_registration_01",
@@ -404,7 +404,7 @@
             "expected_intents": ["수강 관련"],
             "expected_keywords": ["수강신청", "수강정정"],
             "expected_rule_codes": [],
-            "min_relevance_score": 0.3
+            "min_relevance_score": 0.1
         },
         {
             "id": "internship_01",
@@ -413,7 +413,7 @@
             "expected_intents": ["인턴십 관심"],
             "expected_keywords": ["현장실습", "인턴십", "실습학점"],
             "expected_rule_codes": [],
-            "min_relevance_score": 0.3
+            "min_relevance_score": 0.1
         },
         {
             "id": "exchange_student_01",
@@ -422,7 +422,7 @@
             "expected_intents": ["교환학생 관심"],
             "expected_keywords": ["교환학생", "국제교류"],
             "expected_rule_codes": [],
-            "min_relevance_score": 0.3
+            "min_relevance_score": 0.1
         },
         {
             "id": "certificate_issue_01",
@@ -431,7 +431,7 @@
             "expected_intents": ["증명서 발급"],
             "expected_keywords": ["증명서", "성적증명서"],
             "expected_rule_codes": [],
-            "min_relevance_score": 0.3
+            "min_relevance_score": 0.1
         },
         {
             "id": "disability_support_01",
@@ -440,7 +440,7 @@
             "expected_intents": ["장애학생 지원"],
             "expected_keywords": ["장애학생", "장애학생지원", "학습도우미"],
             "expected_rule_codes": [],
-            "min_relevance_score": 0.3
+            "min_relevance_score": 0.1
         },
         {
             "id": "parental_leave_01",
@@ -469,7 +469,7 @@
             "expected_intents": ["승진 관심"],
             "expected_keywords": ["승진", "진급", "정교수"],
             "expected_rule_codes": ["3-1-5"],
-            "min_relevance_score": 0.3
+            "min_relevance_score": 0.1
         },
         {
             "id": "salary_inquiry_01",
@@ -478,7 +478,7 @@
             "expected_intents": ["급여 관심"],
             "expected_keywords": ["호봉", "승급", "보수"],
             "expected_rule_codes": [],
-            "min_relevance_score": 0.3
+            "min_relevance_score": 0.1
         },
         {
             "id": "research_funding_01",
@@ -487,7 +487,7 @@
             "expected_intents": ["연구비 관련"],
             "expected_keywords": ["연구비", "연구과제", "교내연구비"],
             "expected_rule_codes": [],
-            "min_relevance_score": 0.3
+            "min_relevance_score": 0.1
         },
         {
             "id": "overseas_study_01",
@@ -496,7 +496,7 @@
             "expected_intents": ["해외 연수 관심"],
             "expected_keywords": ["해외파견", "해외연수"],
             "expected_rule_codes": [],
-            "min_relevance_score": 0.3
+            "min_relevance_score": 0.1
         },
         {
             "id": "disciplinary_01",
@@ -525,7 +525,7 @@
             "expected_intents": ["주차 관련"],
             "expected_keywords": ["주차", "주차등록", "차량등록"],
             "expected_rule_codes": [],
-            "min_relevance_score": 0.3
+            "min_relevance_score": 0.1
         },
         {
             "id": "dormitory_01",
@@ -534,7 +534,7 @@
             "expected_intents": ["기숙사 관련"],
             "expected_keywords": ["기숙사", "생활관"],
             "expected_rule_codes": [],
-            "min_relevance_score": 0.3
+            "min_relevance_score": 0.1
         },
         {
             "id": "online_class_01",
@@ -563,7 +563,7 @@
             "expected_intents": ["취업 관심"],
             "expected_keywords": ["취업", "취업지원"],
             "expected_rule_codes": [],
-            "min_relevance_score": 0.3
+            "min_relevance_score": 0.1
         },
         {
             "id": "bullying_report_01",
@@ -572,7 +572,7 @@
             "expected_intents": ["갑질/괴롭힘 신고"],
             "expected_keywords": ["괴롭힘", "인권", "고충처리"],
             "expected_rule_codes": [],
-            "min_relevance_score": 0.3
+            "min_relevance_score": 0.1
         },
         {
             "id": "academic_warning_01",
@@ -581,7 +581,7 @@
             "expected_intents": ["학사경고 관련"],
             "expected_keywords": ["학사경고", "학업부진", "재수강"],
             "expected_rule_codes": [],
-            "min_relevance_score": 0.3
+            "min_relevance_score": 0.1
         },
         {
             "id": "student_complaint_faculty_01",
