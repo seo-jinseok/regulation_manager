@@ -53,8 +53,8 @@ def setup_components():
     except Exception as e:
         print(f"Warning: LLM init failed ({e}). LLM features will be disabled.")
 
-    # 3. Search
-    search = SearchUseCase(store, llm_client=llm, use_reranker=True)
+    # 3. Search - reranker disabled for better evaluation consistency
+    search = SearchUseCase(store, llm_client=llm, use_reranker=False)
 
     # 4. Evaluation
     eval_usecase = EvaluationUseCase(search_usecase=search)
