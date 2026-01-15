@@ -176,6 +176,40 @@ uv run regulation serve --mcp              # MCP Server
 - `QUICKSTART.md` - User guide
 - `LLM_GUIDE.md` - LLM configuration
 - `SCHEMA_REFERENCE.md` - JSON schema spec
+- `QUERY_PIPELINE.md` - Query processing pipeline details
+
+## Advanced RAG Configuration
+
+The system includes advanced RAG features that can be configured via environment variables:
+
+| Feature | Env Variable | Default | Description |
+|---------|-------------|---------|-------------|
+| Self-RAG | `ENABLE_SELF_RAG` | `true` | LLM evaluates retrieval necessity |
+| HyDE | `ENABLE_HYDE` | `true` | Hypothetical document for vague queries |
+| BM25 Tokenizer | `BM25_TOKENIZE_MODE` | `konlpy` | `konlpy`/`morpheme`/`simple` |
+| HyDE Cache | `HYDE_CACHE_ENABLED` | `true` | Cache hypothetical documents |
+| HyDE Cache Dir | `HYDE_CACHE_DIR` | `data/cache/hyde` | Cache storage location |
+
+### Corrective RAG Thresholds
+
+Dynamic thresholds based on query complexity (configured in `src/rag/config.py`):
+
+```python
+corrective_rag_thresholds = {
+    "simple": 0.3,   # Short keyword queries
+    "medium": 0.4,   # Default for most queries
+    "complex": 0.5,  # Comparison or multi-step queries
+}
+```
+
+### Key Infrastructure Components
+
+| Component | Location | Purpose |
+|-----------|----------|---------|
+| `SelfRAGEvaluator` | `infrastructure/self_rag.py` | Retrieval necessity & relevance evaluation |
+| `HyDEGenerator` | `infrastructure/hyde.py` | Hypothetical document generation |
+| `RetrievalEvaluator` | `infrastructure/retrieval_evaluator.py` | Corrective RAG trigger |
+| `HybridSearcher` | `infrastructure/hybrid_search.py` | BM25 + Dense search fusion |
 
 ## Security & Input Validation
 

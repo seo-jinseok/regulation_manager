@@ -127,6 +127,7 @@ def test_ask_includes_history_and_uses_search_query(monkeypatch):
     store = FakeStore(results)
     llm = FakeLLMCapture()
     usecase = SearchUseCase(store, llm_client=llm, use_reranker=False, use_hybrid=False)
+    usecase._enable_self_rag = False  # Disable Self-RAG for this test
 
     captured = {}
 

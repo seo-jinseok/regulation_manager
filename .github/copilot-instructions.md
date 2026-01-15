@@ -23,10 +23,13 @@ This file provides project-specific context to GitHub Copilot.
 | Component | Location | Role |
 |-----------|----------|------|
 | `QueryHandler` | `interface/query_handler.py` | Query routing & result aggregation |
-| `SearchUseCase` | `application/search_usecase.py` | Search logic + Corrective RAG |
+| `SearchUseCase` | `application/search_usecase.py` | Search logic + Corrective RAG + Self-RAG + HyDE |
 | `FunctionGemmaAdapter` | `infrastructure/function_gemma_adapter.py` | LLM Tool Calling |
 | `QueryAnalyzer` | `infrastructure/query_analyzer.py` | Intent/audience detection |
-| `RetrievalEvaluator` | `infrastructure/retrieval_evaluator.py` | Corrective RAG trigger |
+| `RetrievalEvaluator` | `infrastructure/retrieval_evaluator.py` | Corrective RAG trigger (dynamic thresholds) |
+| `SelfRAGEvaluator` | `infrastructure/self_rag.py` | Retrieval necessity & relevance evaluation |
+| `HyDEGenerator` | `infrastructure/hyde.py` | Hypothetical document generation |
+| `HybridSearcher` | `infrastructure/hybrid_search.py` | BM25 (KoNLPy) + Dense search |
 
 ### Development Principles
 
@@ -62,11 +65,22 @@ uv run regulation serve --web           # Web UI
 ```
 User Query → NFC Normalize → Route by Type → [Tool Calling | Traditional Search]
                                                     ↓                ↓
-                                           QueryAnalyzer      HybridSearcher
-                                           → Intent Hints     → Corrective RAG
-                                           → ToolExecutor     → BGE Reranker
-                                           → LLM Answer       → LLM Answer
+                                           QueryAnalyzer      Self-RAG Check
+                                           → Intent Hints     → HyDE (vague queries)
+                                           → ToolExecutor     → HybridSearcher
+                                           → LLM Answer       → Corrective RAG
+                                                              → BGE Reranker
+                                                              → LLM Answer
 ```
+
+### Advanced RAG Features (enabled by default)
+
+| Feature | Env Variable | Description |
+|---------|-------------|-------------|
+| Self-RAG | `ENABLE_SELF_RAG=true` | LLM evaluates retrieval necessity |
+| HyDE | `ENABLE_HYDE=true` | Hypothetical doc for vague queries |
+| BM25 KoNLPy | `BM25_TOKENIZE_MODE=konlpy` | Morpheme-based tokenization |
+| Corrective RAG | Dynamic thresholds | simple: 0.3, medium: 0.4, complex: 0.5 |
 
 ---
 

@@ -5,6 +5,7 @@ Provides weighted fusion of sparse (keyword-based) and dense (embedding-based)
 search results for improved retrieval quality.
 """
 
+import logging
 import re
 from collections import defaultdict
 from dataclasses import dataclass
@@ -19,6 +20,28 @@ from .query_analyzer import (
 if TYPE_CHECKING:
     from ..domain.repositories import ILLMClient
 
+logger = logging.getLogger(__name__)
+
+# Lazy-loaded KoNLPy tokenizer (singleton)
+_komoran = None
+
+
+def _get_komoran():
+    """Lazy-load Komoran tokenizer (singleton)."""
+    global _komoran
+    if _komoran is None:
+        try:
+            from konlpy.tag import Komoran
+            _komoran = Komoran()
+            logger.debug("KoNLPy Komoran tokenizer initialized")
+        except ImportError:
+            logger.warning("KoNLPy not installed, falling back to morpheme mode")
+            return None
+        except Exception as e:
+            logger.warning(f"Failed to initialize Komoran: {e}")
+            return None
+    return _komoran
+
 
 @dataclass
 class ScoredDocument:
@@ -28,7 +51,6 @@ class ScoredDocument:
     score: float
     content: str
     metadata: Dict
-
 
 class BM25:
     """
@@ -58,8 +80,16 @@ class BM25:
         self.doc_metadata: Dict[str, Dict] = {}  # NEW: Store metadata
 
     def _tokenize(self, text: str) -> List[str]:
-        """Tokenize text into terms based on tokenize_mode."""
-        if self.tokenize_mode == "morpheme":
+        """Tokenize text into terms based on tokenize_mode.
+        
+        Modes:
+            - "simple": Regex-based tokenizer (fast, no external deps)
+            - "morpheme": Rule-based Korean morpheme splitting
+            - "konlpy": KoNLPy Komoran-based tokenizer (best quality)
+        """
+        if self.tokenize_mode == "konlpy":
+            return self._tokenize_konlpy(text)
+        elif self.tokenize_mode == "morpheme":
             return self._tokenize_morpheme(text)
         return self._tokenize_simple(text)
 
@@ -115,6 +145,46 @@ class BM25:
                 tokens.append(token)
 
         return tokens
+
+    def _tokenize_konlpy(self, text: str) -> List[str]:
+        """
+        KoNLPy-based morphological analysis tokenizer.
+
+        Uses Komoran for high-quality Korean morpheme analysis.
+        Extracts nouns, verbs (stems), and adjectives for better recall.
+        Falls back to morpheme mode if KoNLPy is unavailable.
+        """
+        komoran = _get_komoran()
+        if komoran is None:
+            # Fallback to rule-based morpheme tokenizer
+            return self._tokenize_morpheme(text)
+
+        try:
+            text = text.lower()
+            tokens = []
+
+            # Get morphemes with POS tags
+            morphemes = komoran.pos(text)
+
+            # Filter meaningful POS tags
+            # NNG: 일반명사, NNP: 고유명사, VV: 동사, VA: 형용사
+            # MAG: 일반부사, NNB: 의존명사
+            meaningful_tags = {"NNG", "NNP", "VV", "VA", "MAG", "NNB", "SL"}
+
+            for word, pos in morphemes:
+                if pos in meaningful_tags and len(word) >= 2:
+                    tokens.append(word)
+                elif pos == "SL":  # Foreign language (English)
+                    tokens.append(word.lower())
+
+            # If no tokens extracted, fallback to simple
+            if not tokens:
+                return self._tokenize_simple(text)
+
+            return tokens
+        except Exception as e:
+            logger.warning(f"KoNLPy tokenization failed: {e}, falling back to morpheme")
+            return self._tokenize_morpheme(text)
 
     def add_documents(self, documents: List[Tuple[str, str, Dict]]) -> None:
         """
@@ -297,6 +367,7 @@ class HybridSearcher(IHybridSearcher):
         synonyms_path: Optional[str] = None,
         intents_path: Optional[str] = None,
         index_cache_path: Optional[str] = None,
+        tokenize_mode: Optional[str] = None,
     ):
         """
         Initialize hybrid searcher.
@@ -308,8 +379,17 @@ class HybridSearcher(IHybridSearcher):
             use_dynamic_weights: Enable query-based dynamic weighting (default: True).
             use_dynamic_rrf_k: Enable query-based dynamic RRF k value (default: False).
             index_cache_path: Path to cache BM25 index (default: None).
+            tokenize_mode: BM25 tokenizer mode ("simple", "morpheme", "konlpy").
         """
-        self.bm25 = BM25()
+        # Get tokenize_mode from config if not specified
+        if tokenize_mode is None:
+            try:
+                from ..config import get_config
+                tokenize_mode = get_config().bm25_tokenize_mode
+            except Exception:
+                tokenize_mode = "simple"
+
+        self.bm25 = BM25(tokenize_mode=tokenize_mode)
         self.bm25_weight = bm25_weight
         self.dense_weight = dense_weight
         self.rrf_k = rrf_k

@@ -308,6 +308,67 @@ class TestCorrectionStrategy:
         assert result == "expanded query"
 
 
+class TestDynamicThresholds:
+    """Test dynamic threshold support for query complexity."""
+
+    def test_threshold_dict_accepted(self):
+        """쿼리 유형별 임계값 딕셔너리를 받을 수 있어야 함."""
+        thresholds = {"simple": 0.3, "medium": 0.4, "complex": 0.5}
+        evaluator = RetrievalEvaluator(relevance_threshold=thresholds)
+        
+        assert evaluator._thresholds == thresholds
+
+    def test_float_threshold_converted_to_dict(self):
+        """단일 float 임계값은 내부적으로 딕셔너리로 변환."""
+        evaluator = RetrievalEvaluator(relevance_threshold=0.35)
+        
+        # 모든 쿼리 유형에 동일한 임계값 적용
+        assert evaluator._thresholds["simple"] == 0.35
+        assert evaluator._thresholds["medium"] == 0.35
+        assert evaluator._thresholds["complex"] == 0.35
+
+    def test_needs_correction_uses_query_complexity(self):
+        """needs_correction이 쿼리 복잡도를 고려해야 함."""
+        thresholds = {"simple": 0.3, "medium": 0.4, "complex": 0.5}
+        evaluator = RetrievalEvaluator(relevance_threshold=thresholds)
+        
+        # 점수 0.35인 결과
+        results = [
+            make_result("doc1", "내용", 0.35, rule_code="1-1-1"),
+            make_result("doc2", "내용2", 0.30, rule_code="2-1-1"),
+        ]
+        
+        # simple (임계값 0.3): 0.35 > 0.3 → 수정 불필요
+        assert evaluator.needs_correction("쿼리", results, complexity="simple") is False
+        
+        # complex (임계값 0.5): 0.35 < 0.5 → 수정 필요
+        assert evaluator.needs_correction("쿼리", results, complexity="complex") is True
+
+    def test_needs_correction_default_complexity_medium(self):
+        """complexity 미지정 시 medium 사용."""
+        thresholds = {"simple": 0.3, "medium": 0.4, "complex": 0.5}
+        evaluator = RetrievalEvaluator(relevance_threshold=thresholds)
+        
+        results = [
+            make_result("doc1", "내용", 0.35, rule_code="1-1-1"),
+            make_result("doc2", "내용2", 0.30, rule_code="2-1-1"),
+        ]
+        
+        # medium (임계값 0.4): 0.35 < 0.4 → 수정 필요
+        assert evaluator.needs_correction("쿼리", results) is True
+
+    def test_default_thresholds_from_config(self):
+        """설정에서 기본 임계값을 가져와야 함."""
+        from src.rag.config import get_config, reset_config
+        reset_config()
+        
+        evaluator = RetrievalEvaluator()
+        config = get_config()
+        
+        assert evaluator._thresholds == config.corrective_rag_thresholds
+        reset_config()
+
+
 class TestEvaluatorWeights:
     """Test the weighted combination of component scores."""
 

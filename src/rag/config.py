@@ -64,6 +64,30 @@ class RAGConfig:
         default_factory=lambda: os.getenv("BM25_INDEX_CACHE_PATH")
     )
 
+    # Advanced RAG settings
+    enable_self_rag: bool = field(
+        default_factory=lambda: os.getenv("ENABLE_SELF_RAG", "true").lower() == "true"
+    )
+    enable_hyde: bool = field(
+        default_factory=lambda: os.getenv("ENABLE_HYDE", "true").lower() == "true"
+    )
+    bm25_tokenize_mode: str = field(
+        default_factory=lambda: os.getenv("BM25_TOKENIZE_MODE", "konlpy")
+    )
+    corrective_rag_thresholds: dict = field(
+        default_factory=lambda: {
+            "simple": 0.3,   # 단순 쿼리는 낮은 임계값
+            "medium": 0.4,   # 기본 임계값
+            "complex": 0.5,  # 복잡 쿼리는 더 엄격
+        }
+    )
+    hyde_cache_dir: str = field(
+        default_factory=lambda: os.getenv("HYDE_CACHE_DIR", "data/cache/hyde")
+    )
+    hyde_cache_enabled: bool = field(
+        default_factory=lambda: os.getenv("HYDE_CACHE_ENABLED", "true").lower() == "true"
+    )
+
     # Supported LLM providers
     llm_providers: List[str] = field(
         default_factory=lambda: [
@@ -132,6 +156,11 @@ class RAGConfig:
         if not self.bm25_index_cache_path:
             return None
         return Path(self.bm25_index_cache_path).resolve()
+
+    @property
+    def hyde_cache_dir_resolved(self) -> Path:
+        """Get absolute path to HyDE cache directory."""
+        return Path(self.hyde_cache_dir).resolve()
 
 
 # Global configuration instance (singleton)

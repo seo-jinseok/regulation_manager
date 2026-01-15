@@ -90,6 +90,9 @@ class SelfRAGEvaluator:
         """
         Evaluate if retrieval is needed for this query.
 
+        For regulation Q&A systems, retrieval is almost always needed.
+        Only skip retrieval for very simple greetings/chat.
+
         Args:
             query: User's question
 
@@ -99,6 +102,11 @@ class SelfRAGEvaluator:
         if not self._llm_client:
             return True  # Default to retrieval if no LLM
 
+        # Quick heuristic: very short queries without question words
+        # are probably not factual questions
+        if len(query) < 5 and not any(k in query for k in ["?", "뭐", "어떻", "왜", "언제"]):
+            return True  # Still default to retrieval to be safe
+
         prompt = self.RETRIEVAL_NEEDED_PROMPT.format(query=query)
 
         try:
@@ -107,9 +115,12 @@ class SelfRAGEvaluator:
                 user_message=prompt,
                 temperature=0.0,
             )
-            return "[RETRIEVE_YES]" in response.upper()
+            # Default to retrieval unless explicitly told not to
+            if "[RETRIEVE_NO]" in response.upper():
+                return False
+            return True  # Default to retrieval
         except Exception:
-            return True  # Default to retrieval on error
+            return True  # Default to retrieval on error  # Default to retrieval on error
 
     def evaluate_relevance(
         self, query: str, results: List["SearchResult"], max_context_chars: int = 2000

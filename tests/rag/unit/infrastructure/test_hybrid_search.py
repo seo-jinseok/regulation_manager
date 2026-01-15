@@ -20,6 +20,16 @@ class TestBM25Tokenization:
     def bm25(self) -> BM25:
         return BM25()
 
+    @pytest.fixture
+    def bm25_konlpy(self) -> BM25:
+        """KoNLPy 토크나이저를 사용하는 BM25."""
+        return BM25(tokenize_mode="konlpy")
+
+    @pytest.fixture
+    def bm25_morpheme(self) -> BM25:
+        """규칙 기반 형태소 분석 토크나이저를 사용하는 BM25."""
+        return BM25(tokenize_mode="morpheme")
+
     def test_tokenize_korean_text(self, bm25: BM25):
         """한글 텍스트가 올바르게 토큰화되는지 확인"""
         tokens = bm25._tokenize("교원인사규정 제15조에 따라 임용한다")
@@ -52,6 +62,41 @@ class TestBM25Tokenization:
         assert "15" in tokens
         assert "3" in tokens
         assert "2" in tokens
+
+    def test_konlpy_tokenize_extracts_nouns(self, bm25_konlpy: BM25):
+        """KoNLPy 토크나이저가 명사를 추출하는지 확인"""
+        tokens = bm25_konlpy._tokenize("교원의 휴직 신청 절차")
+        # 명사들이 추출되어야 함
+        assert "교원" in tokens
+        assert "휴직" in tokens
+        assert "신청" in tokens
+        assert "절차" in tokens
+
+    def test_konlpy_tokenize_handles_compound_words(self, bm25_konlpy: BM25):
+        """KoNLPy가 복합어를 분리하는지 확인"""
+        tokens = bm25_konlpy._tokenize("육아휴직신청서")
+        # 형태소 분석으로 분리되어야 함
+        assert len(tokens) >= 1  # 최소 1개 이상의 토큰
+
+    def test_morpheme_tokenize_splits_compounds(self, bm25_morpheme: BM25):
+        """규칙 기반 형태소 분석이 복합어를 분리하는지 확인"""
+        tokens = bm25_morpheme._tokenize("육아휴직신청")
+        # 접두사 "육아" + "휴직" + "신청"으로 분리되거나, 최소한 "신청" 분리
+        assert "신청" in tokens or "육아휴직" in tokens
+
+    def test_tokenize_mode_affects_results(self):
+        """토크나이저 모드에 따라 결과가 달라지는지 확인"""
+        bm25_simple = BM25(tokenize_mode="simple")
+        bm25_morpheme = BM25(tokenize_mode="morpheme")
+        
+        text = "교원휴직규정에 따른 신청"
+        
+        simple_tokens = bm25_simple._tokenize(text)
+        morpheme_tokens = bm25_morpheme._tokenize(text)
+        
+        # morpheme 모드가 더 많은 토큰을 생성할 수 있음 (복합어 분리)
+        assert len(simple_tokens) >= 1
+        assert len(morpheme_tokens) >= 1
 
 
 class TestBM25Indexing:

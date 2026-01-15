@@ -487,6 +487,7 @@ class TestSearchUseCaseAsk:
             use_reranker=False,
             use_hybrid=False,
         )
+        usecase._enable_self_rag = False  # Disable Self-RAG for this test
         usecase.ask(
             question="다음 질문",
             history_text="이전 대화 기록",

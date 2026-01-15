@@ -21,20 +21,39 @@ class RetrievalEvaluator:
     - Result diversity
     """
 
-    # Threshold below which correction is triggered
+    # Default threshold below which correction is triggered
     RELEVANCE_THRESHOLD = 0.4
 
     # Minimum results needed for reliable evaluation
     MIN_RESULTS_FOR_EVAL = 2
 
-    def __init__(self, relevance_threshold: float = None):
+    def __init__(self, relevance_threshold: float | dict = None):
         """
         Initialize evaluator.
 
         Args:
-            relevance_threshold: Custom threshold (default: 0.4)
+            relevance_threshold: Custom threshold. Can be:
+                - float: Same threshold for all query types
+                - dict: {"simple": 0.3, "medium": 0.4, "complex": 0.5}
+                - None: Use defaults from config
         """
-        self.threshold = relevance_threshold or self.RELEVANCE_THRESHOLD
+        if relevance_threshold is None:
+            # Load from config
+            from ..config import get_config
+            config = get_config()
+            self._thresholds = config.corrective_rag_thresholds.copy()
+        elif isinstance(relevance_threshold, dict):
+            self._thresholds = relevance_threshold.copy()
+        else:
+            # Convert single float to dict for all types
+            self._thresholds = {
+                "simple": relevance_threshold,
+                "medium": relevance_threshold,
+                "complex": relevance_threshold,
+            }
+        
+        # Backward compatibility: keep threshold property for legacy code
+        self.threshold = self._thresholds.get("medium", self.RELEVANCE_THRESHOLD)
 
     def evaluate(self, query: str, results: List["SearchResult"]) -> float:
         """
@@ -60,13 +79,19 @@ class RetrievalEvaluator:
 
         return min(1.0, max(0.0, final_score))
 
-    def needs_correction(self, query: str, results: List["SearchResult"]) -> bool:
+    def needs_correction(
+        self,
+        query: str,
+        results: List["SearchResult"],
+        complexity: str = "medium",
+    ) -> bool:
         """
         Check if search results need correction.
 
         Args:
             query: Original search query
             results: List of SearchResult objects
+            complexity: Query complexity ("simple", "medium", "complex")
 
         Returns:
             True if correction (re-retrieval) is recommended
@@ -78,7 +103,8 @@ class RetrievalEvaluator:
             return True
 
         score = self.evaluate(query, results)
-        return score < self.threshold
+        threshold = self._thresholds.get(complexity, self._thresholds["medium"])
+        return score < threshold
 
     def _evaluate_top_score(self, results: List["SearchResult"]) -> float:
         """Evaluate based on top result's retrieval score."""

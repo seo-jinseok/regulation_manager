@@ -326,28 +326,186 @@ def _match_intents(self, query: str) -> List[IntentMatch]:
 
 ---
 
-## Self-RAG (선택적)
+## Self-RAG
 
-### 활성화 조건
+Self-RAG는 LLM이 검색 필요성과 결과 품질을 자체 평가하는 고급 RAG 기법입니다.
 
-Self-RAG는 추가 LLM 호출이 필요하여 기본적으로 비활성화되어 있습니다.
+### 활성화 설정
+
+Self-RAG는 **기본적으로 활성화**되어 있습니다. 비활성화하려면:
+
+```bash
+# 환경 변수로 비활성화
+ENABLE_SELF_RAG=false uv run regulation
+
+# 또는 .env 파일에 설정
+ENABLE_SELF_RAG=false
+```
+
+### 파이프라인 통합
 
 ```python
-# self_rag.py
-class SelfRAGPipeline:
-    enable_retrieval_check: bool = True   # 검색 필요성 평가
-    enable_relevance_check: bool = True   # 결과 관련성 평가
-    enable_support_check: bool = False    # 답변 근거 평가 (비용 높음)
+# search_usecase.py
+def ask(self, question, ...):
+    # 1. Self-RAG: 검색 필요성 평가
+    if self._enable_self_rag:
+        self._ensure_self_rag()
+        if not self._self_rag_evaluator.needs_retrieval(question):
+            # 검색 없이 직접 답변 (간단한 인사말 등)
+            return self._generate_direct_answer(question)
+    
+    # 2. 검색 수행
+    results = self.search(search_query or question, ...)
+    
+    # 3. Self-RAG: 결과 관련성 필터링
+    if self._enable_self_rag and results:
+        results = self._apply_self_rag_relevance_filter(question, results)
+    
+    # 4. 답변 생성
+    return self._generate_answer(question, results)
 ```
 
 ### 평가 프롬프트
 
+**검색 필요성 평가**:
 ```
 다음 질문에 답하기 위해 외부 문서 검색이 필요한지 판단하세요.
 
 질문: {query}
 
 답변 형식: [RETRIEVE_YES] 또는 [RETRIEVE_NO]
+```
+
+**결과 관련성 평가**:
+```
+다음 문서가 질문에 답변하는 데 관련이 있는지 평가하세요.
+
+질문: {query}
+문서: {context}
+
+답변 형식: [RELEVANT] 또는 [IRRELEVANT]
+```
+
+---
+
+## HyDE (Hypothetical Document Embeddings)
+
+HyDE는 모호한 쿼리에 대해 가상의 규정 문서를 생성한 후, 그 문서의 임베딩으로 검색하는 기법입니다.
+
+### 활성화 설정
+
+HyDE는 **기본적으로 활성화**되어 있습니다. 비활성화하려면:
+
+```bash
+ENABLE_HYDE=false uv run regulation
+```
+
+### 자동 감지 로직
+
+```python
+# search_usecase.py
+VAGUE_PATTERNS = [
+    r"싶어|싫어",      # 의도 표현
+    r"뭐가|어떤|어떻게",  # 불명확 질문
+    r"알려|설명",      # 정보 요청
+]
+
+def _should_use_hyde(self, query: str) -> bool:
+    # 모호한 표현이 포함된 경우 HyDE 적용
+    for pattern in VAGUE_PATTERNS:
+        if re.search(pattern, query):
+            return True
+    return False
+```
+
+### 파이프라인 통합
+
+```python
+def _search_general(self, query, ...):
+    # 1. HyDE 적용 여부 확인
+    if self._enable_hyde and self._should_use_hyde(query.text):
+        self._ensure_hyde()
+        hyde_result = self._apply_hyde(query.text)
+        if hyde_result:
+            # 가상 문서로 검색
+            query = Query(text=hyde_result.hypothetical_doc, ...)
+    
+    # 2. 하이브리드 검색 수행
+    results = self.hybrid_searcher.hybrid_search(query, ...)
+    
+    return results
+```
+
+### 가상 문서 생성 프롬프트
+
+```
+당신은 대학 규정 전문가입니다. 
+사용자의 질문에 답하는 대학 규정 조문을 작성하세요.
+
+작성 규칙:
+1. 실제 대학 규정처럼 형식적인 문체로 작성
+2. 관련 키워드와 용어를 포함
+3. 100-200자 내외로 간결하게 작성
+
+예시:
+질문: "학교 안 가고 싶어"
+답변: 교직원의 휴직은 다음 각 호의 사유에 해당하는 경우 신청할 수 있다...
+```
+
+### 캐시 전략
+
+HyDE 결과는 영구 캐시에 저장됩니다:
+
+```python
+# 캐시 위치: data/cache/hyde/hyde_cache.json
+{
+    "학교에 가기 싫어": {
+        "hypothetical_doc": "교직원의 휴직은 다음 각 호의...",
+        "created_at": "2024-01-15T10:30:00"
+    }
+}
+```
+
+환경 변수로 캐시 제어:
+```bash
+HYDE_CACHE_DIR=data/cache/hyde  # 캐시 디렉토리
+HYDE_CACHE_ENABLED=true         # 캐시 활성화 (기본: true)
+```
+
+---
+
+## Corrective RAG 동적 임계값
+
+쿼리 복잡도에 따라 관련성 평가 임계값이 자동 조정됩니다.
+
+### 임계값 설정
+
+```python
+# config.py
+corrective_rag_thresholds = {
+    "simple": 0.3,   # 단순 키워드 검색
+    "medium": 0.4,   # 일반 질문 (기본값)
+    "complex": 0.5,  # 비교, 다단계 질문
+}
+```
+
+### 복잡도 판단 로직
+
+```python
+def _determine_complexity(self, query: str) -> str:
+    # 비교 표현: "차이점", "vs", "비교"
+    if re.search(r"차이|비교|vs|versus", query):
+        return "complex"
+    
+    # 다단계 질문: "그리고", "또한", "추가로"
+    if re.search(r"그리고|또한|추가로|동시에", query):
+        return "complex"
+    
+    # 단순 키워드 (3단어 이하)
+    if len(query.split()) <= 3:
+        return "simple"
+    
+    return "medium"
 ```
 
 ---
@@ -369,6 +527,8 @@ uv run regulation --debug
 | `ToolExecutor.execute` | 도구 호출 및 결과 |
 | `RetrievalEvaluator.evaluate` | 관련성 점수 |
 | `_apply_corrective_rag` | 재검색 트리거 여부 |
+| `SelfRAGEvaluator.needs_retrieval` | 검색 필요성 판단 |
+| `HyDEGenerator.generate` | 가상 문서 생성 |
 
 ### 일반적인 문제
 
@@ -378,3 +538,5 @@ uv run regulation --debug
 | LLM이 엉뚱한 검색 | 시스템 프롬프트에 힌트 미포함 | `_build_analysis_context` 확인 |
 | "전문" 쿼리 실패 | NFD/NFC 정규화 누락 | `_normalize_query` 확인 |
 | Corrective RAG 미작동 | `_corrective_rag_enabled = False` | 설정 확인 |
+| Self-RAG 비활성화됨 | `ENABLE_SELF_RAG=false` 환경 변수 | `.env` 확인 |
+| HyDE 캐시 미사용 | `HYDE_CACHE_ENABLED=false` | 설정 확인 |

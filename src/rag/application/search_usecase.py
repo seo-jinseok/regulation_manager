@@ -200,6 +200,15 @@ class SearchUseCase:
         self._retrieval_evaluator = None
         self._corrective_rag_enabled = True
 
+        # HyDE components (from config)
+        self._enable_hyde = config.enable_hyde
+        self._hyde_generator = None  # Lazy initialized
+        self._hyde_searcher = None   # Lazy initialized
+
+        # Self-RAG components (from config)
+        self._enable_self_rag = config.enable_self_rag
+        self._self_rag_pipeline = None  # Lazy initialized
+
         # Background warmup
         if enable_warmup is None:
             enable_warmup = os.environ.get("WARMUP_ON_INIT", "").lower() == "true"
@@ -619,8 +628,25 @@ class SearchUseCase:
         # Increase recall for intent/llm queries to ensure correct candidates are found
         fetch_k = top_k * 6 if is_intent else top_k * 3
 
+        # Adaptive RAG: Classify query complexity early for HyDE decision
+        matched_intents = (
+            self._last_query_rewrite.matched_intents if self._last_query_rewrite else None
+        )
+        complexity = self._classify_query_complexity(query_text, matched_intents)
+
         # Get dense results
         dense_results = self.store.search(query, filter, fetch_k)
+
+        # Apply HyDE for vague/complex queries (merge with dense results)
+        if self._should_use_hyde(query_text, complexity):
+            hyde_results = self._apply_hyde(query_text, filter, fetch_k // 2)
+            if hyde_results:
+                # Merge HyDE results with dense results
+                seen_ids = {r.chunk.id for r in dense_results}
+                for r in hyde_results:
+                    if r.chunk.id not in seen_ids:
+                        seen_ids.add(r.chunk.id)
+                        dense_results.append(r)
 
         # Apply hybrid search if available
         results = self._apply_hybrid_search(
@@ -640,11 +666,6 @@ class SearchUseCase:
         # Re-sort by boosted score
         boosted_results.sort(key=lambda x: -x.score)
 
-        # Adaptive RAG: Classify query complexity and decide reranker usage
-        matched_intents = (
-            self._last_query_rewrite.matched_intents if self._last_query_rewrite else None
-        )
-        complexity = self._classify_query_complexity(query_text, matched_intents)
         skip_reranker = self._should_skip_reranker(complexity, matched_intents)
 
         # Apply reranking if enabled and not skipped by Adaptive RAG
@@ -659,7 +680,7 @@ class SearchUseCase:
                 f"matched_intents={matched_intents}"
             )
 
-        # Corrective RAG: Check if results need correction
+        # Corrective RAG: Check if results need correction (with dynamic threshold)
         if self._corrective_rag_enabled and boosted_results:
             boosted_results = self._apply_corrective_rag(
                 query_text,
@@ -668,6 +689,7 @@ class SearchUseCase:
                 top_k,
                 include_abolished,
                 audience_override,
+                complexity=complexity,  # Pass complexity for dynamic threshold
             )
 
         # Deduplicate by article (One Chunk per Article)
@@ -982,6 +1004,104 @@ class SearchUseCase:
             warmup_reranker()
             self._reranker_initialized = True
 
+    def _ensure_hyde(self) -> None:
+        """Initialize HyDE generator if not already initialized."""
+        if self._hyde_generator is None and self._enable_hyde:
+            from ..infrastructure.hyde import HyDEGenerator
+            from ..config import get_config
+
+            config = get_config()
+            self._hyde_generator = HyDEGenerator(
+                llm_client=self.llm,
+                cache_dir=config.hyde_cache_dir,
+                enable_cache=config.hyde_cache_enabled,
+            )
+
+    def _should_use_hyde(self, query_text: str, complexity: str) -> bool:
+        """Determine if HyDE should be used for this query."""
+        if not self._enable_hyde:
+            return False
+
+        self._ensure_hyde()
+        if self._hyde_generator is None:
+            return False
+
+        return self._hyde_generator.should_use_hyde(query_text, complexity)
+
+    def _apply_hyde(
+        self,
+        query_text: str,
+        filter: Optional[SearchFilter],
+        top_k: int,
+    ) -> List[SearchResult]:
+        """
+        Apply HyDE: generate hypothetical document and search with it.
+
+        Returns additional results from HyDE-enhanced search.
+        """
+        self._ensure_hyde()
+        if self._hyde_generator is None:
+            return []
+
+        try:
+            # Generate hypothetical document
+            hyde_result = self._hyde_generator.generate_hypothetical_doc(query_text)
+
+            # Search with hypothetical document
+            from ..domain.value_objects import Query
+            hyde_query = Query(text=hyde_result.hypothetical_doc)
+            hyde_results = self.store.search(hyde_query, filter, top_k)
+
+            logger.debug(
+                f"HyDE: Generated doc (cached={hyde_result.cached}), "
+                f"found {len(hyde_results)} results"
+            )
+
+            return hyde_results
+        except Exception as e:
+            logger.warning(f"HyDE search failed: {e}")
+            return []
+
+    def _ensure_self_rag(self) -> None:
+        """Initialize Self-RAG pipeline if not already initialized."""
+        if self._self_rag_pipeline is None and self._enable_self_rag:
+            from ..infrastructure.self_rag import SelfRAGPipeline
+
+            self._self_rag_pipeline = SelfRAGPipeline(
+                search_usecase=self,
+                llm_client=self.llm,
+                enable_retrieval_check=True,
+                enable_relevance_check=True,
+                enable_support_check=True,
+                async_support_check=True,
+            )
+
+    def _apply_self_rag_relevance_filter(
+        self, query: str, results: List[SearchResult]
+    ) -> List[SearchResult]:
+        """Apply Self-RAG relevance filtering to results."""
+        if not self._enable_self_rag or not results:
+            return results
+
+        self._ensure_self_rag()
+        if self._self_rag_pipeline is None:
+            return results
+
+        try:
+            is_relevant, filtered, confidence = (
+                self._self_rag_pipeline.evaluate_results_batch(query, results)
+            )
+            if filtered:
+                logger.debug(
+                    f"Self-RAG: Filtered {len(results)} -> {len(filtered)} results "
+                    f"(relevant={is_relevant}, confidence={confidence:.2f})"
+                )
+                return filtered
+        except Exception as e:
+            logger.warning(f"Self-RAG relevance filter failed: {e}")
+
+        return results
+
     def _apply_corrective_rag(
         self,
         query_text: str,
@@ -990,6 +1110,7 @@ class SearchUseCase:
         top_k: int,
         include_abolished: bool,
         audience_override: Optional["Audience"],
+        complexity: str = "medium",
     ) -> List[SearchResult]:
         """
         Apply Corrective RAG: evaluate results and re-retrieve if needed.
@@ -998,6 +1119,15 @@ class SearchUseCase:
         1. Expand the query using intent/synonym detection
         2. Re-run the search with expanded query
         3. Merge and re-rank combined results
+
+        Args:
+            query_text: Original query text
+            results: Current search results
+            filter: Optional search filter
+            top_k: Number of results to return
+            include_abolished: Whether to include abolished regulations
+            audience_override: Optional audience override
+            complexity: Query complexity for dynamic threshold selection
         """
         # Lazy initialize evaluator
         if self._retrieval_evaluator is None:
@@ -1005,8 +1135,10 @@ class SearchUseCase:
 
             self._retrieval_evaluator = RetrievalEvaluator()
 
-        # Evaluate current results
-        if not self._retrieval_evaluator.needs_correction(query_text, results):
+        # Evaluate current results with dynamic threshold based on complexity
+        if not self._retrieval_evaluator.needs_correction(
+            query_text, results, complexity=complexity
+        ):
             return results  # Results are good enough
 
         # Try to get expanded query
@@ -1212,8 +1344,20 @@ class SearchUseCase:
 
             raise ConfigurationError("LLM client not configured. Use search() instead.")
 
-        # Get relevant chunks
+        # Self-RAG: Check if retrieval is even needed
         retrieval_query = search_query or question
+        if self._enable_self_rag:
+            self._ensure_self_rag()
+            if self._self_rag_pipeline and not self._self_rag_pipeline.should_retrieve(question):
+                # Simple query that doesn't need retrieval (rare for regulation Q&A)
+                logger.debug("Self-RAG: Skipping retrieval for simple query")
+                return Answer(
+                    text="이 질문은 규정 검색이 필요하지 않습니다. 구체적인 규정 관련 질문을 해주세요.",
+                    sources=[],
+                    confidence=0.5,
+                )
+
+        # Get relevant chunks
         results = self.search(
             retrieval_query,
             filter=filter,
@@ -1228,6 +1372,9 @@ class SearchUseCase:
                 sources=[],
                 confidence=0.0,
             )
+
+        # Self-RAG: Apply relevance filtering
+        results = self._apply_self_rag_relevance_filter(question, results)
 
         # Filter out low-signal headings when possible
         filtered_results = self._select_answer_sources(results, top_k)
@@ -1251,6 +1398,12 @@ class SearchUseCase:
             user_message=user_message,
             temperature=0.0,
         )
+
+        # Self-RAG: Start async support verification
+        if self._enable_self_rag and self._self_rag_pipeline:
+            self._self_rag_pipeline.start_async_support_check(
+                question, context, answer_text
+            )
 
         # Compute confidence based on search scores
         confidence = self._compute_confidence(filtered_results)
