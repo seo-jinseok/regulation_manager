@@ -1053,7 +1053,7 @@ class SearchUseCase:
             hyde_results = self.store.search(hyde_query, filter, top_k)
 
             logger.debug(
-                f"HyDE: Generated doc (cached={hyde_result.cached}), "
+                f"HyDE: Generated doc (from_cache={hyde_result.from_cache}), "
                 f"found {len(hyde_results)} results"
             )
 
