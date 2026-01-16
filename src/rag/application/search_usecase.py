@@ -209,6 +209,11 @@ class SearchUseCase:
         self._enable_self_rag = config.enable_self_rag
         self._self_rag_pipeline = None  # Lazy initialized
 
+        # Fact check components (from config)
+        self._enable_fact_check = config.enable_fact_check
+        self._fact_check_max_retries = config.fact_check_max_retries
+        self._fact_checker = None  # Lazy initialized
+
         # Background warmup
         if enable_warmup is None:
             enable_warmup = os.environ.get("WARMUP_ON_INIT", "").lower() == "true"
@@ -1076,6 +1081,13 @@ class SearchUseCase:
                 async_support_check=True,
             )
 
+    def _ensure_fact_checker(self) -> None:
+        """Initialize FactChecker if not already initialized."""
+        if self._fact_checker is None and self._enable_fact_check:
+            from ..infrastructure.fact_checker import FactChecker
+
+            self._fact_checker = FactChecker(store=self.store)
+
     def _apply_self_rag_relevance_filter(
         self, query: str, results: List[SearchResult]
     ) -> List[SearchResult]:
@@ -1393,10 +1405,12 @@ class SearchUseCase:
             logger.debug(f"[User]\n{user_message}")
             logger.debug("=" * 80)
 
-        answer_text = self.llm.generate(
-            system_prompt=REGULATION_QA_PROMPT,
-            user_message=user_message,
-            temperature=0.0,
+        # Generate answer with fact-check loop
+        answer_text = self._generate_with_fact_check(
+            question=question,
+            context=context,
+            history_text=history_text,
+            debug=debug,
         )
 
         # Self-RAG: Start async support verification
@@ -1413,6 +1427,99 @@ class SearchUseCase:
             sources=filtered_results,
             confidence=confidence,
         )
+
+    def _generate_with_fact_check(
+        self,
+        question: str,
+        context: str,
+        history_text: Optional[str] = None,
+        debug: bool = False,
+    ) -> str:
+        """
+        Generate answer with iterative fact-checking and correction.
+
+        If fact check fails, regenerate with feedback until all citations
+        are verified or max retries reached.
+
+        Args:
+            question: User's question.
+            context: Search result context.
+            history_text: Optional conversation history.
+            debug: Whether to print debug info.
+
+        Returns:
+            Verified answer text.
+        """
+        user_message = self._build_user_message(question, context, history_text)
+
+        # Initial generation
+        answer_text = self.llm.generate(
+            system_prompt=REGULATION_QA_PROMPT,
+            user_message=user_message,
+            temperature=0.0,
+        )
+
+        # Skip fact check if disabled
+        if not self._enable_fact_check:
+            return answer_text
+
+        self._ensure_fact_checker()
+        if not self._fact_checker:
+            return answer_text
+
+        # Fact check loop
+        for attempt in range(self._fact_check_max_retries + 1):
+            fact_result = self._fact_checker.check(answer_text)
+
+            if debug:
+                logger.debug(
+                    f"Fact check attempt {attempt + 1}: "
+                    f"{fact_result.verified_count}/{fact_result.total_count} verified"
+                )
+
+            # All citations verified - done!
+            if fact_result.all_verified:
+                if attempt > 0:
+                    logger.info(
+                        f"Fact check passed after {attempt + 1} attempts "
+                        f"({fact_result.verified_count} citations verified)"
+                    )
+                return answer_text
+
+            # Max retries reached - return best effort with warning
+            if attempt >= self._fact_check_max_retries:
+                logger.warning(
+                    f"Fact check failed after {attempt + 1} attempts. "
+                    f"Unverified citations: {[c.original_text for c in fact_result.failed_citations]}"
+                )
+                # Add warning to answer
+                failed_refs = ", ".join(
+                    c.original_text for c in fact_result.failed_citations
+                )
+                answer_text += (
+                    f"\n\n---\n⚠️ **주의**: 일부 인용({failed_refs})은 "
+                    f"데이터베이스에서 확인되지 않았습니다. 담당 부서에 확인하시기 바랍니다."
+                )
+                return answer_text
+
+            # Build correction feedback and regenerate
+            feedback = self._fact_checker.build_correction_feedback(fact_result)
+            corrected_user_message = (
+                f"{user_message}\n\n---\n{feedback}\n\n"
+                f"위 피드백을 반영하여 다시 답변해주세요. "
+                f"검증되지 않은 조항은 언급하지 마세요."
+            )
+
+            if debug:
+                logger.debug(f"Regenerating with feedback:\n{feedback}")
+
+            answer_text = self.llm.generate(
+                system_prompt=REGULATION_QA_PROMPT,
+                user_message=corrected_user_message,
+                temperature=0.0,
+            )
+
+        return answer_text
 
     def ask_stream(
         self,

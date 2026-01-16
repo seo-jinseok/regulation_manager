@@ -88,6 +88,14 @@ class RAGConfig:
         default_factory=lambda: os.getenv("HYDE_CACHE_ENABLED", "true").lower() == "true"
     )
 
+    # Fact check settings
+    enable_fact_check: bool = field(
+        default_factory=lambda: os.getenv("ENABLE_FACT_CHECK", "true").lower() == "true"
+    )
+    fact_check_max_retries: int = field(
+        default_factory=lambda: int(os.getenv("FACT_CHECK_MAX_RETRIES", "2"))
+    )
+
     # Supported LLM providers
     llm_providers: List[str] = field(
         default_factory=lambda: [
