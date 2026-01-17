@@ -153,10 +153,10 @@ class HyDEGenerator:
         
         try:
             # Generate hypothetical document
+            # Note: LLMClientAdapter.generate() only accepts system_prompt, user_message, temperature
             hypothetical_doc = self._llm_client.generate(
                 system_prompt=self.SYSTEM_PROMPT,
                 user_message=f"질문: {query}",
-                max_tokens=300,
                 temperature=0.3,  # Low temperature for consistency
             )
             

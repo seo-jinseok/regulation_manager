@@ -483,6 +483,135 @@ class SearchUseCase:
                         break
         return target_rule_code
 
+    def _search_composite(
+        self,
+        sub_queries: List[str],
+        original_query: str,
+        filter: Optional[SearchFilter],
+        top_k: int,
+        include_abolished: bool,
+        audience_override: Optional["Audience"],
+    ) -> List[SearchResult]:
+        """
+        Search with composite query decomposition and RRF merge.
+
+        Searches each sub-query separately and merges results using
+        Reciprocal Rank Fusion (RRF) for better coverage.
+
+        Args:
+            sub_queries: List of decomposed sub-queries.
+            original_query: The original composite query.
+            filter: Optional metadata filters.
+            top_k: Maximum number of results.
+            include_abolished: Whether to include abolished regulations.
+            audience_override: Optional audience override.
+
+        Returns:
+            Merged and deduplicated results.
+        """
+        logger.info(
+            "Composite search: decomposed '%s' into %d sub-queries: %s",
+            original_query,
+            len(sub_queries),
+            sub_queries,
+        )
+
+        # Collect results from each sub-query
+        all_results: Dict[str, List[tuple]] = {}  # chunk_id -> [(rank, result), ...]
+
+        for sq_idx, sub_query in enumerate(sub_queries):
+            # Search each sub-query (avoid recursive decomposition)
+            query = Query(text=sub_query, include_abolished=include_abolished)
+
+            # Get dense results
+            dense_results = self.store.search(query, filter, top_k * 3)
+
+            # Apply hybrid search if available
+            if self.hybrid_searcher:
+                from ..infrastructure.hybrid_search import ScoredDocument
+
+                sparse_results = self.hybrid_searcher.search_sparse(sub_query, top_k * 2)
+                sparse_results = self._filter_sparse_results(
+                    sparse_results, filter=filter, include_abolished=include_abolished
+                )
+                dense_docs = [
+                    ScoredDocument(
+                        doc_id=r.chunk.id,
+                        score=r.score,
+                        content=r.chunk.text,
+                        metadata=r.chunk.to_metadata(),
+                    )
+                    for r in dense_results
+                ]
+                fused = self.hybrid_searcher.fuse_results(
+                    sparse_results=sparse_results,
+                    dense_results=dense_docs,
+                    query_text=sub_query,
+                )
+                # Convert back to SearchResult
+                sub_results = []
+                for doc in fused:
+                    for orig in dense_results:
+                        if orig.chunk.id == doc.doc_id:
+                            sub_results.append(
+                                SearchResult(
+                                    chunk=orig.chunk, score=doc.score, rank=0
+                                )
+                            )
+                            break
+            else:
+                sub_results = dense_results
+
+            # Record rank for RRF
+            for rank, result in enumerate(sub_results, start=1):
+                chunk_id = result.chunk.id
+                if chunk_id not in all_results:
+                    all_results[chunk_id] = []
+                all_results[chunk_id].append((rank, result))
+
+        # RRF fusion across sub-queries
+        rrf_k = 60  # Standard RRF constant
+        rrf_scores: Dict[str, float] = {}
+        best_results: Dict[str, SearchResult] = {}
+
+        for chunk_id, rank_result_list in all_results.items():
+            rrf_score = sum(1.0 / (rrf_k + rank) for rank, _ in rank_result_list)
+            rrf_scores[chunk_id] = rrf_score
+            # Keep the result with best original score
+            best_result = max(rank_result_list, key=lambda x: x[1].score)[1]
+            best_results[chunk_id] = SearchResult(
+                chunk=best_result.chunk, score=rrf_score, rank=0
+            )
+
+        # Sort by RRF score
+        merged = sorted(best_results.values(), key=lambda x: -x.score)
+
+        # Assign ranks
+        for i, r in enumerate(merged):
+            r.rank = i + 1
+
+        # Store query rewrite info
+        self._last_query_rewrite = QueryRewriteInfo(
+            original=original_query,
+            rewritten=" | ".join(sub_queries),
+            used=True,
+            method="composite_decomposition",
+            from_cache=False,
+            fallback=False,
+            used_synonyms=True,
+            used_intent=True,
+            matched_intents=[f"sub:{sq}" for sq in sub_queries],
+        )
+
+        logger.info(
+            "Composite search merged %d unique results from %d sub-queries",
+            len(merged),
+            len(sub_queries),
+        )
+
+        # Deduplicate by article
+        return self._deduplicate_by_article(merged, top_k)
+
     def _deduplicate_by_article(
         self, results: List[SearchResult], top_k: int
     ) -> List[SearchResult]:
@@ -611,6 +740,21 @@ class SearchUseCase:
         audience_override: Optional["Audience"],
     ) -> List[SearchResult]:
         """Perform general search with hybrid search, scoring, and reranking."""
+        # Step 4/5: Composite query decomposition and merging
+        if self.hybrid_searcher:
+            sub_queries = self.hybrid_searcher._query_analyzer.decompose_query(
+                query_text
+            )
+            if len(sub_queries) >= 2:
+                return self._search_composite(
+                    sub_queries,
+                    query_text,
+                    filter,
+                    top_k,
+                    include_abolished,
+                    audience_override,
+                )
+
         # Query rewriting
         query, rewritten_query_text = self._perform_query_rewriting(
             query_text, include_abolished

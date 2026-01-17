@@ -169,6 +169,7 @@ class MockHybridSearcher(IHybridSearcher):
         self._query_analyzer.has_synonyms = Mock(return_value=True)
         self._query_analyzer.detect_audience = Mock(return_value=None)
         self._query_analyzer.expand_query = Mock(side_effect=lambda q: q)  # Return query as-is
+        self._query_analyzer.decompose_query = Mock(side_effect=lambda q: [q])  # Return single-element list (no decomposition)
         self._query_analyzer._llm_client = None
 
     def add_documents(self, documents: List[tuple]) -> None:

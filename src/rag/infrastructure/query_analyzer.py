@@ -6,6 +6,7 @@ and provides query expansion with synonyms for better recall.
 """
 
 import json
+import logging
 import os
 import re
 import unicodedata
@@ -18,6 +19,8 @@ from .patterns import ARTICLE_PATTERN
 
 if TYPE_CHECKING:
     from ..domain.repositories import ILLMClient
+
+logger = logging.getLogger(__name__)
 
 
 class QueryType(Enum):
@@ -379,6 +382,20 @@ class QueryAnalyzer:
         ),
     ]
     INTENT_MAX_MATCHES = 3
+
+    # Composite query conjunctions for decomposition
+    COMPOSITE_CONJUNCTIONS = [
+        "하면서",
+        "하고",
+        "그리고",
+        "또한",
+        "동시에",
+        "하면",
+        "와",
+        "과",
+        "랑",
+        "이랑",
+    ]
 
     # LLM Query Rewriting prompt
     QUERY_REWRITE_PROMPT = """당신은 대학 규정 검색 시스템의 전처리 에이전트입니다.
@@ -832,6 +849,70 @@ class QueryAnalyzer:
             return cleaned
 
         return " ".join(filtered_words)
+
+    def decompose_query(self, query: str) -> List[str]:
+        """
+        Decompose composite queries into sub-queries.
+
+        Handles queries with conjunctions like "A하면서 B", "A하고 B", "A 그리고 B".
+        Returns a list of sub-queries. If no decomposition is needed, returns [query].
+
+        Args:
+            query: The original search query text.
+
+        Returns:
+            List of sub-queries. Single element list if no decomposition needed.
+
+        Examples:
+            "장학금 받으면서 휴학" → ["장학금 신청", "휴학 절차"]
+            "교원 휴직 그리고 복직" → ["교원 휴직", "교원 복직"]
+            "단순 쿼리" → ["단순 쿼리"]
+        """
+        # Check for composite conjunctions
+        for conj in self.COMPOSITE_CONJUNCTIONS:
+            if conj in query:
+                parts = query.split(conj)
+                if len(parts) >= 2:
+                    # Clean and expand each part
+                    sub_queries = []
+                    for part in parts:
+                        part = part.strip()
+                        if part:
+                            # Expand each sub-query for better recall
+                            expanded = self.expand_query(part)
+                            sub_queries.append(expanded)
+                    if len(sub_queries) >= 2:
+                        logger.debug(
+                            "Decomposed query '%s' into %d sub-queries: %s",
+                            query,
+                            len(sub_queries),
+                            sub_queries,
+                        )
+                        return sub_queries
+
+        # Check for multiple intent matches that suggest decomposition
+        matches = self._match_intents(query)
+        if len(matches) >= 2:
+            # Extract unique keyword groups from top matches
+            keyword_groups = []
+            seen_keywords = set()
+            for match in matches[:3]:
+                new_keywords = [k for k in match.keywords[:2] if k not in seen_keywords]
+                if new_keywords:
+                    keyword_groups.append(" ".join(new_keywords))
+                    seen_keywords.update(new_keywords)
+
+            if len(keyword_groups) >= 2:
+                logger.debug(
+                    "Decomposed query '%s' by intent into %d sub-queries: %s",
+                    query,
+                    len(keyword_groups),
+                    keyword_groups,
+                )
+                return keyword_groups
+
+        # No decomposition needed
+        return [query]
 
     def expand_query(self, query: str) -> str:
         """

@@ -129,6 +129,46 @@ class QueryResult:
     suggestions: List[str] = field(default_factory=list)
 
 
+# Deletion warning patterns
+DELETION_PATTERNS = [
+    (re.compile(r"삭제\s*[\(\<\[]\s*(\d{4})[.\-/]?\s*(\d{1,2})?[.\-/]?\s*(\d{1,2})?"), "삭제"),
+    (re.compile(r"폐지\s*[\(\<\[]\s*(\d{4})[.\-/]?\s*(\d{1,2})?[.\-/]?\s*(\d{1,2})?"), "폐지"),
+    (re.compile(r"\(삭제\)"), "삭제"),
+    (re.compile(r"\[삭제\]"), "삭제"),
+    (re.compile(r"본 조는?\s*삭제"), "삭제"),
+    (re.compile(r"본 항은?\s*삭제"), "삭제"),
+]
+
+
+def detect_deletion_warning(text: str) -> Optional[str]:
+    """
+    Detect if text contains deletion markers and extract date if available.
+
+    Args:
+        text: The chunk text to analyze.
+
+    Returns:
+        Warning message if deletion detected, None otherwise.
+    """
+    for pattern, deletion_type in DELETION_PATTERNS:
+        match = pattern.search(text)
+        if match:
+            groups = match.groups() if match.groups() else ()
+            if groups and groups[0]:
+                year = groups[0]
+                month = groups[1] if len(groups) > 1 and groups[1] else None
+                day = groups[2] if len(groups) > 2 and groups[2] else None
+                if month and day:
+                    return f"⚠️ 이 조항은 {year}년 {month}월 {day}일에 {deletion_type}되었습니다."
+                elif month:
+                    return f"⚠️ 이 조항은 {year}년 {month}월에 {deletion_type}되었습니다."
+                else:
+                    return f"⚠️ 이 조항은 {year}년에 {deletion_type}되었습니다."
+            else:
+                return f"⚠️ 이 조항은 {deletion_type}되었습니다. 최신 규정을 확인하세요."
+    return None
+
+
 class QueryHandler:
     """
     Unified query handler for all interfaces.
@@ -1192,6 +1232,12 @@ class QueryHandler:
         content += f"**규정명:** {top.chunk.parent_path[0] if top.chunk.parent_path else top.chunk.title}\n\n"
         content += f"**경로:** {full_path}\n\n"
         content += f"**매칭 정보:** {explanation}\n\n"
+
+        # Step 6: 삭제 조항 경고 추가
+        deletion_warning = detect_deletion_warning(top_text)
+        if deletion_warning:
+            content += f"\n{deletion_warning}\n\n"
+
         content += f"{top_text}"
 
         # Build data for MCP
@@ -1203,6 +1249,8 @@ class QueryHandler:
                 if r.chunk.parent_path
                 else r.chunk.title
             )
+            # 각 결과에도 삭제 경고 포함
+            result_deletion_warning = detect_deletion_warning(r.chunk.text)
             formatted_results.append(
                 {
                     "rank": i,
@@ -1211,6 +1259,7 @@ class QueryHandler:
                     "path": path,
                     "text": r.chunk.text,
                     "score": round(r.score, 4),
+                    "deletion_warning": result_deletion_warning,
                 }
             )
 
