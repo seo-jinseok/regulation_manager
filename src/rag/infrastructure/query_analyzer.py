@@ -241,21 +241,23 @@ class QueryAnalyzer:
     ]
 
     # Weight presets for each query type: (bm25_weight, dense_weight)
+    # NOTE: Dense (BGE-M3) performs poorly on Korean semantic search,
+    # so we heavily favor BM25 for all query types
     WEIGHT_PRESETS: Dict[QueryType, Tuple[float, float]] = {
-        QueryType.ARTICLE_REFERENCE: (0.6, 0.4),  # Favor exact keyword match
+        QueryType.ARTICLE_REFERENCE: (0.9, 0.1),  # Strongly favor keyword match
         QueryType.REGULATION_NAME: (
-            0.5,
-            0.5,
-        ),  # Balanced (also used for academic keywords)
+            0.85,
+            0.15,
+        ),  # Favor BM25 (Dense fails for Korean regulation names)
         QueryType.NATURAL_QUESTION: (
-            0.4,
-            0.6,
-        ),  # Slightly favor semantic, but still consider keywords
+            0.75,
+            0.25,
+        ),  # Still favor BM25 even for questions
         QueryType.INTENT: (
-            0.6,
-            0.4,
-        ),  # Intent queries: balanced with slight BM25 favor (keywords injected)
-        QueryType.GENERAL: (0.5, 0.5),  # Balanced default (increased BM25 from 0.3)
+            0.85,
+            0.15,
+        ),  # Intent queries: heavily favor BM25 (intent keywords injected)
+        QueryType.GENERAL: (0.8, 0.2),  # Favor BM25 as default
     }
 
     # Synonym dictionary for query expansion (minimal seed).
