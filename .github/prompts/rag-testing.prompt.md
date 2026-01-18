@@ -1,6 +1,13 @@
-# RAG 시스템 품질 테스트 및 개선 (v2.0)
+# RAG 시스템 품질 테스트 및 개선 (v2.1)
 
 AI 에이전트가 다양한 사용자 페르소나를 시뮬레이션하여 RAG 시스템의 품질을 **엄격하게** 테스트하고, 답변 품질을 **비판적으로** 검토하는 워크플로우입니다.
+
+**v2.1 주요 변경사항:**
+- 🆕 Fact Check 시스템 검증 추가
+- 🆕 synonym CLI 명령어 문서화
+- 🆕 입력 검증 및 보안 테스트 섹션
+- 🆕 Query Decomposition 컴포넌트 추가
+- CLI 옵션 정확성 업데이트 (`--tool-calling` 제거)
 
 **v2.0 주요 변경사항:**
 - 고급 RAG 기능 검증 추가 (Self-RAG, HyDE, Corrective RAG, Hybrid Search, BGE Reranker)
@@ -32,8 +39,11 @@ AI 에이전트가 다양한 사용자 페르소나를 시뮬레이션하여 RAG
 | **Corrective RAG** | 검색 결과 품질 평가 → 재검색 트리거 | 동적 임계값 (0.3~0.5) | 낮은 점수 결과에서 재검색 발동 여부 |
 | **Hybrid Search** | BM25 + Dense 검색 융합 (RRF) | `use_hybrid=True` | 키워드 검색과 의미 검색 균형 |
 | **BGE Reranker** | 검색 결과 재정렬 | `use_reranker=True` | 최종 순위 품질 |
-| **Tool Calling** | Agentic RAG (도구 기반 검색) | `--tool-calling` 옵션 | 복잡 쿼리의 도구 선택 정확성 |
+| **Tool Calling** | Agentic RAG (도구 기반 검색) | `serve --mcp` 또는 내부 로직 | 복잡 쿼리의 도구 선택 정확성 |
 | **Query Analyzer** | 인텐트 분석 + 쿼리 확장 | 항상 활성 | 의도 파악 + 동의어 확장 |
+| **Fact Check** 🆕 | 답변 생성 후 팩트체크 및 재생성 | `ENABLE_FACT_CHECK=true` (기본 OFF) | 오류 발견 시 재생성 여부 |
+| **Query Decomposition** 🆕 | 복합 질문 → 하위 질문 분해 | 내부 로직 | 복합 쿼리 처리 정확도 |
+| **Dynamic RRF** 🆕 | RRF k 값 동적 조정 | 코드 내 설정 | BM25/Dense 균형 |
 
 ## 성공 기준
 
@@ -75,14 +85,16 @@ curl http://localhost:11434/api/tags 2>/dev/null || echo "Ollama 미실행"
 
 ### 0.4 고급 RAG 설정 확인 (신규)
 ```bash
-# 현재 RAG 설정 확인
-cat .env | grep -E "(ENABLE_SELF_RAG|ENABLE_HYDE|BM25_TOKENIZE_MODE|HYDE_CACHE)"
+# 현재 RAG 설정 확인 (확장)
+cat .env | grep -E "(ENABLE_SELF_RAG|ENABLE_HYDE|BM25_TOKENIZE_MODE|HYDE_CACHE|ENABLE_FACT_CHECK|FACT_CHECK_MAX_RETRIES)"
 
 # 기본 설정값 (미설정 시):
 # ENABLE_SELF_RAG=true
 # ENABLE_HYDE=true  
 # BM25_TOKENIZE_MODE=konlpy
 # HYDE_CACHE_ENABLED=true
+# ENABLE_FACT_CHECK=false       # 🆕 기본 비활성화
+# FACT_CHECK_MAX_RETRIES=2      # 🆕 최대 재생성 횟수
 ```
 
 ---
@@ -290,6 +302,83 @@ ENABLE_SELF_RAG=false uv run regulation search "돈 없어서 학교 다니기 �
 | Reranker | ✅ | 재정렬 수행 | 장학금 규정 상위 배치 |
 
 최종 결과 품질: ✅ 우수 / ⚠️ 보통 / ❌ 미흡
+```
+
+### 1.5.8 Fact Check 검증 (선택적) 🆕
+
+Fact Check는 LLM 답변 생성 후 팩트체크를 수행하고 오류 발견 시 재생성합니다.
+
+> ⚠️ 기본 비활성화(`ENABLE_FACT_CHECK=false`)이므로 활성화 후 테스트합니다.
+
+**테스트 케이스:**
+
+| 시나리오 | 기대 동작 |
+|----------|----------|
+| 정확한 답변 | 팩트체크 통과, 재생성 없음 |
+| 부정확한 답변 | 팩트체크 실패, 최대 N회 재생성 |
+
+```bash
+# Fact Check 활성화 테스트
+ENABLE_FACT_CHECK=true uv run regulation search "휴학 신청 기간" -a -n 5
+# 로그에서 "Fact check passed" 또는 "Fact check failed, regenerating" 확인
+
+# Fact Check 비활성화 (기본)
+uv run regulation search "휴학 신청 기간" -a -n 5
+```
+
+**비교 테스트:**
+```bash
+# Fact Check ON - 정확도 검증
+ENABLE_FACT_CHECK=true uv run regulation --debug search "교원 승진 조건" -a -n 5
+# 로그에서 팩트체크 프로세스 확인
+
+# 최대 재시도 횟수 조정
+ENABLE_FACT_CHECK=true FACT_CHECK_MAX_RETRIES=3 uv run regulation search "장학금 신청 자격" -a -n 5
+```
+
+**검증 기록:**
+```
+[Fact Check 검증]
+- 활성화 상태: ENABLE_FACT_CHECK=true
+- 정확한 답변: ✅ 팩트체크 통과 / ❌ 불필요한 재생성
+- 부정확한 답변 시뮬레이션: ✅ 재생성 트리거 / ❌ 미트리거
+- 최대 재시도 횟수: N회 확인
+```
+
+### 1.5.9 입력 검증 및 보안 테스트 🆕
+
+QueryHandler의 입력 검증이 올바르게 작동하는지 확인합니다.
+
+**검증 항목:**
+- 최대 쿼리 길이: 500자
+- 금지 패턴 차단: XSS, SQL Injection, Template Injection
+
+**테스트 케이스:**
+```bash
+# 길이 제한 테스트 (500자 초과)
+uv run regulation search "$(python -c 'print("a"*501)')" -n 1
+# 기대: 오류 메시지 또는 잘린 쿼리
+
+# XSS 패턴 차단 테스트
+uv run regulation search "<script>alert(1)</script>" -n 1
+# 기대: 차단 또는 무시
+
+# SQL Injection 패턴 차단 테스트
+uv run regulation search "'; DROP TABLE regulations; --" -n 1
+# 기대: 차단 또는 무시
+
+# Template Injection 패턴 차단 테스트
+uv run regulation search "{{config}}" -n 1
+# 기대: 차단 또는 무시
+```
+
+**검증 기록:**
+```
+[입력 검증 테스트]
+- 500자 초과 쿼리: ✅ 차단/잘림 / ❌ 그대로 처리
+- XSS 패턴 (<script>): ✅ 차단 / ❌ 처리됨
+- SQL Injection 패턴 (DROP TABLE): ✅ 차단 / ❌ 처리됨
+- Template Injection ({{}}): ✅ 차단 / ❌ 처리됨
 ```
 
 ---
@@ -874,6 +963,18 @@ User: "휴학 기간은 얼마까지 가능해요?"
 
 ### 4.6 CLI에서 멀티턴 테스트
 
+**search 명령 실제 옵션:** 🆕
+```bash
+uv run regulation search "query" [OPTIONS]
+  -n, --top-k INT      결과 개수 (기본: 10)
+  -a, --answer         LLM 답변 생성
+  -q, --quick          빠른 검색 (리랭킹 생략)
+  --no-rerank          리랭킹 비활성화
+  --debug              디버그 모드
+  --interactive        대화형 모드
+  --feedback           피드백 수집 모드
+```
+
 ```bash
 # 인터랙티브 모드로 멀티턴 테스트
 uv run regulation
@@ -1063,7 +1164,21 @@ cat data/output/improvement_plan.json | python -m json.tool
 }
 ```
 
-**동의어 추가** - `data/config/synonyms.json`에 새 항목 추가
+**동의어 추가** - CLI 사용 권장 🆕:
+```bash
+# 방법 1: CLI (권장)
+uv run regulation synonym add 휴학 학업중단
+uv run regulation synonym add 휴학 학교출석건
+
+# LLM 기반 동의어 제안 후 추가
+uv run regulation synonym suggest "장학금"  # 제안 확인
+uv run regulation synonym add 장학금 장학금지원  # 선택적 추가
+
+# 방법 2: 수동 편집 (필요시)
+# data/config/synonyms.json에 직접 추가
+```
+
+> 💡 **팁**: CLI를 사용하면 오타 방지 및 포맷 검증이 자동화됩니다.
 
 ### 5.4 코드 개선 (code_* / RAG 컴포넌트)
 
@@ -1246,6 +1361,12 @@ rm data/cache/hyde/hyde_cache.json  # 캐시 초기화
 ENABLE_HYDE=false uv run regulation search "<쿼리>" -n 5
 ENABLE_SELF_RAG=false uv run regulation search "<쿼리>" -n 5
 BM25_TOKENIZE_MODE=simple uv run regulation search "<쿼리>" -n 5
+
+# 동의어 관리 (synonym CLI) 🆕
+uv run regulation synonym suggest "휴학"       # LLM 기반 동의어 제안
+uv run regulation synonym add 휴학 학업중단    # 동의어 추가
+uv run regulation synonym remove 휴학         # 동의어 삭제
+uv run regulation synonym list                # 전체 동의어 목록
 ```
 
 ---
@@ -1265,6 +1386,8 @@ BM25_TOKENIZE_MODE=simple uv run regulation search "<쿼리>" -n 5
 - [ ] Phase 1.5: Reranker 검증 완료 (ON/OFF 비교)
 - [ ] Phase 1.5: Query Analyzer 검증 완료
 - [ ] Phase 1.5: 컴포넌트 통합 테스트 완료
+- [ ] Phase 1.5: **Fact Check 검증 완료 (선택적)** 🆕
+- [ ] Phase 1.5: **입력 검증/보안 테스트 완료** 🆕
 
 ### 동적 테스트
 - [ ] Phase 2: 페르소나 선택 (3~5개)
@@ -1317,6 +1440,8 @@ RAG 설정: Self-RAG=ON, HyDE=ON, BM25=konlpy, Reranker=ON
 - HyDE: ✅ "학교 가기 싫어" 테스트 통과 (휴학 결과 증가)
 - Corrective RAG: ✅ 낮은 품질 결과에서 재검색 트리거
 - Hybrid Search: ✅ BM25+Dense 융합 정상
+- Fact Check: ⚠️ 선택적 (ENABLE_FACT_CHECK=false)
+- 보안 검증: ✅ XSS/SQL Injection 패턴 차단 확인
 - Reranker: ✅ 관련 결과 상위 배치
 - Query Analyzer: ⚠️ 복합 인텐트 매칭 부족 (개선 필요)
 
