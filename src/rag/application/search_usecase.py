@@ -10,6 +10,7 @@ import re
 import threading
 import unicodedata
 from dataclasses import dataclass
+from enum import Enum
 from typing import TYPE_CHECKING, List, Optional
 
 from ..domain.entities import Answer, Chunk, ChunkLevel, SearchResult
@@ -29,6 +30,13 @@ logger = logging.getLogger(__name__)
 # Forward references for type hints
 if TYPE_CHECKING:
     from ..infrastructure.query_analyzer import Audience
+
+
+class SearchStrategy(Enum):
+    """Search strategy based on query characteristics."""
+
+    DIRECT = "direct"  # Simple factual queries - bypass tool calling
+    TOOL_CALLING = "tool_calling"  # Complex queries - use agent with tools
     from ..infrastructure.hybrid_search import ScoredDocument
 
 
@@ -259,6 +267,83 @@ class SearchUseCase:
             # Set LLM client for query rewriting if available
             if self.llm:
                 self._hybrid_searcher.set_llm_client(self.llm)
+
+        self._hybrid_initialized = True
+
+    # --- Phase 2: Search Strategy Branching ---
+
+    # Patterns for simple factual queries
+    SIMPLE_FACTUAL_PATTERNS = [
+        re.compile(r"^.{2,15}(이|가)\s*(몇|얼마|언제)", re.UNICODE),  # "졸업학점이 몇"
+        re.compile(
+            r"^.{2,15}\s*(어떻게|뭐야|뭔가요|몇이야)", re.UNICODE
+        ),  # "승진 기준이 어떻게"
+        re.compile(r"^.{2,20}(필요해\??|있어\??|돼\??)$", re.UNICODE),  # "영어 점수도 필요해?"
+        re.compile(r"^.{2,15}\s*기준", re.UNICODE),  # "장학금 성적 기준"
+    ]
+
+    def _determine_search_strategy(self, query: str) -> SearchStrategy:
+        """
+        Determine search strategy based on query characteristics.
+
+        Simple factual queries can bypass tool calling for faster response.
+        Complex queries benefit from agent-based multi-step reasoning.
+
+        Args:
+            query: User query text.
+
+        Returns:
+            SearchStrategy.DIRECT for simple queries, TOOL_CALLING otherwise.
+        """
+        query = query.strip()
+
+        # Short queries (≤15 chars) are likely simple factual
+        if len(query) <= 15:
+            logger.debug(f"Short query detected ({len(query)} chars) - DIRECT strategy")
+            return SearchStrategy.DIRECT
+
+        # Check against simple factual patterns
+        if self._is_simple_factual(query):
+            logger.debug(f"Simple factual query detected - DIRECT strategy")
+            return SearchStrategy.DIRECT
+
+        # Default to tool calling for complex queries
+        return SearchStrategy.TOOL_CALLING
+
+    def _is_simple_factual(self, query: str) -> bool:
+        """
+        Detect simple factual queries that can be answered directly.
+
+        Examples:
+            - "졸업학점이 몇 학점이야?"
+            - "교수 승진 기준이 어떻게 됩니까?"
+            - "장학금 받으려면 성적이 몇 점이어야 해?"
+
+        Args:
+            query: User query text.
+
+        Returns:
+            True if query matches simple factual patterns.
+        """
+        for pattern in self.SIMPLE_FACTUAL_PATTERNS:
+            if pattern.search(query):
+                return True
+        return False
+
+    def get_recommended_strategy(self, query: str) -> SearchStrategy:
+        """
+        Public method to get recommended search strategy for a query.
+
+        This can be used by QueryHandler to decide whether to use
+        tool calling or direct search.
+
+        Args:
+            query: User query text.
+
+        Returns:
+            Recommended SearchStrategy.
+        """
+        return self._determine_search_strategy(query)
 
         self._hybrid_initialized = True
 

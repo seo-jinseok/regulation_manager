@@ -108,7 +108,7 @@ class FunctionGemmaAdapter:
         llm_client=None,
         tool_executor: Optional[ToolExecutor] = None,
         query_analyzer: Optional[QueryAnalyzer] = None,
-        max_iterations: int = 5,
+        max_iterations: int = 3,  # Reduced from 5 to avoid excessive retries
         model: str = None,
         base_url: str = None,
         api_mode: str = "auto",
@@ -414,6 +414,51 @@ class FunctionGemmaAdapter:
             return answer, tool_results
 
         return "검색 반복 횟수를 초과했습니다.", tool_results
+
+    # --- Phase 2: Handle Insufficient Results ---
+
+    def _handle_insufficient_results(
+        self, query: str, tool_results: list, llm_client=None
+    ) -> str:
+        """
+        Handle cases where search results are insufficient.
+
+        Instead of retrying search indefinitely, generate answer from available
+        partial results or provide a helpful response.
+
+        Args:
+            query: Original user query.
+            tool_results: List of ToolResult from previous searches.
+            llm_client: Optional LLM client for answer generation.
+
+        Returns:
+            Generated answer or informative message.
+        """
+        # No results at all
+        if not tool_results:
+            return (
+                "관련 규정을 찾지 못했습니다. "
+                "질문을 더 구체적으로 해주시거나 다른 키워드로 검색해 보세요."
+            )
+
+        # Filter successful search results
+        search_results = [
+            r for r in tool_results if r.success and r.tool_name == "search_regulations"
+        ]
+
+        if not search_results:
+            return (
+                "검색을 수행했으나 관련 규정을 찾지 못했습니다. "
+                "다른 검색어로 시도해 보세요."
+            )
+
+        # Generate answer from partial results
+        context_text = "\n\n".join([r.to_context_string() for r in search_results])
+        logger.info(
+            f"Generating answer from {len(search_results)} partial search results"
+        )
+
+        return self._generate_answer_with_base_llm(query, context_text, llm_client)
 
     def _generate_answer_with_base_llm(
         self, question: str, context: str, llm_client=None

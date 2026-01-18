@@ -448,3 +448,110 @@ class TestQueryRewritingWithTypos:
 
         assert "강의" in result
         assert "면제" in result
+
+
+# --- Phase 2: Intent Classification Tests ---
+
+
+class TestIntentClassification:
+    """Tests for 2-tier intent classification system (Phase 2)."""
+
+    @pytest.fixture
+    def analyzer(self, monkeypatch) -> QueryAnalyzer:
+        monkeypatch.delenv("RAG_SYNONYMS_PATH", raising=False)
+        monkeypatch.delenv("RAG_INTENTS_PATH", raising=False)
+        return QueryAnalyzer(synonyms_path=None, intents_path=None)
+
+    def test_classify_intent_returns_result(self, analyzer: QueryAnalyzer):
+        """classify_intent가 IntentClassificationResult를 반환하는지 확인"""
+        from src.rag.infrastructure.query_analyzer import IntentClassificationResult
+
+        result = analyzer.classify_intent("휴학하고 싶어")
+
+        assert isinstance(result, IntentClassificationResult)
+        assert result.intent_id is not None
+        assert isinstance(result.keywords, list)
+        assert 0.0 <= result.confidence <= 1.0
+        assert result.method in ("pattern", "llm", "pattern_fallback", "none")
+
+    def test_classify_intent_high_confidence_pattern(self, analyzer: QueryAnalyzer):
+        """높은 신뢰도 패턴 매칭 시 LLM 호출 없이 바로 반환"""
+        result = analyzer.classify_intent("학교에 가기 싫어")
+
+        # Should match pattern with high confidence
+        assert result.confidence >= 0.5
+        assert result.method in ("pattern", "pattern_fallback")
+        # intents.json의 study_break 또는 legacy want_leave_school 인텐트와 매칭
+        assert "휴학" in result.keywords or "휴직" in result.keywords or "휴가" in result.keywords
+
+    def test_classify_intent_empty_query(self, analyzer: QueryAnalyzer):
+        """빈 쿼리는 other 의도로 분류"""
+        result = analyzer.classify_intent("")
+
+        assert result.intent_id == "other"
+        assert result.confidence == 0.0
+        assert result.method == "none"
+
+    def test_classify_intent_unknown_query_no_llm(self, analyzer: QueryAnalyzer):
+        """LLM 없이 미지의 쿼리는 other로 분류"""
+        result = analyzer.classify_intent("xyzabc123")
+
+        # No pattern match, no LLM -> fallback to "other"
+        assert result.intent_id == "other"
+        assert result.confidence == 0.0
+
+    def test_classify_intent_with_llm_fallback(self, mock_llm):
+        """패턴 미매칭 시 LLM 폴백 호출"""
+        # LLM이 JSON 응답을 반환한다고 가정
+        mock_llm.generate.return_value = '{"intent": "scholarship", "keywords": ["장학금", "성적"], "confidence": 0.85}'
+
+        analyzer = QueryAnalyzer(llm_client=mock_llm, synonyms_path=None, intents_path=None)
+        result = analyzer.classify_intent("성적이 얼마나 좋아야 해?")
+
+        # Pattern might not match strongly, so LLM should be called
+        # The result depends on whether pattern matched with high confidence
+        assert result.intent_id in ("scholarship", "other", "graduation")
+        assert result.confidence > 0
+
+    def test_llm_classify_intent_json_parsing(self, mock_llm):
+        """LLM 응답 JSON 파싱 테스트"""
+        mock_llm.generate.return_value = '{"intent": "graduation", "keywords": ["졸업", "학점"], "confidence": 0.9}'
+
+        analyzer = QueryAnalyzer(llm_client=mock_llm, synonyms_path=None, intents_path=None)
+        result = analyzer._llm_classify_intent("졸업 요건이 뭐야?")
+
+        assert result is not None
+        assert result.intent_id == "graduation"
+        assert "졸업" in result.keywords
+        assert result.confidence == 0.9
+        assert result.method == "llm"
+
+    def test_llm_classify_intent_adds_default_keywords(self, mock_llm):
+        """LLM 분류 시 기본 키워드가 추가되는지 확인"""
+        mock_llm.generate.return_value = '{"intent": "faculty", "keywords": ["승진"], "confidence": 0.8}'
+
+        analyzer = QueryAnalyzer(llm_client=mock_llm, synonyms_path=None, intents_path=None)
+        result = analyzer._llm_classify_intent("교수 진급")
+
+        assert result is not None
+        # Default keywords for "faculty" should be added
+        assert "승진" in result.keywords
+        assert "교원" in result.keywords or "교원인사규정" in result.keywords
+
+    def test_llm_classify_intent_handles_invalid_json(self, mock_llm):
+        """LLM이 잘못된 JSON을 반환할 때 None 반환"""
+        mock_llm.generate.return_value = "이것은 JSON이 아닙니다"
+
+        analyzer = QueryAnalyzer(llm_client=mock_llm, synonyms_path=None, intents_path=None)
+        result = analyzer._llm_classify_intent("테스트 쿼리")
+
+        assert result is None
+
+    def test_llm_classify_intent_handles_exception(self, mock_llm):
+        """LLM 호출 중 예외 발생 시 None 반환"""
+        mock_llm.generate.side_effect = Exception("LLM connection failed")
+
+        analyzer = QueryAnalyzer(llm_client=mock_llm, synonyms_path=None, intents_path=None)
+        result = analyzer._llm_classify_intent("테스트 쿼리")
+
+        assert result is None

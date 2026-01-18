@@ -76,6 +76,18 @@ class IntentMatch:
     label: str
     keywords: List[str]
     score: int
+    confidence: float = 0.0  # 0.0 ~ 1.0, higher = more confident
+
+
+@dataclass(frozen=True)
+class IntentClassificationResult:
+    """Result of intent classification (2-tier system)."""
+
+    intent_id: str
+    label: str
+    keywords: List[str]
+    confidence: float  # 0.0 ~ 1.0
+    method: str  # "pattern" or "llm"
 
 
 class QueryAnalyzer:
@@ -1271,3 +1283,168 @@ class QueryAnalyzer:
             matches = [m for m in matches if m.score >= 2]
 
         return matches[: self.INTENT_MAX_MATCHES]
+
+    # --- Phase 2: 2-tier Intent Classification System ---
+
+    # LLM Intent Classification prompt
+    LLM_CLASSIFY_PROMPT = """대학 규정 검색 시스템입니다. 사용자 질문의 의도를 분석하세요.
+
+질문: {query}
+
+다음 중 가장 적합한 의도를 선택하고 검색 키워드를 추출하세요:
+- scholarship: 장학금 관련 (성적기준, 신청조건, 지급액 등)
+- graduation: 졸업 요건 관련 (학점, 어학, 논문 등)
+- faculty: 교원/교수 관련 (승진, 인사, 연구년 등)
+- student_status: 학적 관련 (휴학, 복학, 전과, 제적 등)
+- course: 수강 관련 (수강신청, 재수강, 수강철회 등)
+- other: 기타
+
+반드시 다음 JSON 형식으로만 응답하세요:
+{{"intent": "...", "keywords": ["...", "..."], "confidence": 0.9}}"""
+
+    # Mapping from LLM intent to expanded keywords
+    INTENT_KEYWORD_MAP = {
+        "scholarship": ["장학금", "장학", "성적기준", "장학금지급규정", "성적우수장학금"],
+        "graduation": ["졸업", "졸업요건", "졸업학점", "어학인증", "학칙"],
+        "faculty": ["교원", "교수", "승진", "교원인사규정", "업적평가"],
+        "student_status": ["휴학", "복학", "전과", "제적", "학적"],
+        "course": ["수강신청", "재수강", "수강철회", "학점"],
+        "other": [],
+    }
+
+    def classify_intent(self, query: str) -> IntentClassificationResult:
+        """
+        2-tier intent classification: pattern matching first, LLM fallback if low confidence.
+
+        Args:
+            query: User query text.
+
+        Returns:
+            IntentClassificationResult with intent, keywords, confidence, and method.
+        """
+        if not query:
+            return IntentClassificationResult(
+                intent_id="other",
+                label="기타",
+                keywords=[],
+                confidence=0.0,
+                method="none",
+            )
+
+        # Tier 1: Pattern matching (fast, free)
+        pattern_matches = self._match_intents(query)
+
+        if pattern_matches:
+            best_match = pattern_matches[0]
+            # Convert score to confidence (score 4 = exact match = 1.0, score 2 = 0.8)
+            confidence = min(1.0, best_match.score / 4.0)
+
+            if confidence >= 0.8:
+                logger.debug(
+                    f"Intent classified by pattern: {best_match.intent_id} "
+                    f"(confidence={confidence:.2f})"
+                )
+                return IntentClassificationResult(
+                    intent_id=best_match.intent_id,
+                    label=best_match.label,
+                    keywords=best_match.keywords,
+                    confidence=confidence,
+                    method="pattern",
+                )
+
+        # Tier 2: LLM fallback (slower, cost)
+        if self._llm_client:
+            llm_result = self._llm_classify_intent(query)
+            if llm_result and llm_result.confidence >= 0.5:
+                logger.debug(
+                    f"Intent classified by LLM: {llm_result.intent_id} "
+                    f"(confidence={llm_result.confidence:.2f})"
+                )
+                return llm_result
+
+        # Fallback to best pattern match if any, or "other"
+        if pattern_matches:
+            best_match = pattern_matches[0]
+            return IntentClassificationResult(
+                intent_id=best_match.intent_id,
+                label=best_match.label,
+                keywords=best_match.keywords,
+                confidence=min(1.0, best_match.score / 4.0),
+                method="pattern_fallback",
+            )
+
+        return IntentClassificationResult(
+            intent_id="other",
+            label="기타",
+            keywords=[],
+            confidence=0.0,
+            method="none",
+        )
+
+    def _llm_classify_intent(self, query: str) -> Optional[IntentClassificationResult]:
+        """
+        Classify intent using LLM when pattern matching fails.
+
+        Args:
+            query: User query text.
+
+        Returns:
+            IntentClassificationResult or None on failure.
+        """
+        if not self._llm_client:
+            return None
+
+        try:
+            prompt = self.LLM_CLASSIFY_PROMPT.format(query=query)
+            response = self._llm_client.generate(
+                system_prompt="당신은 대학 규정 검색 시스템의 의도 분류 에이전트입니다.",
+                user_message=prompt,
+                temperature=0.0,
+            )
+
+            # Parse JSON response
+            clean_json = response.strip()
+            if clean_json.startswith("```json"):
+                clean_json = clean_json[7:]
+            if clean_json.startswith("```"):
+                clean_json = clean_json[3:]
+            if clean_json.endswith("```"):
+                clean_json = clean_json[:-3]
+
+            data = json.loads(clean_json.strip())
+            intent = data.get("intent", "other")
+            keywords = data.get("keywords", [])
+            confidence = data.get("confidence", 0.7)
+
+            # Ensure keywords is a list
+            if isinstance(keywords, str):
+                keywords = [keywords]
+
+            # Add default keywords for known intents
+            default_keywords = self.INTENT_KEYWORD_MAP.get(intent, [])
+            combined_keywords = list(set(keywords + default_keywords))
+
+            # Map intent to label
+            intent_labels = {
+                "scholarship": "장학금 관련",
+                "graduation": "졸업 요건",
+                "faculty": "교원 관련",
+                "student_status": "학적 관련",
+                "course": "수강 관련",
+                "other": "기타",
+            }
+
+            return IntentClassificationResult(
+                intent_id=intent,
+                label=intent_labels.get(intent, intent),
+                keywords=combined_keywords,
+                confidence=float(confidence),
+                method="llm",
+            )
+
+        except (json.JSONDecodeError, KeyError) as e:
+            logger.warning(f"Failed to parse LLM intent classification response: {e}")
+            return None
+        except Exception as e:
+            logger.warning(f"LLM intent classification failed: {e}")
+            return None

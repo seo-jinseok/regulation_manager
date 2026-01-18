@@ -403,3 +403,81 @@ class TestSearchUseCaseWarmup:
         time.sleep(0.1)
         
         assert len(warmup_called) == 1
+
+
+# --- Phase 2: Search Strategy Tests ---
+
+
+class TestSearchStrategy:
+    """Tests for search strategy determination (Phase 2)."""
+
+    def test_search_strategy_enum_exists(self):
+        """SearchStrategy Enum이 존재하고 올바른 값을 가지는지 확인"""
+        from src.rag.application.search_usecase import SearchStrategy
+
+        assert SearchStrategy.DIRECT.value == "direct"
+        assert SearchStrategy.TOOL_CALLING.value == "tool_calling"
+
+    def test_determine_search_strategy_short_query(self):
+        """짧은 쿼리는 DIRECT 전략 반환"""
+        from src.rag.application.search_usecase import SearchStrategy
+
+        store = FakeStore([])
+        usecase = SearchUseCase(store, use_reranker=False, enable_warmup=False)
+
+        result = usecase._determine_search_strategy("휴학")
+        assert result == SearchStrategy.DIRECT
+
+    def test_determine_search_strategy_simple_factual(self):
+        """단순 사실 질문은 DIRECT 전략 반환"""
+        from src.rag.application.search_usecase import SearchStrategy
+
+        store = FakeStore([])
+        usecase = SearchUseCase(store, use_reranker=False, enable_warmup=False)
+
+        # Pattern: "~이 몇"
+        result = usecase._determine_search_strategy("졸업학점이 몇 학점이야?")
+        assert result == SearchStrategy.DIRECT
+
+    def test_determine_search_strategy_complex_query(self):
+        """복잡한 쿼리는 TOOL_CALLING 전략 반환"""
+        from src.rag.application.search_usecase import SearchStrategy
+
+        store = FakeStore([])
+        usecase = SearchUseCase(store, use_reranker=False, enable_warmup=False)
+
+        # Long, complex query
+        result = usecase._determine_search_strategy(
+            "휴학하면서 장학금도 받을 수 있는지 궁금합니다. 그리고 복학 절차도 알려주세요."
+        )
+        assert result == SearchStrategy.TOOL_CALLING
+
+    def test_is_simple_factual_patterns(self):
+        """단순 사실 질문 패턴 감지 테스트"""
+        store = FakeStore([])
+        usecase = SearchUseCase(store, use_reranker=False, enable_warmup=False)
+
+        # Should match simple factual patterns
+        assert usecase._is_simple_factual("졸업학점이 몇 학점이야?") is True
+        assert usecase._is_simple_factual("영어 점수도 필요해?") is True
+        assert usecase._is_simple_factual("장학금 성적 기준") is True
+
+        # Should NOT match
+        assert usecase._is_simple_factual("휴학하면서 장학금 받을 수 있나요?") is False
+
+    def test_get_recommended_strategy_public_api(self):
+        """공개 API get_recommended_strategy 테스트"""
+        from src.rag.application.search_usecase import SearchStrategy
+
+        store = FakeStore([])
+        usecase = SearchUseCase(store, use_reranker=False, enable_warmup=False)
+
+        # Simple query -> DIRECT
+        result = usecase.get_recommended_strategy("휴학")
+        assert result == SearchStrategy.DIRECT
+
+        # Complex query -> TOOL_CALLING
+        result = usecase.get_recommended_strategy(
+            "교원 승진에 필요한 업적 평가 기준과 절차를 상세히 알려주세요."
+        )
+        assert result == SearchStrategy.TOOL_CALLING
