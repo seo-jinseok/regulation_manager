@@ -1,13 +1,21 @@
-# RAG 시스템 품질 테스트 및 개선 (v2.1)
+# RAG 시스템 품질 테스트 및 개선 (v2.2)
 
 AI 에이전트가 다양한 사용자 페르소나를 시뮬레이션하여 RAG 시스템의 품질을 **엄격하게** 테스트하고, 답변 품질을 **비판적으로** 검토하는 워크플로우입니다.
 
+**v2.2 주요 변경사항:**
+- 🆕 **Dynamic Query Expansion** 컴포넌트 추가 (LLM 기반 쿼리 확장)
+- 🆕 **Fact Check 기본 활성화** (`ENABLE_FACT_CHECK=true`로 변경)
+- 🆕 Tool Calling CLI 옵션 업데이트 (`--no-tools`, `--tool-mode` 추가)
+- 🆕 **SelfRAG Pipeline** 배치 평가 기능 추가
+- 🆕 synonym CLI 서브커맨드 상세화 (suggest --auto-add, --context 등)
+- 🆕 BM25 인덱스 캐시 기능 추가
+
 **v2.1 주요 변경사항:**
-- 🆕 Fact Check 시스템 검증 추가
-- 🆕 synonym CLI 명령어 문서화
-- 🆕 입력 검증 및 보안 테스트 섹션
-- 🆕 Query Decomposition 컴포넌트 추가
-- CLI 옵션 정확성 업데이트 (`--tool-calling` 제거)
+- Fact Check 시스템 검증 추가
+- synonym CLI 명령어 문서화
+- 입력 검증 및 보안 테스트 섹션
+- Query Decomposition 컴포넌트 추가
+- CLI 옵션 정확성 업데이트
 
 **v2.0 주요 변경사항:**
 - 고급 RAG 기능 검증 추가 (Self-RAG, HyDE, Corrective RAG, Hybrid Search, BGE Reranker)
@@ -39,11 +47,13 @@ AI 에이전트가 다양한 사용자 페르소나를 시뮬레이션하여 RAG
 | **Corrective RAG** | 검색 결과 품질 평가 → 재검색 트리거 | 동적 임계값 (0.3~0.5) | 낮은 점수 결과에서 재검색 발동 여부 |
 | **Hybrid Search** | BM25 + Dense 검색 융합 (RRF) | `use_hybrid=True` | 키워드 검색과 의미 검색 균형 |
 | **BGE Reranker** | 검색 결과 재정렬 | `use_reranker=True` | 최종 순위 품질 |
-| **Tool Calling** | Agentic RAG (도구 기반 검색) | `serve --mcp` 또는 내부 로직 | 복잡 쿼리의 도구 선택 정확성 |
+| **Tool Calling** | Agentic RAG (도구 기반 검색) | 기본 활성화 (`--no-tools`로 비활성화) | 복잡 쿼리의 도구 선택 정확성 |
 | **Query Analyzer** | 인텐트 분석 + 쿼리 확장 | 항상 활성 | 의도 파악 + 동의어 확장 |
-| **Fact Check** 🆕 | 답변 생성 후 팩트체크 및 재생성 | `ENABLE_FACT_CHECK=true` (기본 OFF) | 오류 발견 시 재생성 여부 |
-| **Query Decomposition** 🆕 | 복합 질문 → 하위 질문 분해 | 내부 로직 | 복합 쿼리 처리 정확도 |
-| **Dynamic RRF** 🆕 | RRF k 값 동적 조정 | 코드 내 설정 | BM25/Dense 균형 |
+| **Dynamic Query Expansion** 🆕 | LLM 기반 동적 쿼리 확장 | `ENABLE_QUERY_EXPANSION=true` (기본) | 복잡 쿼리에서 키워드 확장 품질 |
+| **Fact Check** | 답변 생성 후 팩트체크 및 재생성 | `ENABLE_FACT_CHECK=true` (기본) | 오류 발견 시 재생성 여부 |
+| **Query Decomposition** | 복합 질문 → 하위 질문 분해 | 내부 로직 | 복합 쿼리 처리 정확도 |
+| **Dynamic RRF** | RRF k 값 동적 조정 | 코드 내 설정 | BM25/Dense 균형 |
+| **BM25 Index Cache** 🆕 | BM25 인덱스 영구 캐싱 | `BM25_INDEX_CACHE_PATH` 설정 시 | 재시작 후 인덱싱 속도 |
 
 ## 성공 기준
 
@@ -86,15 +96,17 @@ curl http://localhost:11434/api/tags 2>/dev/null || echo "Ollama 미실행"
 ### 0.4 고급 RAG 설정 확인 (신규)
 ```bash
 # 현재 RAG 설정 확인 (확장)
-cat .env | grep -E "(ENABLE_SELF_RAG|ENABLE_HYDE|BM25_TOKENIZE_MODE|HYDE_CACHE|ENABLE_FACT_CHECK|FACT_CHECK_MAX_RETRIES)"
+cat .env | grep -E "(ENABLE_SELF_RAG|ENABLE_HYDE|BM25_TOKENIZE_MODE|HYDE_CACHE|ENABLE_FACT_CHECK|FACT_CHECK_MAX_RETRIES|ENABLE_QUERY_EXPANSION|BM25_INDEX_CACHE_PATH)"
 
 # 기본 설정값 (미설정 시):
 # ENABLE_SELF_RAG=true
 # ENABLE_HYDE=true  
 # BM25_TOKENIZE_MODE=konlpy
 # HYDE_CACHE_ENABLED=true
-# ENABLE_FACT_CHECK=false       # 🆕 기본 비활성화
-# FACT_CHECK_MAX_RETRIES=2      # 🆕 최대 재생성 횟수
+# ENABLE_FACT_CHECK=true         # 기본 활성화 (v2.2에서 변경)
+# FACT_CHECK_MAX_RETRIES=2       # 최대 재생성 횟수
+# ENABLE_QUERY_EXPANSION=true    # 🆕 동적 쿼리 확장
+# BM25_INDEX_CACHE_PATH=         # 🆕 설정 시 BM25 인덱스 캐싱
 ```
 
 ---
@@ -297,18 +309,20 @@ ENABLE_SELF_RAG=false uv run regulation search "돈 없어서 학교 다니기 �
 | Self-RAG | ✅ | 검색 필요 판단 | 정상 |
 | HyDE | ✅ | 가상 문서 생성 | 장학금/분납 키워드 추가 |
 | Query Analyzer | ✅ | 인텐트: 경제적 어려움 | 키워드 확장 |
+| Dynamic Query Expansion | ✅ | LLM 확장 | 지원금/학자금 키워드 추가 |
 | Hybrid Search | ✅ | BM25+Dense 융합 | 정상 |
 | Corrective RAG | ❌ | 미트리거 (품질 충분) | - |
 | Reranker | ✅ | 재정렬 수행 | 장학금 규정 상위 배치 |
+| Fact Check | ✅ | 검증 통과 | 정확한 답변 확인 |
 
 최종 결과 품질: ✅ 우수 / ⚠️ 보통 / ❌ 미흡
 ```
 
-### 1.5.8 Fact Check 검증 (선택적) 🆕
+### 1.5.8 Fact Check 검증 🆕
 
 Fact Check는 LLM 답변 생성 후 팩트체크를 수행하고 오류 발견 시 재생성합니다.
 
-> ⚠️ 기본 비활성화(`ENABLE_FACT_CHECK=false`)이므로 활성화 후 테스트합니다.
+> ℹ️ **v2.2부터 기본 활성화**(`ENABLE_FACT_CHECK=true`)입니다.
 
 **테스트 케이스:**
 
@@ -318,34 +332,67 @@ Fact Check는 LLM 답변 생성 후 팩트체크를 수행하고 오류 발견 �
 | 부정확한 답변 | 팩트체크 실패, 최대 N회 재생성 |
 
 ```bash
-# Fact Check 활성화 테스트
-ENABLE_FACT_CHECK=true uv run regulation search "휴학 신청 기간" -a -n 5
+# Fact Check 동작 확인 (기본 활성화)
+uv run regulation --debug search "휴학 신청 기간" -a -n 5
 # 로그에서 "Fact check passed" 또는 "Fact check failed, regenerating" 확인
 
-# Fact Check 비활성화 (기본)
-uv run regulation search "휴학 신청 기간" -a -n 5
+# Fact Check 비활성화 테스트
+ENABLE_FACT_CHECK=false uv run regulation search "휴학 신청 기간" -a -n 5
 ```
 
 **비교 테스트:**
 ```bash
-# Fact Check ON - 정확도 검증
-ENABLE_FACT_CHECK=true uv run regulation --debug search "교원 승진 조건" -a -n 5
+# Fact Check ON (기본) - 정확도 검증
+uv run regulation --debug search "교원 승진 조건" -a -n 5
 # 로그에서 팩트체크 프로세스 확인
 
 # 최대 재시도 횟수 조정
-ENABLE_FACT_CHECK=true FACT_CHECK_MAX_RETRIES=3 uv run regulation search "장학금 신청 자격" -a -n 5
+FACT_CHECK_MAX_RETRIES=3 uv run regulation search "장학금 신청 자격" -a -n 5
 ```
 
 **검증 기록:**
 ```
 [Fact Check 검증]
-- 활성화 상태: ENABLE_FACT_CHECK=true
+- 활성화 상태: ENABLE_FACT_CHECK=true (기본)
 - 정확한 답변: ✅ 팩트체크 통과 / ❌ 불필요한 재생성
 - 부정확한 답변 시뮬레이션: ✅ 재생성 트리거 / ❌ 미트리거
 - 최대 재시도 횟수: N회 확인
 ```
 
-### 1.5.9 입력 검증 및 보안 테스트 🆕
+### 1.5.9 Dynamic Query Expansion 검증 🆕
+
+LLM을 활용한 동적 쿼리 확장 기능을 검증합니다.
+
+**테스트 케이스:**
+
+| 쿼리 유형 | 예시 | 기대 확장 |
+|----------|------|----------|
+| 단순 키워드 | "휴학" | 확장 불필요 (패턴 기반만) |
+| 모호한 쿼리 | "학교 가기 싫어" | LLM 확장 (휴학, 휴직, 상담 등) |
+| 복합 쿼리 | "장학금 받다가 휴학하면" | LLM 확장 (장학금 중단, 복학 등) |
+
+```bash
+# Dynamic Query Expansion 동작 확인
+uv run regulation --debug search "학교 가기 싫어" -a -n 5
+# 로그에서 "Query expansion:" 확인
+
+# 캐시 확인
+ls -la data/cache/query_expansion/
+
+# 비활성화 테스트
+ENABLE_QUERY_EXPANSION=false uv run regulation search "학교 가기 싫어" -a -n 5
+```
+
+**검증 기록:**
+```
+[Dynamic Query Expansion 검증]
+- 활성화 상태: ENABLE_QUERY_EXPANSION=true (기본)
+- 모호 쿼리 확장: ✅ LLM이 관련 키워드 추가 / ❌ 확장 없음
+- 캐시 동작: ✅ 동일 쿼리 재사용 시 캐시 히트 / ❌ 매번 LLM 호출
+- 확장 품질: ✅ 관련성 높은 키워드 / ⚠️ 무관한 키워드 포함
+```
+
+### 1.5.10 입력 검증 및 보안 테스트
 
 QueryHandler의 입력 검증이 올바르게 작동하는지 확인합니다.
 
@@ -963,16 +1010,24 @@ User: "휴학 기간은 얼마까지 가능해요?"
 
 ### 4.6 CLI에서 멀티턴 테스트
 
-**search 명령 실제 옵션:** 🆕
+**search 명령 실제 옵션:**
 ```bash
 uv run regulation search "query" [OPTIONS]
-  -n, --top-k INT      결과 개수 (기본: 10)
-  -a, --answer         LLM 답변 생성
-  -q, --quick          빠른 검색 (리랭킹 생략)
+  -n, --top-k INT      결과 개수 (기본: 5)
+  -a, --answer         LLM 답변 생성 강제 (Ask 모드)
+  -q, --quick          문서 검색만 수행 (Search 모드)
   --no-rerank          리랭킹 비활성화
-  --debug              디버그 모드
-  --interactive        대화형 모드
+  --debug              디버그 정보 출력
+  --verbose, -v        상세 정보 출력
+  --interactive        대화형 모드로 연속 질의
   --feedback           피드백 수집 모드
+  --include-abolished  폐지 규정 포함
+  --show-sources       관련 규정 전문 출력
+  --no-tools           🆕 Tool Calling 비활성화 (기존 방식 사용)
+  --tool-mode          🆕 Tool Calling 백엔드 (auto/mlx/openai/ollama)
+  --provider           LLM 프로바이더 (ollama/lmstudio/openai 등)
+  --model              모델명
+  --base-url           로컬 서버 URL
 ```
 
 ```bash
@@ -1035,10 +1090,12 @@ Turn 5: ✅ 성공
 | Self-RAG | 5회 | +3 |
 | HyDE | 0회 | 0 |
 | Query Analyzer | 5회 | +4 |
+| Dynamic Query Expansion | 3회 | +2 |
 | Corrective RAG | 1회 | +1 |
 | Hybrid Search | 5회 | +3 |
 | Reranker | 5회 | +2 |
-| **합계** | | **+13** |
+| Fact Check | 5회 | +2 |
+| **합계** | | **+17** |
 
 [판정] ✅ 성공
 [근본 원인] Turn 3에서 복합 의도(휴학+장학금) 파악 개선 필요
@@ -1108,6 +1165,8 @@ Why 5: 근본 원인은?
 | **Corrective RAG 임계값** | Corrective RAG | 임계값 조정 | Phase 5.4 |
 | **Reranker 순위 오류** | BGE Reranker | - (모델 제한) | 별도 검토 |
 | **Self-RAG 오판** | Self-RAG | 프롬프트 개선 | Phase 5.4 |
+| **Query Expansion 품질** 🆕 | Dynamic Query Expansion | 프롬프트/규칙 개선 | Phase 5.4 |
+| **Fact Check 오탐** 🆕 | Fact Check | 검증 로직 조정 | Phase 5.4 |
 | **프롬프트 문제** | LLM 생성 | prompts.json 수정 | Phase 5.4 |
 
 ### 4.5.4 분석 필수 실행 조건
@@ -1141,6 +1200,8 @@ cat data/output/improvement_plan.json | python -m json.tool
 | `code_audience` | 대상 감지 로직 개선 | Query Analyzer |
 | `hyde_condition` | HyDE 발동 조건 수정 | HyDE |
 | `self_rag_prompt` | Self-RAG 프롬프트 수정 | Self-RAG |
+| `query_expansion` 🆕 | 쿼리 확장 규칙/프롬프트 수정 | Dynamic Query Expansion |
+| `fact_check` 🆕 | 팩트체크 검증 로직 수정 | Fact Check |
 | `prompt` | `data/config/prompts.json` 수정 | LLM 생성 |
 | `architecture` | Phase 7에서 수동 검토 보고 | - |
 
@@ -1164,15 +1225,24 @@ cat data/output/improvement_plan.json | python -m json.tool
 }
 ```
 
-**동의어 추가** - CLI 사용 권장 🆕:
+**동의어 추가** - CLI 사용 권장:
 ```bash
 # 방법 1: CLI (권장)
 uv run regulation synonym add 휴학 학업중단
 uv run regulation synonym add 휴학 학교출석건
 
 # LLM 기반 동의어 제안 후 추가
-uv run regulation synonym suggest "장학금"  # 제안 확인
-uv run regulation synonym add 장학금 장학금지원  # 선택적 추가
+uv run regulation synonym suggest "장학금"                    # 제안 확인 (인터랙티브)
+uv run regulation synonym suggest "장학금" --auto-add         # 🆕 검토 없이 바로 추가
+uv run regulation synonym suggest "장학금" --context "대학 학비" # 🆕 맥락 지정
+uv run regulation synonym add 장학금 장학금지원               # 선택적 추가
+
+# 동의어 조회
+uv run regulation synonym list                               # 전체 용어 목록
+uv run regulation synonym list 휴학                          # 특정 용어의 동의어
+
+# 동의어 제거
+uv run regulation synonym remove 휴학 학업중단
 
 # 방법 2: 수동 편집 (필요시)
 # data/config/synonyms.json에 직접 추가
@@ -1187,10 +1257,12 @@ uv run regulation synonym add 장학금 장학금지원  # 선택적 추가
 | `code_pattern` | `src/rag/infrastructure/query_analyzer.py` | `INTENT_PATTERNS` |
 | `code_weight` | `src/rag/infrastructure/query_analyzer.py` | `WEIGHT_PRESETS` |
 | `code_audience` | `src/rag/infrastructure/query_analyzer.py` | `*_KEYWORDS` 상수 |
-| `hyde_condition` | `src/rag/infrastructure/hyde.py` | `_should_use_hyde()` 조건 |
+| `hyde_condition` | `src/rag/infrastructure/hyde.py` | `should_use_hyde()` 조건 |
 | `self_rag_prompt` | `src/rag/infrastructure/self_rag.py` | 프롬프트 상수 |
 | `corrective_threshold` | `src/rag/config.py` | `corrective_rag_thresholds` |
 | `prompt` | `data/config/prompts.json` | 해당 프롬프트 키 |
+| `query_expansion` 🆕 | `src/rag/infrastructure/query_expander.py` | `FALLBACK_RULES`, LLM 프롬프트 |
+| `fact_check` 🆕 | `src/rag/infrastructure/fact_checker.py` | 검증 로직 |
 
 **수정 원칙**: 기존 항목 삭제 금지, 새 항목만 추가
 
@@ -1339,6 +1411,8 @@ uv run pytest tests/rag/unit/infrastructure/test_query_analyzer.py::test_specifi
 uv run pytest tests/rag/unit/infrastructure/test_self_rag.py -v -s
 uv run pytest tests/rag/unit/infrastructure/test_hyde.py -v -s
 uv run pytest tests/rag/unit/infrastructure/test_retrieval_evaluator.py -v -s
+uv run pytest tests/rag/unit/infrastructure/test_query_expander.py -v -s  # 🆕
+uv run pytest tests/rag/unit/infrastructure/test_fact_checker.py -v -s   # 🆕
 
 # 변경사항 확인/되돌리기
 git diff data/config/
@@ -1357,16 +1431,27 @@ uv run regulation --debug search "<쿼리>" -a -n 5
 cat data/cache/hyde/hyde_cache.json | python -m json.tool
 rm data/cache/hyde/hyde_cache.json  # 캐시 초기화
 
+# Query Expansion 캐시 확인/초기화 🆕
+ls -la data/cache/query_expansion/
+rm -rf data/cache/query_expansion/  # 캐시 초기화
+
 # RAG 설정 임시 변경 테스트
 ENABLE_HYDE=false uv run regulation search "<쿼리>" -n 5
 ENABLE_SELF_RAG=false uv run regulation search "<쿼리>" -n 5
+ENABLE_QUERY_EXPANSION=false uv run regulation search "<쿼리>" -n 5  # 🆕
+ENABLE_FACT_CHECK=false uv run regulation search "<쿼리>" -a -n 5    # 🆕
 BM25_TOKENIZE_MODE=simple uv run regulation search "<쿼리>" -n 5
 
-# 동의어 관리 (synonym CLI) 🆕
-uv run regulation synonym suggest "휴학"       # LLM 기반 동의어 제안
-uv run regulation synonym add 휴학 학업중단    # 동의어 추가
-uv run regulation synonym remove 휴학         # 동의어 삭제
-uv run regulation synonym list                # 전체 동의어 목록
+# Tool Calling 비활성화 테스트 🆕
+uv run regulation search "<쿼리>" -a --no-tools
+
+# 동의어 관리 (synonym CLI)
+uv run regulation synonym suggest "휴학"           # LLM 기반 동의어 제안
+uv run regulation synonym suggest "휴학" --auto-add # 🆕 자동 추가
+uv run regulation synonym add 휴학 학업중단        # 동의어 추가
+uv run regulation synonym remove 휴학 학업중단     # 동의어 삭제
+uv run regulation synonym list                    # 전체 동의어 목록
+uv run regulation synonym list 휴학               # 특정 용어 조회
 ```
 
 ---
@@ -1386,8 +1471,9 @@ uv run regulation synonym list                # 전체 동의어 목록
 - [ ] Phase 1.5: Reranker 검증 완료 (ON/OFF 비교)
 - [ ] Phase 1.5: Query Analyzer 검증 완료
 - [ ] Phase 1.5: 컴포넌트 통합 테스트 완료
-- [ ] Phase 1.5: **Fact Check 검증 완료 (선택적)** 🆕
-- [ ] Phase 1.5: **입력 검증/보안 테스트 완료** 🆕
+- [ ] Phase 1.5: **Fact Check 검증 완료** (기본 활성화)
+- [ ] Phase 1.5: **Dynamic Query Expansion 검증 완료** 🆕
+- [ ] Phase 1.5: **입력 검증/보안 테스트 완료**
 
 ### 동적 테스트
 - [ ] Phase 2: 페르소나 선택 (3~5개)
@@ -1426,12 +1512,12 @@ uv run regulation synonym list                # 전체 동의어 목록
 
 ```
 === RAG 품질 테스트 세션 시작 ===
-날짜: 2026-01-15
+날짜: 2026-01-18
 테스터: AI Agent (엄격 모드)
-RAG 설정: Self-RAG=ON, HyDE=ON, BM25=konlpy, Reranker=ON
+RAG 설정: Self-RAG=ON, HyDE=ON, BM25=konlpy, Reranker=ON, FactCheck=ON, QueryExpansion=ON
 
 [Phase 0] 시스템 상태: OK (318개 규정, 17254개 조항)
-[Phase 0] RAG 설정: ENABLE_SELF_RAG=true, ENABLE_HYDE=true, BM25_TOKENIZE_MODE=konlpy
+[Phase 0] RAG 설정: ENABLE_SELF_RAG=true, ENABLE_HYDE=true, BM25_TOKENIZE_MODE=konlpy, ENABLE_FACT_CHECK=true, ENABLE_QUERY_EXPANSION=true
 
 [Phase 1] 정적 테스트: 50/50 통과 (100%)
 
@@ -1440,7 +1526,8 @@ RAG 설정: Self-RAG=ON, HyDE=ON, BM25=konlpy, Reranker=ON
 - HyDE: ✅ "학교 가기 싫어" 테스트 통과 (휴학 결과 증가)
 - Corrective RAG: ✅ 낮은 품질 결과에서 재검색 트리거
 - Hybrid Search: ✅ BM25+Dense 융합 정상
-- Fact Check: ⚠️ 선택적 (ENABLE_FACT_CHECK=false)
+- Fact Check: ✅ 기본 활성화, 정확한 답변 통과 확인
+- Dynamic Query Expansion: ✅ 모호 쿼리에서 LLM 확장 동작
 - 보안 검증: ✅ XSS/SQL Injection 패턴 차단 확인
 - Reranker: ✅ 관련 결과 상위 배치
 - Query Analyzer: ⚠️ 복합 인텐트 매칭 부족 (개선 필요)
@@ -1893,6 +1980,24 @@ RAG 컴포넌트별 동작 검증에 특화된 시나리오입니다.
 [Turn 1] "장학금 받는데 휴학하면?" → 복합 인텐트 (장학금+휴학)
 [Turn 2] "졸업하려면 복수전공 학점도 필요해?" → 복합 인텐트 (졸업+복수전공)
 [Turn 3] "연구년 가면서 겸직도 가능해?" → 복합 인텐트 (연구년+겸직)
+```
+
+#### Dynamic Query Expansion 테스트 시나리오 🆕
+LLM 기반 쿼리 확장이 올바르게 작동하는지 검증합니다.
+```
+[Turn 1] "학교 가기 싫어" → LLM 확장 기대 (휴학, 휴직, 상담)
+[Turn 2] "돈 문제" → LLM 확장 기대 (장학금, 분납, 지원금)
+[Turn 3] "휴학 신청" → 패턴 확장만 (LLM 불필요)
+[Turn 4] "복전하고 싶어" → LLM 확장 기대 (복수전공, 이중전공)
+[Turn 5] "교수님 문제" → LLM 확장 기대 (상담, 고충처리, 인권)
+```
+
+#### Fact Check 테스트 시나리오 🆕
+팩트체크가 올바르게 작동하는지 검증합니다.
+```
+[Turn 1] "휴학 기간이 몇 년이야?" → 정확한 답변 → 팩트체크 통과
+[Turn 2] "장학금 조건이 뭐야?" → 정확한 답변 → 팩트체크 통과
+[Turn 3] 의도적으로 모호한 질문 → 재생성 트리거 여부 확인
 ```
 
 #### Hybrid Search 균형 테스트
