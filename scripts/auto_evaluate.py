@@ -46,10 +46,10 @@ def setup_components():
     db_path = "data/chroma_db"
     store = ChromaVectorStore(persist_directory=db_path)
 
-    # 2. LLM
+    # 2. LLM - use environment variable settings
     llm = None
     try:
-        llm = LLMClientAdapter(provider="ollama")  # Default, can be overridden by env
+        llm = LLMClientAdapter()  # Uses LLM_PROVIDER, LLM_MODEL, LLM_BASE_URL from env
     except Exception as e:
         print(f"Warning: LLM init failed ({e}). LLM features will be disabled.")
 

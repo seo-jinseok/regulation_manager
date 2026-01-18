@@ -5,6 +5,7 @@ Adapts the existing LLMClient to the ILLMClient interface.
 Supports multiple providers: Ollama, LM Studio, MLX, OpenAI, Gemini, OpenRouter.
 """
 
+import os
 from typing import List, Optional
 
 from ..domain.repositories import ILLMClient
@@ -25,7 +26,7 @@ class LLMClientAdapter(ILLMClient):
 
     def __init__(
         self,
-        provider: str = "ollama",
+        provider: Optional[str] = None,
         model: Optional[str] = None,
         base_url: Optional[str] = None,
         api_key: Optional[str] = None,
@@ -34,23 +35,25 @@ class LLMClientAdapter(ILLMClient):
         Initialize LLM client adapter.
 
         Args:
-            provider: LLM provider (ollama, lmstudio, mlx, local, openai, gemini, openrouter)
-            model: Model name (optional, uses provider default)
-            base_url: Base URL for local providers
+            provider: LLM provider (ollama, lmstudio, mlx, local, openai, gemini, openrouter).
+                      If not provided, reads from LLM_PROVIDER env var.
+            model: Model name (optional, uses provider default or LLM_MODEL env var)
+            base_url: Base URL for local providers (optional, uses LLM_BASE_URL env var)
             api_key: API key for cloud providers
         """
         # Lazy import to avoid circular dependencies
         from ...llm_client import LLMClient
 
-        self.provider = provider
-        self.model = model
-        self.base_url = base_url
+        # Read from environment variables if not provided
+        self.provider = provider or os.getenv("LLM_PROVIDER", "ollama")
+        self.model = model or os.getenv("LLM_MODEL")
+        self.base_url = base_url or os.getenv("LLM_BASE_URL")
 
         self._client = LLMClient(
-            provider=provider,
-            model=model,
+            provider=self.provider,
+            model=self.model,
             api_key=api_key,
-            base_url=base_url,
+            base_url=self.base_url,
         )
 
     def generate(

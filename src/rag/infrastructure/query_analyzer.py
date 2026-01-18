@@ -850,6 +850,21 @@ class QueryAnalyzer:
 
         return " ".join(filtered_words)
 
+    # Patterns where conjunction should NOT trigger decomposition
+    # (e.g., "하고 싶어" is a single intent, not "하고" + "싶어")
+    DECOMPOSITION_EXCEPTIONS = [
+        r"하고\s*싶",      # 하고 싶어, 하고싶어
+        r"하면\s*싶",      # 하면 싶어
+        r"하면서\s*싶",    # 하면서 싶어
+        r"받고\s*싶",      # 받고 싶어
+        r"알고\s*싶",      # 알고 싶어
+        r"가고\s*싶",      # 가고 싶어
+        r"싶고\s*",        # ~싶고 하다
+        r"내고\s+",        # ~내고 (화도 내고)
+        r"\S고\s+그래",    # ~고 그래
+        r"줬\S*\s",        # 줬어, 줬는데
+    ]
+
     def decompose_query(self, query: str) -> List[str]:
         """
         Decompose composite queries into sub-queries.
@@ -867,49 +882,82 @@ class QueryAnalyzer:
             "장학금 받으면서 휴학" → ["장학금 신청", "휴학 절차"]
             "교원 휴직 그리고 복직" → ["교원 휴직", "교원 복직"]
             "단순 쿼리" → ["단순 쿼리"]
+            "휴학하고 싶어" → ["휴학하고 싶어"] (NOT decomposed)
         """
-        # Check for composite conjunctions
-        for conj in self.COMPOSITE_CONJUNCTIONS:
-            if conj in query:
-                parts = query.split(conj)
-                if len(parts) >= 2:
-                    # Clean and expand each part
-                    sub_queries = []
-                    for part in parts:
-                        part = part.strip()
-                        if part:
-                            # Expand each sub-query for better recall
-                            expanded = self.expand_query(part)
-                            sub_queries.append(expanded)
-                    if len(sub_queries) >= 2:
-                        logger.debug(
-                            "Decomposed query '%s' into %d sub-queries: %s",
-                            query,
-                            len(sub_queries),
-                            sub_queries,
-                        )
-                        return sub_queries
-
-        # Check for multiple intent matches that suggest decomposition
-        matches = self._match_intents(query)
-        if len(matches) >= 2:
-            # Extract unique keyword groups from top matches
-            keyword_groups = []
-            seen_keywords = set()
-            for match in matches[:3]:
-                new_keywords = [k for k in match.keywords[:2] if k not in seen_keywords]
-                if new_keywords:
-                    keyword_groups.append(" ".join(new_keywords))
-                    seen_keywords.update(new_keywords)
-
-            if len(keyword_groups) >= 2:
+        # Check for exception patterns - these should NOT be decomposed
+        for pattern in self.DECOMPOSITION_EXCEPTIONS:
+            if re.search(pattern, query):
                 logger.debug(
-                    "Decomposed query '%s' by intent into %d sub-queries: %s",
+                    "Query '%s' matches decomposition exception pattern '%s', skipping decomposition",
                     query,
-                    len(keyword_groups),
-                    keyword_groups,
+                    pattern,
                 )
-                return keyword_groups
+                return [query]
+
+        # Check for composite conjunctions
+        # Short particles (과, 와, 랑, 이랑) require word boundary checks
+        SHORT_PARTICLES = {"과", "와", "랑", "이랑"}
+        
+        for conj in self.COMPOSITE_CONJUNCTIONS:
+            if conj not in query:
+                continue
+                
+            # For short particles, require proper word boundaries
+            # e.g., "A와 B" should split, but "교수가" should not (가 is subject marker)
+            if conj in SHORT_PARTICLES:
+                # Check if conjunction appears with spaces: "X와 Y" pattern
+                # Particle should be preceded by a noun character and followed by space
+                pattern = rf"(\S{conj})\s+(\S)"
+                if not re.search(pattern, query):
+                    continue
+            
+            parts = query.split(conj)
+            if len(parts) >= 2:
+                # Validate parts are meaningful (at least 2 chars each)
+                valid_parts = [p.strip() for p in parts if len(p.strip()) >= 2]
+                if len(valid_parts) < 2:
+                    continue
+                    
+                # Clean and expand each part
+                sub_queries = []
+                for part in valid_parts:
+                    # Expand each sub-query for better recall
+                    expanded = self.expand_query(part)
+                    sub_queries.append(expanded)
+                if len(sub_queries) >= 2:
+                    logger.debug(
+                        "Decomposed query '%s' into %d sub-queries: %s",
+                        query,
+                        len(sub_queries),
+                        sub_queries,
+                    )
+                    return sub_queries
+
+        # NOTE: Disabled intent-based decomposition as it often hurts retrieval quality
+        # for queries matching multiple similar intents (e.g., student_rights, complaint_professor).
+        # The multiple intent keywords get scattered across sub-queries, reducing recall.
+        # Instead, we now use expand_query() which merges all intent keywords into a single query.
+        #
+        # Check for multiple intent matches that suggest decomposition
+        # matches = self._match_intents(query)
+        # if len(matches) >= 2:
+        #     # Extract unique keyword groups from top matches
+        #     keyword_groups = []
+        #     seen_keywords = set()
+        #     for match in matches[:3]:
+        #         new_keywords = [k for k in match.keywords[:2] if k not in seen_keywords]
+        #         if new_keywords:
+        #             keyword_groups.append(" ".join(new_keywords))
+        #             seen_keywords.update(new_keywords)
+        #
+        #     if len(keyword_groups) >= 2:
+        #         logger.debug(
+        #             "Decomposed query '%s' by intent into %d sub-queries: %s",
+        #             query,
+        #             len(keyword_groups),
+        #             keyword_groups,
+        #         )
+        #         return keyword_groups
 
         # No decomposition needed
         return [query]
@@ -1081,7 +1129,7 @@ class QueryAnalyzer:
                 )
             )
 
-        path_value = intents_path or os.getenv("RAG_INTENTS_PATH")
+        path_value = intents_path or os.getenv("RAG_INTENTS_PATH", "data/config/intents.json")
         if not path_value:
             return rules
 
