@@ -222,6 +222,10 @@ class SearchUseCase:
         self._fact_check_max_retries = config.fact_check_max_retries
         self._fact_checker = None  # Lazy initialized
 
+        # Dynamic Query Expansion components (Phase 3)
+        self._enable_query_expansion = config.enable_query_expansion
+        self._query_expander = None  # Lazy initialized
+
         # Background warmup
         if enable_warmup is None:
             enable_warmup = os.environ.get("WARMUP_ON_INIT", "").lower() == "true"
@@ -868,8 +872,21 @@ class SearchUseCase:
         )
         complexity = self._classify_query_complexity(query_text, matched_intents)
 
-        # Get dense results
-        dense_results = self.store.search(query, filter, fetch_k)
+        # Phase 3: Apply dynamic query expansion for vague/informal queries
+        expanded_query_text = query_text
+        expansion_keywords = []
+        if not matched_intents or len(matched_intents) == 0:
+            # Only expand if no intent was matched (fallback for pattern-miss)
+            expanded_query_text, expansion_keywords = self._apply_dynamic_expansion(query_text)
+            if expansion_keywords:
+                logger.debug(
+                    f"Dynamic expansion applied: {query_text[:30]}... -> "
+                    f"keywords={expansion_keywords[:3]}"
+                )
+
+        # Get dense results (use expanded query if expansion was applied)
+        search_query = Query(text=expanded_query_text) if expansion_keywords else query
+        dense_results = self.store.search(search_query, filter, fetch_k)
 
         # Apply HyDE for vague/complex queries (merge with dense results)
         if self._should_use_hyde(query_text, complexity):
@@ -1295,6 +1312,54 @@ class SearchUseCase:
         except Exception as e:
             logger.warning(f"HyDE search failed: {e}")
             return []
+
+    def _ensure_query_expander(self) -> None:
+        """Initialize DynamicQueryExpander if not already initialized."""
+        if self._query_expander is None and self._enable_query_expansion:
+            from ..infrastructure.query_expander import DynamicQueryExpander
+            from ..config import get_config
+
+            config = get_config()
+            self._query_expander = DynamicQueryExpander(
+                llm_client=self.llm,
+                cache_dir=str(config.query_expansion_cache_dir_resolved),
+                enable_cache=True,
+            )
+
+    def _apply_dynamic_expansion(self, query_text: str) -> tuple[str, list[str]]:
+        """
+        Apply dynamic query expansion using LLM.
+
+        Args:
+            query_text: Original query text.
+
+        Returns:
+            Tuple of (expanded_query, keywords).
+        """
+        if not self._enable_query_expansion:
+            return query_text, []
+
+        self._ensure_query_expander()
+        if self._query_expander is None:
+            return query_text, []
+
+        try:
+            # Check if expansion is needed
+            if not self._query_expander.should_expand(query_text):
+                logger.debug(f"Skipping dynamic expansion for: {query_text[:30]}...")
+                return query_text, []
+
+            # Perform expansion
+            result = self._query_expander.expand(query_text)
+            logger.debug(
+                f"Dynamic expansion: {query_text[:30]}... -> {result.keywords[:3]}... "
+                f"(method={result.method}, confidence={result.confidence:.2f})"
+            )
+
+            return result.expanded_query, result.keywords
+        except Exception as e:
+            logger.warning(f"Dynamic query expansion failed: {e}")
+            return query_text, []
 
     def _ensure_self_rag(self) -> None:
         """Initialize Self-RAG pipeline if not already initialized."""

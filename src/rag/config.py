@@ -88,6 +88,14 @@ class RAGConfig:
         default_factory=lambda: os.getenv("HYDE_CACHE_ENABLED", "true").lower() == "true"
     )
 
+    # Dynamic Query Expansion settings (Phase 3)
+    enable_query_expansion: bool = field(
+        default_factory=lambda: os.getenv("ENABLE_QUERY_EXPANSION", "true").lower() == "true"
+    )
+    query_expansion_cache_dir: str = field(
+        default_factory=lambda: os.getenv("QUERY_EXPANSION_CACHE_DIR", "data/cache/query_expansion")
+    )
+
     # Fact check settings
     enable_fact_check: bool = field(
         default_factory=lambda: os.getenv("ENABLE_FACT_CHECK", "true").lower() == "true"
@@ -169,6 +177,11 @@ class RAGConfig:
     def hyde_cache_dir_resolved(self) -> Path:
         """Get absolute path to HyDE cache directory."""
         return Path(self.hyde_cache_dir).resolve()
+
+    @property
+    def query_expansion_cache_dir_resolved(self) -> Path:
+        """Get absolute path to query expansion cache directory."""
+        return Path(self.query_expansion_cache_dir).resolve()
 
 
 # Global configuration instance (singleton)
