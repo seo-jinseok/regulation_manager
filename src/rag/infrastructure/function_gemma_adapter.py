@@ -518,6 +518,10 @@ class FunctionGemmaAdapter:
                 .get("content", "")
             )
         except Exception as e:
+            logger.warning(f"Answer generation failed: {e}")
+            # Return a summary of available context when LLM fails
+            if context and len(context) > 100:
+                return f"관련 규정을 찾았습니다. 아래 내용을 참고하세요:\\n\\n{context[:2000]}..."
             return f"답변 생성 실패: {e}"
 
     def process_query_openai(
@@ -703,7 +707,8 @@ class FunctionGemmaAdapter:
                     tool_results,
                 )
 
-        return "검색 반복 횟수를 초과했습니다.", tool_results
+        # Max iterations reached - try to generate answer from accumulated results
+        return self._handle_insufficient_results(query, tool_results, llm_client), tool_results
 
     def _get_ollama_tools(self) -> List[callable]:
         """Convert tool definitions to Ollama-compatible function list."""
@@ -783,7 +788,8 @@ class FunctionGemmaAdapter:
                 # No tool calls, return the response
                 return response.message.content, tool_results
 
-        return "검색 반복 횟수를 초과했습니다.", tool_results
+        # Max iterations reached - try to generate answer from accumulated results
+        return self._handle_insufficient_results(query, tool_results), tool_results
 
     def process_query(
         self, query: str, context: Optional[str] = None, llm_client=None
@@ -855,11 +861,8 @@ class FunctionGemmaAdapter:
                 conversation, tool_results[-len(parsed.tool_calls) :]
             )
 
-        # Max iterations reached
-        return (
-            "검색 반복 횟수를 초과했습니다. 질문을 더 구체적으로 해주세요.",
-            tool_results,
-        )
+        # Max iterations reached - try to generate answer from accumulated results
+        return self._handle_insufficient_results(query, tool_results), tool_results
 
     def process_query_stream(
         self, query: str, context: Optional[str] = None
