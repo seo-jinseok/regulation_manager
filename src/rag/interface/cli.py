@@ -259,6 +259,11 @@ def create_parser() -> argparse.ArgumentParser:
         default="data/chroma_db",
         help="ChromaDB 저장 경로",
     )
+    sync_parser.add_argument(
+        "--extract-keywords",
+        action="store_true",
+        help="동기화 후 키워드 자동 추출 (regulation_keywords.json 갱신)",
+    )
 
     # search command
     search_parser = subparsers.add_parser(
@@ -546,6 +551,24 @@ def cmd_sync(args) -> int:
 
     print_success(str(result))
     print_info(f"총 청크 수: {store.count()}")
+
+    # Auto-extract keywords if requested
+    if getattr(args, "extract_keywords", False):
+        print_info("키워드 자동 추출 시작...")
+        try:
+            from ..infrastructure.keyword_extractor import KeywordExtractor
+
+            extractor = KeywordExtractor(json_path=str(json_path))
+            extract_result = extractor.extract_keywords()
+            output_path = extractor.save_keywords(extract_result)
+            print_success(
+                f"키워드 추출 완료: {extract_result.total_regulations}개 규정, "
+                f"{extract_result.total_keywords}개 키워드"
+            )
+            print_info(f"저장 위치: {output_path}")
+        except Exception as e:
+            print_error(f"키워드 추출 실패: {e}")
+
     return 0
 
 

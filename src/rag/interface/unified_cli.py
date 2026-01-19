@@ -155,6 +155,11 @@ def _add_sync_parser(subparsers):
         default="data/chroma_db",
         help="ChromaDB 저장 경로",
     )
+    parser.add_argument(
+        "--extract-keywords",
+        action="store_true",
+        help="동기화 후 키워드 자동 추출 (regulation_keywords.json 갱신)",
+    )
 
 
 def _add_search_parser(subparsers):

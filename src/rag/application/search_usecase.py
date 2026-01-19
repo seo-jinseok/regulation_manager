@@ -872,20 +872,44 @@ class SearchUseCase:
         )
         complexity = self._classify_query_complexity(query_text, matched_intents)
 
-        # Phase 3: Apply dynamic query expansion for vague/informal queries
+        # Phase 4 (Hybrid): Apply LLM-based dynamic expansion FIRST (primary)
+        # Then merge with intent/synonym matching (secondary)
         expanded_query_text = query_text
-        expansion_keywords = []
-        if not matched_intents or len(matched_intents) == 0:
-            # Only expand if no intent was matched (fallback for pattern-miss)
-            expanded_query_text, expansion_keywords = self._apply_dynamic_expansion(query_text)
-            if expansion_keywords:
+        combined_keywords = []
+        
+        # 1. Always try LLM expansion first (with cache for speed)
+        llm_expanded, llm_keywords = self._apply_dynamic_expansion(query_text)
+        if llm_keywords:
+            combined_keywords.extend(llm_keywords)
+            logger.debug(
+                f"LLM expansion (primary): {query_text[:30]}... -> "
+                f"keywords={llm_keywords[:3]}"
+            )
+        
+        # 2. Add intent-matched keywords if available (secondary)
+        if matched_intents and self._last_query_rewrite:
+            # Intent keywords are already in rewritten_query_text from _perform_query_rewriting
+            # We add any unique keywords from the rewrite that aren't in LLM results
+            intent_words = set(rewritten_query_text.split()) - set(query_text.split())
+            for word in intent_words:
+                if word not in combined_keywords and len(word) >= 2:
+                    combined_keywords.append(word)
+        
+        # 3. Build final expanded query with combined keywords
+        if combined_keywords:
+            # Deduplicate and limit keywords
+            unique_keywords = list(dict.fromkeys(combined_keywords))[:7]
+            existing_words = set(query_text.lower().split())
+            new_keywords = [kw for kw in unique_keywords if kw.lower() not in existing_words]
+            if new_keywords:
+                expanded_query_text = f"{query_text} {' '.join(new_keywords[:4])}"
                 logger.debug(
-                    f"Dynamic expansion applied: {query_text[:30]}... -> "
-                    f"keywords={expansion_keywords[:3]}"
+                    f"Hybrid expansion: {query_text[:20]}... -> "
+                    f"combined={new_keywords[:4]} (LLM+Intent)"
                 )
 
         # Get dense results (use expanded query if expansion was applied)
-        search_query = Query(text=expanded_query_text) if expansion_keywords else query
+        search_query = Query(text=expanded_query_text) if combined_keywords else query
         dense_results = self.store.search(search_query, filter, fetch_k)
 
         # Apply HyDE for vague/complex queries (merge with dense results)
