@@ -739,3 +739,28 @@ def format_search_result_with_explanation(
     explanation = " | ".join(parts) if parts else "관련 내용"
 
     return explanation, matched_keywords_str
+
+
+def format_regulation_citation(chunk: "Chunk") -> str:
+    """
+    Format regulation chunk as a citation block.
+
+    Args:
+        chunk: The regulation chunk to cite.
+
+    Returns:
+        Formatted string block.
+    """
+    reg_name = chunk.parent_path[0] if chunk.parent_path else chunk.title
+    rule_code = chunk.rule_code
+    title = chunk.title
+    text = chunk.text
+
+    # Extract clean text via format_regulation_content if needed,
+    # but for citation we usually want the raw text or slightly cleaned.
+    # formatting indents might be good.
+    formatted_text = format_regulation_content(text)
+
+    return f"""### 📜 관련 규정: {reg_name} (규정코드: {rule_code})
+**[{title}]**
+{formatted_text}"""

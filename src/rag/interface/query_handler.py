@@ -42,6 +42,7 @@ from .common import decide_search_mode
 from .formatters import (
     clean_path_segments,
     filter_by_relevance,
+    format_regulation_citation,
     format_regulation_content,
     format_search_result_with_explanation,
     infer_attachment_label,
@@ -713,6 +714,7 @@ class QueryHandler:
                     }
 
         # Use SearchUseCase.ask_stream
+        sources = []
         for event in search_usecase.ask_stream(
             question=question,
             top_k=options.top_k,
@@ -721,7 +723,23 @@ class QueryHandler:
             history_text=history_text,
             search_query=search_query,
         ):
+            if event.get("type") == "metadata":
+                sources = event.get("sources", [])
             yield event
+
+        if sources:
+            norm_scores = normalize_relevance_scores(sources)
+            display_sources = filter_by_relevance(sources, norm_scores)
+
+            citations_text = ""
+            for i, r in enumerate(display_sources, 1):
+                citation_block = format_regulation_citation(r.chunk)
+                norm_score = norm_scores.get(r.chunk.id, 0.0)
+                rel_pct = int(norm_score * 100)
+                citations_text += f"\n\n{citation_block}\n*관련도: {rel_pct}%*\n\n---\n"
+
+            if citations_text:
+                yield {"type": "token", "content": citations_text}
 
         self._last_query_rewrite = search_usecase.get_last_query_rewrite()
 
@@ -1363,35 +1381,16 @@ class QueryHandler:
         # Build sources section
         sources_md = []
         if answer.sources:
-            sources_md.append("### 📚 참고 규정\n")
             norm_scores = normalize_relevance_scores(answer.sources)
             display_sources = filter_by_relevance(answer.sources, norm_scores)
 
             for i, r in enumerate(display_sources, 1):
-                reg_name = (
-                    r.chunk.parent_path[0] if r.chunk.parent_path else r.chunk.title
-                )
-                path = (
-                    " > ".join(clean_path_segments(r.chunk.parent_path))
-                    if r.chunk.parent_path
-                    else r.chunk.title
-                )
+                citation_block = format_regulation_citation(r.chunk)
                 norm_score = norm_scores.get(r.chunk.id, 0.0)
                 rel_pct = int(norm_score * 100)
-                snippet = strip_path_prefix(r.chunk.text, r.chunk.parent_path or [])
 
-                # 매칭 설명 추가
-                explanation, _ = format_search_result_with_explanation(
-                    r, question, show_score=options.show_debug
-                )
-
-                sources_md.append(f"""#### [{i}] {reg_name}
-**경로:** {path}
-**매칭 정보:** {explanation}
-
-{snippet[:300]}{"..." if len(snippet) > 300 else ""}
-
-*규정번호: {r.chunk.rule_code} | 관련도: {rel_pct}%*
+                sources_md.append(f"""{citation_block}
+*관련도: {rel_pct}%*
 
 ---
 """)
