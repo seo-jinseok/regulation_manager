@@ -94,3 +94,113 @@ grep_*.txt
 *_grep.txt
 inspect_*.py
 inspection_*.txt
+.firebase/
+.claude/.env.local*
+*.pyo
+.claude/settings.local.json
+*.secret.*
+*.pyc
+*.p12
+.uv-cache/
+.VolumeIcon.icns
+*_key.*
+*.sublime-project
+*-backup/
+secret-*.*
+.claude/skills/*/*/*token*
+.DocumentRevisions-V100
+out/
+*.pfx
+# Claude Code Configuration
+# Test Coverage
+# Virtual Environments
+.aws/config
+# Updated: 2026-01-10
+*.sqlite3
+.env.*
+# Cloud provider credentials
+.netlify/
+*.sqlite
+.nuxt/
+# Mac
+# Linux
+.uv_cache/
+!.env.example
+# Node.js (for docs/Nextra)
+*.pem
+# Private keys (specific patterns to avoid false positives)
+# MoAI-ADK Package Distribution .gitignore
+*_token=*
+# Python Cache & Bytecode
+coverage.json
+node_modules/
+*.pyd
+.claude/settings.local.*.json
+.vercel/
+*.dbm
+*-secret-key.*
+*_secret=*
+*.backup/
+# Version: 0.33.0
+# Logs & Temporary Files
+.claude/plans/
+.AppleDouble
+*-key.*
+*.sublime-workspace
+.moai-backups/
+*.suo
+*.key.*
+# Purpose: Essential patterns for user projects
+*.jks
+# Certificate files
+*_secret.*
+Thumbs.db
+.next/
+*.sln
+.claude/skills/*/*/*secret*
+# Build Artifacts & Distribution
+[Dd]esktop.ini
+# Deployment & CI/CD
+# Backups
+.Spotlight-V100
+# Build Tools & Frameworks
+.claude/skills/*/secrets/
+.directory
+*.rdb
+api-key-*
+# Environment files
+*~
+.claude/skills/*/.env*
+*.sw?
+# Secrets and Credentials (CRITICAL)
+# FIXED: Issue #237 - Replaced overly broad *key* and *secret* patterns
+.turbo/
+*-api-key.*
+# OS Files
+*.njsproj
+# ============================================
+dist-ssr/
+.Trashes
+.claude/local/
+*.tsbuildinfo
+ehthumbs.db
+*.backup
+# ===========================================
+.#*
+.aws/credentials
+.claude/skills/*/*/*key*
+.env/
+.LSOverride
+*_backup_*/
+# Windows
+private-key*
+.fseventsd
+# Credential patterns in environment files
+# Skill-specific credentials
+# IDE & Editors
+*-secret.*
+*.db
+.tscache/
+secret-key-*
+*.temp
+.TemporaryItems

@@ -266,6 +266,60 @@ uv run regulation serve --web
 
 파일 업로드 → 변환 → DB 동기화 → 질문까지 한 화면에서 진행할 수 있습니다.
 
+### RAG 테스팅 자동화
+
+RAG 시스템의 품질을 자동으로 테스트하고 개선 제안을 생성하는 자동화 시스템을 제공합니다.
+
+```bash
+# 테스트 자동화 CLI
+uv run python -m src.rag.automation.interface.automation_cli test --scenarios 10
+uv run python -m src.rag.automation.interface.automation_cli list-sessions
+uv run python -m src.rag.automation.interface.automation_cli report --session-id <ID>
+```
+
+**주요 기능**:
+
+| 기능 | 설명 |
+|------|------|
+| **자동 테스트 생성** | LLM 기반 다양한 테스트 시나리오 자동 생성 |
+| **테스트 실행** | 자동 생성된 테스트 케이스 실행 및 결과 수집 |
+| **품질 평가** | 관련성, 정확성, 완전성 기반 품질 점수 계산 |
+| **멀티턴 시뮬레이션** | 대화 맥락이 유지되는 멀티턴 테스트 지원 |
+| **컴포넌트 분석** | Retrieval, Rerank, LLM 각 컴포넌트별 성능 분석 |
+| **개선 적용** | 분석 결과 기반 자동 개선 제안 생성 |
+| **리포트 생성** | HTML/JSON 형식의 상세 테스트 리포트 |
+
+**아키텍처**:
+
+```text
+src/rag/automation/
+├── domain/          # 도메인 엔티티 및 비즈니스 로직
+├── application/     # 유스케이스 (테스트 생성, 실행, 평가)
+├── infrastructure/  # LLM, 저장소, 시뮬레이터
+└── interface/       # CLI 진입점
+```
+
+**테스트 결과 예시**:
+
+```text
+✅ 테스트 시나리오 10개 생성 완료
+✅ 테스트 실행 완료 (10/10 성공)
+📊 품질 점수: 87.5/100
+   - 관련성: 92.0%
+   - 정확성: 85.0%
+   - 완전성: 85.5%
+
+🔍 컴포넌트 분석:
+   - Retrieval: 9.2/10 (우수)
+   - Rerank: 8.8/10 (양호)
+   - LLM: 8.5/10 (양호)
+
+💡 개선 제안 3건 생성됨
+📄 리포트 저장됨: data/test_reports/report_20250124_143022.html
+```
+
+> RAG 테스팅 자동화는 Clean Architecture로 구현되었으며, 120개의 단위 테스트로 검증되었습니다.
+
 ### MCP 서버 (AI 에이전트 연동)
 
 AI 에이전트(Claude, Cursor 등)에서 규정 검색 기능을 사용할 수 있는 MCP(Model Context Protocol) 서버를 제공합니다.
@@ -329,6 +383,9 @@ uv run regulation serve --mcp
 | `regulation reset --confirm` | DB 초기화 |
 | `regulation serve --web` | Web UI 시작 |
 | `regulation serve --mcp` | MCP Server 시작 |
+| `python -m src.rag.automation.interface.automation_cli test` | RAG 자동 테스트 실행 |
+| `python -m src.rag.automation.interface.automation_cli list-sessions` | 테스트 세션 목록 |
+| `python -m src.rag.automation.interface.automation_cli report` | 테스트 리포트 생성 |
 
 ---
 
@@ -969,11 +1026,18 @@ regulation_manager/
 │       ├── interface/       # CLI, Web UI, MCP Server
 │       ├── application/     # Use Cases
 │       ├── domain/          # 도메인 모델
-│       └── infrastructure/  # ChromaDB, Reranker, LLM
+│       ├── infrastructure/  # ChromaDB, Reranker, LLM
+│       └── automation/      # RAG 테스팅 자동화
+│           ├── domain/      # 테스트 도메인 엔티티
+│           ├── application/ # 테스트 유스케이스
+│           ├── infrastructure/ # LLM, 저장소, 시뮬레이터
+│           └── interface/   # Automation CLI
 ├── data/
 │   ├── input/               # HWP 파일 입력
 │   ├── output/              # JSON 출력
 │   ├── chroma_db/           # 벡터 DB 저장소
+│   ├── test_sessions/       # 테스트 세션 저장소
+│   ├── test_reports/        # 테스트 리포트
 │   └── config/              # 동의어/인텐트 사전
 └── tests/                   # pytest 테스트
 ```

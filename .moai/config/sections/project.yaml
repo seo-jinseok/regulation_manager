@@ -1,0 +1,9 @@
+project:
+  name: regulation_manager
+  description: ''
+  type: ''
+  locale: '{{LOCALE}}'
+  created_at: '2026-01-24T12:14:45.621351Z'
+  initialized: 'true'
+github:
+  profile_name: seo-jinseok

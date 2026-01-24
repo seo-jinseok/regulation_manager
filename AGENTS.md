@@ -1,255 +1,147 @@
-# AGENTS.md - AI Agent Context
+# CLAUDE.md
 
-> Context for AI coding agents (Gemini CLI, Cursor, GitHub Copilot, Claude, Codex, etc.)
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Quick Context
+## Project Overview
+
+**Regulation Manager** converts HWP university regulation files to structured JSON and provides RAG-powered AI search/Q&A. The system uses Clean Architecture with Python 3.11+.
+
+### Three-Stage Pipeline
 
 ```
-Project: University Regulation Manager (HWP → JSON → RAG Search)
-Structure: src/rag/ with Clean Architecture (domain/ → application/ → infrastructure/ → interface/)
-Testing: TDD required - write tests before implementation
-Runtime: Python 3.11+, uv package manager (pip/conda forbidden)
-Entry: `regulation` CLI (convert, sync, search, serve)
-
-Key Constraints:
-1. No external library imports in Domain layer
-2. No features without tests
-3. Never manually edit data/chroma_db/ or sync_state.json
+HWP File → JSON → Vector DB → Hybrid Search → LLM Answer
+  (1)       (2)        (3)          (4)           (5)
 ```
 
-## Build & Test Commands
+## Development Commands
+
+**Package Manager:** `uv` (not pip, not conda)
 
 ```bash
-# Environment setup
-uv venv && uv sync
-cp .env.example .env
+# Install dependencies
+uv sync
 
-# Run all tests
+# Add new dependency
+uv add <package>
+
+# Run tests (excludes debug tests by default)
 uv run pytest
+uv run pytest --cov
+uv run pytest -m "not debug"
 
-# Run specific test file
-uv run pytest tests/rag/unit/application/test_search_usecase.py -v
+# Linting and formatting
+uv run ruff check
+uv run ruff format
 
-# Run single test by name
-uv run pytest -k "test_keyword_bonus_applied" -v
-
-# Run tests matching pattern
-uv run pytest -k "search" -v
-
-# Run with coverage
-uv run pytest --cov=src --cov-report=term-missing
-
-# Lint and format with ruff
-uv run ruff check src/ tests/
-uv run ruff check --fix src/  # auto-fix
-uv run ruff format src/       # auto-format
+# Run the CLI
+uv run regulation                    # Interactive mode
+uv run regulation convert "file.hwp" # HWP to JSON
+uv run regulation sync <json>        # Sync to vector DB
+uv run regulation search "query"     # Search
+uv run regulation search "query" -a  # Search + LLM answer
+uv run regulation serve --web        # Web UI (Gradio)
+uv run regulation serve --mcp        # MCP server for AI agents
 ```
 
-## Code Style Guidelines
+## Architecture
 
-### Naming Conventions
-- **Functions/Variables**: `snake_case` (e.g., `search_regulations`, `top_k`)
-- **Classes**: `CamelCase` (e.g., `SearchUseCase`, `ChromaVectorStore`)
-- **Constants**: `UPPER_SNAKE_CASE` (e.g., `RELEVANCE_THRESHOLD`)
-- **Private**: `_leading_underscore` (e.g., `_compute_confidence`)
-
-### Import Order (ruff isort)
-```python
-# 1. Standard library
-import json
-from dataclasses import dataclass
-
-# 2. Third-party
-import pytest
-from chromadb import Client
-
-# 3. First-party (src/)
-from src.rag.domain.entities import Chunk, SearchResult
-```
-
-### Type Hints (Required)
-```python
-def search(self, query: str, top_k: int = 10) -> list[SearchResult]:
-    ...
-```
-
-### Docstrings (Google Style)
-```python
-def search(self, query: str, top_k: int = 10) -> list[SearchResult]:
-    """Search for relevant regulation chunks.
-
-    Args:
-        query: Search query text.
-        top_k: Maximum number of results.
-
-    Returns:
-        List of SearchResult sorted by relevance.
-
-    Raises:
-        SearchError: If vector store unavailable.
-    """
-```
-
-### Error Handling
-Use domain exceptions from `src/exceptions.py`:
-```python
-from src.exceptions import SearchError, LLMError, VectorStoreError
-
-raise SearchError("Vector store not initialized")
-raise LLMError("ollama", "Connection refused")
-```
-
-### Path Handling
-```python
-from pathlib import Path
-config_path = Path("data/config/synonyms.json")  # Always use pathlib
-```
-
-## Architecture Rules
+### Clean Architecture Layers
 
 ```
-[Interface] → [Application] → [Domain] ← [Infrastructure]
-   CLI/Web      Use Cases     Entities    ChromaDB/LLM
+src/rag/
+├── domain/           # Core entities & interfaces (pure Python only)
+├── application/      # Use cases (business logic)
+├── infrastructure/   # External system implementations (ChromaDB, LLM)
+└── interface/        # CLI, Web UI, MCP Server
 ```
 
-| Layer | Location | Dependencies |
-|-------|----------|--------------|
-| Domain | `src/rag/domain/` | None (pure Python stdlib only) |
-| Application | `src/rag/application/` | Domain only |
-| Infrastructure | `src/rag/infrastructure/` | Implements Domain interfaces |
-| Interface | `src/rag/interface/` | Calls Application |
+**Critical Rule:** `domain/` layer must NOT import external libraries. Keep it pure Python.
 
-### Forbidden Patterns
-```python
-# ❌ Domain importing external libraries
-from chromadb import Client  # FORBIDDEN in domain/
-
-# ❌ Application importing Infrastructure directly
-from src.rag.infrastructure.chroma_store import ChromaVectorStore  # FORBIDDEN
-
-# ✅ Use interfaces instead
-from src.rag.domain.repositories import IVectorStore  # OK
-```
-
-## Testing Patterns
-
-```python
-# Use Fake classes for dependencies
-class FakeStore:
-    def __init__(self, results):
-        self._results = results
-    
-    def search(self, query, filter=None, top_k: int = 10):
-        return self._results
-
-def test_keyword_bonus_applied():
-    """Korean: 키워드 보너스가 점수에 적용되는지 테스트"""
-    chunk = make_chunk("내용", keywords=[Keyword(term="교원", weight=1.0)])
-    store = FakeStore([SearchResult(chunk=chunk, score=0.4, rank=1)])
-    usecase = SearchUseCase(store, use_reranker=False)
-
-    results = usecase.search("교원", top_k=1)
-
-    assert results[0].score == pytest.approx(0.45)
-```
-
-- Test files: `test_<module>.py`
-- Test functions: `test_<behavior>` or `test_<scenario>_<expected>`
-- Korean comments allowed for context
-
-## CLI Reference
-
-```bash
-uv run regulation                          # Interactive mode
-uv run regulation search "query" -n 5      # Search with limit
-uv run regulation search "query" -a        # Search + LLM answer
-uv run regulation sync data/output/규정집.json
-uv run regulation status
-uv run regulation reset --confirm
-uv run regulation serve --web              # Gradio UI
-uv run regulation serve --mcp              # MCP Server
-```
-
-## Related Files
-
-- `.github/copilot-instructions.md` - GitHub Copilot specific
-- `QUICKSTART.md` - User guide
-- `LLM_GUIDE.md` - LLM configuration
-- `SCHEMA_REFERENCE.md` - JSON schema spec
-- `QUERY_PIPELINE.md` - Query processing pipeline details
-
-## Advanced RAG Configuration
-
-The system includes advanced RAG features that can be configured via environment variables:
-
-| Feature | Env Variable | Default | Description |
-|---------|-------------|---------|-------------|
-| Self-RAG | `ENABLE_SELF_RAG` | `true` | LLM evaluates retrieval necessity |
-| HyDE | `ENABLE_HYDE` | `true` | Hypothetical document for vague queries |
-| BM25 Tokenizer | `BM25_TOKENIZE_MODE` | `konlpy` | `konlpy`/`morpheme`/`simple` |
-| HyDE Cache | `HYDE_CACHE_ENABLED` | `true` | Cache hypothetical documents |
-| HyDE Cache Dir | `HYDE_CACHE_DIR` | `data/cache/hyde` | Cache storage location |
-
-### Corrective RAG Thresholds
-
-Dynamic thresholds based on query complexity (configured in `src/rag/config.py`):
-
-```python
-corrective_rag_thresholds = {
-    "simple": 0.3,   # Short keyword queries
-    "medium": 0.4,   # Default for most queries
-    "complex": 0.5,  # Comparison or multi-step queries
-}
-```
-
-### Key Infrastructure Components
+### Key Components
 
 | Component | Location | Purpose |
 |-----------|----------|---------|
-| `SelfRAGEvaluator` | `infrastructure/self_rag.py` | Retrieval necessity & relevance evaluation |
-| `HyDEGenerator` | `infrastructure/hyde.py` | Hypothetical document generation |
+| `QueryHandler` | `interface/query_handler.py` | Query routing, mode selection |
+| `SearchUseCase` | `application/search_usecase.py` | Core search/answer logic, Corrective RAG |
+| `QueryAnalyzer` | `infrastructure/query_analyzer.py` | Intent detection, audience analysis |
+| `FunctionGemmaAdapter` | `infrastructure/function_gemma_adapter.py` | LLM tool calling |
+| `HybridSearch` | `infrastructure/hybrid_search.py` | BM25 + Dense vector fusion with RRF |
+| `Reranker` | `infrastructure/reranker.py` | BGE-Reranker-v2-m3 for precision |
 | `RetrievalEvaluator` | `infrastructure/retrieval_evaluator.py` | Corrective RAG trigger |
-| `HybridSearcher` | `infrastructure/hybrid_search.py` | BM25 + Dense search fusion |
+| `SelfRAGEvaluator` | `infrastructure/self_rag.py` | Self-RAG evaluation |
 
-## Security & Input Validation
+### Query Processing Pipeline
 
-### Query Validation
-All user queries are validated in `QueryHandler.validate_query()`:
-- **Max length**: 500 characters
-- **Forbidden patterns**: XSS, SQL injection, template injection
-- **Control characters**: Blocked (except newlines)
-
-```python
-# Validation patterns (src/rag/interface/query_handler.py)
-FORBIDDEN_PATTERNS = [
-    r"<script",           # XSS
-    r"javascript:",       # JavaScript URL
-    r"on\w+\s*=",        # Event handlers
-    r"<iframe",          # Iframe injection
-    r"DROP\s+TABLE",     # SQL injection
-    r"\$\{.*\}",         # Template injection
-    r"\{\{.*\}\}",       # Jinja2 template
-]
+```
+User Query → NFC normalization → Query type detection
+                                  ↓
+    ┌─────────────────────────┼─────────────────────────┐
+    │                         │                         │
+Regulation name only     Tool Calling (Agentic)    Traditional search
+    (Overview)              (Agentic RAG)             (Search/Ask)
+    │                         │                         │
+    └─────────→ QueryAnalyzer analysis ←──────────────────┘
+                              │
+                    ┌─────────┴─────────┐
+                    │                   │
+              Intent expansion    Corrective RAG
+              (Intent)             (if low relevance)
+                    │                   │
+                    └─────────┬─────────┘
+                              ↓
+                     BGE Reranker → LLM answer
 ```
 
-### Prompt Management
-LLM prompts are externalized to `data/config/prompts.json`:
-```python
-# Load prompt (src/rag/application/search_usecase.py)
-from src.rag.application.search_usecase import _load_prompt
-prompt = _load_prompt("regulation_qa")
+### RAG Features
+
+- **Hybrid Search:** BM25 (sparse) + Dense vector fusion with Reciprocal Rank Fusion (RRF)
+- **Audience-Aware Search:** Penalizes mismatched student/faculty/staff queries
+- **Corrective RAG:** Dynamic thresholds based on query complexity
+- **Self-RAG:** Evaluates retrieval necessity and relevance
+- **HyDE:** Hypothetical document embeddings for vague/intent-based queries
+- **Korean NLP:** KoNLPy Komoran tokenizer for morphological analysis
+
+## Development Principles
+
+### TDD Required
+
+```
+RED → GREEN → REFACTOR
 ```
 
-### Logging Best Practices
-- Use `logging.getLogger(__name__)` instead of `print()`
-- Log levels: `debug` for dev, `info` for operations, `warning/error` for issues
-- Never log sensitive data (API keys, user PII)
+Write tests before implementing features. Use `pytest` with markers:
+- `@pytest.mark.debug` - for debug tests (excluded by default)
 
-```python
-import logging
-logger = logging.getLogger(__name__)
+### Prohibited Actions
 
-logger.debug("Processing query: %s", query[:50])  # Truncate for safety
-logger.info("Search completed in %.2fs", elapsed)
-logger.error("LLM connection failed: %s", error)
-```
+- Do NOT import external libraries in `domain/` layer
+- Do NOT add features without tests
+- Do NOT manipulate `sync_state.json` or `data/chroma_db/` directly
+
+### Change Checklist
+
+| Change Target | Required Action |
+|---------------|-----------------|
+| `SearchUseCase` | Run integration tests |
+| `QueryAnalyzer` | Verify search test cases |
+| `FunctionGemmaAdapter` | Test tool calling scenarios |
+| `RetrievalEvaluator` | Verify search quality when adjusting thresholds |
+| `QueryHandler` | Test both CLI and Web interfaces |
+
+## Key Dependencies
+
+- **RAG Framework:** `llama-index` (>=0.14.10)
+- **Vector Store:** `chromadb` (>=1.4.0)
+- **Embedding:** `flagembedding` (bge-m3, bge-reranker-v2-m3) - Korean-optimized
+- **Web UI:** `gradio` (>=6.2.0)
+- **MCP:** `mcp[cli]` (>=1.9.0) - Model Context Protocol server
+- **HWP Processing:** `pyhwp` (>=0.1b15)
+- **Korean NLP:** `konlpy` (Komoran tokenizer)
+
+## Related Documentation
+
+- `README.md` - User documentation (Korean)
+- `AGENTS.md` - MoAI-ADK workflow instructions (Korean)
+- `QUERY_PIPELINE.md` - Detailed query processing pipeline
+- `SCHEMA_REFERENCE.md` - JSON schema documentation
+- `.cursor/rules/regulation_manager.mdc` - Cursor AI rules
