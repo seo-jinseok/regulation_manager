@@ -211,7 +211,7 @@ class SearchUseCase:
         # HyDE components (from config)
         self._enable_hyde = config.enable_hyde
         self._hyde_generator = None  # Lazy initialized
-        self._hyde_searcher = None   # Lazy initialized
+        self._hyde_searcher = None  # Lazy initialized
 
         # Self-RAG components (from config)
         self._enable_self_rag = config.enable_self_rag
@@ -282,7 +282,9 @@ class SearchUseCase:
         re.compile(
             r"^.{2,15}\s*(어떻게|뭐야|뭔가요|몇이야)", re.UNICODE
         ),  # "승진 기준이 어떻게"
-        re.compile(r"^.{2,20}(필요해\??|있어\??|돼\??)$", re.UNICODE),  # "영어 점수도 필요해?"
+        re.compile(
+            r"^.{2,20}(필요해\??|있어\??|돼\??)$", re.UNICODE
+        ),  # "영어 점수도 필요해?"
         re.compile(r"^.{2,15}\s*기준", re.UNICODE),  # "장학금 성적 기준"
     ]
 
@@ -308,7 +310,7 @@ class SearchUseCase:
 
         # Check against simple factual patterns
         if self._is_simple_factual(query):
-            logger.debug(f"Simple factual query detected - DIRECT strategy")
+            logger.debug("Simple factual query detected - DIRECT strategy")
             return SearchStrategy.DIRECT
 
         # Default to tool calling for complex queries
@@ -348,8 +350,6 @@ class SearchUseCase:
             Recommended SearchStrategy.
         """
         return self._determine_search_strategy(query)
-
-        self._hybrid_initialized = True
 
     def search(
         self,
@@ -619,7 +619,9 @@ class SearchUseCase:
             if self.hybrid_searcher:
                 from ..infrastructure.hybrid_search import ScoredDocument
 
-                sparse_results = self.hybrid_searcher.search_sparse(sub_query, top_k * 2)
+                sparse_results = self.hybrid_searcher.search_sparse(
+                    sub_query, top_k * 2
+                )
                 sparse_results = self._filter_sparse_results(
                     sparse_results, filter=filter, include_abolished=include_abolished
                 )
@@ -643,9 +645,7 @@ class SearchUseCase:
                     for orig in dense_results:
                         if orig.chunk.id == doc.doc_id:
                             sub_results.append(
-                                SearchResult(
-                                    chunk=orig.chunk, score=doc.score, rank=0
-                                )
+                                SearchResult(chunk=orig.chunk, score=doc.score, rank=0)
                             )
                             break
             else:
@@ -868,7 +868,9 @@ class SearchUseCase:
 
         # Adaptive RAG: Classify query complexity early for HyDE decision
         matched_intents = (
-            self._last_query_rewrite.matched_intents if self._last_query_rewrite else None
+            self._last_query_rewrite.matched_intents
+            if self._last_query_rewrite
+            else None
         )
         complexity = self._classify_query_complexity(query_text, matched_intents)
 
@@ -876,7 +878,7 @@ class SearchUseCase:
         # Then merge with intent/synonym matching (secondary)
         expanded_query_text = query_text
         combined_keywords = []
-        
+
         # 1. Always try LLM expansion first (with cache for speed)
         llm_expanded, llm_keywords = self._apply_dynamic_expansion(query_text)
         if llm_keywords:
@@ -885,7 +887,7 @@ class SearchUseCase:
                 f"LLM expansion (primary): {query_text[:30]}... -> "
                 f"keywords={llm_keywords[:3]}"
             )
-        
+
         # 2. Add intent-matched keywords if available (secondary)
         if matched_intents and self._last_query_rewrite:
             # Intent keywords are already in rewritten_query_text from _perform_query_rewriting
@@ -894,13 +896,15 @@ class SearchUseCase:
             for word in intent_words:
                 if word not in combined_keywords and len(word) >= 2:
                     combined_keywords.append(word)
-        
+
         # 3. Build final expanded query with combined keywords
         if combined_keywords:
             # Deduplicate and limit keywords
             unique_keywords = list(dict.fromkeys(combined_keywords))[:7]
             existing_words = set(query_text.lower().split())
-            new_keywords = [kw for kw in unique_keywords if kw.lower() not in existing_words]
+            new_keywords = [
+                kw for kw in unique_keywords if kw.lower() not in existing_words
+            ]
             if new_keywords:
                 expanded_query_text = f"{query_text} {' '.join(new_keywords[:4])}"
                 logger.debug(
@@ -1209,12 +1213,12 @@ class SearchUseCase:
     ) -> List[SearchResult]:
         """
         Apply cross-encoder reranking with optional hybrid scoring.
-        
+
         Hybrid Scoring combines reranker scores with keyword-boosted scores
         to preserve important keyword matches that reranker might miss.
-        
+
         Formula: final_score = α * reranker_score + (1 - α) * boosted_score
-        
+
         Args:
             results: Search results with boosted scores
             scoring_query_text: Query text for reranking
@@ -1229,16 +1233,16 @@ class SearchUseCase:
             candidate_k = top_k * 2
 
         candidates = results[:candidate_k]
-        
+
         # Store original boosted scores for hybrid scoring
         id_to_boosted_score = {r.chunk.id: r.score for r in candidates}
-        
+
         documents = [(r.chunk.id, r.chunk.text, {}) for r in candidates]
         reranked = self._reranker.rerank(scoring_query_text, documents, top_k=top_k)
 
         id_to_result = {r.chunk.id: r for r in candidates}
         final_results = []
-        
+
         for i, rr in enumerate(reranked):
             doc_id, content, reranker_score, metadata = rr
             original = id_to_result.get(doc_id)
@@ -1251,22 +1255,24 @@ class SearchUseCase:
                     final_score = alpha * reranker_score + (1 - alpha) * boosted_score
                     logger.debug(
                         f"Hybrid score: {final_score:.3f} = {alpha}*{reranker_score:.3f} + "
-                        f"{1-alpha}*{boosted_score:.3f} for {doc_id[:30]}"
+                        f"{1 - alpha}*{boosted_score:.3f} for {doc_id[:30]}"
                     )
                 else:
                     final_score = reranker_score
-                    
+
                 final_results.append(
                     SearchResult(chunk=original.chunk, score=final_score, rank=i + 1)
                 )
-        
+
         # Re-sort by final score (hybrid scoring may change order)
         if use_hybrid_scoring:
             final_results.sort(key=lambda x: -x.score)
             # Update ranks
             for i, r in enumerate(final_results):
-                final_results[i] = SearchResult(chunk=r.chunk, score=r.score, rank=i + 1)
-        
+                final_results[i] = SearchResult(
+                    chunk=r.chunk, score=r.score, rank=i + 1
+                )
+
         return final_results
 
     def _ensure_reranker(self) -> None:
@@ -1282,8 +1288,8 @@ class SearchUseCase:
     def _ensure_hyde(self) -> None:
         """Initialize HyDE generator if not already initialized."""
         if self._hyde_generator is None and self._enable_hyde:
-            from ..infrastructure.hyde import HyDEGenerator
             from ..config import get_config
+            from ..infrastructure.hyde import HyDEGenerator
 
             config = get_config()
             self._hyde_generator = HyDEGenerator(
@@ -1324,6 +1330,7 @@ class SearchUseCase:
 
             # Search with hypothetical document
             from ..domain.value_objects import Query
+
             hyde_query = Query(text=hyde_result.hypothetical_doc)
             hyde_results = self.store.search(hyde_query, filter, top_k)
 
@@ -1340,8 +1347,8 @@ class SearchUseCase:
     def _ensure_query_expander(self) -> None:
         """Initialize DynamicQueryExpander if not already initialized."""
         if self._query_expander is None and self._enable_query_expansion:
-            from ..infrastructure.query_expander import DynamicQueryExpander
             from ..config import get_config
+            from ..infrastructure.query_expander import DynamicQueryExpander
 
             config = get_config()
             self._query_expander = DynamicQueryExpander(
@@ -1562,9 +1569,11 @@ class SearchUseCase:
         for key, condition in filters.items():
             value = metadata.get(key)
             if isinstance(condition, dict) and "$in" in condition:
-                if value not in condition["$in"]:
+                # For $in conditions, value must be in the list
+                if value is None or value not in condition["$in"]:
                     return False
             else:
+                # For equality conditions, value must match exactly
                 if value != condition:
                     return False
         return True
@@ -1678,7 +1687,9 @@ class SearchUseCase:
         retrieval_query = search_query or question
         if self._enable_self_rag:
             self._ensure_self_rag()
-            if self._self_rag_pipeline and not self._self_rag_pipeline.should_retrieve(question):
+            if self._self_rag_pipeline and not self._self_rag_pipeline.should_retrieve(
+                question
+            ):
                 # Simple query that doesn't need retrieval (rare for regulation Q&A)
                 logger.debug("Self-RAG: Skipping retrieval for simple query")
                 return Answer(

@@ -259,3 +259,384 @@ class TestJSONDocumentLoader:
 
         assert titles["3-1-5"] == "교원인사규정"
         assert titles["3-1-99"] == "시간강사위촉규정【폐지】"
+
+
+class TestJSONDocumentLoaderCache:
+    """Tests for caching behavior."""
+
+    def test_clear_cache(self):
+        """Test clear_cache clears the internal cache."""
+        loader = JSONDocumentLoader()
+        # Add something to cache by loading a file
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".json", delete=False, encoding="utf-8"
+        ) as f:
+            json.dump({"docs": []}, f)
+            path = f.name
+        loader.load_all_chunks(path)
+
+        # Cache should have the file
+        assert path in loader._cache
+
+        # Clear cache
+        loader.clear_cache()
+        assert len(loader._cache) == 0
+
+
+class TestJSONDocumentLoaderRegulationDoc:
+    """Tests for get_regulation_doc method."""
+
+    def test_get_regulation_doc_by_rule_code(self, sample_regulation_json):
+        """Get regulation document by rule code."""
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".json", delete=False, encoding="utf-8"
+        ) as f:
+            json.dump(sample_regulation_json, f, ensure_ascii=False)
+            path = f.name
+
+        loader = JSONDocumentLoader()
+        doc = loader.get_regulation_doc(path, "3-1-5")
+
+        assert doc is not None
+        assert doc["title"] == "교원인사규정"
+        assert doc["metadata"]["rule_code"] == "3-1-5"
+
+    def test_get_regulation_doc_by_title(self, sample_regulation_json):
+        """Get regulation document by title."""
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".json", delete=False, encoding="utf-8"
+        ) as f:
+            json.dump(sample_regulation_json, f, ensure_ascii=False)
+            path = f.name
+
+        loader = JSONDocumentLoader()
+        doc = loader.get_regulation_doc(path, "교원인사규정")
+
+        assert doc is not None
+        assert doc["metadata"]["rule_code"] == "3-1-5"
+
+    def test_get_regulation_doc_not_found(self, sample_regulation_json):
+        """Get regulation document returns None when not found."""
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".json", delete=False, encoding="utf-8"
+        ) as f:
+            json.dump(sample_regulation_json, f, ensure_ascii=False)
+            path = f.name
+
+        loader = JSONDocumentLoader()
+        doc = loader.get_regulation_doc(path, "nonexistent")
+
+        assert doc is None
+
+    def test_get_regulation_doc_skips_non_regulation(self, sample_regulation_json):
+        """Get regulation doc skips TOC documents."""
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".json", delete=False, encoding="utf-8"
+        ) as f:
+            json.dump(sample_regulation_json, f, ensure_ascii=False)
+            path = f.name
+
+        loader = JSONDocumentLoader()
+        doc = loader.get_regulation_doc(path, "차례")
+
+        # Should not find the TOC document
+        assert doc is None
+
+
+class TestJSONDocumentLoaderRegulationOverview:
+    """Tests for get_regulation_overview method."""
+
+    def test_get_regulation_overview_active(self, sample_regulation_json):
+        """Get regulation overview for active regulation."""
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".json", delete=False, encoding="utf-8"
+        ) as f:
+            json.dump(sample_regulation_json, f, ensure_ascii=False)
+            path = f.name
+
+        loader = JSONDocumentLoader()
+        overview = loader.get_regulation_overview(path, "3-1-5")
+
+        assert overview is not None
+        assert overview.rule_code == "3-1-5"
+        assert overview.title == "교원인사규정"
+        assert overview.status.value == "active"
+        # Count includes both searchable and non-searchable articles
+        assert overview.article_count >= 1
+        assert overview.has_addenda is True
+
+    def test_get_regulation_overview_abolished(self, sample_regulation_json):
+        """Get regulation overview for abolished regulation."""
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".json", delete=False, encoding="utf-8"
+        ) as f:
+            json.dump(sample_regulation_json, f, ensure_ascii=False)
+            path = f.name
+
+        loader = JSONDocumentLoader()
+        overview = loader.get_regulation_overview(path, "3-1-99")
+
+        assert overview is not None
+        assert overview.status.value == "abolished"
+
+    def test_get_regulation_overview_not_found(self, sample_regulation_json):
+        """Get regulation overview returns None when not found."""
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".json", delete=False, encoding="utf-8"
+        ) as f:
+            json.dump(sample_regulation_json, f, ensure_ascii=False)
+            path = f.name
+
+        loader = JSONDocumentLoader()
+        overview = loader.get_regulation_overview(path, "nonexistent")
+
+        assert overview is None
+
+    def test_get_regulation_overview_with_chapters(self):
+        """Test overview extracts chapter information."""
+        data = {
+            "docs": [
+                {
+                    "title": "테스트규정",
+                    "doc_type": "regulation",
+                    "metadata": {"rule_code": "TEST-001"},
+                    "content": [
+                        {
+                            "type": "chapter",
+                            "display_no": "제1장",
+                            "title": "총칙",
+                            "children": [
+                                {
+                                    "type": "article",
+                                    "display_no": "제1조",
+                                    "title": "목적",
+                                },
+                                {
+                                    "type": "article",
+                                    "display_no": "제2조",
+                                    "title": "정의",
+                                },
+                            ],
+                        },
+                        {
+                            "type": "chapter",
+                            "display_no": "제2장",
+                            "title": "인사",
+                            "children": [
+                                {
+                                    "type": "article",
+                                    "display_no": "제3조",
+                                    "title": "임용",
+                                },
+                            ],
+                        },
+                    ],
+                    "addenda": [],
+                }
+            ]
+        }
+
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".json", delete=False, encoding="utf-8"
+        ) as f:
+            json.dump(data, f, ensure_ascii=False)
+            path = f.name
+
+        loader = JSONDocumentLoader()
+        overview = loader.get_regulation_overview(path, "TEST-001")
+
+        assert overview is not None
+        assert len(overview.chapters) == 2
+        assert overview.chapters[0].display_no == "제1장"
+        assert overview.chapters[0].title == "총칙"
+        # Article range for chapter 1 should be 제1조~제2조
+        assert overview.chapters[0].article_range == "제1조~제2조"
+        assert overview.chapters[1].article_range == "제3조"
+
+
+class TestJSONDocumentLoaderFindCandidates:
+    """Tests for find_regulation_candidates method."""
+
+    def test_find_regulation_candidates(self, sample_regulation_json):
+        """Find regulation candidates by query."""
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".json", delete=False, encoding="utf-8"
+        ) as f:
+            json.dump(sample_regulation_json, f, ensure_ascii=False)
+            path = f.name
+
+        loader = JSONDocumentLoader()
+        candidates = loader.find_regulation_candidates(path, "교원인사")
+
+        assert len(candidates) > 0
+        codes = [c[0] for c in candidates]
+        assert "3-1-5" in codes
+
+    def test_find_candidates_sorts_by_length(self, sample_regulation_json):
+        """Candidates are sorted by title length difference."""
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".json", delete=False, encoding="utf-8"
+        ) as f:
+            json.dump(sample_regulation_json, f, ensure_ascii=False)
+            path = f.name
+
+        loader = JSONDocumentLoader()
+        candidates = loader.find_regulation_candidates(path, "교원인사")
+
+        # First candidate should be closest match
+        assert candidates[0][0] == "3-1-5"
+
+    def test_find_candidates_empty_query(self, sample_regulation_json):
+        """Empty query returns all candidates."""
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".json", delete=False, encoding="utf-8"
+        ) as f:
+            json.dump(sample_regulation_json, f, ensure_ascii=False)
+            path = f.name
+
+        loader = JSONDocumentLoader()
+        candidates = loader.find_regulation_candidates(path, "")
+
+        # Should return all regulations
+        assert len(candidates) >= 2
+
+
+class TestJSONDocumentLoaderGetAllRegulations:
+    """Tests for get_all_regulations method."""
+
+    def test_get_all_regulations(self, sample_regulation_json):
+        """Get all regulation metadata."""
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".json", delete=False, encoding="utf-8"
+        ) as f:
+            json.dump(sample_regulation_json, f, ensure_ascii=False)
+            path = f.name
+
+        loader = JSONDocumentLoader()
+        regulations = loader.get_all_regulations(path)
+
+        assert len(regulations) == 2  # 2 regulations (excluding TOC)
+
+        codes = [r[0] for r in regulations]
+        titles = [r[1] for r in regulations]
+
+        assert "3-1-5" in codes
+        assert "3-1-99" in codes
+        assert "교원인사규정" in titles
+
+    def test_get_all_regulations_skips_non_regulation(self):
+        """get_all_regulations skips non-regulation documents."""
+        data = {
+            "docs": [
+                {
+                    "title": "TOC",
+                    "doc_type": "toc",
+                    "metadata": {"rule_code": "N/A"},
+                },
+                {
+                    "title": "Regulation",
+                    "doc_type": "regulation",
+                    "metadata": {"rule_code": "TEST-001"},
+                },
+                {
+                    "title": "Index",
+                    "doc_type": "index",
+                    "metadata": {"rule_code": "N/A"},
+                },
+            ]
+        }
+
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".json", delete=False, encoding="utf-8"
+        ) as f:
+            json.dump(data, f, ensure_ascii=False)
+            path = f.name
+
+        loader = JSONDocumentLoader()
+        regulations = loader.get_all_regulations(path)
+
+        assert len(regulations) == 1
+        assert regulations[0][0] == "TEST-001"
+
+
+class TestJSONDocumentLoaderEdgeCases:
+    """Tests for edge cases and error handling."""
+
+    def test_load_chunks_skips_docs_without_rule_code(self):
+        """Documents without rule code are skipped."""
+        data = {
+            "docs": [
+                {
+                    "title": "No Rule Code",
+                    "doc_type": "regulation",
+                    "metadata": {},
+                    "content": [
+                        {
+                            "id": "node-1",
+                            "type": "article",
+                            "title": "제1조",
+                            "text": "내용",
+                            "embedding_text": "내용",
+                            "is_searchable": True,
+                        }
+                    ],
+                    "addenda": [],
+                }
+            ]
+        }
+
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".json", delete=False, encoding="utf-8"
+        ) as f:
+            json.dump(data, f, ensure_ascii=False)
+            path = f.name
+
+        loader = JSONDocumentLoader()
+        chunks = loader.load_all_chunks(path)
+
+        # Should skip document without rule code
+        assert len(chunks) == 0
+
+    def test_load_chunks_by_rule_codes_empty_set(self, sample_regulation_json):
+        """Empty rule codes set returns no chunks."""
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".json", delete=False, encoding="utf-8"
+        ) as f:
+            json.dump(sample_regulation_json, f, ensure_ascii=False)
+            path = f.name
+
+        loader = JSONDocumentLoader()
+        chunks = loader.load_chunks_by_rule_codes(path, set())
+
+        assert len(chunks) == 0
+
+    def test_compute_state_skips_index_duplicates(self):
+        """Index duplicate documents are skipped in state computation."""
+        data = {
+            "docs": [
+                {
+                    "title": "Index Duplicate",
+                    "is_index_duplicate": True,
+                    "doc_type": "toc",
+                    "metadata": {"rule_code": "INDEX-001"},
+                },
+                {
+                    "title": "Regulation",
+                    "doc_type": "regulation",
+                    "metadata": {"rule_code": "REG-001"},
+                },
+            ]
+        }
+
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".json", delete=False, encoding="utf-8"
+        ) as f:
+            json.dump(data, f, ensure_ascii=False)
+            path = f.name
+
+        loader = JSONDocumentLoader()
+        state = loader.compute_state(path)
+
+        # Should only have REG-001, not INDEX-001
+        assert "REG-001" in state.regulations
+        assert "INDEX-001" not in state.regulations

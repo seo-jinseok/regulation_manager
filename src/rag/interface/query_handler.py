@@ -28,8 +28,8 @@ from ..application.search_usecase import (
     SearchUseCase,
 )
 from ..domain.entities import RegulationStatus
-from ..infrastructure.query_analyzer import Audience, QueryAnalyzer
 from ..infrastructure.json_loader import JSONDocumentLoader
+from ..infrastructure.query_analyzer import Audience, QueryAnalyzer
 
 logger = logging.getLogger(__name__)
 from .chat_logic import (
@@ -132,8 +132,18 @@ class QueryResult:
 
 # Deletion warning patterns
 DELETION_PATTERNS = [
-    (re.compile(r"삭제\s*[\(\<\[]\s*(\d{4})[.\-/]?\s*(\d{1,2})?[.\-/]?\s*(\d{1,2})?"), "삭제"),
-    (re.compile(r"폐지\s*[\(\<\[]\s*(\d{4})[.\-/]?\s*(\d{1,2})?[.\-/]?\s*(\d{1,2})?"), "폐지"),
+    (
+        re.compile(
+            r"삭제\s*[\(\<\[]\s*(\d{4})[.\-/]?\s*(\d{1,2})?[.\-/]?\s*(\d{1,2})?"
+        ),
+        "삭제",
+    ),
+    (
+        re.compile(
+            r"폐지\s*[\(\<\[]\s*(\d{4})[.\-/]?\s*(\d{1,2})?[.\-/]?\s*(\d{1,2})?"
+        ),
+        "폐지",
+    ),
     (re.compile(r"\(삭제\)"), "삭제"),
     (re.compile(r"\[삭제\]"), "삭제"),
     (re.compile(r"본 조는?\s*삭제"), "삭제"),
@@ -162,7 +172,9 @@ def detect_deletion_warning(text: str) -> Optional[str]:
                 if month and day:
                     return f"⚠️ 이 조항은 {year}년 {month}월 {day}일에 {deletion_type}되었습니다."
                 elif month:
-                    return f"⚠️ 이 조항은 {year}년 {month}월에 {deletion_type}되었습니다."
+                    return (
+                        f"⚠️ 이 조항은 {year}년 {month}월에 {deletion_type}되었습니다."
+                    )
                 else:
                     return f"⚠️ 이 조항은 {year}년에 {deletion_type}되었습니다."
             else:
@@ -736,7 +748,16 @@ class QueryHandler:
                 citation_block = format_regulation_citation(r.chunk)
                 norm_score = norm_scores.get(r.chunk.id, 0.0)
                 rel_pct = int(norm_score * 100)
-                citations_text += f"\n\n{citation_block}\n*관련도: {rel_pct}%*\n\n---\n"
+
+                # Add matching explanation with keywords
+                explanation, _ = format_search_result_with_explanation(
+                    r, question, show_score=False
+                )
+
+                citations_text += (
+                    f"\n\n{citation_block}\n*관련도: {rel_pct}%*\n\n"
+                    f"**매칭 정보:** {explanation}\n\n---\n"
+                )
 
             if citations_text:
                 yield {"type": "token", "content": citations_text}
@@ -1389,8 +1410,15 @@ class QueryHandler:
                 norm_score = norm_scores.get(r.chunk.id, 0.0)
                 rel_pct = int(norm_score * 100)
 
+                # Add matching explanation with keywords
+                explanation, _ = format_search_result_with_explanation(
+                    r, question, show_score=False
+                )
+
                 sources_md.append(f"""{citation_block}
 *관련도: {rel_pct}%*
+
+**매칭 정보:** {explanation}
 
 ---
 """)

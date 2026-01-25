@@ -36,10 +36,10 @@ from ..application.sync_usecase import SyncUseCase
 from ..domain.entities import RegulationStatus
 from ..domain.value_objects import SearchFilter
 from ..infrastructure.chroma_store import ChromaVectorStore
-from ..infrastructure.query_analyzer import Audience, QueryAnalyzer
 from ..infrastructure.json_loader import JSONDocumentLoader
 from ..infrastructure.llm_adapter import LLMClientAdapter
 from ..infrastructure.llm_client import MockLLMClient
+from ..infrastructure.query_analyzer import Audience, QueryAnalyzer
 
 try:
     from ..infrastructure.function_gemma_adapter import FunctionGemmaAdapter
@@ -1320,6 +1320,10 @@ def create_app(
                 )
 
     return app
+
+
+# Alias for backward compatibility with tests
+create_demo = create_app
 
 
 def main():

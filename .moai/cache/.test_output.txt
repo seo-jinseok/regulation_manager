@@ -1,0 +1,111 @@
+.........................................F.F............................ [  9%]
+......F................................................................. [ 19%]
+........................................................................ [ 29%]
+........................................................................ [ 39%]
+........................................................................ [ 49%]
+.........FFFF.F......................................................... [ 59%]
+........................................................................ [ 69%]
+..............................................................F......... [ 79%]
+........................................................................ [ 89%]
+........................................................................ [ 99%]
+....                                                                     [100%]
+=================================== FAILURES ===================================
+_________________ test_hybrid_filters_abolished_sparse_results _________________
+tests/rag/unit/application/test_search_usecase.py:225: in test_hybrid_filters_abolished_sparse_results
+    assert {r.chunk.id for r in results} == {"doc_active"}
+E   AssertionError: assert {'47128af8-27...921f768ca5d6'} == {'doc_active'}
+E     
+E     Extra items in the left set:
+E     'c9009434-bfc7-5c00-96c0-921f768ca5d6'
+E     'c023a4b9-bd49-5392-8833-c7434f163a2c'
+E     '47128af8-27f9-58f6-8225-3750967ef57f'
+E     '7ae00d9b-f8f0-5079-b757-0a1d4603ebfc'
+E     '58ac3a18-7bfc-500d-be16-f03a9fdba6c5'...
+E     
+E     ...Full output truncated (3 lines hidden), use '-vv' to show
+__________________ test_hybrid_filters_by_rule_code_and_level __________________
+tests/rag/unit/application/test_search_usecase.py:289: in test_hybrid_filters_by_rule_code_and_level
+    assert {r.chunk.id for r in results} == {"doc_allowed"}
+E   AssertionError: assert set() == {'doc_allowed'}
+E     
+E     Extra items in the right set:
+E     'doc_allowed'
+E     Use -v to get more diff
+___________ TestSearchUseCaseAsk.test_ask_includes_history_in_prompt ___________
+tests/rag/unit/application/test_search_usecase_extended.py:498: in test_ask_includes_history_in_prompt
+    assert "대화 기록" in user_message
+E   AssertionError: assert '대화 기록' in '질문: 다음 질문'
+__________________ TestQueryAnalyzer.test_get_weights_article __________________
+tests/rag/unit/infrastructure/test_query_analyzer.py:124: in test_get_weights_article
+    assert bm25_w == 0.6
+E   assert 0.9 == 0.6
+________________ TestQueryAnalyzer.test_get_weights_regulation _________________
+tests/rag/unit/infrastructure/test_query_analyzer.py:131: in test_get_weights_regulation
+    assert bm25_w == 0.5
+E   assert 0.85 == 0.5
+_________________ TestQueryAnalyzer.test_get_weights_question __________________
+tests/rag/unit/infrastructure/test_query_analyzer.py:137: in test_get_weights_question
+    assert bm25_w == 0.4
+E   assert 0.75 == 0.4
+__________________ TestQueryAnalyzer.test_get_weights_intent ___________________
+tests/rag/unit/infrastructure/test_query_analyzer.py:143: in test_get_weights_intent
+    assert bm25_w == 0.6
+E   assert 0.85 == 0.6
+__________________ TestQueryAnalyzer.test_get_weights_general __________________
+tests/rag/unit/infrastructure/test_query_analyzer.py:156: in test_get_weights_general
+    assert bm25_w == 0.5
+E   assert 0.8 == 0.5
+__ TestQueryHandlerAskExplanation.test_ask_includes_matching_info_in_sources ___
+tests/rag/unit/interface/test_query_handler_explanation.py:221: in test_ask_includes_matching_info_in_sources
+    assert "매칭 정보" in result.content
+E   AssertionError: assert '매칭 정보' in '연구년 신청은 매년 3월에 가능합니다.\n\n---\n\n### 📜 관련 규정: 교원인사규정 (규정코드: 3-1-5)\n**[제15조 연구년 신청]**\n연구년 신청은 매년 3월에 가능합니다.\n*관련도: 100%*\n\n---\n'
+E    +  where '연구년 신청은 매년 3월에 가능합니다.\n\n---\n\n### 📜 관련 규정: 교원인사규정 (규정코드: 3-1-5)\n**[제15조 연구년 신청]**\n연구년 신청은 매년 3월에 가능합니다.\n*관련도: 100%*\n\n---\n' = QueryResult(type=<QueryType.ASK: 'ask'>, success=True, content='연구년 신청은 매년 3월에 가능합니다.\n\n---\n\n### 📜 관련 규정: 교원인사규정 (규...'교원인사규정', 'last_rule_code': '3-1-5'}, clarification_type=None, clarification_options=[], debug_info='', suggestions=[]).content
+=============================== warnings summary ===============================
+src/rag/automation/domain/entities.py:73
+  /Users/truestone/Dropbox/repo/University/regulation_manager/src/rag/automation/domain/entities.py:73: PytestCollectionWarning: cannot collect test class 'TestCase' because it has a __init__ constructor (from: tests/rag/unit/automation/domain/test_entities.py)
+    @dataclass
+
+src/rag/automation/domain/entities.py:92
+  /Users/truestone/Dropbox/repo/University/regulation_manager/src/rag/automation/domain/entities.py:92: PytestCollectionWarning: cannot collect test class 'TestSession' because it has a __init__ constructor (from: tests/rag/unit/automation/domain/test_entities.py)
+    @dataclass
+
+src/rag/automation/domain/entities.py:73
+  /Users/truestone/Dropbox/repo/University/regulation_manager/src/rag/automation/domain/entities.py:73: PytestCollectionWarning: cannot collect test class 'TestCase' because it has a __init__ constructor (from: tests/rag/unit/automation/infrastructure/test_json_session_repository.py)
+    @dataclass
+
+src/rag/automation/domain/entities.py:92
+  /Users/truestone/Dropbox/repo/University/regulation_manager/src/rag/automation/domain/entities.py:92: PytestCollectionWarning: cannot collect test class 'TestSession' because it has a __init__ constructor (from: tests/rag/unit/automation/infrastructure/test_json_session_repository.py)
+    @dataclass
+
+src/rag/automation/domain/entities.py:120
+  /Users/truestone/Dropbox/repo/University/regulation_manager/src/rag/automation/domain/entities.py:120: PytestCollectionWarning: cannot collect test class 'TestResult' because it has a __init__ constructor (from: tests/rag/unit/automation/test_phase2/test_auto_fact_checker.py)
+    @dataclass
+
+src/rag/automation/domain/entities.py:73
+  /Users/truestone/Dropbox/repo/University/regulation_manager/src/rag/automation/domain/entities.py:73: PytestCollectionWarning: cannot collect test class 'TestCase' because it has a __init__ constructor (from: tests/rag/unit/automation/test_phase2/test_execute_test_usecase.py)
+    @dataclass
+
+src/rag/automation/domain/entities.py:120
+  /Users/truestone/Dropbox/repo/University/regulation_manager/src/rag/automation/domain/entities.py:120: PytestCollectionWarning: cannot collect test class 'TestResult' because it has a __init__ constructor (from: tests/rag/unit/automation/test_phase2/test_quality_evaluator.py)
+    @dataclass
+
+src/rag/automation/domain/entities.py:120
+  /Users/truestone/Dropbox/repo/University/regulation_manager/src/rag/automation/domain/entities.py:120: PytestCollectionWarning: cannot collect test class 'TestResult' because it has a __init__ constructor (from: tests/rag/unit/automation/test_phase4/test_component_analyzer.py)
+    @dataclass
+
+src/rag/automation/domain/entities.py:120
+  /Users/truestone/Dropbox/repo/University/regulation_manager/src/rag/automation/domain/entities.py:120: PytestCollectionWarning: cannot collect test class 'TestResult' because it has a __init__ constructor (from: tests/rag/unit/automation/test_phase5/test_failure_analyzer.py)
+    @dataclass
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/rag/unit/application/test_search_usecase.py::test_hybrid_filters_abolished_sparse_results
+FAILED tests/rag/unit/application/test_search_usecase.py::test_hybrid_filters_by_rule_code_and_level
+FAILED tests/rag/unit/application/test_search_usecase_extended.py::TestSearchUseCaseAsk::test_ask_includes_history_in_prompt
+FAILED tests/rag/unit/infrastructure/test_query_analyzer.py::TestQueryAnalyzer::test_get_weights_article
+FAILED tests/rag/unit/infrastructure/test_query_analyzer.py::TestQueryAnalyzer::test_get_weights_regulation
+FAILED tests/rag/unit/infrastructure/test_query_analyzer.py::TestQueryAnalyzer::test_get_weights_question
+FAILED tests/rag/unit/infrastructure/test_query_analyzer.py::TestQueryAnalyzer::test_get_weights_intent
+FAILED tests/rag/unit/infrastructure/test_query_analyzer.py::TestQueryAnalyzer::test_get_weights_general
+FAILED tests/rag/unit/interface/test_query_handler_explanation.py::TestQueryHandlerAskExplanation::test_ask_includes_matching_info_in_sources
+9 failed, 715 passed, 10 deselected, 9 warnings in 14.78s

@@ -4,16 +4,16 @@ Extended unit tests for SearchUseCase.
 Tests clean architecture compliance with mocked dependencies.
 """
 
-import pytest
-from unittest.mock import Mock, MagicMock
 from typing import List, Optional
+from unittest.mock import MagicMock, Mock
+
+import pytest
 
 from src.rag.application.search_usecase import (
     SearchUseCase,
     _extract_regulation_article_query,
     _extract_regulation_only_query,
 )
-from src.rag.infrastructure.patterns import normalize_article_token
 from src.rag.domain.entities import (
     Answer,
     Chunk,
@@ -29,11 +29,12 @@ from src.rag.domain.repositories import (
     IVectorStore,
 )
 from src.rag.domain.value_objects import Query, SearchFilter
-
+from src.rag.infrastructure.patterns import normalize_article_token
 
 # ====================
 # Helper factories
 # ====================
+
 
 def make_chunk(
     chunk_id: str = "test-chunk-1",
@@ -69,6 +70,7 @@ def make_search_result(chunk: Chunk, score: float = 0.5, rank: int = 1) -> Searc
 # ====================
 # Mock implementations
 # ====================
+
 
 class MockVectorStore(IVectorStore):
     """Mock vector store for testing."""
@@ -165,11 +167,17 @@ class MockHybridSearcher(IHybridSearcher):
         mock_rewrite_result.used_intent = False
         mock_rewrite_result.used_synonyms = True
         mock_rewrite_result.matched_intents = []  # Must be a list, not None
-        self._query_analyzer.rewrite_query_with_info = Mock(return_value=mock_rewrite_result)
+        self._query_analyzer.rewrite_query_with_info = Mock(
+            return_value=mock_rewrite_result
+        )
         self._query_analyzer.has_synonyms = Mock(return_value=True)
         self._query_analyzer.detect_audience = Mock(return_value=None)
-        self._query_analyzer.expand_query = Mock(side_effect=lambda q: q)  # Return query as-is
-        self._query_analyzer.decompose_query = Mock(side_effect=lambda q: [q])  # Return single-element list (no decomposition)
+        self._query_analyzer.expand_query = Mock(
+            side_effect=lambda q: q
+        )  # Return query as-is
+        self._query_analyzer.decompose_query = Mock(
+            side_effect=lambda q: [q]
+        )  # Return single-element list (no decomposition)
         self._query_analyzer._llm_client = None
 
     def add_documents(self, documents: List[tuple]) -> None:
@@ -187,7 +195,9 @@ class MockHybridSearcher(IHybridSearcher):
         top_k: int = 10,
         query_text: Optional[str] = None,
     ) -> List:
-        self.fuse_results_calls.append((sparse_results, dense_results, top_k, query_text))
+        self.fuse_results_calls.append(
+            (sparse_results, dense_results, top_k, query_text)
+        )
         # Return dense results as-is for simplicity
         return dense_results[:top_k]
 
@@ -201,6 +211,7 @@ class MockHybridSearcher(IHybridSearcher):
 # ====================
 # Unit tests for helper functions
 # ====================
+
 
 class TestHelperFunctions:
     """Tests for module-level helper functions."""
@@ -245,6 +256,7 @@ class TestHelperFunctions:
 # ====================
 # Unit tests for SearchUseCase
 # ====================
+
 
 class TestSearchUseCaseInit:
     """Tests for SearchUseCase initialization."""
@@ -384,7 +396,9 @@ class TestSearchUseCaseSearch:
         )
         results = usecase.search("휴학", top_k=5)
 
-        assert len(hybrid.search_sparse_calls) >= 1  # May be called multiple times due to Corrective RAG
+        assert (
+            len(hybrid.search_sparse_calls) >= 1
+        )  # May be called multiple times due to Corrective RAG
 
 
 class TestSearchUseCaseSearchUnique:
@@ -396,11 +410,13 @@ class TestSearchUseCaseSearchUnique:
         chunk2 = make_chunk(chunk_id="c2", rule_code="A-1-1")  # Same rule_code
         chunk3 = make_chunk(chunk_id="c3", rule_code="B-1-1")  # Different
 
-        store = MockVectorStore([
-            make_search_result(chunk1, score=0.9, rank=1),
-            make_search_result(chunk2, score=0.8, rank=2),
-            make_search_result(chunk3, score=0.7, rank=3),
-        ])
+        store = MockVectorStore(
+            [
+                make_search_result(chunk1, score=0.9, rank=1),
+                make_search_result(chunk2, score=0.8, rank=2),
+                make_search_result(chunk3, score=0.7, rank=3),
+            ]
+        )
         usecase = SearchUseCase(store, use_reranker=False, use_hybrid=False)
 
         results = usecase.search_unique("test", top_k=10)
@@ -414,10 +430,12 @@ class TestSearchUseCaseSearchUnique:
         chunk1 = make_chunk(chunk_id="c1", rule_code="A-1-1")
         chunk2 = make_chunk(chunk_id="c2", rule_code="A-1-1")
 
-        store = MockVectorStore([
-            make_search_result(chunk1, score=0.9, rank=1),
-            make_search_result(chunk2, score=0.8, rank=2),
-        ])
+        store = MockVectorStore(
+            [
+                make_search_result(chunk1, score=0.9, rank=1),
+                make_search_result(chunk2, score=0.8, rank=2),
+            ]
+        )
         usecase = SearchUseCase(store, use_reranker=False, use_hybrid=False)
 
         results = usecase.search_unique("교원인사규정", top_k=10)
@@ -432,6 +450,7 @@ class TestSearchUseCaseAsk:
     def test_ask_requires_llm_client(self):
         """Raises ConfigurationError if LLM client not configured."""
         from src.exceptions import ConfigurationError
+
         store = MockVectorStore([make_search_result(make_chunk())])
         usecase = SearchUseCase(store, llm_client=None)
 
@@ -489,12 +508,15 @@ class TestSearchUseCaseAsk:
             use_hybrid=False,
         )
         usecase._enable_self_rag = False  # Disable Self-RAG for this test
+        usecase._enable_fact_check = False  # Disable fact-checking for this test
+        usecase._enable_query_expansion = False  # Disable query expansion for this test
         usecase.ask(
             question="다음 질문",
             history_text="이전 대화 기록",
         )
 
-        _, user_message, _ = llm.generate_calls[0]
+        # Check the last LLM call (the actual answer generation, not query expansion)
+        _, user_message, _ = llm.generate_calls[-1]
         assert "대화 기록" in user_message
         assert "이전 대화 기록" in user_message
 

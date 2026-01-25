@@ -1044,7 +1044,10 @@ class RegulationFormatter:
                             references=refs,
                         )
                     )
-                    current_node = nodes[-1]
+                    # Don't set current_node for orphan paragraphs to allow
+                    # subsequent orphan paragraphs to be separate top-level items
+                    # (e.g., ①, ②, ③ should be siblings, not nested)
+                    # current_node = nodes[-1]
                 continue
 
             # 4. Text Content (append to current node)

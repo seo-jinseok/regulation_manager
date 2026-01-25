@@ -1,6 +1,6 @@
 import unittest
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 from src.main import main
 
@@ -22,7 +22,8 @@ class TestMainFailureModes(unittest.TestCase):
                         # Use side_effect to mock the reader being None inside main()
                         with patch("src.main.reader", None, create=True):
                             with patch("sys.argv", ["main.py", "test.hwp"]):
-                                with patch("builtins.open", MagicMock()):
+                                # Patch Preprocessor to avoid file I/O issues
+                                with patch("src.main.Preprocessor"):
                                     with self.assertRaises(SystemExit):
                                         main()
 

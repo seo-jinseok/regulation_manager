@@ -8,13 +8,23 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 
+def _cleanup_bm25_cache():
+    """Clean up BM25 index cache file to prevent test isolation issues."""
+    cache_path = ROOT / "data" / "cache" / "bm25_index.pkl"
+    if cache_path.exists():
+        cache_path.unlink()
+
+
 @pytest.fixture(autouse=True)
 def reset_rag_config():
     """Reset RAG config before and after each test."""
     from src.rag.config import reset_config
+
     reset_config()
+    _cleanup_bm25_cache()
     yield
     reset_config()
+    _cleanup_bm25_cache()
 
 
 def pytest_collection_modifyitems(config, items):

@@ -119,29 +119,29 @@ class TestQueryAnalyzer:
     # --- Weight Calculation ---
 
     def test_get_weights_article(self, analyzer: QueryAnalyzer):
-        """ARTICLE_REFERENCE는 BM25 가중치가 높아야 함"""
+        """ARTICLE_REFERENCE는 BM25 가중치가 높아야 함 (한국어 시맨틱 서치 성능 문제로 BM25 강조)"""
         bm25_w, dense_w = analyzer.get_weights("제15조")
-        assert bm25_w == 0.6
-        assert dense_w == 0.4
+        assert bm25_w == 0.9
+        assert dense_w == 0.1
 
     def test_get_weights_regulation(self, analyzer: QueryAnalyzer):
-        """REGULATION_NAME은 균형 잡힌 가중치 (동의어 없을 때)"""
+        """REGULATION_NAME은 BM25 강조 (한국어 시맨틱 서치 성능 문제로 BM25 강조)"""
         # "인사규정"은 동의어가 없어서 기본 가중치 적용
         bm25_w, dense_w = analyzer.get_weights("인사규정")
-        assert bm25_w == 0.5
-        assert dense_w == 0.5
+        assert bm25_w == 0.85
+        assert dense_w == 0.15
 
     def test_get_weights_question(self, analyzer: QueryAnalyzer):
-        """NATURAL_QUESTION은 약간 Dense 가중치가 높음 (0.4, 0.6)"""
+        """NATURAL_QUESTION도 BM25 강조 (한국어 시맨틱 서치 성능 문제로 BM25 강조)"""
         bm25_w, dense_w = analyzer.get_weights("이건 뭔가요?")
-        assert bm25_w == 0.4
-        assert dense_w == 0.6
+        assert bm25_w == 0.75
+        assert dense_w == 0.25
 
     def test_get_weights_intent(self, analyzer: QueryAnalyzer):
-        """INTENT는 균형 잡힌 가중치 (0.6, 0.4)를 가짐 (키워드 주입됨)"""
+        """INTENT는 BM25 강조 (한국어 시맨틱 서치 성능 문제로 BM25 강조, 의도 키워드 주입됨)"""
         bm25_w, dense_w = analyzer.get_weights("학교에 가기 싫어")
-        assert bm25_w == 0.6
-        assert dense_w == 0.4
+        assert bm25_w == 0.85
+        assert dense_w == 0.15
 
     def test_detects_new_intents(self, analyzer: QueryAnalyzer):
         """새로 추가된 의도 패턴 감지 확인"""
@@ -151,10 +151,10 @@ class TestQueryAnalyzer:
         assert analyzer.analyze("창업 지원 받고 싶어") == QueryType.INTENT
 
     def test_get_weights_general(self, analyzer: QueryAnalyzer):
-        """GENERAL은 균형 가중치 (0.5, 0.5)"""
+        """GENERAL도 BM25 강조 (한국어 시맨틱 서치 성능 문제로 BM25 강조)"""
         bm25_w, dense_w = analyzer.get_weights("일반 검색어")
-        assert bm25_w == 0.5
-        assert dense_w == 0.5
+        assert bm25_w == 0.8
+        assert dense_w == 0.2
 
 
 class TestHybridSearcherDynamicWeights:
@@ -175,10 +175,10 @@ class TestHybridSearcherDynamicWeights:
         sparse = [self._make_doc("doc1", 0.9)]
         dense = [self._make_doc("doc2", 0.9)]
 
-        # Article query → BM25 weighted higher (0.6)
+        # Article query → BM25 weighted higher (0.9)
         results = searcher.fuse_results(sparse, dense, query_text="제15조")
 
-        # doc1 (sparse) should rank higher due to BM25 weight 0.6 > 0.4
+        # doc1 (sparse) should rank higher due to BM25 weight 0.9 > 0.1
         assert results[0].doc_id == "doc1"
 
     def test_fuse_without_query_uses_static_weights(self):
@@ -435,10 +435,10 @@ class TestQueryRewritingWithTypos:
         result = analyzer.rewrite_query("휴학하고 시퍼")
 
         assert "휴학" in result
-        # Note: 실제 LLM이 연결되지 않으면 mock 응답에 의존하므로 
-        # 로직상 clean_query나 expand_query가 오타를 처리하지 못해도 
+        # Note: 실제 LLM이 연결되지 않으면 mock 응답에 의존하므로
+        # 로직상 clean_query나 expand_query가 오타를 처리하지 못해도
         # LLM이 처리해준다는 것을 검증함.
-    
+
     def test_rewrite_slang_with_llm(self, mock_llm):
         """구어체 표현(바드려면)이 교정되어야 함."""
         mock_llm.generate.return_value = "강의 면제 신청"
@@ -482,7 +482,11 @@ class TestIntentClassification:
         assert result.confidence >= 0.5
         assert result.method in ("pattern", "pattern_fallback")
         # intents.json의 study_break 또는 legacy want_leave_school 인텐트와 매칭
-        assert "휴학" in result.keywords or "휴직" in result.keywords or "휴가" in result.keywords
+        assert (
+            "휴학" in result.keywords
+            or "휴직" in result.keywords
+            or "휴가" in result.keywords
+        )
 
     def test_classify_intent_empty_query(self, analyzer: QueryAnalyzer):
         """빈 쿼리는 other 의도로 분류"""
@@ -505,7 +509,9 @@ class TestIntentClassification:
         # LLM이 JSON 응답을 반환한다고 가정
         mock_llm.generate.return_value = '{"intent": "scholarship", "keywords": ["장학금", "성적"], "confidence": 0.85}'
 
-        analyzer = QueryAnalyzer(llm_client=mock_llm, synonyms_path=None, intents_path=None)
+        analyzer = QueryAnalyzer(
+            llm_client=mock_llm, synonyms_path=None, intents_path=None
+        )
         result = analyzer.classify_intent("성적이 얼마나 좋아야 해?")
 
         # Pattern might not match strongly, so LLM should be called
@@ -515,9 +521,13 @@ class TestIntentClassification:
 
     def test_llm_classify_intent_json_parsing(self, mock_llm):
         """LLM 응답 JSON 파싱 테스트"""
-        mock_llm.generate.return_value = '{"intent": "graduation", "keywords": ["졸업", "학점"], "confidence": 0.9}'
+        mock_llm.generate.return_value = (
+            '{"intent": "graduation", "keywords": ["졸업", "학점"], "confidence": 0.9}'
+        )
 
-        analyzer = QueryAnalyzer(llm_client=mock_llm, synonyms_path=None, intents_path=None)
+        analyzer = QueryAnalyzer(
+            llm_client=mock_llm, synonyms_path=None, intents_path=None
+        )
         result = analyzer._llm_classify_intent("졸업 요건이 뭐야?")
 
         assert result is not None
@@ -528,9 +538,13 @@ class TestIntentClassification:
 
     def test_llm_classify_intent_adds_default_keywords(self, mock_llm):
         """LLM 분류 시 기본 키워드가 추가되는지 확인"""
-        mock_llm.generate.return_value = '{"intent": "faculty", "keywords": ["승진"], "confidence": 0.8}'
+        mock_llm.generate.return_value = (
+            '{"intent": "faculty", "keywords": ["승진"], "confidence": 0.8}'
+        )
 
-        analyzer = QueryAnalyzer(llm_client=mock_llm, synonyms_path=None, intents_path=None)
+        analyzer = QueryAnalyzer(
+            llm_client=mock_llm, synonyms_path=None, intents_path=None
+        )
         result = analyzer._llm_classify_intent("교수 진급")
 
         assert result is not None
@@ -542,7 +556,9 @@ class TestIntentClassification:
         """LLM이 잘못된 JSON을 반환할 때 None 반환"""
         mock_llm.generate.return_value = "이것은 JSON이 아닙니다"
 
-        analyzer = QueryAnalyzer(llm_client=mock_llm, synonyms_path=None, intents_path=None)
+        analyzer = QueryAnalyzer(
+            llm_client=mock_llm, synonyms_path=None, intents_path=None
+        )
         result = analyzer._llm_classify_intent("테스트 쿼리")
 
         assert result is None
@@ -551,7 +567,9 @@ class TestIntentClassification:
         """LLM 호출 중 예외 발생 시 None 반환"""
         mock_llm.generate.side_effect = Exception("LLM connection failed")
 
-        analyzer = QueryAnalyzer(llm_client=mock_llm, synonyms_path=None, intents_path=None)
+        analyzer = QueryAnalyzer(
+            llm_client=mock_llm, synonyms_path=None, intents_path=None
+        )
         result = analyzer._llm_classify_intent("테스트 쿼리")
 
         assert result is None

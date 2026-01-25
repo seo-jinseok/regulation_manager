@@ -17,12 +17,15 @@ class ReferenceResolver:
     links them to their corresponding node IDs.
     """
 
-    def resolve_all(self, docs: List[Dict[str, Any]]) -> None:
+    def resolve_all(self, docs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
         Resolve references in all documents.
 
         Args:
             docs: List of document dictionaries to process.
+
+        Returns:
+            The processed list of document dictionaries (modified in place).
         """
         for doc in docs:
             rule_code = (doc.get("metadata") or {}).get("rule_code")
@@ -40,6 +43,7 @@ class ReferenceResolver:
                     current_paragraph=None,
                     current_item=None,
                 )
+        return docs
 
     def extract_references(self, text: str) -> List[Dict[str, str]]:
         """
