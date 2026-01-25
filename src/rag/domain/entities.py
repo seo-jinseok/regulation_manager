@@ -388,7 +388,7 @@ class RerankingMetrics:
         avg_time = self.avg_reranker_time_ms
         if avg_time == 0:
             return 0.0
-        return self.reranker_skips * avg_time
+        return self.reranker_skipped * avg_time
 
     def get_summary(self) -> str:
         """
