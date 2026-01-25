@@ -6,9 +6,65 @@ scattered across the codebase.
 """
 
 import os
+import logging
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
+
+
+@dataclass
+class LLMProviderConfig:
+    """Configuration for a single LLM provider."""
+
+    provider: str
+    model: Optional[str] = None
+    base_url: Optional[str] = None
+    api_key_env_var: Optional[str] = None
+    priority: int = 0  # Lower number = higher priority
+
+
+@dataclass
+class FallbackConfig:
+    """Configuration for LLM provider fallback behavior."""
+
+    enabled: bool = True
+    max_retries: int = 3
+    initial_backoff_seconds: float = 1.0
+    max_backoff_seconds: float = 32.0
+    backoff_multiplier: float = 2.0
+    log_fallback_events: bool = True
+    cache_failures: bool = True
+    failure_cache_ttl_seconds: int = 300  # 5 minutes
+
+    # Fallback chain: providers tried in order
+    # Each entry defines a provider configuration
+    provider_chain: List[Dict[str, Any]] = field(default_factory=lambda: [
+        {
+            "provider": "openrouter",
+            "model": "google/gemini-2.0-flash-exp:free",
+            "api_key_env_var": "OPENROUTER_API_KEY",
+            "priority": 1,
+        },
+        {
+            "provider": "lmstudio",
+            "model": None,  # Uses LM Studio default
+            "base_url": "http://localhost:1234",
+            "api_key_env_var": None,
+            "priority": 2,
+        },
+        {
+            "provider": "openrouter",
+            "model": "deepseek/deepseek-r1:free",
+            "api_key_env_var": "OPENROUTER_API_KEY",
+            "priority": 3,
+        },
+    ])
+
+    # Graceful degradation settings
+    allow_partial_results: bool = True
+    partial_result_fallback_message: str = (
+        "[Note: Response generated using fallback provider due to primary provider unavailability.]"
+    )
 
 
 @dataclass
@@ -32,7 +88,7 @@ class RAGConfig:
     )
     sync_state_path: str = "data/sync_state.json"
 
-    # LLM settings
+    # LLM settings - Primary provider (legacy, for backward compatibility)
     llm_provider: str = field(
         default_factory=lambda: os.getenv("LLM_PROVIDER", "ollama")
     )
@@ -40,6 +96,9 @@ class RAGConfig:
     llm_base_url: Optional[str] = field(
         default_factory=lambda: os.getenv("LLM_BASE_URL")
     )
+
+    # Fallback configuration
+    llm_fallback: FallbackConfig = field(default_factory=FallbackConfig)
 
     # Search settings
     use_reranker: bool = True
@@ -104,6 +163,29 @@ class RAGConfig:
         default_factory=lambda: int(os.getenv("FACT_CHECK_MAX_RETRIES", "2"))
     )
 
+    # RAG Query Cache settings
+    enable_cache: bool = field(
+        default_factory=lambda: os.getenv("RAG_ENABLE_CACHE", "true").lower() == "true"
+    )
+    cache_ttl_hours: int = field(
+        default_factory=lambda: int(os.getenv("RAG_CACHE_TTL_HOURS", "24"))
+    )
+    cache_dir: str = field(
+        default_factory=lambda: os.getenv("RAG_CACHE_DIR", "data/cache/rag")
+    )
+    redis_host: Optional[str] = field(
+        default_factory=lambda: os.getenv("RAG_REDIS_HOST")
+    )
+    redis_port: int = field(
+        default_factory=lambda: int(os.getenv("RAG_REDIS_PORT", "6379"))
+    )
+    redis_password: Optional[str] = field(
+        default_factory=lambda: os.getenv("RAG_REDIS_PASSWORD")
+    )
+    cache_warm_queries_path: Optional[str] = field(
+        default_factory=lambda: os.getenv("RAG_CACHE_WARM_QUERIES_PATH", "data/config/warm_queries.json")
+    )
+
     # Supported LLM providers
     llm_providers: List[str] = field(
         default_factory=lambda: [
@@ -121,6 +203,14 @@ class RAGConfig:
         """Validate configuration after initialization."""
         if self.llm_provider not in self.llm_providers:
             self.llm_provider = "ollama"
+
+        # Load fallback config from environment if provided
+        if os.getenv("LLM_FALLBACK_ENABLED"):
+            self.llm_fallback.enabled = os.getenv("LLM_FALLBACK_ENABLED").lower() == "true"
+        if os.getenv("LLM_FALLBACK_MAX_RETRIES"):
+            self.llm_fallback.max_retries = int(os.getenv("LLM_FALLBACK_MAX_RETRIES"))
+        if os.getenv("LLM_FALLBACK_BACKOFF_SECONDS"):
+            self.llm_fallback.initial_backoff_seconds = float(os.getenv("LLM_FALLBACK_BACKOFF_SECONDS"))
 
     @property
     def db_path_resolved(self) -> Path:
@@ -182,6 +272,18 @@ class RAGConfig:
     def query_expansion_cache_dir_resolved(self) -> Path:
         """Get absolute path to query expansion cache directory."""
         return Path(self.query_expansion_cache_dir).resolve()
+
+    @property
+    def cache_dir_resolved(self) -> Path:
+        """Get absolute path to RAG query cache directory."""
+        return Path(self.cache_dir).resolve()
+
+    @property
+    def cache_warm_queries_path_resolved(self) -> Optional[Path]:
+        """Get absolute path to cache warm queries file if configured."""
+        if not self.cache_warm_queries_path:
+            return None
+        return Path(self.cache_warm_queries_path).resolve()
 
 
 # Global configuration instance (singleton)

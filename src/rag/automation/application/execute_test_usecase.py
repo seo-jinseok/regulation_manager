@@ -7,9 +7,12 @@ Integrates with SearchUseCase to run RAG pipeline and capture results.
 Clean Architecture: Application layer orchestrates domain and infrastructure.
 """
 
+import asyncio
 import logging
+import os
 import time
-from typing import TYPE_CHECKING, Dict, List
+from concurrent.futures import ThreadPoolExecutor
+from typing import TYPE_CHECKING, Callable, Dict, List, Optional
 
 if TYPE_CHECKING:
     from ...application.search_usecase import SearchUseCase
@@ -205,5 +208,147 @@ class ExecuteTestUseCase:
                 enable_answer=True,
             )
             results.append(result)
+
+        return results
+
+    def batch_execute_parallel(
+        self,
+        queries: List[str],
+        test_case_prefix: str = "batch",
+        max_workers: Optional[int] = None,
+        rate_limit_per_second: float = 5.0,
+        progress_callback: Optional[Callable[[int, int, "TestResult"], None]] = None,
+    ) -> List["TestResult"]:
+        """
+        Execute multiple queries in parallel with rate limiting and progress tracking.
+
+        Args:
+            queries: List of queries to execute.
+            test_case_prefix: Prefix for test case IDs.
+            max_workers: Maximum number of parallel workers (default: CPU count).
+            rate_limit_per_second: Maximum API calls per second (default: 5.0).
+            progress_callback: Optional callback for progress updates.
+                                Called with (completed, total, latest_result).
+
+        Returns:
+            List of TestResult objects in the same order as input queries.
+        """
+        if max_workers is None:
+            max_workers = os.cpu_count() or 4
+
+        logger.info(
+            f"Starting parallel execution: {len(queries)} queries, "
+            f"{max_workers} workers, {rate_limit_per_second} req/s limit"
+        )
+
+        # Thread-safe result storage using a dictionary
+        results: Dict[int, "TestResult"] = {}
+        results_lock = asyncio.Lock()
+
+        # Semaphore for rate limiting
+        semaphore = asyncio.Semaphore(int(rate_limit_per_second))
+
+        async def execute_with_rate_limit(
+            idx: int, query: str
+        ) -> tuple[int, "TestResult"]:
+            """Execute a single query with rate limiting."""
+            # Acquire semaphore for rate limiting
+            async with semaphore:
+                # Small delay to respect rate limit
+                await asyncio.sleep(1.0 / rate_limit_per_second)
+
+            # Run synchronous execute_query in thread pool
+            loop = asyncio.get_event_loop()
+            with ThreadPoolExecutor(max_workers=1) as executor:
+                test_case_id = f"{test_case_prefix}_{idx:03d}"
+                result = await loop.run_in_executor(
+                    executor,
+                    lambda: self.execute_query(
+                        query=query,
+                        test_case_id=test_case_id,
+                        enable_answer=True,
+                    ),
+                )
+
+            return idx, result
+
+        async def execute_all() -> None:
+            """Execute all queries with progress tracking."""
+            completed = 0
+            total = len(queries)
+
+            # Create tasks for all queries
+            tasks = [
+                execute_with_rate_limit(idx, query) for idx, query in enumerate(queries)
+            ]
+
+            # Process tasks as they complete for real-time progress
+            for coro in asyncio.as_completed(tasks):
+                idx, result = await coro
+
+                # Thread-safe result storage
+                async with results_lock:
+                    results[idx] = result
+                    completed += 1
+
+                # Call progress callback if provided
+                if progress_callback:
+                    progress_callback(completed, total, result)
+
+                logger.info(
+                    f"Completed {completed}/{total}: {result.query[:50]}... "
+                    f"({result.execution_time_ms}ms, {len(result.sources)} sources)"
+                )
+
+        # Run the async execution
+        asyncio.run(execute_all())
+
+        # Return results in original order
+        ordered_results = [results[idx] for idx in sorted(results.keys())]
+
+        logger.info(
+            f"Parallel execution complete: {len(ordered_results)} results "
+            f"in {sum(r.execution_time_ms for r in ordered_results) / 1000:.2f}s total"
+        )
+
+        return ordered_results
+
+    def batch_execute_test_cases(
+        self,
+        test_cases: List["TestCase"],
+        max_workers: Optional[int] = None,
+        rate_limit_per_second: float = 5.0,
+        progress_callback: Optional[Callable[[int, int, "TestResult"], None]] = None,
+    ) -> List["TestResult"]:
+        """
+        Execute multiple TestCase entities in parallel.
+
+        Args:
+            test_cases: List of TestCase entities to execute.
+            max_workers: Maximum number of parallel workers (default: CPU count).
+            rate_limit_per_second: Maximum API calls per second (default: 5.0).
+            progress_callback: Optional callback for progress updates.
+
+        Returns:
+            List of TestResult objects in the same order as input test cases.
+        """
+        # Extract queries and create mapping
+        queries = [tc.query for tc in test_cases]
+
+        # Execute in parallel
+        results = self.batch_execute_parallel(
+            queries=queries,
+            test_case_prefix="test_case",
+            max_workers=max_workers,
+            rate_limit_per_second=rate_limit_per_second,
+            progress_callback=progress_callback,
+        )
+
+        # Update test_case_id with proper persona and difficulty info
+        for idx, pair in enumerate(zip(test_cases, results, strict=True)):
+            test_case, result = pair
+            result.test_case_id = (
+                f"{test_case.persona_type.value}_{test_case.difficulty.value}_{idx:03d}"
+            )
 
         return results

@@ -1,0 +1,65 @@
+{
+  "description": "Frequent queries to warm the RAG cache",
+  "queries": [
+    {
+      "type": "retrieval",
+      "query": "졸업 학점",
+      "filter_options": {},
+      "kwargs": {
+        "top_k": 10,
+        "include_abolished": false
+      },
+      "data": {
+        "note": "Warm query for graduation requirements"
+      }
+    },
+    {
+      "type": "retrieval",
+      "query": "교수 승진 기준",
+      "filter_options": {},
+      "kwargs": {
+        "top_k": 10,
+        "include_abolished": false
+      },
+      "data": {
+        "note": "Warm query for professor promotion criteria"
+      }
+    },
+    {
+      "type": "retrieval",
+      "query": "장학금",
+      "filter_options": {},
+      "kwargs": {
+        "top_k": 10,
+        "include_abolished": false
+      },
+      "data": {
+        "note": "Warm query for scholarship information"
+      }
+    },
+    {
+      "type": "retrieval",
+      "query": "휴학",
+      "filter_options": {},
+      "kwargs": {
+        "top_k": 10,
+        "include_abolished": false
+      },
+      "data": {
+        "note": "Warm query for leave of absence"
+      }
+    },
+    {
+      "type": "retrieval",
+      "query": "성적 평가",
+      "filter_options": {},
+      "kwargs": {
+        "top_k": 10,
+        "include_abolished": false
+      },
+      "data": {
+        "note": "Warm query for grade evaluation"
+      }
+    }
+  ]
+}

@@ -95,6 +95,31 @@ def regulation():
     is_flag=True,
     help="Generate tests without executing them.",
 )
+@click.option(
+    "--parallel",
+    "-p",
+    is_flag=True,
+    help="Enable parallel test execution for faster evaluation.",
+)
+@click.option(
+    "--workers",
+    "-w",
+    type=int,
+    default=None,
+    help="Number of parallel workers (default: CPU count).",
+)
+@click.option(
+    "--rate-limit",
+    "-r",
+    type=float,
+    default=5.0,
+    help="Rate limit for LLM API calls in requests per second (default: 5.0).",
+)
+@click.option(
+    "--html-report",
+    is_flag=True,
+    help="Generate interactive HTML report with visualizations.",
+)
 def test(
     session_id: str,
     tests_per_persona: int,
@@ -106,6 +131,10 @@ def test(
     base_url: Optional[str],
     no_rerank: bool,
     dry_run: bool,
+    parallel: bool,
+    workers: Optional[int],
+    rate_limit: float,
+    html_report: bool,
 ):
     """
     Run automated RAG testing session.
@@ -193,35 +222,81 @@ def test(
             click.echo(f"✅ Generated {len(session.test_cases)} test cases")
 
             # Step 2: Execute tests with actual RAG system
-            click.echo("🚀 Executing tests against RAG system...")
-
-            test_results = []
-            passed = 0
-            failed = 0
-
-            for idx, test_case in enumerate(session.test_cases, 1):
+            if parallel:
                 click.echo(
-                    f"   [{idx}/{len(session.test_cases)}] {test_case.query[:50]}..."
+                    f"🚀 Executing tests in parallel (workers: {workers or 'auto'}, rate limit: {rate_limit} req/s)..."
                 )
 
-                try:
-                    result = execute_usecase.execute_test_case(test_case)
-                    test_results.append(result)
+                # Progress tracking callback
+                completed_tests = [0]
 
-                    # Simple pass/fail based on whether we got results
-                    if result.sources and len(result.sources) > 0:
-                        passed += 1
-                        click.echo(
-                            f"      ✅ {len(result.sources)} sources, confidence={result.confidence:.2f}"
+                def progress_callback(completed: int, total: int, result) -> None:
+                    """Update progress display."""
+                    completed_tests[0] = completed
+                    sources_count = len(result.sources) if result.sources else 0
+                    status = (
+                        f"✅ {sources_count} sources, conf={result.confidence:.2f}"
+                        if sources_count > 0
+                        else "⚠️  No sources"
+                    )
+                    click.echo(
+                        f"   [{completed}/{total}] {result.query[:50]}... → {status}"
+                    )
+
+                # Execute tests in parallel
+                test_results = execute_usecase.batch_execute_test_cases(
+                    test_cases=session.test_cases,
+                    max_workers=workers,
+                    rate_limit_per_second=rate_limit,
+                    progress_callback=progress_callback,
+                )
+            else:
+                click.echo("🚀 Executing tests sequentially...")
+
+                test_results = []
+                for idx, test_case in enumerate(session.test_cases, 1):
+                    click.echo(
+                        f"   [{idx}/{len(session.test_cases)}] {test_case.query[:50]}..."
+                    )
+
+                    try:
+                        result = execute_usecase.execute_test_case(test_case)
+                        test_results.append(result)
+
+                        # Simple pass/fail based on whether we got results
+                        if result.sources and len(result.sources) > 0:
+                            click.echo(
+                                f"      ✅ {len(result.sources)} sources, confidence={result.confidence:.2f}"
+                            )
+                        else:
+                            click.echo("      ⚠️  No sources found")
+
+                    except Exception as e:
+                        logger.error(f"Test case {idx} failed: {e}")
+                        # Create error result
+                        from ..domain.entities import TestResult
+
+                        error_result = TestResult(
+                            test_case_id=f"error_{idx}",
+                            query=test_case.query,
+                            answer="",
+                            sources=[],
+                            confidence=0.0,
+                            execution_time_ms=0,
+                            rag_pipeline_log={"error": str(e)},
+                            error_message=str(e),
+                            passed=False,
                         )
-                    else:
-                        failed += 1
-                        click.echo("      ⚠️  No sources found")
+                        test_results.append(error_result)
+                        click.echo(f"      ❌ Error: {e}")
 
-                except Exception as e:
-                    logger.error(f"Test case {idx} failed: {e}")
-                    failed += 1
-                    click.echo(f"      ❌ Error: {e}")
+            # Calculate summary statistics
+            passed = sum(
+                1
+                for r in test_results
+                if r.sources and len(r.sources) > 0 and not r.error_message
+            )
+            failed = len(test_results) - passed
 
             # Save session with results
             session.test_results = test_results
@@ -235,14 +310,54 @@ def test(
 
         else:
             click.echo("🔍 Dry run: Tests would be generated but not executed")
+            test_results = []
 
         # Step 3: Generate report
         click.echo("📊 Generating report...")
 
-        # For now, just indicate where report would be saved
-        click.echo(
-            f"📄 Report would be saved to: {output_dir}/test_report_{session_id}.md"
-        )
+        from ..infrastructure.test_report_generator import TestReportGenerator
+
+        report_generator = TestReportGenerator(output_dir=output_dir)
+
+        # Generate HTML or Markdown report
+        if html_report and test_results:
+            report_path = report_generator.generate_html_report(
+                session_id=session_id,
+                test_results=test_results,
+                metadata={
+                    "total_test_cases": session.total_test_cases,
+                    "session_duration": (
+                        f"{session.duration_seconds:.0f}s"
+                        if session.duration_seconds
+                        else "N/A"
+                    ),
+                    "difficulty_filter": difficulty,
+                    "tests_per_persona": tests_per_persona,
+                },
+            )
+        else:
+            report_path = report_generator.generate_report(
+                session_id=session_id,
+                test_results=test_results,
+                metadata={
+                    "total_test_cases": session.total_test_cases,
+                    "session_duration": (
+                        f"{session.duration_seconds:.0f}s"
+                        if session.duration_seconds
+                        else "N/A"
+                    ),
+                    "difficulty_filter": difficulty,
+                    "tests_per_persona": tests_per_persona,
+                },
+            )
+
+        click.echo(f"✅ Report generated: {report_path}")
+
+        # Open HTML report in browser if requested
+        if html_report:
+            click.echo(
+                f"💡 Open the report in your browser: file://{report_path.absolute()}"
+            )
 
         click.echo(f"✨ Test session complete: {session_id}")
 
@@ -275,7 +390,7 @@ def test(
 @click.option(
     "--format",
     "-f",
-    type=click.Choice(["markdown", "json"]),
+    type=click.Choice(["markdown", "json", "html"]),
     default="markdown",
     help="Report format (default: markdown).",
 )
@@ -288,10 +403,12 @@ def report(
     """
     Generate test report from results.
 
-    Creates comprehensive markdown or JSON reports
+    Creates comprehensive markdown, JSON, or HTML reports
     from test execution results.
+
+    HTML format includes interactive Chart.js visualizations.
     """
-    click.echo(f"📊 Generating report for session: {session_id}")
+    click.echo(f"📊 Generating {format} report for session: {session_id}")
 
     try:
         from ..infrastructure.json_session_repository import JSONSessionRepository
@@ -314,19 +431,33 @@ def report(
 
         test_results: list[TestResult] = []
 
-        # Generate report
-        report_path = report_generator.generate_report(
-            session_id=session_id,
-            test_results=test_results,
-            metadata={
-                "total_test_cases": session.total_test_cases,
-                "session_duration": (
-                    f"{session.duration_seconds:.0f}s"
-                    if session.duration_seconds
-                    else "N/A"
-                ),
-            },
-        )
+        # Generate report based on format
+        if format == "html":
+            report_path = report_generator.generate_html_report(
+                session_id=session_id,
+                test_results=test_results,
+                metadata={
+                    "total_test_cases": session.total_test_cases,
+                    "session_duration": (
+                        f"{session.duration_seconds:.0f}s"
+                        if session.duration_seconds
+                        else "N/A"
+                    ),
+                },
+            )
+        else:
+            report_path = report_generator.generate_report(
+                session_id=session_id,
+                test_results=test_results,
+                metadata={
+                    "total_test_cases": session.total_test_cases,
+                    "session_duration": (
+                        f"{session.duration_seconds:.0f}s"
+                        if session.duration_seconds
+                        else "N/A"
+                    ),
+                },
+            )
 
         click.echo(f"✅ Report generated: {report_path}")
 

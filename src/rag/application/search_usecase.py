@@ -11,7 +11,7 @@ import threading
 import unicodedata
 from dataclasses import dataclass
 from enum import Enum
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, List, Optional, Dict
 
 from ..domain.entities import Answer, Chunk, ChunkLevel, SearchResult
 from ..domain.repositories import IHybridSearcher, ILLMClient, IReranker, IVectorStore
@@ -24,6 +24,8 @@ from ..infrastructure.patterns import (
     RULE_CODE_PATTERN,
     normalize_article_token,
 )
+from ..infrastructure.cache import RAGQueryCache, CacheType, _single_flight
+
 
 logger = logging.getLogger(__name__)
 
@@ -225,6 +227,20 @@ class SearchUseCase:
         # Dynamic Query Expansion components (Phase 3)
         self._enable_query_expansion = config.enable_query_expansion
         self._query_expander = None  # Lazy initialized
+        # Cache initialization
+        self._enable_cache = config.enable_cache
+        self._query_cache = None
+        if self._enable_cache:
+            self._query_cache = RAGQueryCache(
+                enabled=config.enable_cache,
+                ttl_hours=config.cache_ttl_hours,
+                redis_host=config.redis_host,
+                redis_port=config.redis_port,
+                redis_password=config.redis_password,
+                cache_dir=str(config.cache_dir_resolved),
+            )
+            logger.info(f"RAG query cache enabled (TTL={config.cache_ttl_hours}h)")
+
 
         # Background warmup
         if enable_warmup is None:
@@ -829,6 +845,11 @@ class SearchUseCase:
         audience_override: Optional["Audience"],
     ) -> List[SearchResult]:
         """Perform general search with hybrid search, scoring, and reranking."""
+        # Check cache first
+        cached_results = self._check_retrieval_cache(query_text, filter, top_k, include_abolished)
+        if cached_results is not None:
+            return cached_results
+
         # Step 4/5: Composite query decomposition and merging
         if self.hybrid_searcher:
             sub_queries = self.hybrid_searcher._query_analyzer.decompose_query(
@@ -972,6 +993,9 @@ class SearchUseCase:
             )
 
         # Deduplicate by article (One Chunk per Article)
+        # Store results in cache
+        self._store_retrieval_cache(query_text, boosted_results, filter, top_k, include_abolished)
+        
         return self._deduplicate_by_article(boosted_results, top_k)
 
     def _perform_query_rewriting(
@@ -2077,6 +2101,74 @@ class SearchUseCase:
         combined = (abs_confidence * 0.7) + (spread_confidence * 0.3)
 
         return max(0.0, min(1.0, combined))
+
+
+
+    def _get_cache_key(self, query: str, filter: Optional["SearchFilter"] = None,
+                      top_k: int = 10, include_abolished: bool = False) -> str:
+        """Generate cache key for query parameters."""
+        filter_options = None
+        if filter and hasattr(filter, 'to_metadata_filter'):
+            filter_options = filter.to_metadata_filter()
+        parts = [query.strip().lower()]
+        if filter_options:
+            parts.append(str(sorted(filter_options.items())))
+        parts.extend([str(top_k), str(include_abolished)])
+        return "::".join(parts)
+
+    def _check_retrieval_cache(self, query: str, filter: Optional["SearchFilter"] = None,
+                               top_k: int = 10, include_abolished: bool = False) -> Optional[List["SearchResult"]]:
+        """Check cache for retrieval results."""
+        if not self._query_cache:
+            return None
+        filter_options = None
+        if filter and hasattr(filter, 'to_metadata_filter'):
+            filter_options = filter.to_metadata_filter()
+        cached = self._query_cache.get(CacheType.RETRIEVAL, query, filter_options,
+                                       top_k=top_k, include_abolished=include_abolished)
+        if cached:
+            results = cached.get("results")
+            if results:
+                logger.debug(f"Cache HIT: Retrieved {len(results)} results for '{query[:30]}...'")
+                return results
+        return None
+
+    def _store_retrieval_cache(self, query: str, results: List["SearchResult"],
+                              filter: Optional["SearchFilter"] = None,
+                              top_k: int = 10, include_abolished: bool = False) -> None:
+        """Store retrieval results in cache."""
+        if not self._query_cache or not results:
+            return
+        filter_options = None
+        if filter and hasattr(filter, 'to_metadata_filter'):
+            filter_options = filter.to_metadata_filter()
+        serialized = [
+            {
+                "chunk_id": r.chunk.id,
+                "score": r.score,
+                "rank": r.rank,
+                "rule_code": r.chunk.rule_code,
+                "title": r.chunk.title,
+                "text": r.chunk.text[:500],
+                "level": r.chunk.level.value,
+            }
+            for r in results
+        ]
+        self._query_cache.set(CacheType.RETRIEVAL, query, {"results": serialized},
+                             filter_options, top_k=top_k, include_abolished=include_abolished)
+
+    def get_cache_stats(self) -> Dict[str, Any]:
+        """Get cache statistics."""
+        if self._query_cache:
+            return self._query_cache.stats()
+        return {"cache_enabled": False}
+
+    def clear_cache(self) -> int:
+        """Clear all cache entries."""
+        if self._query_cache:
+            return self._query_cache.clear_all()
+        return 0
+
 
     def search_by_rule_code(
         self,
