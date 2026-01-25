@@ -80,8 +80,13 @@ class ApplyImprovementUseCase:
             },
         }
 
-        for analysis, test_result in zip(analyses, test_results, strict=False):
-            if not analysis.component_to_patch:
+        # Handle potentially different length lists (Python 3.9 compatibility)
+        min_len = min(len(analyses), len(test_results))
+        for i in range(min_len):
+            analysis = analyses[i]
+            test_result = test_results[i]
+            # Skip if no patch target and no code change required
+            if not analysis.component_to_patch and not analysis.code_change_required:
                 continue
 
             # Apply patch based on target
@@ -446,7 +451,11 @@ class ApplyImprovementUseCase:
         lines.append("# Improvement Preview\n")
         lines.append(f"Total analyses: {len(analyses)}\n")
 
-        for analysis, test_result in zip(analyses, test_results, strict=False):
+        # Handle potentially different length lists (Python 3.9 compatibility)
+        min_len = min(len(analyses), len(test_results))
+        for i in range(min_len):
+            analysis = analyses[i]
+            test_result = test_results[i]
             lines.append(f"## Test: {test_result.test_case_id}")
             lines.append(f"**Query:** {test_result.query[:100]}...")
             lines.append(f"**Root Cause:** {analysis.root_cause}")
