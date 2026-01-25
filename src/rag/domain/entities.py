@@ -275,3 +275,172 @@ class RegulationOverview:
     article_count: int
     chapters: List[ChapterInfo] = field(default_factory=list)
     has_addenda: bool = False
+
+
+@dataclass
+class RerankingMetrics:
+    """
+    Metrics tracking reranker performance and usage patterns (Cycle 3).
+
+    Provides insights into:
+    - How often reranker is applied vs skipped
+    - Performance impact of reranking
+    - Query type distribution for reranking decisions
+    """
+
+    total_queries: int = 0
+    reranker_applied: int = 0
+    reranker_skipped: int = 0
+
+    # Query type breakdown for skips
+    article_reference_skips: int = 0
+    regulation_name_skips: int = 0
+    short_simple_skips: int = 0
+    no_intent_skips: int = 0
+
+    # Query type breakdown for applies
+    natural_question_applies: int = 0
+    intent_applies: int = 0
+    complex_applies: int = 0
+
+    # Performance tracking
+    total_reranker_time_ms: float = 0.0
+    total_skip_saved_time_ms: float = 0.0  # Estimated time saved by skipping
+
+    def record_skip(
+        self,
+        query_type: Optional[str] = None,
+        reason: str = "unknown",
+    ) -> None:
+        """
+        Record a reranker skip event.
+
+        Args:
+            query_type: The type of query that was skipped.
+            reason: The reason for skipping (article_reference, regulation_name, etc.)
+        """
+        self.reranker_skipped += 1
+        if reason == "article_reference":
+            self.article_reference_skips += 1
+        elif reason == "regulation_name":
+            self.regulation_name_skips += 1
+        elif reason == "short_simple":
+            self.short_simple_skips += 1
+        elif reason == "no_intent":
+            self.no_intent_skips += 1
+
+    def record_apply(
+        self,
+        query_type: Optional[str] = None,
+        reranker_time_ms: float = 0.0,
+    ) -> None:
+        """
+        Record a reranker apply event.
+
+        Args:
+            query_type: The type of query that was reranked.
+            reranker_time_ms: Time taken for reranking in milliseconds.
+        """
+        self.reranker_applied += 1
+        self.total_reranker_time_ms += reranker_time_ms
+
+        if query_type == "NATURAL_QUESTION":
+            self.natural_question_applies += 1
+        elif query_type == "INTENT":
+            self.intent_applies += 1
+        elif query_type == "complex":
+            self.complex_applies += 1
+
+    def record_query(self) -> None:
+        """Record a total query event."""
+        self.total_queries += 1
+
+    @property
+    def skip_rate(self) -> float:
+        """Calculate the rate of reranker skips (0.0 to 1.0)."""
+        if self.total_queries == 0:
+            return 0.0
+        return self.reranker_skipped / self.total_queries
+
+    @property
+    def apply_rate(self) -> float:
+        """Calculate the rate of reranker applies (0.0 to 1.0)."""
+        if self.total_queries == 0:
+            return 0.0
+        return self.reranker_applied / self.total_queries
+
+    @property
+    def avg_reranker_time_ms(self) -> float:
+        """Calculate average reranker time in milliseconds."""
+        if self.reranker_applied == 0:
+            return 0.0
+        return self.total_reranker_time_ms / self.reranker_applied
+
+    @property
+    def estimated_time_saved_ms(self) -> float:
+        """
+        Estimate total time saved by skipping reranker.
+
+        Assumes each skip would have taken avg_reranker_time_ms if not skipped.
+        """
+        if self.reranker_skipped == 0:
+            return 0.0
+        avg_time = self.avg_reranker_time_ms
+        if avg_time == 0:
+            return 0.0
+        return self.reranker_skips * avg_time
+
+    def get_summary(self) -> str:
+        """
+        Generate a human-readable summary of reranking metrics.
+
+        Returns:
+            Formatted string with key metrics.
+        """
+        lines = [
+            "📊 Reranking Metrics Summary:",
+            f"   Total queries: {self.total_queries}",
+            f"   Reranker applied: {self.reranker_applied} ({self.apply_rate:.1%})",
+            f"   Reranker skipped: {self.reranker_skipped} ({self.skip_rate:.1%})",
+            "",
+            "🔍 Skip Reasons:",
+            f"   Article reference: {self.article_reference_skips}",
+            f"   Regulation name: {self.regulation_name_skips}",
+            f"   Short simple: {self.short_simple_skips}",
+            f"   No intent: {self.no_intent_skips}",
+            "",
+            "✅ Apply Types:",
+            f"   Natural questions: {self.natural_question_applies}",
+            f"   Intent queries: {self.intent_applies}",
+            f"   Complex queries: {self.complex_applies}",
+            "",
+            "⏱️  Performance:",
+            f"   Avg reranker time: {self.avg_reranker_time_ms:.2f}ms",
+            f"   Est. time saved: {self.estimated_time_saved_ms:.2f}ms",
+        ]
+        return "\n".join(lines)
+
+    def to_dict(self) -> Dict[str, Any]:
+        """
+        Convert metrics to dictionary for JSON serialization.
+
+        Returns:
+            Dictionary representation of metrics.
+        """
+        return {
+            "total_queries": self.total_queries,
+            "reranker_applied": self.reranker_applied,
+            "reranker_skipped": self.reranker_skipped,
+            "skip_rate": self.skip_rate,
+            "apply_rate": self.apply_rate,
+            "article_reference_skips": self.article_reference_skips,
+            "regulation_name_skips": self.regulation_name_skips,
+            "short_simple_skips": self.short_simple_skips,
+            "no_intent_skips": self.no_intent_skips,
+            "natural_question_applies": self.natural_question_applies,
+            "intent_applies": self.intent_applies,
+            "complex_applies": self.complex_applies,
+            "total_reranker_time_ms": self.total_reranker_time_ms,
+            "avg_reranker_time_ms": self.avg_reranker_time_ms,
+            "estimated_time_saved_ms": self.estimated_time_saved_ms,
+        }

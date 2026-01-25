@@ -226,6 +226,10 @@ class SearchUseCase:
         # Dynamic Query Expansion components (Phase 3)
         self._enable_query_expansion = config.enable_query_expansion
         self._query_expander = None  # Lazy initialized
+
+        # Reranking metrics (Cycle 3)
+        self._reranking_metrics = RerankingMetrics()
+
         # Cache initialization
         self._enable_cache = config.enable_cache
         self._query_cache = None
@@ -815,7 +819,7 @@ class SearchUseCase:
         query_significantly_expanded: bool = False,
         query_type: Optional["QueryType"] = None,
         query_text: str = "",
-    ) -> bool:
+    ) -> tuple[bool, str]:
         """
         Determine if reranker should be skipped for this query.
 
@@ -837,38 +841,39 @@ class SearchUseCase:
             query_text: Original query text for length check
 
         Returns:
-            True if reranker should be skipped, False otherwise.
+            Tuple of (should_skip: bool, reason: str).
+            reason is one of: article_reference, regulation_name, short_simple, no_intent, apply.
         """
         # Skip reranker for article references (already precise with BM25)
         if query_type == QueryType.ARTICLE_REFERENCE:
             logger.debug(
                 f"Skipping reranker for article reference query: {query_text[:30]}..."
             )
-            return True
+            return True, "article_reference"
 
         # Skip reranker for regulation name searches (exact string match is sufficient)
         if query_type == QueryType.REGULATION_NAME:
             logger.debug(
                 f"Skipping reranker for regulation name query: {query_text[:30]}..."
             )
-            return True
+            return True, "regulation_name"
 
         # Skip reranker for very short simple queries
         if complexity == "simple" and len(query_text.strip()) < 15:
             logger.debug(
                 f"Skipping reranker for short simple query: {query_text[:30]}..."
             )
-            return True
+            return True, "short_simple"
 
         # Skip reranker for simple queries without intent matching
         if complexity == "simple" and not matched_intents:
             logger.debug(
                 f"Skipping reranker for simple query without intent: {query_text[:30]}..."
             )
-            return True
+            return True, "no_intent"
 
         # Apply reranker for all other cases
-        return False
+        return False, "apply"
 
     def _search_general(
         self,
@@ -1008,7 +1013,7 @@ class SearchUseCase:
         boosted_results.sort(key=lambda x: -x.score)
 
         # Determine if reranker should be skipped (Cycle 2: Conditional Reranking)
-        skip_reranker = self._should_skip_reranker(
+        skip_reranker, skip_reason = self._should_skip_reranker(
             complexity,
             matched_intents,
             query_significantly_expanded=False,
@@ -1016,16 +1021,31 @@ class SearchUseCase:
             query_text=query_text,
         )
 
+        # Record query and apply/skip decision (Cycle 3: Metrics)
+        self._reranking_metrics.record_query()
+        if skip_reranker:
+            self._reranking_metrics.record_skip(
+                query_type=query_type.name if query_type else None,
+                reason=skip_reason,
+            )
         # Apply reranking if enabled and not skipped by Adaptive RAG
         if self.use_reranker and boosted_results and not skip_reranker:
+            import time
+
+            start_time = time.time()
             rerank_k = top_k * 5 if is_intent else top_k * 2
             boosted_results = self._apply_reranking(
                 boosted_results, scoring_query_text, top_k, candidate_k=rerank_k
             )
+            reranker_time_ms = (time.time() - start_time) * 1000
+            self._reranking_metrics.record_apply(
+                query_type=query_type.name if query_type else None,
+                reranker_time_ms=reranker_time_ms,
+            )
         elif skip_reranker and boosted_results:
             logger.debug(
                 f"Adaptive RAG: Skipping reranker for complexity={complexity}, "
-                f"matched_intents={matched_intents}"
+                f"matched_intents={matched_intents}, reason={skip_reason}"
             )
 
         # Corrective RAG: Check if results need correction (with dynamic threshold)
@@ -2539,3 +2559,21 @@ class SearchUseCase:
             effective_date_from=base_filter.effective_date_from,
             effective_date_to=base_filter.effective_date_to,
         )
+
+    def get_reranking_metrics(self) -> RerankingMetrics:
+        """
+        Get the current reranking metrics (Cycle 3).
+
+        Returns:
+            RerankingMetrics object with usage statistics and performance data.
+        """
+        return self._reranking_metrics
+
+    def reset_reranking_metrics(self) -> None:
+        """Reset reranking metrics to zero (Cycle 3)."""
+        self._reranking_metrics = RerankingMetrics()
+        logger.info("Reranking metrics reset")
+
+    def print_reranking_metrics(self) -> None:
+        """Print reranking metrics summary to log (Cycle 3)."""
+        logger.info(self._reranking_metrics.get_summary())
