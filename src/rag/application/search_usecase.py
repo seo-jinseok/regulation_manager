@@ -813,25 +813,61 @@ class SearchUseCase:
         complexity: str,
         matched_intents: Optional[List[str]] = None,
         query_significantly_expanded: bool = False,
+        query_type: Optional["QueryType"] = None,
+        query_text: str = "",
     ) -> bool:
         """
         Determine if reranker should be skipped for this query.
 
-        Reranker may hurt performance for:
-        - Complex queries with multiple intents (comparison, etc.)
-        - Queries where intent expansion significantly changed the query
+        Reranking is skipped for:
+        - Simple, precise queries (article references, regulation names)
+        - Very short queries (< 15 characters) where keyword matching is sufficient
+        - Queries already well-matched by BM25+Dense hybrid search
 
-        Note: Currently disabled to maintain backward compatibility.
-        The reranker still provides value by using the rewritten query for scoring,
-        even for complex queries. This feature may be enabled later with more
-        sophisticated logic that considers the actual query transformation ratio.
+        Reranking is applied for:
+        - Natural language questions requiring semantic understanding
+        - Intent-based queries where LLM expansion was used
+        - Complex queries needing cross-encoder refinement
+
+        Args:
+            complexity: Query complexity classification (simple, medium, complex)
+            matched_intents: List of matched intent IDs
+            query_significantly_expanded: Whether query was heavily expanded
+            query_type: QueryType enum (ARTICLE_REFERENCE, REGULATION_NAME, etc.)
+            query_text: Original query text for length check
 
         Returns:
-            Always False - reranker is never skipped in current implementation.
+            True if reranker should be skipped, False otherwise.
         """
-        # Currently disabled for backward compatibility
-        # Reranker with rewritten queries still provides value in most cases
-        # TODO: Enable with more sophisticated heuristics if needed
+        # Skip reranker for article references (already precise with BM25)
+        if query_type == QueryType.ARTICLE_REFERENCE:
+            logger.debug(
+                f"Skipping reranker for article reference query: {query_text[:30]}..."
+            )
+            return True
+
+        # Skip reranker for regulation name searches (exact string match is sufficient)
+        if query_type == QueryType.REGULATION_NAME:
+            logger.debug(
+                f"Skipping reranker for regulation name query: {query_text[:30]}..."
+            )
+            return True
+
+        # Skip reranker for very short simple queries
+        if complexity == "simple" and len(query_text.strip()) < 15:
+            logger.debug(
+                f"Skipping reranker for short simple query: {query_text[:30]}..."
+            )
+            return True
+
+        # Skip reranker for simple queries without intent matching
+        if complexity == "simple" and not matched_intents:
+            logger.debug(
+                f"Skipping reranker for simple query without intent: {query_text[:30]}..."
+            )
+            return True
+
+        # Apply reranker for all other cases
         return False
 
     def _search_general(
@@ -894,6 +930,11 @@ class SearchUseCase:
             else None
         )
         complexity = self._classify_query_complexity(query_text, matched_intents)
+
+        # Get query type for conditional reranking
+        query_type = None
+        if self.hybrid_searcher:
+            query_type = self.hybrid_searcher._query_analyzer.classify_query(query_text)
 
         # Phase 4 (Hybrid): Apply LLM-based dynamic expansion FIRST (primary)
         # Then merge with intent/synonym matching (secondary)
@@ -966,7 +1007,14 @@ class SearchUseCase:
         # Re-sort by boosted score
         boosted_results.sort(key=lambda x: -x.score)
 
-        skip_reranker = self._should_skip_reranker(complexity, matched_intents)
+        # Determine if reranker should be skipped (Cycle 2: Conditional Reranking)
+        skip_reranker = self._should_skip_reranker(
+            complexity,
+            matched_intents,
+            query_significantly_expanded=False,
+            query_type=query_type,
+            query_text=query_text,
+        )
 
         # Apply reranking if enabled and not skipped by Adaptive RAG
         if self.use_reranker and boosted_results and not skip_reranker:

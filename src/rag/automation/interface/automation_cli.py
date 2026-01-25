@@ -139,6 +139,16 @@ def regulation():
     default=None,
     help="Random seed for reproducible query generation. Same seed produces identical test cases.",
 )
+@click.option(
+    "--apply-improvements",
+    is_flag=True,
+    help="Automatically apply improvements to intents.json/synonyms.json based on test failures.",
+)
+@click.option(
+    "--improvement-dry-run",
+    is_flag=True,
+    help="Preview improvements without applying them (use with --apply-improvements).",
+)
 def test(
     session_id: str,
     tests_per_persona: int,
@@ -156,6 +166,8 @@ def test(
     html_report: bool,
     vary_queries: bool,
     seed: Optional[int],
+    apply_improvements: bool,
+    improvement_dry_run: bool,
 ):
     """
     Run automated RAG testing session.
@@ -398,6 +410,62 @@ def test(
             )
 
         click.echo(f"✅ Report generated: {report_path}")
+
+        # Step 4: Apply improvements if requested (Cycle 2: Auto-Improvement Pipeline)
+        if apply_improvements and test_results:
+            click.echo("\n🔧 Running auto-improvement pipeline...")
+
+            from ...config import get_config
+            from ..application.apply_improvement_usecase import ApplyImprovementUseCase
+            from ..infrastructure.component_analyzer import ComponentAnalyzer
+            from ..infrastructure.failure_analyzer import FailureAnalyzer
+
+            # Initialize improvement use case
+            config = get_config()
+            apply_usecase = ApplyImprovementUseCase(
+                intents_path=config.intents_path_resolved,
+                synonyms_path=config.synonyms_path_resolved,
+            )
+
+            # Analyze failures
+            failure_analyzer = FailureAnalyzer(llm_client=llm_client)
+            component_analyzer = ComponentAnalyzer(llm_client=llm_client)
+
+            # Collect failed tests
+            failed_results = [
+                r for r in test_results if not r.passed or r.error_message
+            ]
+            click.echo(f"   Analyzing {len(failed_results)} failed tests...")
+
+            # Generate 5-Why analyses
+            analyses = []
+            for result in failed_results[:10]:  # Limit to first 10 failures
+                component_analysis = component_analyzer.analyze_test_result(result)
+                analysis = failure_analyzer.analyze_failure(result, component_analysis)
+                analyses.append(analysis)
+
+            # Apply improvements
+            click.echo(f"   Applying improvements (dry_run={improvement_dry_run})...")
+            improvement_results = apply_usecase.apply_improvements(
+                analyses=analyses,
+                test_results=failed_results,
+                dry_run=improvement_dry_run,
+            )
+
+            # Display improvement summary
+            stats = improvement_results["statistics"]
+            click.echo("\n📊 Improvement Summary:")
+            click.echo(f"   Intents patches: {stats['intents_patches']}")
+            click.echo(f"   Synonyms patches: {stats['synonyms_patches']}")
+            click.echo(f"   Code changes: {stats['code_changes']}")
+            click.echo(f"   Config changes: {stats['config_changes']}")
+
+            if improvement_dry_run:
+                click.echo(
+                    "\n💡 Preview mode: Use --apply-improvements without --improvement-dry-run to apply changes"
+                )
+            else:
+                click.echo("\n✅ Improvements applied successfully")
 
         # Open HTML report in browser if requested
         if html_report:
