@@ -1085,6 +1085,11 @@ class SearchUseCase:
             sparse_results, filter=filter, include_abolished=include_abolished
         )
 
+        # Filter dense_results to ensure they meet filter criteria
+        filtered_dense_results = self._filter_search_results(
+            dense_results, filter=filter, include_abolished=include_abolished
+        )
+
         dense_docs = [
             ScoredDocument(
                 doc_id=r.chunk.id,
@@ -1092,7 +1097,7 @@ class SearchUseCase:
                 content=r.chunk.text,
                 metadata=r.chunk.to_metadata(),
             )
-            for r in dense_results
+            for r in filtered_dense_results
         ]
 
         fused = self.hybrid_searcher.fuse_results(
@@ -1102,7 +1107,7 @@ class SearchUseCase:
             query_text=query_text,
         )
 
-        id_to_result = {r.chunk.id: r for r in dense_results}
+        id_to_result = {r.chunk.id: r for r in filtered_dense_results}
         results = []
         for i, doc in enumerate(fused):
             if doc.doc_id in id_to_result:
@@ -1111,10 +1116,16 @@ class SearchUseCase:
                     SearchResult(chunk=original.chunk, score=doc.score, rank=i + 1)
                 )
             else:
-                from ..domain.entities import Chunk
+                # Re-validate filter conditions for sparse documents
+                if self._chunk_matches_filter(
+                    doc.metadata, filter=filter, include_abolished=include_abolished
+                ):
+                    from ..domain.entities import Chunk
 
-                chunk = Chunk.from_metadata(doc.doc_id, doc.content, doc.metadata)
-                results.append(SearchResult(chunk=chunk, score=doc.score, rank=i + 1))
+                    chunk = Chunk.from_metadata(doc.doc_id, doc.content, doc.metadata)
+                    results.append(
+                        SearchResult(chunk=chunk, score=doc.score, rank=i + 1)
+                    )
 
         return results
 
@@ -1603,6 +1614,42 @@ class SearchUseCase:
             return results
 
         return [r for r in results if self._metadata_matches(where_clauses, r.metadata)]
+
+    def _filter_search_results(
+        self,
+        results: List[SearchResult],
+        filter: Optional[SearchFilter],
+        include_abolished: bool,
+    ) -> List[SearchResult]:
+        """Filter dense search results to match metadata filters/abolished policy."""
+        if not results:
+            return results
+
+        where_clauses = filter.to_metadata_filter() if filter else {}
+        if not include_abolished and "status" not in where_clauses:
+            where_clauses["status"] = "active"
+
+        if not where_clauses:
+            return results
+
+        return [
+            r
+            for r in results
+            if self._metadata_matches(where_clauses, r.chunk.to_metadata())
+        ]
+
+    def _chunk_matches_filter(
+        self, metadata: dict, filter: Optional[SearchFilter], include_abolished: bool
+    ) -> bool:
+        """Check if chunk metadata satisfies filter conditions."""
+        where_clauses = filter.to_metadata_filter() if filter else {}
+        if not include_abolished and "status" not in where_clauses:
+            where_clauses["status"] = "active"
+
+        if not where_clauses:
+            return True
+
+        return self._metadata_matches(where_clauses, metadata)
 
     def _metadata_matches(self, filters: dict, metadata: dict) -> bool:
         """Check if metadata satisfies simple filter clauses."""
