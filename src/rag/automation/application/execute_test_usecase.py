@@ -10,6 +10,8 @@ Clean Architecture: Application layer orchestrates domain and infrastructure.
 import asyncio
 import logging
 import os
+
+# Import threading for when we need thread-safe operations
 import time
 from concurrent.futures import ThreadPoolExecutor
 from typing import TYPE_CHECKING, Callable, Dict, List, Optional
@@ -243,13 +245,12 @@ class ExecuteTestUseCase:
 
         # Thread-safe result storage using a dictionary
         results: Dict[int, "TestResult"] = {}
-        results_lock = asyncio.Lock()
-
-        # Semaphore for rate limiting
-        semaphore = asyncio.Semaphore(int(rate_limit_per_second))
 
         async def execute_with_rate_limit(
-            idx: int, query: str
+            semaphore: "asyncio.Semaphore",
+            results_lock: "asyncio.Lock",
+            idx: int,
+            query: str,
         ) -> tuple[int, "TestResult"]:
             """Execute a single query with rate limiting."""
             # Acquire semaphore for rate limiting
@@ -274,12 +275,17 @@ class ExecuteTestUseCase:
 
         async def execute_all() -> None:
             """Execute all queries with progress tracking."""
+            # Create asyncio primitives inside async context for Python 3.9 compatibility
+            semaphore = asyncio.Semaphore(int(rate_limit_per_second))
+            results_lock = asyncio.Lock()
+
             completed = 0
             total = len(queries)
 
             # Create tasks for all queries
             tasks = [
-                execute_with_rate_limit(idx, query) for idx, query in enumerate(queries)
+                execute_with_rate_limit(semaphore, results_lock, idx, query)
+                for idx, query in enumerate(queries)
             ]
 
             # Process tasks as they complete for real-time progress
@@ -345,8 +351,9 @@ class ExecuteTestUseCase:
         )
 
         # Update test_case_id with proper persona and difficulty info
-        for idx, pair in enumerate(zip(test_cases, results, strict=True)):
-            test_case, result = pair
+        for idx in range(min(len(test_cases), len(results))):
+            test_case = test_cases[idx]
+            result = results[idx]
             result.test_case_id = (
                 f"{test_case.persona_type.value}_{test_case.difficulty.value}_{idx:03d}"
             )
