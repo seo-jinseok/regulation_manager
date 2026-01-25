@@ -9,7 +9,6 @@ Clean Architecture: Infrastructure implements domain interfaces.
 
 import json
 import logging
-import re
 from typing import TYPE_CHECKING, List, Optional
 
 if TYPE_CHECKING:
@@ -17,35 +16,10 @@ if TYPE_CHECKING:
     from ..domain.entities import TestResult
     from ..domain.value_objects import FactCheck, QualityDimensions, QualityScore
 
+from .evaluation_constants import ScoringThresholds
+from .evaluation_helpers import AutoFailChecker, EvaluationMetrics
+
 logger = logging.getLogger(__name__)
-
-
-# Patterns for detecting quality issues
-GENERALIZATION_PATTERNS = [
-    r"대학마다\s*다를\s*수",
-    r"각\s*대학의\s*상황에\s*따라",
-    r"일반적으로",
-    r"보통은",
-    r"대체로",
-]
-
-# Patterns for source citations
-CITATION_PATTERNS = [
-    r"제\d+[조항]",
-    r"\d+[조항]\s*.*규정",
-    r"[가-힣]+규정",
-    r"[가-힣]+학칙",
-]
-
-# Patterns for practical information
-PRACTICAL_INFO_PATTERNS = [
-    r"\d+[년월일시점분]\s*이내",
-    r"\d+회\s*이상",
-    r"\d+[학점점]",
-    r"\d+\.\d+\s*이상",
-    r"[가-힣]+\s*부서",
-    r"[가-힣]+\s*담당자",
-]
 
 
 class QualityEvaluator:
@@ -120,20 +94,14 @@ class QualityEvaluator:
         Returns:
             QualityScore with dimension scores and total.
         """
-
         # Check for automatic fail conditions
-        if self._has_generalization(test_result.answer):
-            logger.warning("Generalization detected - automatic fail")
+        should_fail, fail_reason = AutoFailChecker.check_all_auto_fail_conditions(
+            test_result.answer, fact_checks
+        )
 
-            return self._create_fail_quality_score(
-                "Answer contains generalization phrases"
-            )
-
-        if self._has_empty_answer(test_result):
-            return self._create_fail_quality_score("Empty answer")
-
-        if not self._all_fact_checks_pass(fact_checks):
-            return self._create_fail_quality_score("Some fact checks failed")
+        if should_fail:
+            logger.warning(f"Auto-fail condition detected: {fail_reason}")
+            return self._create_fail_quality_score(fail_reason)
 
         # Perform quality evaluation
         if self.llm:
@@ -144,17 +112,10 @@ class QualityEvaluator:
             )
 
         # Calculate total score
-        total_score = (
-            dimensions.accuracy
-            + dimensions.completeness
-            + dimensions.relevance
-            + dimensions.source_citation
-            + dimensions.practicality
-            + dimensions.actionability
-        )
+        total_score = self._calculate_total_score(dimensions)
 
         # Determine pass/fail
-        is_pass = total_score >= 4.0
+        is_pass = total_score >= ScoringThresholds.PASS_THRESHOLD
 
         from ..domain.value_objects import QualityScore
 
@@ -164,44 +125,63 @@ class QualityEvaluator:
             is_pass=is_pass,
         )
 
-    def _has_generalization(self, answer: str) -> bool:
-        """Check if answer contains generalization phrases."""
-        for pattern in GENERALIZATION_PATTERNS:
-            if re.search(pattern, answer):
-                return True
-        return False
+    def _calculate_total_score(self, dimensions: "QualityDimensions") -> float:
+        """
+        Calculate total score from all dimensions.
 
-    def _has_empty_answer(self, test_result: "TestResult") -> bool:
-        """Check if answer is empty."""
-        return not test_result.answer or len(test_result.answer.strip()) < 10
+        Args:
+            dimensions: Quality dimensions with individual scores
 
-    def _all_fact_checks_pass(self, fact_checks: List["FactCheck"]) -> bool:
-        """Check if all fact checks passed."""
-        from ..domain.value_objects import FactCheckStatus
-
-        return all(fc.status == FactCheckStatus.PASS for fc in fact_checks)
+        Returns:
+            Total score (sum of all dimensions)
+        """
+        return (
+            dimensions.accuracy
+            + dimensions.completeness
+            + dimensions.relevance
+            + dimensions.source_citation
+            + dimensions.practicality
+            + dimensions.actionability
+        )
 
     def _create_fail_quality_score(self, reason: str) -> "QualityScore":
-        """Create a failing quality score."""
+        """
+        Create a failing quality score.
+
+        Args:
+            reason: Reason for failure (for logging)
+
+        Returns:
+            QualityScore with all zeros and failed status
+        """
         from ..domain.value_objects import QualityDimensions, QualityScore
 
         dimensions = QualityDimensions(
-            accuracy=0.0,
-            completeness=0.0,
-            relevance=0.0,
-            source_citation=0.0,
-            practicality=0.0,
-            actionability=0.0,
+            accuracy=ScoringThresholds.MIN_SCORE,
+            completeness=ScoringThresholds.MIN_SCORE,
+            relevance=ScoringThresholds.MIN_SCORE,
+            source_citation=ScoringThresholds.MIN_SCORE,
+            practicality=ScoringThresholds.MIN_SCORE,
+            actionability=ScoringThresholds.MIN_SCORE,
         )
 
         return QualityScore(
             dimensions=dimensions,
-            total_score=0.0,
+            total_score=ScoringThresholds.MIN_TOTAL_SCORE,
             is_pass=False,
         )
 
     def _evaluate_with_llm(self, question: str, answer: str) -> "QualityDimensions":
-        """Evaluate quality using LLM."""
+        """
+        Evaluate quality using LLM.
+
+        Args:
+            question: The user's question
+            answer: The RAG system's answer
+
+        Returns:
+            QualityDimensions with LLM-evaluated scores
+        """
         from ..domain.value_objects import QualityDimensions
 
         prompt = self.QUALITY_EVALUATION_PROMPT.format(question=question, answer=answer)
@@ -214,14 +194,7 @@ class QualityEvaluator:
             )
 
             # Parse JSON response
-            cleaned = response.strip()
-            if cleaned.startswith("```json"):
-                cleaned = cleaned[7:]
-            if cleaned.startswith("```"):
-                cleaned = cleaned[3:]
-            if cleaned.endswith("```"):
-                cleaned = cleaned[:-3]
-
+            cleaned = self._extract_json_from_response(response)
             data = json.loads(cleaned.strip())
 
             return QualityDimensions(
@@ -238,36 +211,64 @@ class QualityEvaluator:
             # Fallback to rule-based
             return self._evaluate_rule_based(question, answer, [])
 
+    def _extract_json_from_response(self, response: str) -> str:
+        """
+        Extract JSON from LLM response (handles markdown code blocks).
+
+        Args:
+            response: Raw LLM response
+
+        Returns:
+            Cleaned JSON string
+        """
+        cleaned = response.strip()
+        if cleaned.startswith("```json"):
+            cleaned = cleaned[7:]
+        if cleaned.startswith("```"):
+            cleaned = cleaned[3:]
+        if cleaned.endswith("```"):
+            cleaned = cleaned[:-3]
+        return cleaned
+
     def _evaluate_rule_based(
         self, question: str, answer: str, sources: List[str]
     ) -> "QualityDimensions":
-        """Evaluate quality using rule-based approach."""
+        """
+        Evaluate quality using rule-based approach.
+
+        Uses helper classes for consistent metric calculation.
+
+        Args:
+            question: The user's question
+            answer: The RAG system's answer
+            sources: List of source documents used
+
+        Returns:
+            QualityDimensions with rule-based scores
+        """
         from ..domain.value_objects import QualityDimensions
+        from .evaluation_constants import AutoFailPatterns
 
         # Accuracy: Based on answer length and structure
-        accuracy = min(1.0, len(answer) / 200)
+        accuracy = EvaluationMetrics.calculate_accuracy(answer)
 
         # Completeness: Based on question coverage
-        question_words = set(question.split())
-        answer_words = set(answer.split())
-        overlap = len(question_words & answer_words)
-        completeness = min(1.0, overlap / max(len(question_words), 1))
+        completeness = EvaluationMetrics.calculate_completeness(question, answer)
 
-        # Relevance: Based on keyword overlap
-        relevance = min(1.0, completeness * 0.8 + 0.2)
+        # Relevance: Based on completeness with weighting
+        relevance = EvaluationMetrics.calculate_relevance(completeness)
 
         # Source Citation: Check for citation patterns
-        has_citation = any(re.search(p, answer) for p in CITATION_PATTERNS)
-        source_citation = 1.0 if has_citation else 0.3
+        has_citation = AutoFailPatterns.has_citation(answer)
+        source_citation = EvaluationMetrics.calculate_source_citation(has_citation)
 
         # Practicality: Check for practical info
-        has_practical = any(re.search(p, answer) for p in PRACTICAL_INFO_PATTERNS)
-        practicality = 0.5 if has_practical else 0.2
+        has_practical_info = AutoFailPatterns.has_practical_info(answer)
+        practicality = EvaluationMetrics.calculate_practicality(has_practical_info)
 
-        # Actionability: Based on verbs and structure
-        action_verbs = ["신청", "제출", "방문", "연락", "확인", "준비"]
-        has_action = any(verb in answer for verb in action_verbs)
-        actionability = 0.5 if has_action else 0.2
+        # Actionability: Check for action verbs
+        has_action_verbs = AutoFailPatterns.has_action_verbs(answer)
+        actionability = EvaluationMetrics.calculate_actionability(has_action_verbs)
 
         return QualityDimensions(
             accuracy=round(accuracy, 2),

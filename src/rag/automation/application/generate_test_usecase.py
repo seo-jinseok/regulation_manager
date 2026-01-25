@@ -15,6 +15,7 @@ from src.rag.automation.domain.repository import SessionRepository
 from src.rag.automation.domain.value_objects import DifficultyDistribution
 from src.rag.automation.infrastructure.llm_persona_generator import PersonaGenerator
 from src.rag.automation.infrastructure.llm_query_generator import QueryGenerator
+from src.rag.domain.repositories import ILLMClient
 
 
 class GenerateTestUseCase:
@@ -25,22 +26,31 @@ class GenerateTestUseCase:
     queries, and difficulty levels.
     """
 
-    def __init__(self, session_repository: SessionRepository):
+    def __init__(
+        self,
+        session_repository: SessionRepository,
+        llm_client: Optional[ILLMClient] = None,
+    ):
         """
         Initialize the use case.
 
         Args:
             session_repository: Repository for persisting test sessions.
+            llm_client: Optional LLM client for diverse query generation.
+                      If provided, enables LLM-based query generation.
         """
         self.session_repository = session_repository
         self.persona_generator = PersonaGenerator()
-        self.query_generator = QueryGenerator()
+        # Initialize QueryGenerator with LLM client if provided
+        self.query_generator = QueryGenerator(llm_client)
 
     def execute(
         self,
         session_id: str,
         tests_per_persona: int = 3,
         difficulty_distribution: Optional[DifficultyDistribution] = None,
+        vary_queries: bool = False,  # Default to False for backward compatibility
+        seed: Optional[int] = None,
         metadata: Optional[dict] = None,
     ) -> TestSession:
         """
@@ -50,6 +60,8 @@ class GenerateTestUseCase:
             session_id: Unique identifier for the test session.
             tests_per_persona: Number of test cases to generate per persona.
             difficulty_distribution: Custom difficulty distribution (optional).
+            vary_queries: If True, use LLM for diverse queries; if False, use templates.
+            seed: Random seed for reproducibility.
             metadata: Additional metadata for the session.
 
         Returns:
@@ -75,7 +87,10 @@ class GenerateTestUseCase:
         for persona in all_personas:
             # Generate queries for this persona
             test_cases = self.query_generator.generate_for_persona(
-                persona=persona, count_per_difficulty=counts
+                persona=persona,
+                count_per_difficulty=counts,
+                vary_queries=vary_queries,
+                seed=seed,
             )
 
             all_test_cases.extend(test_cases)
@@ -99,6 +114,8 @@ class GenerateTestUseCase:
         session_id: str,
         persona_type: str,  # PersonaType enum value
         tests_per_difficulty: dict,
+        vary_queries: bool = False,
+        seed: Optional[int] = None,
         metadata: Optional[dict] = None,
     ) -> TestSession:
         """
@@ -108,6 +125,8 @@ class GenerateTestUseCase:
             session_id: Unique identifier for the test session.
             persona_type: Type of persona to generate tests for.
             tests_per_difficulty: Dict with 'easy', 'medium', 'hard' counts.
+            vary_queries: If True, use LLM for diverse queries; if False, use templates.
+            seed: Random seed for reproducibility.
             metadata: Additional metadata for the session.
 
         Returns:
@@ -121,7 +140,10 @@ class GenerateTestUseCase:
 
         # Generate queries for this persona
         test_cases = self.query_generator.generate_for_persona(
-            persona=persona, count_per_difficulty=tests_per_difficulty
+            persona=persona,
+            count_per_difficulty=tests_per_difficulty,
+            vary_queries=vary_queries,
+            seed=seed,
         )
 
         # Create test session
