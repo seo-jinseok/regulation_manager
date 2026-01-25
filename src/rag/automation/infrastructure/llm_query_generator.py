@@ -11,7 +11,7 @@ external libraries (anthropic).
 import hashlib
 import json
 import random
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 from src.rag.automation.domain.entities import (
     DifficultyLevel,
@@ -309,12 +309,15 @@ class LLMQueryGenerator:
 
         # Use LLM only if available and vary_queries is True
         if vary_queries and self._use_llm and self.llm is not None:
-            return self._generate_with_llm(persona, count_per_difficulty)
+            return self._generate_with_llm(persona, count_per_difficulty, seed)
         else:
             return self._generate_from_templates(persona, count_per_difficulty)
 
     def _generate_with_llm(
-        self, persona: Persona, count_per_difficulty: Dict[str, int]
+        self,
+        persona: Persona,
+        count_per_difficulty: Dict[str, int],
+        seed: Optional[int] = None,
     ) -> List[TestCase]:
         """
         Generate diverse queries using LLM.
@@ -332,8 +335,8 @@ class LLMQueryGenerator:
 
         system_prompt = self._build_system_prompt(persona, count_per_difficulty)
 
-        # Temperature for creativity (0.7-0.9 for diverse queries)
-        temperature = 0.8 + (random.random() * 0.1)  # 0.8-0.9
+        # Temperature based on seed for reproducibility
+        temperature = self._get_temperature(seed)
 
         response = self.llm.generate(system_prompt, "", temperature)
 
@@ -357,17 +360,17 @@ class LLMQueryGenerator:
 ## 페르소나 정보
 - **이름**: {persona.name}
 - **설명**: {persona.description}
-- **성격 특성**: {', '.join(persona.characteristics) if persona.characteristics else '없음'}
-- **질문 스타일**: {', '.join(persona.query_styles) if persona.query_styles else '일반적'}
+- **성격 특성**: {", ".join(persona.characteristics) if persona.characteristics else "없음"}
+- **질문 스타일**: {", ".join(persona.query_styles) if persona.query_styles else "일반적"}
 
 {self._REGULATION_TOPICS}
 
 ## 생성 요청
 다음 난이도별로 질문을 생성해주세요:
 
-- **Easy** ({count_per_difficulty.get('easy', 0)}개): 단순 정보 조회, 명확한 키워드, 단일 규정 참조
-- **Medium** ({count_per_difficulty.get('medium', 0)}개): 절차/자격 확인, 여러 규정 연계 필요
-- **Hard** ({count_per_difficulty.get('hard', 0)}개): 추론 필요, 여러 문서 참조, 모호하거나 감정적 표현
+- **Easy** ({count_per_difficulty.get("easy", 0)}개): 단순 정보 조회, 명확한 키워드, 단일 규정 참조
+- **Medium** ({count_per_difficulty.get("medium", 0)}개): 절차/자격 확인, 여러 규정 연계 필요
+- **Hard** ({count_per_difficulty.get("hard", 0)}개): 추론 필요, 여러 문서 참조, 모호하거나 감정적 표현
 
 ## 질문 유형 가이드
 - **사실 확인 (fact_check)**: 구체적 사실 확인
@@ -477,7 +480,11 @@ class LLMQueryGenerator:
                     # Skip invalid entries
                     continue
 
-            return test_cases if test_cases else self._generate_from_templates(persona, count_per_difficulty)
+            return (
+                test_cases
+                if test_cases
+                else self._generate_from_templates(persona, count_per_difficulty)
+            )
 
         except json.JSONDecodeError:
             # Fallback to templates if JSON parsing fails
@@ -575,9 +582,7 @@ class LLMQueryGenerator:
             PersonaType.DISSATISFIED_MEMBER: "권리 주장 및 불만 해소",
         }
 
-        intent_suffix = persona_intents.get(
-            persona.persona_type, "정보 필요"
-        )
+        intent_suffix = persona_intents.get(persona.persona_type, "정보 필요")
         return f"{query} - {intent_suffix}"
 
     def _infer_behavioral_intent(self, query: str, persona: Persona) -> str:

@@ -5,6 +5,8 @@ Provides fine-grained exception types for better error handling
 and debugging across the application.
 """
 
+from typing import Optional
+
 
 class RegulationManagerError(Exception):
     """Base exception for all Regulation Manager errors."""
@@ -26,7 +28,7 @@ class ParsingError(RegulationManagerError):
 class RegulationParseError(ParsingError):
     """Error occurred while parsing regulation text."""
 
-    def __init__(self, message: str, line_number: int | None = None):
+    def __init__(self, message: str, line_number: Optional[int] = None):
         self.line_number = line_number
         if line_number:
             message = f"Line {line_number}: {message}"

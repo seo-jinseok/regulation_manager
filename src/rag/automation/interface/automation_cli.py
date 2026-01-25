@@ -128,6 +128,17 @@ def regulation():
     is_flag=True,
     help="Generate interactive HTML report with visualizations.",
 )
+@click.option(
+    "--vary-queries/--no-vary-queries",
+    default=True,
+    help="Use LLM to generate diverse queries (default: True). Disable for template-based queries.",
+)
+@click.option(
+    "--seed",
+    type=int,
+    default=None,
+    help="Random seed for reproducible query generation. Same seed produces identical test cases.",
+)
 def test(
     session_id: str,
     tests_per_persona: int,
@@ -143,6 +154,8 @@ def test(
     workers: Optional[int],
     rate_limit: float,
     html_report: bool,
+    vary_queries: bool,
+    seed: Optional[int],
 ):
     """
     Run automated RAG testing session.
@@ -194,7 +207,10 @@ def test(
 
         # Initialize test use cases
         session_repo = JSONSessionRepository(output_dir)
-        generate_usecase = GenerateTestUseCase(session_repository=session_repo)
+        generate_usecase = GenerateTestUseCase(
+            session_repository=session_repo,
+            llm_client=llm_client,  # Pass LLM client for diverse query generation
+        )
         execute_usecase = ExecuteTestUseCase(search_usecase=search_usecase)
 
         # Step 1: Generate test cases
@@ -219,12 +235,34 @@ def test(
         else:
             difficulty_dist = None
 
+        # Generate test cases (also for dry-run to enable report generation)
+        session = generate_usecase.execute(
+            session_id=session_id,
+            tests_per_persona=tests_per_persona,
+            difficulty_distribution=difficulty_dist,
+            vary_queries=vary_queries,  # Pass vary_queries flag
+            seed=seed,  # Pass seed for reproducibility
+            metadata={
+                "difficulty_filter": difficulty,
+                "vary_queries": vary_queries,
+                "seed": seed,
+            },
+        )
+
+        click.echo(f"✅ Generated {len(session.test_cases)} test cases")
+
         if not dry_run:
             session = generate_usecase.execute(
                 session_id=session_id,
                 tests_per_persona=tests_per_persona,
                 difficulty_distribution=difficulty_dist,
-                metadata={"difficulty_filter": difficulty},
+                vary_queries=vary_queries,  # Pass vary_queries flag
+                seed=seed,  # Pass seed for reproducibility
+                metadata={
+                    "difficulty_filter": difficulty,
+                    "vary_queries": vary_queries,
+                    "seed": seed,
+                },
             )
 
             click.echo(f"✅ Generated {len(session.test_cases)} test cases")

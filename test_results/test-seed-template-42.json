@@ -1,0 +1,153 @@
+{
+  "session_id": "test-seed-template-42",
+  "started_at": "2026-01-25T20:24:41.611276",
+  "total_test_cases": 10,
+  "test_cases": [
+    {
+      "query": "휴학 신청은 어떻게 하나요?",
+      "persona_type": "freshman",
+      "difficulty": "hard",
+      "query_type": "procedural",
+      "intent_analysis": {
+        "surface_intent": "절차/신청 문의",
+        "hidden_intent": "휴학 신청은 어떻게 하나요? - 학교 시스템 적응 필요",
+        "behavioral_intent": "신청서 제출"
+      },
+      "expected_topics": [],
+      "expected_regulations": [],
+      "metadata": {}
+    },
+    {
+      "query": "교환 학생 갈 수 있는 조건이 뭐야?",
+      "persona_type": "junior",
+      "difficulty": "hard",
+      "query_type": "eligibility",
+      "intent_analysis": {
+        "surface_intent": "자격/요건 확인",
+        "hidden_intent": "교환 학생 갈 수 있는 조건이 뭐야? - 졸업/진로 준비",
+        "behavioral_intent": "자격 확인 후 행동"
+      },
+      "expected_topics": [],
+      "expected_regulations": [],
+      "metadata": {}
+    },
+    {
+      "query": "박사 과정 수료 기준이 어떻게 돼?",
+      "persona_type": "graduate",
+      "difficulty": "hard",
+      "query_type": "eligibility",
+      "intent_analysis": {
+        "surface_intent": "자격/요건 확인",
+        "hidden_intent": "박사 과정 수료 기준이 어떻게 돼? - 연구/학위 진행",
+        "behavioral_intent": "정보 확인"
+      },
+      "expected_topics": [],
+      "expected_regulations": [],
+      "metadata": {}
+    },
+    {
+      "query": "교권 보호 관련 규정 알려주세요",
+      "persona_type": "new_professor",
+      "difficulty": "hard",
+      "query_type": "fact_check",
+      "intent_analysis": {
+        "surface_intent": "일반 문의",
+        "hidden_intent": "교권 보호 관련 규정 알려주세요 - 교수 업무 수행",
+        "behavioral_intent": "정보 확인"
+      },
+      "expected_topics": [],
+      "expected_regulations": [],
+      "metadata": {}
+    },
+    {
+      "query": "정년 보장 심사 기준이 뭐야?",
+      "persona_type": "professor",
+      "difficulty": "hard",
+      "query_type": "eligibility",
+      "intent_analysis": {
+        "surface_intent": "자격/요건 확인",
+        "hidden_intent": "정년 보장 심사 기준이 뭐야? - 교수 업무 수행",
+        "behavioral_intent": "정보 확인"
+      },
+      "expected_topics": [],
+      "expected_regulations": [],
+      "metadata": {}
+    },
+    {
+      "query": "연차 사용하는 방법 알려주세요",
+      "persona_type": "new_staff",
+      "difficulty": "hard",
+      "query_type": "procedural",
+      "intent_analysis": {
+        "surface_intent": "절차/신청 문의",
+        "hidden_intent": "연차 사용하는 방법 알려주세요 - 직무 수행",
+        "behavioral_intent": "절차 수행"
+      },
+      "expected_topics": [],
+      "expected_regulations": [],
+      "metadata": {}
+    },
+    {
+      "query": "재정 집행 승인 권한이 어디까지야?",
+      "persona_type": "staff_manager",
+      "difficulty": "hard",
+      "query_type": "eligibility",
+      "intent_analysis": {
+        "surface_intent": "일반 문의",
+        "hidden_intent": "재정 집행 승인 권한이 어디까지야? - 직무 수행",
+        "behavioral_intent": "정보 확인"
+      },
+      "expected_topics": [],
+      "expected_regulations": [],
+      "metadata": {}
+    },
+    {
+      "query": "자녀가 졸업하려면 어떤 조건이 필요한가요?",
+      "persona_type": "parent",
+      "difficulty": "hard",
+      "query_type": "eligibility",
+      "intent_analysis": {
+        "surface_intent": "자격/요건 확인",
+        "hidden_intent": "자녀가 졸업하려면 어떤 조건이 필요한가요? - 자녀 교육 지원",
+        "behavioral_intent": "자격 확인 후 행동"
+      },
+      "expected_topics": [],
+      "expected_regulations": [],
+      "metadata": {}
+    },
+    {
+      "query": "성적이 너무 안 좋아서 장학금 받을 수 있나요?",
+      "persona_type": "distressed_student",
+      "difficulty": "hard",
+      "query_type": "complex",
+      "intent_analysis": {
+        "surface_intent": "일반 문의",
+        "hidden_intent": "성적이 너무 안 좋아서 장학금 받을 수 있나요? - 긴급 상황 해결 필요",
+        "behavioral_intent": "정보 확인"
+      },
+      "expected_topics": [],
+      "expected_regulations": [],
+      "metadata": {}
+    },
+    {
+      "query": "교수님이 성적을 공정하게 매기지 않았어요",
+      "persona_type": "dissatisfied_member",
+      "difficulty": "hard",
+      "query_type": "emotional",
+      "intent_analysis": {
+        "surface_intent": "일반 문의",
+        "hidden_intent": "교수님이 성적을 공정하게 매기지 않았어요 - 권리 주장 및 불만 해소",
+        "behavioral_intent": "정보 확인"
+      },
+      "expected_topics": [],
+      "expected_regulations": [],
+      "metadata": {}
+    }
+  ],
+  "completed_at": null,
+  "metadata": {
+    "difficulty_filter": null,
+    "vary_queries": false,
+    "seed": 42
+  }
+}

@@ -5,7 +5,7 @@ Evaluates the relevance of search results and determines
 if re-retrieval or query rewriting is needed.
 """
 
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Dict, List, Optional, Union
 
 if TYPE_CHECKING:
     from ..domain.entities import SearchResult
@@ -27,7 +27,9 @@ class RetrievalEvaluator:
     # Minimum results needed for reliable evaluation
     MIN_RESULTS_FOR_EVAL = 2
 
-    def __init__(self, relevance_threshold: float | dict = None):
+    def __init__(
+        self, relevance_threshold: Optional[Union[float, Dict[str, float]]] = None
+    ):
         """
         Initialize evaluator.
 
@@ -40,6 +42,7 @@ class RetrievalEvaluator:
         if relevance_threshold is None:
             # Load from config
             from ..config import get_config
+
             config = get_config()
             self._thresholds = config.corrective_rag_thresholds.copy()
         elif isinstance(relevance_threshold, dict):
@@ -51,7 +54,7 @@ class RetrievalEvaluator:
                 "medium": relevance_threshold,
                 "complex": relevance_threshold,
             }
-        
+
         # Backward compatibility: keep threshold property for legacy code
         self.threshold = self._thresholds.get("medium", self.RELEVANCE_THRESHOLD)
 
