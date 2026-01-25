@@ -104,7 +104,9 @@ class SelfRAGEvaluator:
 
         # Quick heuristic: very short queries without question words
         # are probably not factual questions
-        if len(query) < 5 and not any(k in query for k in ["?", "뭐", "어떻", "왜", "언제"]):
+        if len(query) < 5 and not any(
+            k in query for k in ["?", "뭐", "어떻", "왜", "언제"]
+        ):
             return True  # Still default to retrieval to be safe
 
         prompt = self.RETRIEVAL_NEEDED_PROMPT.format(query=query)
@@ -120,7 +122,9 @@ class SelfRAGEvaluator:
                 return False
             return True  # Default to retrieval
         except Exception:
-            return True  # Default to retrieval on error  # Default to retrieval on error
+            return (
+                True  # Default to retrieval on error  # Default to retrieval on error
+            )
 
     def evaluate_relevance(
         self, query: str, results: List["SearchResult"], max_context_chars: int = 2000
@@ -208,7 +212,7 @@ class SelfRAGEvaluator:
 class SelfRAGPipeline:
     """
     Complete Self-RAG pipeline integrating evaluation with search and generation.
-    
+
     Features:
     - Retrieval necessity check: Skip retrieval for simple queries
     - Relevance filtering: Remove irrelevant results before answer generation
@@ -223,7 +227,7 @@ class SelfRAGPipeline:
         enable_retrieval_check: bool = True,
         enable_relevance_check: bool = True,
         enable_support_check: bool = True,  # Now enabled by default
-        async_support_check: bool = True,   # Run support check asynchronously
+        async_support_check: bool = True,  # Run support check asynchronously
     ):
         """
         Initialize Self-RAG pipeline.
@@ -272,21 +276,21 @@ class SelfRAGPipeline:
         if not self.enable_support_check:
             return "SUPPORTED"
         return self._evaluator.evaluate_support(query, context, answer)
-    
+
     def start_async_support_check(
         self, query: str, context: str, answer: str
     ) -> Optional[concurrent.futures.Future]:
         """
         Start support check in background thread.
-        
+
         Returns immediately with a Future that can be checked later.
         This allows the main response to be sent while support verification runs.
-        
+
         Args:
             query: User's question
             context: Retrieved context
             answer: Generated answer
-            
+
         Returns:
             Future object or None if async is disabled
         """
@@ -295,7 +299,7 @@ class SelfRAGPipeline:
         if not self.async_support_check:
             # Run synchronously
             return None
-        
+
         try:
             future = self._executor.submit(
                 self._evaluator.evaluate_support, query, context, answer
@@ -306,22 +310,20 @@ class SelfRAGPipeline:
         except Exception as e:
             logger.warning(f"Failed to start async support check: {e}")
             return None
-    
-    def get_async_support_result(
-        self, timeout: float = 5.0
-    ) -> Optional[str]:
+
+    def get_async_support_result(self, timeout: float = 5.0) -> Optional[str]:
         """
         Get the result of async support check if available.
-        
+
         Args:
             timeout: Maximum seconds to wait for result
-            
+
         Returns:
             Support level or None if not available/timed out
         """
         if self._pending_support_check is None:
             return None
-        
+
         try:
             result = self._pending_support_check.result(timeout=timeout)
             self._pending_support_check = None
@@ -332,30 +334,78 @@ class SelfRAGPipeline:
         except Exception as e:
             logger.warning(f"Async support check failed: {e}")
             return None
-    
+
     def evaluate_results_batch(
         self, query: str, results: List["SearchResult"]
     ) -> Tuple[bool, List["SearchResult"], float]:
         """
         Evaluate search results in batch for efficiency.
-        
+
         Returns:
             Tuple of (is_relevant, filtered_results, confidence_score)
         """
         if not results:
             return (False, [], 0.0)
-        
+
+        # Defensive type checking: Convert dict to SearchResult if necessary
+        processed_results = []
+        for r in results:
+            if isinstance(r, dict):
+                # Convert dict representation to SearchResult
+                # This handles cases where data was serialized/deserialized
+                try:
+                    from ..domain.entities import Chunk
+                    from ..domain.entities import SearchResult as SR
+
+                    chunk_data = r.get("chunk")
+                    score = r.get("score", 0.0)
+                    rank = r.get("rank", 0)
+
+                    # Handle chunk as dict or Chunk object
+                    if isinstance(chunk_data, dict):
+                        chunk = Chunk(
+                            id=chunk_data.get("id", ""),
+                            rule_code=chunk_data.get("rule_code", ""),
+                            level=chunk_data.get("level", "text"),
+                            title=chunk_data.get("title", ""),
+                            text=chunk_data.get("text", ""),
+                            embedding_text=chunk_data.get("embedding_text", ""),
+                            full_text=chunk_data.get("full_text", ""),
+                            parent_path=chunk_data.get("parent_path", []),
+                            token_count=chunk_data.get("token_count", 0),
+                            keywords=chunk_data.get("keywords", []),
+                            is_searchable=chunk_data.get("is_searchable", True),
+                            effective_date=chunk_data.get("effective_date"),
+                            status=chunk_data.get("status", "active"),
+                        )
+                    else:
+                        # chunk is already a Chunk object
+                        chunk = chunk_data
+
+                    processed_results.append(SR(chunk=chunk, score=score, rank=rank))
+                except Exception as e:
+                    logger.warning(f"Failed to convert dict to SearchResult: {e}")
+                    continue
+            else:
+                # Already a SearchResult object
+                processed_results.append(r)
+
+        if not processed_results:
+            return (False, [], 0.0)
+
+        results = processed_results
+
         # Quick heuristic check first (no LLM call)
         top_score = results[0].score if results else 0.0
-        
+
         # If top score is very high, skip LLM evaluation
         if top_score > 0.8:
             return (True, results, top_score)
-        
+
         # Use LLM for borderline cases
         if self.enable_relevance_check:
             is_relevant, filtered = self._evaluator.evaluate_relevance(query, results)
             confidence = top_score if is_relevant else top_score * 0.5
             return (is_relevant, filtered, confidence)
-        
+
         return (True, results, top_score)

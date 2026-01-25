@@ -13,15 +13,14 @@ actual intent (휴학, 휴직, 연구년 등) is not explicitly stated.
 import hashlib
 import json
 import logging
-import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, List, Optional, Tuple
 
 if TYPE_CHECKING:
-    from ..domain.repositories import ILLMClient, IVectorStore
     from ..domain.entities import SearchResult
-    from ..domain.value_objects import Query, SearchFilter
+    from ..domain.repositories import ILLMClient, IVectorStore
+    from ..domain.value_objects import SearchFilter
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +28,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class HyDEResult:
     """Result of HyDE query expansion."""
-    
+
     original_query: str
     hypothetical_doc: str
     from_cache: bool
@@ -39,17 +38,17 @@ class HyDEResult:
 class HyDEGenerator:
     """
     Generates hypothetical documents for improved retrieval.
-    
+
     HyDE (Hypothetical Document Embeddings) works by:
     1. Taking a vague/ambiguous query
     2. Generating what an ideal answer document might look like
     3. Using that document's embedding for similarity search
-    
+
     This helps bridge the semantic gap between informal queries and formal
     regulation text.
     """
-    
-    SYSTEM_PROMPT = """당신은 대학 규정 전문가입니다. 
+
+    SYSTEM_PROMPT = """당신은 대학 규정 전문가입니다.
 사용자의 질문에 답하는 대학 규정 조문을 작성하세요.
 
 작성 규칙:
@@ -70,7 +69,7 @@ class HyDEGenerator:
     ):
         """
         Initialize HyDE generator.
-        
+
         Args:
             llm_client: LLM client for generating hypothetical documents.
             cache_dir: Directory to cache generated documents.
@@ -78,18 +77,20 @@ class HyDEGenerator:
         """
         self._llm_client = llm_client
         self._enable_cache = enable_cache
-        
+
         if cache_dir:
             self._cache_dir = Path(cache_dir)
         else:
-            self._cache_dir = Path(__file__).parent.parent.parent.parent / "data" / "cache" / "hyde"
-        
+            self._cache_dir = (
+                Path(__file__).parent.parent.parent.parent / "data" / "cache" / "hyde"
+            )
+
         if self._enable_cache:
             self._cache_dir.mkdir(parents=True, exist_ok=True)
             self._cache: dict = self._load_cache()
         else:
             self._cache = {}
-    
+
     def _load_cache(self) -> dict:
         """Load cache from disk."""
         cache_file = self._cache_dir / "hyde_cache.json"
@@ -100,7 +101,7 @@ class HyDEGenerator:
             except Exception as e:
                 logger.warning(f"Failed to load HyDE cache: {e}")
         return {}
-    
+
     def _save_cache(self) -> None:
         """Save cache to disk."""
         if not self._enable_cache:
@@ -111,27 +112,70 @@ class HyDEGenerator:
                 json.dump(self._cache, f, ensure_ascii=False, indent=2)
         except Exception as e:
             logger.warning(f"Failed to save HyDE cache: {e}")
-    
+
     def _get_cache_key(self, query: str) -> str:
         """Generate cache key for query."""
         return hashlib.md5(query.encode("utf-8")).hexdigest()[:16]
-    
+
     def set_llm_client(self, llm_client: "ILLMClient") -> None:
         """Set LLM client."""
         self._llm_client = llm_client
-    
+
+    def _validate_hypothetical_doc(
+        self, doc: str, original_query: str
+    ) -> Tuple[bool, Optional[str]]:
+        """
+        Validate generated hypothetical document.
+
+        Args:
+            doc: Generated hypothetical document.
+            original_query: Original query for fallback.
+
+        Returns:
+            Tuple of (is_valid, validated_doc_or_none).
+        """
+        if not doc:
+            return False, None
+
+        doc = doc.strip()
+
+        # Minimum length check
+        if len(doc) < 20:
+            return False, None
+
+        # Error message detection
+        error_patterns = [
+            "죄송합니다",
+            "알 수 없습니다",
+            "도움을 드릴 수 없습니다",
+        ]
+        if any(pattern in doc for pattern in error_patterns):
+            return False, None
+
+        return True, doc
+
     def generate_hypothetical_doc(self, query: str) -> HyDEResult:
         """
         Generate a hypothetical regulation document for the given query.
-        
+
         Args:
             query: User's search query.
-            
+
         Returns:
             HyDEResult containing the hypothetical document.
         """
+        # Add input validation
+        if not query or not query.strip():
+            logger.warning("HyDE: Empty query received, skipping generation")
+            return HyDEResult(
+                original_query=query,
+                hypothetical_doc="",  # Return empty to skip HyDE
+                from_cache=False,
+            )
+
+        query = query.strip()
         cache_key = self._get_cache_key(query)
-        
+
         # Check cache
         if cache_key in self._cache:
             logger.debug(f"HyDE cache hit for query: {query[:30]}...")
@@ -141,7 +185,7 @@ class HyDEGenerator:
                 from_cache=True,
                 cache_key=cache_key,
             )
-        
+
         # Generate if LLM client available
         if not self._llm_client:
             logger.debug("No LLM client for HyDE, using original query")
@@ -150,7 +194,7 @@ class HyDEGenerator:
                 hypothetical_doc=query,
                 from_cache=False,
             )
-        
+
         try:
             # Generate hypothetical document
             # Note: LLMClientAdapter.generate() only accepts system_prompt, user_message, temperature
@@ -159,21 +203,36 @@ class HyDEGenerator:
                 user_message=f"질문: {query}",
                 temperature=0.3,  # Low temperature for consistency
             )
-            
-            # Cache result
-            if hypothetical_doc and len(hypothetical_doc) > 20:
-                self._cache[cache_key] = hypothetical_doc
-                self._save_cache()
-                
-            logger.debug(f"Generated HyDE doc for: {query[:30]}... -> {hypothetical_doc[:50]}...")
-            
+
+            # Validate the generated result
+            is_valid, validated_doc = self._validate_hypothetical_doc(
+                hypothetical_doc, query
+            )
+            if not is_valid:
+                logger.warning(
+                    f"Invalid hypothetical doc for '{query}', using original query"
+                )
+                return HyDEResult(
+                    original_query=query,
+                    hypothetical_doc=query,  # Fallback to original
+                    from_cache=False,
+                )
+
+            # Cache validated result
+            self._cache[cache_key] = validated_doc
+            self._save_cache()
+
+            logger.debug(
+                f"Generated HyDE doc for: {query[:30]}... -> {validated_doc[:50]}..."
+            )
+
             return HyDEResult(
                 original_query=query,
-                hypothetical_doc=hypothetical_doc,
+                hypothetical_doc=validated_doc,
                 from_cache=False,
                 cache_key=cache_key,
             )
-            
+
         except Exception as e:
             logger.warning(f"HyDE generation failed: {e}")
             return HyDEResult(
@@ -181,59 +240,68 @@ class HyDEGenerator:
                 hypothetical_doc=query,
                 from_cache=False,
             )
-    
+
     def should_use_hyde(self, query: str, complexity: str = "medium") -> bool:
         """
         Determine if HyDE should be used for this query.
-        
+
         HyDE is most useful for:
         - Vague/ambiguous queries
         - Natural language queries without technical terms
         - Complex queries that need semantic expansion
-        
+
         HyDE is NOT useful for:
         - Simple structural queries (조문 번호, 규정명)
         - Queries already containing technical terms
-        
+
         Args:
             query: User's search query.
             complexity: Query complexity from Adaptive RAG.
-            
+
         Returns:
             True if HyDE should be applied.
         """
         # Skip for simple queries
         if complexity == "simple":
             return False
-        
+
         # Skip if query already contains regulatory terms
         regulatory_terms = ["규정", "규칙", "조", "항", "호", "세칙", "지침"]
         if any(term in query for term in regulatory_terms):
             return False
-        
+
         # Use for vague/emotional queries
         vague_indicators = [
-            "싶어", "싫어", "어떻게", "뭐야", "있어?", "할까",
-            "해야", "가능", "수 있", "받고", "하고"
+            "싶어",
+            "싫어",
+            "어떻게",
+            "뭐야",
+            "있어?",
+            "할까",
+            "해야",
+            "가능",
+            "수 있",
+            "받고",
+            "하고",
         ]
         if any(indicator in query for indicator in vague_indicators):
             return True
-        
+
         # Use for complex queries
         if complexity == "complex":
             return True
-        
+
         return False
 
 
 class HyDESearcher:
     """
     Search using HyDE-enhanced queries.
-    
+
     This class combines HyDE generation with the existing search infrastructure
     to improve retrieval for ambiguous queries.
     """
-    
+
     def __init__(
         self,
         hyde_generator: HyDEGenerator,
@@ -241,14 +309,14 @@ class HyDESearcher:
     ):
         """
         Initialize HyDE searcher.
-        
+
         Args:
             hyde_generator: HyDE document generator.
             store: Vector store for search.
         """
         self._hyde = hyde_generator
         self._store = store
-    
+
     def search_with_hyde(
         self,
         query: str,
@@ -257,31 +325,31 @@ class HyDESearcher:
     ) -> List["SearchResult"]:
         """
         Search using hypothetical document embedding.
-        
+
         Args:
             query: Original user query.
             filter: Optional search filter.
             top_k: Number of results to return.
-            
+
         Returns:
             List of search results.
         """
         from ..domain.value_objects import Query
-        
+
         # Generate hypothetical document
         hyde_result = self._hyde.generate_hypothetical_doc(query)
-        
+
         # Search with hypothetical document
         hyde_query = Query(text=hyde_result.hypothetical_doc)
         results = self._store.search(hyde_query, filter, top_k * 2)
-        
+
         # Also search with original query and merge
         original_query = Query(text=query)
         original_results = self._store.search(original_query, filter, top_k * 2)
-        
+
         # Merge results (deduplicate and re-score)
         return self._merge_results(results, original_results, top_k)
-    
+
     def _merge_results(
         self,
         hyde_results: List["SearchResult"],
@@ -291,7 +359,7 @@ class HyDESearcher:
         """Merge HyDE and original search results."""
         seen_ids = set()
         merged = []
-        
+
         # Interleave results, giving slight preference to HyDE results
         for i in range(max(len(hyde_results), len(original_results))):
             if i < len(hyde_results):
@@ -299,13 +367,13 @@ class HyDESearcher:
                 if result.chunk.id not in seen_ids:
                     seen_ids.add(result.chunk.id)
                     merged.append(result)
-            
+
             if i < len(original_results):
                 result = original_results[i]
                 if result.chunk.id not in seen_ids:
                     seen_ids.add(result.chunk.id)
                     merged.append(result)
-        
+
         # Re-sort by score and return top_k
         merged.sort(key=lambda x: -x.score)
         return merged[:top_k]
