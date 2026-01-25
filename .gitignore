@@ -204,3 +204,10 @@ private-key*
 secret-key-*
 *.temp
 .TemporaryItems
+
+# MoAI-ADK Session State
+.moai/memory/
+.moai/cache/
+
+# UV Lock File (project-specific dependency resolution)
+uv.lock
