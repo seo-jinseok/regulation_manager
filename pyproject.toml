@@ -34,6 +34,7 @@ dependencies = [
     "mcp[cli]>=1.9.0",
     "mlx-lm>=0.29.1",
     "konlpy>=0.6.0",
+    "sentence-transformers>=2.2.0",  # For ko-sbert-sts Korean embeddings
 ]
 
 [project.scripts]

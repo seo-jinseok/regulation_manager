@@ -5,6 +5,7 @@ Provides vector storage and hybrid search using ChromaDB.
 Supports dense (embedding) and sparse (keyword) retrieval.
 """
 
+import logging
 import os
 from typing import List, Optional, Set
 
@@ -20,6 +21,8 @@ from ..domain.entities import Chunk, SearchResult
 from ..domain.repositories import IVectorStore
 from ..domain.value_objects import Query, SearchFilter
 
+logger = logging.getLogger(__name__)
+
 
 class ChromaVectorStore(IVectorStore):
     """
@@ -29,6 +32,8 @@ class ChromaVectorStore(IVectorStore):
     - Dense retrieval via embeddings
     - Metadata filtering
     - Persistence to disk
+
+    Automatically uses ko-sbert-sts embedding model for Korean semantic search.
     """
 
     def __init__(
@@ -36,6 +41,7 @@ class ChromaVectorStore(IVectorStore):
         persist_directory: str = "data/chroma_db",
         collection_name: str = "regulations",
         embedding_function=None,
+        auto_create_embedding: bool = True,
     ):
         """
         Initialize ChromaDB vector store.
@@ -44,14 +50,28 @@ class ChromaVectorStore(IVectorStore):
             persist_directory: Directory for persistent storage.
             collection_name: Name of the ChromaDB collection.
             embedding_function: Optional custom embedding function.
-                If None, will need to be set before adding documents.
+                If None and auto_create_embedding is True, will use
+                ko-sbert-sts model for Korean semantic search.
+            auto_create_embedding: If True and no embedding_function provided,
+                automatically creates sentence-transformers embedding function.
         """
         if not CHROMADB_AVAILABLE:
             raise ImportError("chromadb is required. Install with: uv add chromadb")
 
         self.persist_directory = persist_directory
         self.collection_name = collection_name
-        self._embedding_function = embedding_function
+
+        # Handle embedding function
+        if embedding_function is None and auto_create_embedding:
+            try:
+                from .embedding_function import get_default_embedding_function
+                self._embedding_function = get_default_embedding_function()
+                logger.info("Using default embedding function (ko-sbert-sts)")
+            except Exception as e:
+                logger.warning(f"Failed to create default embedding function: {e}")
+                self._embedding_function = None
+        else:
+            self._embedding_function = embedding_function
 
         # Create directory if needed
         os.makedirs(persist_directory, exist_ok=True)
@@ -69,6 +89,9 @@ class ChromaVectorStore(IVectorStore):
             metadata={"hnsw:space": "cosine"},
         )
 
+        # Log collection status
+        logger.info(f"ChromaDB collection '{collection_name}' initialized")
+
     def add_chunks(self, chunks: List[Chunk]) -> int:
         """
         Add chunks to the vector store.
@@ -80,6 +103,14 @@ class ChromaVectorStore(IVectorStore):
             Number of chunks successfully added.
         """
         if not chunks:
+            return 0
+
+        # Check if embedding function is available
+        if self._embedding_function is None:
+            logger.error(
+                "Cannot add chunks: no embedding function available. "
+                "Provide an embedding_function during initialization."
+            )
             return 0
 
         # Deduplicate by ID (keep first occurrence)
@@ -110,6 +141,7 @@ class ChromaVectorStore(IVectorStore):
             )
             total_added += len(batch)
 
+        logger.info(f"Added {total_added} chunks to ChromaDB collection")
         return total_added
 
     def delete_by_rule_codes(self, rule_codes: List[str]) -> int:
@@ -133,6 +165,7 @@ class ChromaVectorStore(IVectorStore):
         ids_to_delete = results.get("ids", [])
         if ids_to_delete:
             self._collection.delete(ids=ids_to_delete)
+            logger.info(f"Deleted {len(ids_to_delete)} chunks for rule codes: {rule_codes}")
 
         return len(ids_to_delete)
 
@@ -153,6 +186,14 @@ class ChromaVectorStore(IVectorStore):
         Returns:
             List of SearchResult sorted by relevance.
         """
+        # Check if embedding function is available
+        if self._embedding_function is None:
+            logger.error(
+                "Cannot search: no embedding function available. "
+                "Provide an embedding_function during initialization."
+            )
+            return []
+
         where = self._build_where(query, filter)
         query_text = query.text
         if not isinstance(query_text, str):
@@ -285,6 +326,7 @@ class ChromaVectorStore(IVectorStore):
             embedding_function=self._embedding_function,
         )
 
+        logger.info(f"Cleared {count} chunks from ChromaDB collection")
         return count
 
     def _metadata_to_chunk(self, id_: str, document: str, metadata: dict) -> Chunk:

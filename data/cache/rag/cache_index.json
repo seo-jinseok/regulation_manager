@@ -71,7 +71,7 @@
         }
       ]
     },
-    "timestamp": 1769341024.845834,
+    "timestamp": 1769345217.278672,
     "ttl_hours": 24
   },
   "48896534fe14387f94a2fa0012e24887": {
@@ -109,7 +109,7 @@
         }
       ]
     },
-    "timestamp": 1769341024.919893,
+    "timestamp": 1769345219.001888,
     "ttl_hours": 24
   },
   "3b448801adf9e1d2a4bef00a6bd19c52": {
@@ -128,7 +128,7 @@
         }
       ]
     },
-    "timestamp": 1769341023.320171,
+    "timestamp": 1769345225.324938,
     "ttl_hours": 24
   },
   "859d57ef8a2807ca25bc823dd18eef68": {
@@ -138,16 +138,16 @@
       "results": [
         {
           "chunk_id": "test-chunk-1",
-          "score": 0.5,
+          "score": 0.55,
           "rank": 1,
           "rule_code": "1-1-1",
           "title": "제1조",
-          "text": "테스트 내용",
+          "text": "휴학 절차",
           "level": "article"
         }
       ]
     },
-    "timestamp": 1769341024.794081,
+    "timestamp": 1769345235.2746491,
     "ttl_hours": 24
   },
   "8b6249bfc78f7b7270c8a070d99b291a": {
@@ -280,7 +280,7 @@
         }
       ]
     },
-    "timestamp": 1769341023.8676329,
+    "timestamp": 1769345235.530845,
     "ttl_hours": 24
   },
   "3b7803651b8164449cce196d44a38a2d": {
@@ -337,7 +337,7 @@
         }
       ]
     },
-    "timestamp": 1769341024.403438,
+    "timestamp": 1769345205.6702778,
     "ttl_hours": 24
   },
   "300576f0fd197c5830a9f269fe52866a": {
@@ -356,7 +356,7 @@
         }
       ]
     },
-    "timestamp": 1769341024.4147,
+    "timestamp": 1769345205.939071,
     "ttl_hours": 24
   },
   "d1153a2ef709c3644d7d2bb3624ab455": {
@@ -375,7 +375,7 @@
         }
       ]
     },
-    "timestamp": 1769341024.361731,
+    "timestamp": 1769345204.587303,
     "ttl_hours": 24
   },
   "2662533bb2438eec01bd37eaa23f70d1": {
@@ -394,7 +394,7 @@
         }
       ]
     },
-    "timestamp": 1769341024.739681,
+    "timestamp": 1769345214.796748,
     "ttl_hours": 24
   },
   "171b4d76c4ac7c56490f5762df14a0f5": {
@@ -432,7 +432,148 @@
         }
       ]
     },
-    "timestamp": 1769341024.793696,
+    "timestamp": 1769345216.0454452,
+    "ttl_hours": 24
+  },
+  "0e5964ba57a7e4667c1f245242b638f5": {
+    "cache_type": "retrieval",
+    "query_hash": "0e5964ba57a7e4667c1f245242b638f5",
+    "data": {
+      "results": [
+        {
+          "chunk_id": "chunk2",
+          "score": 0.3032258064516129,
+          "rank": 2,
+          "rule_code": "2-1-1",
+          "title": "학칙",
+          "text": "휴학 신청 절차에 대한 내용",
+          "level": "article"
+        },
+        {
+          "chunk_id": "chunk1",
+          "score": 0.21639344262295082,
+          "rank": 1,
+          "rule_code": "3-3-4",
+          "title": "장학금규정",
+          "text": "장학금 신청 방법에 대한 규정",
+          "level": "article"
+        }
+      ]
+    },
+    "timestamp": 1769345165.597912,
+    "ttl_hours": 24
+  },
+  "62a315be74033cca0cf2dacf332ba7e3": {
+    "cache_type": "retrieval",
+    "query_hash": "62a315be74033cca0cf2dacf332ba7e3",
+    "data": {
+      "results": [
+        {
+          "chunk_id": "chunk2",
+          "score": 0.7163405605499735,
+          "rank": 1,
+          "rule_code": "2-1-1",
+          "title": "학칙",
+          "text": "휴학 신청 절차에 대한 내용",
+          "level": "article"
+        },
+        {
+          "chunk_id": "chunk1",
+          "score": 0.21618191433104178,
+          "rank": 2,
+          "rule_code": "3-3-4",
+          "title": "장학금규정",
+          "text": "장학금 신청 방법에 대한 규정",
+          "level": "article"
+        }
+      ]
+    },
+    "timestamp": 1769345165.970619,
+    "ttl_hours": 24
+  },
+  "27c847adf885c510954278b8139040ee": {
+    "cache_type": "retrieval",
+    "query_hash": "27c847adf885c510954278b8139040ee",
+    "data": {
+      "results": [
+        {
+          "chunk_id": "doc1",
+          "score": 0.9,
+          "rank": 1,
+          "rule_code": "",
+          "title": "휴직규정",
+          "text": "교원인사규정 제15조",
+          "level": "text"
+        }
+      ]
+    },
+    "timestamp": 1769345335.1699672,
+    "ttl_hours": 24
+  },
+  "a278bc6b21592085d66bd11373890cf8": {
+    "cache_type": "retrieval",
+    "query_hash": "a278bc6b21592085d66bd11373890cf8",
+    "data": {
+      "results": [
+        {
+          "chunk_id": "doc1",
+          "score": 0.9,
+          "rank": 1,
+          "rule_code": "",
+          "title": "",
+          "text": "content",
+          "level": "text"
+        }
+      ]
+    },
+    "timestamp": 1769345336.2576032,
+    "ttl_hours": 24
+  },
+  "897b32d1221464f029e51fb1e1d5fe03": {
+    "cache_type": "retrieval",
+    "query_hash": "897b32d1221464f029e51fb1e1d5fe03",
+    "data": {
+      "results": [
+        {
+          "chunk_id": "doc2",
+          "score": 0.15,
+          "rank": 1,
+          "rule_code": "",
+          "title": "",
+          "text": "also irrelevant",
+          "level": "text"
+        },
+        {
+          "chunk_id": "doc1",
+          "score": 0.1,
+          "rank": 1,
+          "rule_code": "",
+          "title": "",
+          "text": "irrelevant content",
+          "level": "text"
+        }
+      ]
+    },
+    "timestamp": 1769345337.0781,
+    "ttl_hours": 24
+  },
+  "1e12297a2f60739ab3a7fe9af0e34c4a": {
+    "cache_type": "retrieval",
+    "query_hash": "1e12297a2f60739ab3a7fe9af0e34c4a",
+    "data": {
+      "results": [
+        {
+          "chunk_id": "doc1",
+          "score": 0.9,
+          "rank": 1,
+          "rule_code": "",
+          "title": "",
+          "text": "content",
+          "level": "text"
+        }
+      ]
+    },
+    "timestamp": 1769345338.410321,
     "ttl_hours": 24
   }
 }
