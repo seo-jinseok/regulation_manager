@@ -3,12 +3,14 @@ Evaluation Helpers for RAG Quality Assessment.
 
 Provides reusable metric calculation functions for quality evaluation.
 Separates calculation logic from evaluation orchestration.
+
+Enhanced version with better accuracy, completeness, and relevance calculation.
 """
 
 import logging
 from typing import Set
 
-from .evaluation_constants import ScoringThresholds
+from .evaluation_constants import AutoFailPatterns, ScoringThresholds
 
 logger = logging.getLogger(__name__)
 
@@ -19,15 +21,17 @@ class EvaluationMetrics:
 
     Provides static methods for calculating individual quality dimensions.
     All methods return scores normalized to 0.0-1.0 range unless specified.
+
+    Improved version with better accuracy, completeness, and relevance calculation.
     """
 
     @staticmethod
     def calculate_accuracy(answer: str) -> float:
         """
-        Calculate accuracy score based on answer length and structure.
+        Calculate accuracy score based on citation density and structure.
 
-        Longer, well-structured answers tend to be more accurate.
-        Score is normalized to 0.0-1.0 range.
+        Longer, well-structured answers with proper regulation citations
+        receive higher scores. Score is normalized to 0.0-1.0 range.
 
         Args:
             answer: The answer text to evaluate
@@ -35,17 +39,33 @@ class EvaluationMetrics:
         Returns:
             Accuracy score between 0.0 and 1.0
         """
-        return min(
-            ScoringThresholds.MAX_SCORE,
-            len(answer) / ScoringThresholds.TARGET_ANSWER_LENGTH,
+        # Base score from answer length (0.0 to 0.4)
+        length_score = min(
+            0.4, len(answer) / (ScoringThresholds.TARGET_ANSWER_LENGTH * 2)
         )
+
+        # Citation score (0.0 to 0.6) - heavily weighted for citations
+        has_citation = AutoFailPatterns.has_citation(answer)
+        if has_citation:
+            # Count citation patterns for bonus
+            import re
+
+            citation_count = 0
+            for pattern in AutoFailPatterns.CITATION_PATTERNS:
+                citation_count += len(re.findall(pattern, answer))
+            citation_score = min(0.6, 0.3 + citation_count * 0.1)
+        else:
+            citation_score = 0.0
+
+        return min(ScoringThresholds.MAX_SCORE, length_score + citation_score)
 
     @staticmethod
     def calculate_completeness(question: str, answer: str) -> float:
         """
-        Calculate completeness score based on question keyword coverage.
+        Calculate completeness score based on question type and coverage.
 
-        Measures how well the answer covers the question's key terms.
+        Measures how well the answer covers the question's key terms
+        and provides practical information.
 
         Args:
             question: The original question
@@ -60,22 +80,60 @@ class EvaluationMetrics:
         overlap = len(question_words & answer_words)
         denominator = max(len(question_words), 1)
 
-        return min(ScoringThresholds.MAX_SCORE, overlap / denominator)
+        # Base keyword coverage (0.0 to 0.6)
+        keyword_score = min(0.6, overlap / denominator)
+
+        # Practical info bonus (0.0 to 0.4)
+        has_practical = AutoFailPatterns.has_practical_info(answer)
+        practical_score = 0.4 if has_practical else 0.0
+
+        return min(ScoringThresholds.MAX_SCORE, keyword_score + practical_score)
 
     @staticmethod
-    def calculate_relevance(completeness: float) -> float:
+    def calculate_relevance(question: str, answer: str, completeness: float) -> float:
         """
-        Calculate relevance score based on completeness and keyword overlap.
+        Calculate relevance score based on intent alignment and question type.
 
-        Relevance is derived from completeness with a base score adjustment.
+        Checks if answer directly addresses the question's intent.
 
         Args:
+            question: The original question
+            answer: The answer text to evaluate
             completeness: The completeness score
 
         Returns:
             Relevance score between 0.0 and 1.0
         """
-        weighted_score = completeness * ScoringThresholds.KEYWORD_OVERLAP_RELEVANCE_WEIGHT
+        # Procedural questions need action verbs
+        if any(
+            word in question for word in ["방법", "신청", "절차", "어떻게", "하는 법"]
+        ):
+            has_action = AutoFailPatterns.has_action_verbs(answer)
+            if has_action:
+                return min(ScoringThresholds.MAX_SCORE, completeness + 0.2)
+            else:
+                return completeness * 0.7  # Penalize missing action info
+
+        # Eligibility questions need criteria/deadlines
+        elif any(word in question for word in ["자격", "조건", "기준", "누가", "대상"]):
+            has_practical = AutoFailPatterns.has_practical_info(answer)
+            if has_practical:
+                return min(ScoringThresholds.MAX_SCORE, completeness + 0.2)
+            else:
+                return completeness * 0.7
+
+        # Fact check questions need specific citations
+        elif any(word in question for word in ["언제", "면체", "얼마", "기간", "횟수"]):
+            has_citation = AutoFailPatterns.has_citation(answer)
+            if has_citation:
+                return min(ScoringThresholds.MAX_SCORE, completeness + 0.2)
+            else:
+                return completeness * 0.7
+
+        # Default: weighted completeness
+        weighted_score = (
+            completeness * ScoringThresholds.KEYWORD_OVERLAP_RELEVANCE_WEIGHT
+        )
         return min(
             ScoringThresholds.MAX_SCORE,
             weighted_score + ScoringThresholds.BASE_RELEVANCE_SCORE,
@@ -157,6 +215,11 @@ class AutoFailChecker:
         if AutoFailPatterns.is_generalization(answer):
             return True, "Answer contains generalization phrases"
 
+        # Check for vague answers
+        if hasattr(AutoFailPatterns, "is_vague_answer"):
+            if AutoFailPatterns.is_vague_answer(answer):
+                return True, "Answer is vague without specific information"
+
         return False, ""
 
     @staticmethod
@@ -196,9 +259,7 @@ class AutoFailChecker:
         return True, ""
 
     @staticmethod
-    def check_all_auto_fail_conditions(
-        answer: str, fact_checks
-    ) -> tuple[bool, str]:
+    def check_all_auto_fail_conditions(answer: str, fact_checks) -> tuple[bool, str]:
         """
         Check all automatic failure conditions.
 

@@ -3,6 +3,8 @@ Evaluation Constants for RAG Quality Assessment.
 
 Defines scoring thresholds, auto-fail conditions, and detection patterns.
 Centralizes magic numbers to improve maintainability.
+
+Enhanced with more comprehensive patterns for Korean university regulations.
 """
 
 import re
@@ -46,6 +48,7 @@ class AutoFailPatterns:
     Patterns for detecting automatic failure conditions.
 
     Answers matching these patterns receive automatic failing scores.
+    Enhanced with comprehensive Korean university regulation patterns.
     """
 
     # Generalization phrases indicate vague, non-specific answers
@@ -55,24 +58,63 @@ class AutoFailPatterns:
         r"일반적으로",
         r"보통은",
         r"대체로",
+        r"기관에\s*따라\s*다르",
+        r"상황에\s*따라\s*다르",
+        r"학교\s*규정에\s*맞게",
+        r"관련\s*부서에\s*문의",
+        r"확인이\s*필요",
+        r"해당\s*규정.*?참고",  # More flexible: allows particles
+        r"각\s*기관\s*차이",
+        r"대학\s*상황에\s*따라",
+    ]
+
+    # Vague answer patterns (no specific regulation cited)
+    VAGUE_ANSWER_PATTERNS: List[str] = [
+        r"^(네|예|아니요)\.?$",  # Just yes/no
+        r"규정에\s*딸?르?",  # Matches "따르" with conjugation
+        r"정해진\s*바가\s*있",
+        r"별도로\s*정해",
+        r"관련\s*규정\s*참조",
+        r"규정\s*준수",
     ]
 
     # Source citation patterns for regulation references
     CITATION_PATTERNS: List[str] = [
-        r"제\d+[조항]",
-        r"\d+[조항]\s*.*규정",
-        r"[가-힣]+규정",
-        r"[가-힣]+학칙",
+        r"제\d+\s*[조항]",  # 제N조/제N항
+        r"\d+\s*[조항]",  # N조/N항
+        r"\d+조\s*\d+항",  # N조 M항
+        r"\d+조\s*제\d+항",  # N조 제M항
+        r"\w*규정",  # Any word ending with 규정
+        r"\w*학칙",  # Any word ending with 학칙
+        r"\w*시행세칙",  # Any word ending with 시행세칙
     ]
 
     # Practical information patterns (deadlines, requirements, contacts)
     PRACTICAL_INFO_PATTERNS: List[str] = [
-        r"\d+[년월일시점분]\s*이내",
-        r"\d+회\s*이상",
-        r"\d+[학점점]",
-        r"\d+\.\d+\s*이상",
-        r"[가-힣]+\s*부서",
-        r"[가-힣]+\s*담당자",
+        r"\d+\s*년\s*이내",  # N년 이내
+        r"\d+\s*개?월\s*이내",  # N월/N개월 이내
+        r"\d+\s*일\s*이내",  # N일 이내
+        r"\d+\s*시간\s*이내",  # N시간 이내
+        r"\d+\s*분\s*이내",  # N분 이내
+        r"\d+\s*주일?\s*이내",  # N주/N주일 이내
+        r"\d+\s*년\s*전",  # N년 전
+        r"\d+\s*개?월\s*전",  # N월/N개월 전
+        r"\d+\s*일\s*전",  # N일 전
+        r"\d+\s*시간\s*전",  # N시간 전
+        r"\d+\s*분\s*전",  # N분 전
+        r"\d+\s*주일?\s*전",  # N주/N주일 전
+        r"\d+회\s*이상",  # N회 이상
+        r"\d+\s*[학점점]",  # N학점/N점
+        r"\d+\.\d+\s*이상",  # N.N 이상
+        r"\w+\s*부서",  # Any word + 부서
+        r"\w+\s*담당자",  # Any word + 담당자
+        r"학부사무실",
+        r"교학과",
+        r"학적과",
+        r"장학팀",
+        r"학사지원팀",
+        r"교무처",
+        r"학생처",
     ]
 
     # Action verbs indicating actionable advice
@@ -83,6 +125,15 @@ class AutoFailPatterns:
         "연락",
         "확인",
         "준비",
+        "등록",
+        "완료",
+        "발급",
+        "심사",
+        "신고",
+        "접수",
+        "승인",
+        "변경",
+        "취소",
     ]
 
     @staticmethod
@@ -104,6 +155,13 @@ class AutoFailPatterns:
         """Check if answer contains generalization phrases."""
         return AutoFailPatterns.matches_any_pattern(
             answer, AutoFailPatterns.GENERALIZATION_PATTERNS
+        )
+
+    @staticmethod
+    def is_vague_answer(answer: str) -> bool:
+        """Check if answer is vague without specific information."""
+        return AutoFailPatterns.matches_any_pattern(
+            answer, AutoFailPatterns.VAGUE_ANSWER_PATTERNS
         )
 
     @staticmethod

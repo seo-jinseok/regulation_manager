@@ -234,9 +234,9 @@ class QualityEvaluator:
         self, question: str, answer: str, sources: List[str]
     ) -> "QualityDimensions":
         """
-        Evaluate quality using rule-based approach.
+        Evaluate quality using enhanced rule-based approach.
 
-        Uses helper classes for consistent metric calculation.
+        Uses improved metrics that consider question types and citation density.
 
         Args:
             question: The user's question
@@ -244,19 +244,21 @@ class QualityEvaluator:
             sources: List of source documents used
 
         Returns:
-            QualityDimensions with rule-based scores
+            QualityDimensions with improved rule-based scores
         """
         from ..domain.value_objects import QualityDimensions
         from .evaluation_constants import AutoFailPatterns
 
-        # Accuracy: Based on answer length and structure
+        # Accuracy: Based on citation density and structure (improved)
         accuracy = EvaluationMetrics.calculate_accuracy(answer)
 
-        # Completeness: Based on question coverage
+        # Completeness: Based on question coverage and practical info (improved)
         completeness = EvaluationMetrics.calculate_completeness(question, answer)
 
-        # Relevance: Based on completeness with weighting
-        relevance = EvaluationMetrics.calculate_relevance(completeness)
+        # Relevance: Based on question type and intent alignment (improved)
+        relevance = EvaluationMetrics.calculate_relevance(
+            question, answer, completeness
+        )
 
         # Source Citation: Check for citation patterns
         has_citation = AutoFailPatterns.has_citation(answer)
