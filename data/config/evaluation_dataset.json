@@ -1,7 +1,7 @@
 {
-  "version": "1.0.0",
-  "description": "RAG 시스템 품질 평가용 테스트 데이터셋",
-  "last_updated": "2026-01-15",
+  "version": "1.1.0",
+  "description": "RAG 시스템 품질 평가용 테스트 데이터셋 (Cycle 4: 멀티턴/복합 쿼리 추가)",
+  "last_updated": "2026-01-26",
   "test_cases": [
     {
       "id": "student_complaint_professor_01",
@@ -804,6 +804,334 @@
       "expected_rule_codes": [],
       "min_relevance_score": 0.1,
       "notes": "일반적인 자연어 질문"
+    },
+    {
+      "id": "multi_intent_01",
+      "category": "멀티턴/복합",
+      "query": "휴학하고 싶은데, 장학금은 어떻게 돼?",
+      "expected_intents": [
+        "휴학 관심",
+        "장학금 관심"
+      ],
+      "expected_keywords": [
+        "휴학",
+        "장학금",
+        "등록금"
+      ],
+      "expected_rule_codes": [],
+      "min_relevance_score": 0.1,
+      "notes": "다중 의도 쿼리 (휴학 + 장학금)"
+    },
+    {
+      "id": "multi_intent_02",
+      "category": "멀티턴/복합",
+      "query": "교수 승진 요건과 연구년 신청 방법 알려줘",
+      "expected_intents": [
+        "승진 관심",
+        "연구년 관심"
+      ],
+      "expected_keywords": [
+        "승진",
+        "연구년",
+        "교원인사"
+      ],
+      "expected_rule_codes": [
+        "3-1-5"
+      ],
+      "min_relevance_score": 0.1,
+      "notes": "다중 질문 복합 쿼리"
+    },
+    {
+      "id": "comparison_01",
+      "category": "비교",
+      "query": "휴학과 자퇴 차이가 뭐야?",
+      "expected_intents": [
+        "휴학 관심"
+      ],
+      "expected_keywords": [
+        "휴학",
+        "자퇴",
+        "제적"
+      ],
+      "expected_rule_codes": [],
+      "min_relevance_score": 0.1,
+      "notes": "비교 질문 - 두 개념의 차이 물어봄"
+    },
+    {
+      "id": "conditional_01",
+      "category": "조건부",
+      "query": "학사경고 2번 받았을 때 휴학 가능해?",
+      "expected_intents": [
+        "휴학 관심",
+        "학사경고 관련"
+      ],
+      "expected_keywords": [
+        "휴학",
+        "학사경고",
+        "휴학자격"
+      ],
+      "expected_rule_codes": [],
+      "min_relevance_score": 0.1,
+      "notes": "조건부 질문 - 특정 상황에서의 가능성 물어봄"
+    },
+    {
+      "id": "multi_turn_context_01",
+      "category": "멀티턴/컨텍스트",
+      "query": "졸업 요건이 뭐야?",
+      "expected_intents": [
+        "졸업 관련"
+      ],
+      "expected_keywords": [
+        "졸업",
+        "졸업요건"
+      ],
+      "expected_rule_codes": [],
+      "min_relevance_score": 0.1,
+      "notes": "멀티턴 첫 번째 - 졸업 요건 문의",
+      "multi_turn": {
+        "turn": 1,
+        "total_turns": 3,
+        "context": "졸업 요건을 먼저 물어보고, 이어서 구체적인 질문을 함"
+      }
+    },
+    {
+      "id": "multi_turn_context_02",
+      "category": "멀티턴/컨텍스트",
+      "query": "그럼 논문은 필수야?",
+      "expected_intents": [
+        "논문 도움"
+      ],
+      "expected_keywords": [
+        "논문",
+        "졸업논문",
+        "졸업요건"
+      ],
+      "expected_rule_codes": [],
+      "min_relevance_score": 0.1,
+      "notes": "멀티턴 두 번째 - 컨텍스트(졸업 요건) 유지하며 논문 필수 여부 확인",
+      "multi_turn": {
+        "turn": 2,
+        "total_turns": 3,
+        "context": "이전 질문(졸업 요건)의 컨텍스트 유지",
+        "depends_on": "multi_turn_context_01"
+      }
+    },
+    {
+      "id": "multi_turn_context_03",
+      "category": "멀티턴/컨텍스트",
+      "query": "제출 기한은 언제까지야?",
+      "expected_intents": [
+        "논문 도움"
+      ],
+      "expected_keywords": [
+        "논문",
+        "제출기한",
+        "졸업논문"
+      ],
+      "expected_rule_codes": [],
+      "min_relevance_score": 0.1,
+      "notes": "멀티턴 세 번째 - 논문 제출 기한 확인 (컨텍스트: 논문)",
+      "multi_turn": {
+        "turn": 3,
+        "total_turns": 3,
+        "context": "이전 질문들의 컨텍스트 유지 (졸업 요건 → 논문)",
+        "depends_on": "multi_turn_context_02"
+      }
+    },
+    {
+      "id": "typo_tolerance_01",
+      "category": "오타/문법오류",
+      "query": "졸업 어떻게 해?",
+      "expected_intents": [
+        "졸업 관련"
+      ],
+      "expected_keywords": [
+        "졸업",
+        "졸업요건"
+      ],
+      "expected_rule_codes": [],
+      "min_relevance_score": 0.1,
+      "notes": "구어체, 문법적으로 부정확한 표현"
+    },
+    {
+      "id": "typo_tolerance_02",
+      "category": "오타/문법오류",
+      "query": "장학금 신청 하는 법",
+      "expected_intents": [
+        "장학금 관심"
+      ],
+      "expected_keywords": [
+        "장학금",
+        "장학금신청"
+      ],
+      "expected_rule_codes": [],
+      "min_relevance_score": 0.1,
+      "notes": "띄어쓰기 오류"
+    },
+    {
+      "id": "typo_tolerance_03",
+      "category": "오타/문법오류",
+      "query": "휴학신청기간언제야",
+      "expected_intents": [
+        "휴학 관심"
+      ],
+      "expected_keywords": [
+        "휴학",
+        "휴학신청",
+        "신청기간"
+      ],
+      "expected_rule_codes": [],
+      "min_relevance_score": 0.1,
+      "notes": "띄어쓰기 없는 연속 텍스트"
+    },
+    {
+      "id": "complex_procedural_01",
+      "category": "복잡절차",
+      "query": "연구년 신청하려면 승인 절차가 어떻게 되고, 기간은 얼마나 돼?",
+      "expected_intents": [
+        "연구년 관심"
+      ],
+      "expected_keywords": [
+        "연구년",
+        "신청절차",
+        "승인",
+        "기간"
+      ],
+      "expected_rule_codes": [
+        "3-1-24"
+      ],
+      "min_relevance_score": 0.1,
+      "notes": "복잡한 절차 질문 - 여러 단계 포함"
+    },
+    {
+      "id": "edge_case_negative_01",
+      "category": "에지케이스/부정",
+      "query": "장학금 못 받으면 등록금 환불 돼?",
+      "expected_intents": [
+        "장학금 관심",
+        "등록 문제"
+      ],
+      "expected_keywords": [
+        "장학금",
+        "등록금",
+        "환불"
+      ],
+      "expected_rule_codes": [],
+      "min_relevance_score": 0.1,
+      "notes": "부정적 상황 가정 - 장학금 미수령 시 환불 여부"
+    },
+    {
+      "id": "edge_case_exception_01",
+      "category": "에지케이스/예외",
+      "query": "휴학 기간 초과했는데 예외적으로 더 가능해?",
+      "expected_intents": [
+        "휴학 관심"
+      ],
+      "expected_keywords": [
+        "휴학",
+        "휴학기간",
+        "예외"
+      ],
+      "expected_rule_codes": [],
+      "min_relevance_score": 0.1,
+      "notes": "예외 상황 질문 - 규정 위반 시 예외 가능성"
+    },
+    {
+      "id": "ranking_comparison_01",
+      "category": "비교/순위",
+      "query": "정교수와 부교수 승진 요건 차이가 뭐야?",
+      "expected_intents": [
+        "승진 관심"
+      ],
+      "expected_keywords": [
+        "승진",
+        "정교수",
+        "부교수",
+        "승진요건"
+      ],
+      "expected_rule_codes": [
+        "3-1-5"
+      ],
+      "min_relevance_score": 0.1,
+      "notes": "순위/직급 비교 질문"
+    },
+    {
+      "id": "temporal_query_01",
+      "category": "시간/기간",
+      "query": "학기 중에 휴학 가능한 시기가 언제야?",
+      "expected_intents": [
+        "휴학 관심"
+      ],
+      "expected_keywords": [
+        "휴학",
+        "휴학시기",
+        "학기중"
+      ],
+      "expected_rule_codes": [],
+      "min_relevance_score": 0.1,
+      "notes": "시간적 제약 질문 - 특정 시기 내 가능성"
+    },
+    {
+      "id": "prerequisite_query_01",
+      "category": "선행조건",
+      "query": "조기졸업하려면 이전에 어떤 자격 충족해야 돼?",
+      "expected_intents": [
+        "조기졸업 관심"
+      ],
+      "expected_keywords": [
+        "조기졸업",
+        "자격",
+        "선행조건"
+      ],
+      "expected_rule_codes": [],
+      "min_relevance_score": 0.1,
+      "notes": "선행 조건 질문 - 무엇이 먼저 필요한지"
+    },
+    {
+      "id": "follow_up_elaboration_01",
+      "category": "후속질문/구체화",
+      "query": "복수전공하는데, 제2전공도 신청해야 돼?",
+      "expected_intents": [
+        "복수전공 관심"
+      ],
+      "expected_keywords": [
+        "복수전공",
+        "제2전공",
+        "부전공"
+      ],
+      "expected_rule_codes": [],
+      "min_relevance_score": 0.1,
+      "notes": "후속 구체화 질문 - 복수전공 내 세부 사항"
+    },
+    {
+      "id": "ambiguous_reference_01",
+      "category": "모호참조",
+      "query": "그거 신청서 어디서 받아?",
+      "expected_intents": [],
+      "expected_keywords": [
+        "신청",
+        "신청서"
+      ],
+      "expected_rule_codes": [],
+      "min_relevance_score": 0.05,
+      "notes": "모호한 참조 - '그거'가 무엇인지 컨텍스트 필요"
+    },
+    {
+      "id": "domain_switch_01",
+      "category": "도메인전환",
+      "query": "교원인사규정이랑 학칙이랑 다른 점이 있어?",
+      "expected_intents": [],
+      "expected_keywords": [
+        "교원인사",
+        "학칙",
+        "규정"
+      ],
+      "expected_rule_codes": [
+        "3-1-5",
+        "2-1-1"
+      ],
+      "min_relevance_score": 0.05,
+      "notes": "도메인 간 비교 - 교원 vs 학생 규정"
     }
   ]
 }
