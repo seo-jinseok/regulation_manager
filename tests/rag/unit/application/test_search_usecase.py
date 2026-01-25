@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 import pytest
 
 from src.rag.application.search_usecase import SearchUseCase
@@ -171,8 +173,7 @@ def test_rerank_uses_rewritten_query(monkeypatch):
         def rerank(self, query, documents, top_k=10):
             captured["query"] = query
             return [
-                (documents[0][0], documents[0][1], 0.9, {})
-                for doc in documents[:top_k]
+                (documents[0][0], documents[0][1], 0.9, {}) for doc in documents[:top_k]
             ]
 
     usecase = SearchUseCase(store, llm_client=llm, use_reranker=True, use_hybrid=True)
@@ -220,7 +221,9 @@ def test_hybrid_filters_abolished_sparse_results():
     store = FakeStoreWithDocs(results=[], documents=documents)
     usecase = SearchUseCase(store, use_reranker=False, use_hybrid=True)
 
-    results = usecase.search("휴학", top_k=5, include_abolished=False)
+    # Mock cache check to bypass retrieval cache
+    with patch.object(usecase, "_check_retrieval_cache", return_value=None):
+        results = usecase.search("휴학", top_k=5, include_abolished=False)
 
     assert {r.chunk.id for r in results} == {"doc_active"}
     assert all(r.chunk.status == RegulationStatus.ACTIVE for r in results)
@@ -297,26 +300,47 @@ def test_search_deduplicates_same_article():
 
     # Chunk 1: Article 4 Body
     c1 = Chunk(
-        id="c1", rule_code="3-1-6", level=ChunkLevel.ARTICLE,
-        title="제4조(위원회)", text="위원회는...", 
-        embedding_text="", full_text="", parent_path=["규정"], 
-        token_count=10, keywords=[], is_searchable=True
+        id="c1",
+        rule_code="3-1-6",
+        level=ChunkLevel.ARTICLE,
+        title="제4조(위원회)",
+        text="위원회는...",
+        embedding_text="",
+        full_text="",
+        parent_path=["규정"],
+        token_count=10,
+        keywords=[],
+        is_searchable=True,
     )
 
     # Chunk 2: Article 4 Paragraph 1 (Highest Score)
     c2 = Chunk(
-        id="c2", rule_code="3-1-6", level=ChunkLevel.PARAGRAPH,
-        title="①", text="위원회는 5인...", 
-        embedding_text="", full_text="", parent_path=["규정", "제4조(위원회)"], 
-        token_count=10, keywords=[], is_searchable=True
+        id="c2",
+        rule_code="3-1-6",
+        level=ChunkLevel.PARAGRAPH,
+        title="①",
+        text="위원회는 5인...",
+        embedding_text="",
+        full_text="",
+        parent_path=["규정", "제4조(위원회)"],
+        token_count=10,
+        keywords=[],
+        is_searchable=True,
     )
 
     # Chunk 3: Article 4 Paragraph 2
     c3 = Chunk(
-        id="c3", rule_code="3-1-6", level=ChunkLevel.PARAGRAPH,
-        title="②", text="위원장은...", 
-        embedding_text="", full_text="", parent_path=["규정", "제4조(위원회)"], 
-        token_count=10, keywords=[], is_searchable=True
+        id="c3",
+        rule_code="3-1-6",
+        level=ChunkLevel.PARAGRAPH,
+        title="②",
+        text="위원장은...",
+        embedding_text="",
+        full_text="",
+        parent_path=["규정", "제4조(위원회)"],
+        token_count=10,
+        keywords=[],
+        is_searchable=True,
     )
 
     # Search Results (Sorted by score already)
@@ -327,7 +351,7 @@ def test_search_deduplicates_same_article():
     ]
 
     store = FakeStore(raw_results)
-    usecase = SearchUseCase(store, use_reranker=False, use_hybrid=False)
+    _usecase = SearchUseCase(store, use_reranker=False, use_hybrid=False)
 
     # Act
 
@@ -341,14 +365,16 @@ class TestSearchUseCaseWarmup:
             ("doc1", "교원 휴직 규정", {}),
         ]
         store = FakeStoreWithDocs(results=[], documents=documents)
-        usecase = SearchUseCase(store, use_reranker=False, use_hybrid=True, enable_warmup=False)
-        
+        usecase = SearchUseCase(
+            store, use_reranker=False, use_hybrid=True, enable_warmup=False
+        )
+
         # warmup 전에는 초기화되지 않음
         assert usecase._hybrid_initialized is False
-        
+
         # warmup 호출
         usecase._warmup()
-        
+
         # warmup 후에는 초기화됨
         assert usecase._hybrid_initialized is True
         assert usecase._hybrid_searcher is not None
@@ -357,16 +383,17 @@ class TestSearchUseCaseWarmup:
         """_warmup이 use_reranker=True일 때 reranker를 초기화하는지 확인"""
         store = FakeStore([])
         # use_reranker=True로 설정하고 warmup=False로 초기화 시점 제어
-        usecase = SearchUseCase(store, use_reranker=True, use_hybrid=False, enable_warmup=False)
-        
+        usecase = SearchUseCase(
+            store, use_reranker=True, use_hybrid=False, enable_warmup=False
+        )
+
         # warmup 전에는 초기화되지 않음
         assert usecase._reranker_initialized is False
-        
+
         # _ensure_reranker 직접 호출 (실제 모델 로드 없이 mock 사용)
-        from unittest.mock import patch
         with patch("src.rag.infrastructure.reranker.warmup_reranker"):
             usecase._ensure_reranker()
-        
+
         # 초기화됨
         assert usecase._reranker_initialized is True
         assert usecase._reranker is not None
@@ -374,34 +401,35 @@ class TestSearchUseCaseWarmup:
     def test_warmup_with_no_documents_skips_hybrid(self):
         """문서가 없으면 hybrid_searcher 초기화를 건너뛰는지 확인"""
         store = FakeStore([])  # get_all_documents returns []
-        usecase = SearchUseCase(store, use_reranker=False, use_hybrid=True, enable_warmup=False)
-        
+        usecase = SearchUseCase(
+            store, use_reranker=False, use_hybrid=True, enable_warmup=False
+        )
+
         usecase._warmup()
-        
+
         # 문서가 없으므로 hybrid_searcher는 None
         assert usecase._hybrid_initialized is True
         assert usecase._hybrid_searcher is None
 
     def test_enable_warmup_env_variable(self, monkeypatch):
         """WARMUP_ON_INIT 환경변수가 적용되는지 확인"""
-        import threading
-        
+
         warmup_called = []
-        original_warmup = SearchUseCase._warmup
-        
+
         def mock_warmup(self):
             warmup_called.append(True)
-        
+
         monkeypatch.setattr(SearchUseCase, "_warmup", mock_warmup)
         monkeypatch.setenv("WARMUP_ON_INIT", "true")
-        
+
         store = FakeStore([])
-        usecase = SearchUseCase(store, use_reranker=False, enable_warmup=None)
-        
+        _usecase = SearchUseCase(store, use_reranker=False, enable_warmup=None)
+
         # 스레드 시작 대기
         import time
+
         time.sleep(0.1)
-        
+
         assert len(warmup_called) == 1
 
 

@@ -609,7 +609,7 @@ class TestRerankingEdgeCases:
             enable_warmup=False,
         )
 
-        reranked = usecase._apply_reranking(results, "query", top_k=5, candidate_k=2)
+        _reranked = usecase._apply_reranking(results, "query", top_k=5, candidate_k=2)
 
         # Should only rerank first 2 candidates
         assert len(reranker.rerank_calls) == 1
@@ -677,13 +677,15 @@ class TestSearchGeneralEdgeCases:
             store, use_reranker=False, use_hybrid=False, enable_warmup=False
         )
 
-        results = usecase._search_general(
-            "휴학",
-            None,
-            5,
-            False,
-            None,
-        )
+        # Mock cache check to bypass retrieval cache (which may persist from previous runs)
+        with patch.object(usecase, "_check_retrieval_cache", return_value=None):
+            _results = usecase._search_general(
+                "휴학",
+                None,
+                5,
+                False,
+                None,
+            )
 
         # Should return results from dense search only
         assert len(store.search_calls) > 0
@@ -701,13 +703,15 @@ class TestSearchGeneralEdgeCases:
         usecase._hybrid_searcher = hybrid
         usecase._hybrid_initialized = True
 
-        results = usecase._search_general(
-            "test query",
-            None,
-            5,
-            False,
-            None,
-        )
+        # Mock cache check to bypass retrieval cache
+        with patch.object(usecase, "_check_retrieval_cache", return_value=None):
+            _results = usecase._search_general(
+                "test query",
+                None,
+                5,
+                False,
+                None,
+            )
 
         # Should call decompose_query
         hybrid._query_analyzer.decompose_query.assert_called()
@@ -722,13 +726,15 @@ class TestSearchGeneralEdgeCases:
             store, use_reranker=False, use_hybrid=False, enable_warmup=False
         )
 
-        results = usecase._search_general(
-            "휴학",
-            None,
-            5,
-            False,
-            None,
-        )
+        # Mock cache check to bypass retrieval cache
+        with patch.object(usecase, "_check_retrieval_cache", return_value=None):
+            results = usecase._search_general(
+                "휴학",
+                None,
+                5,
+                False,
+                None,
+            )
 
         # Score should be boosted due to keyword match
         assert len(results) > 0
@@ -743,13 +749,15 @@ class TestSearchGeneralEdgeCases:
 
         from src.rag.infrastructure.query_analyzer import Audience
 
-        results = usecase._search_general(
-            "query",
-            None,
-            5,
-            False,
-            Audience.FACULTY,
-        )
+        # Mock cache check to bypass retrieval cache
+        with patch.object(usecase, "_check_retrieval_cache", return_value=None):
+            results = usecase._search_general(
+                "query",
+                None,
+                5,
+                False,
+                Audience.FACULTY,
+            )
 
         # Should complete without errors
         assert isinstance(results, list)

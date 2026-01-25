@@ -30,11 +30,22 @@ ralph:
     require_confirmation: true    # Ask user before applying fixes
     cooldown_seconds: 2           # Minimum time between loop iterations
 
+    # Test Execution (CRITICAL: Prevent memory overload with 2198 tests)
+    test:
+      # Run tests in smaller batches to prevent memory explosion
+      batch_mode: true            # Enable batch testing
+      batch_size: 200             # Maximum tests per batch (was: 2198 all at once)
+      batch_delay: 5              # Seconds between batches for GC
+      # Command pattern for batched testing
+      batch_command: "pytest {path} -n 2 --no-cov --timeout=300 --maxfail=10"
+      # Quick test for rapid feedback (run first batch only)
+      quick_test: "pytest tests/rag/unit/application/ -n 2 --no-cov --maxfail=5"
+
     # Completion conditions (all must be true to complete)
     completion:
       zero_errors: true           # No LSP errors
       zero_warnings: false        # Warnings allowed (configurable)
-      tests_pass: true            # All tests must pass
+      tests_pass: true            # All tests must pass (uses batch mode)
       coverage_threshold: 85      # Minimum test coverage percentage
 
   # Git Integration

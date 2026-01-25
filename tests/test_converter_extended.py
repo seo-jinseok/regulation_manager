@@ -143,7 +143,8 @@ class TestConverterErrorPaths(unittest.TestCase):
         # Mock process that fails
         mock_process = MagicMock()
         mock_process.returncode = 1
-        mock_process.stdout = iter(["Error output"])
+        # stdout must be an iterable that yields strings when iterated
+        mock_process.stdout.__iter__ = lambda self: iter(["Error output"])
         mock_popen.return_value = mock_process
 
         with patch("pathlib.Path.exists", return_value=True):

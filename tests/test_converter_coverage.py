@@ -64,7 +64,11 @@ class TestHwpToMarkdownReaderData(unittest.TestCase):
                 "pathlib.Path.glob", return_value=[Path("/tmp/dir/index.xhtml")]
             ):
                 with patch("builtins.open", create=True) as mock_open_func:
-                    mock_open_func.return_value.__enter__.return_value.read.return_value = "<html><body>Test content</body></html>"
+                    mock_file = MagicMock()
+                    mock_file.read.return_value = (
+                        "<html><body>Test content</body></html>"
+                    )
+                    mock_open_func.return_value.__enter__.return_value = mock_file
                     docs = self.reader.load_data(Path("test.hwp"))
                     self.assertEqual(len(docs), 1)
 
@@ -91,7 +95,9 @@ class TestHwpToMarkdownReaderMetadata(unittest.TestCase):
                 "pathlib.Path.glob", return_value=[Path("/tmp/dir/index.xhtml")]
             ):
                 with patch("builtins.open", create=True) as mock_open_func:
-                    mock_open_func.return_value.__enter__.return_value.read.return_value = "<html><body>Test</body></html>"
+                    mock_file = MagicMock()
+                    mock_file.read.return_value = "<html><body>Test</body></html>"
+                    mock_open_func.return_value.__enter__.return_value = mock_file
                     docs = self.reader.load_data(Path("test.hwp"))
                     if docs:
                         self.assertIn("html_content", docs[0].metadata)

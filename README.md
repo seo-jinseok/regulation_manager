@@ -1045,12 +1045,49 @@ regulation_manager/
 ### 개발 명령어
 
 ```bash
-# 테스트 실행
-uv run pytest
+# ===== 테스트 실행 (메모리 최적화됨) =====
+# ⚠️ 주의: 전체 테스트(2198개)는 메모리 과다 사용 가능
+# 빠른 테스트 (핵심 기능만): ~30초
+./scripts/quick_test.sh
 
+# 배치 테스트 (전체 but 분할): ~5분
+./scripts/run_tests_batched.sh
+
+# 특정 모듈만 테스트
+pytest tests/rag/unit/application/ -v
+
+# ===== 개발 작업 =====
 # 의존성 추가
 uv add <package>
+
+# LSP 진단
+pyright src/
+
+# ===== 메모리 문제 해결 =====
+# pytest가 메모리를 너무 사용할 때:
+# 1. -n 2로 worker 제한 (기본값)
+# 2. --no-cov로 비활성화 (기본값)
+# 3. --maxfail 5로 조기 종료
+# 4. 또는 배치 스크립트 사용
 ```
+
+### 메모리 관리
+
+이 프로젝트는 2198개의 테스트가 있어 전체 실행 시 메모리 폭주가 발생할 수 있습니다.
+
+**자동 조치**:
+- pytest-xdist: 최대 2개 worker 제한 (`-n 2`)
+- pytest-timeout: 300초 제한
+- pyproject.toml: `--no-cov` 기본값
+- conftest.py: 12GB 초과 시 자동 중단
+
+**권장 방식**:
+| 방법 | 명령어 | 소요 시간 | 메모리 |
+|------|--------|----------|--------|
+| 빠른 테스트 | `./scripts/quick_test.sh` | ~30초 | ~1GB |
+| 모듈별 | `pytest tests/rag/unit/` | ~1분 | ~2GB |
+| 배치 전체 | `./scripts/run_tests_batched.sh` | ~5분 | ~4GB |
+| 전체 (비권장) | `pytest` | ~10분+ | ~20GB+ |
 
 ---
 

@@ -45,6 +45,7 @@ dev = [
     "pytest-cov>=7.0.0",
     "pytest-xdist>=3.6.0",
     "pytest-timeout>=2.3.0",
+    "psutil>=5.9.0",  # Memory monitoring in conftest.py
 ]
 
 [build-system]
@@ -58,7 +59,8 @@ packages = ["src"]
 testpaths = ["tests"]
 # CRITICAL: --no-cov is DEFAULT to prevent memory explosion
 # Use scripts/run_with_coverage.sh to run coverage separately
-addopts = ["--no-cov", "-m", "not debug", "--timeout=300", "--maxfail=5", "--tb=short"]
+# Limit xdist workers to prevent memory overload (2198 tests total)
+addopts = ["--no-cov", "-m", "not debug", "--timeout=300", "--maxfail=5", "--tb=short", "-n", "2"]
 markers = [
     "debug: debug and diagnostic tests",
     "slow: tests that take a long time to run",

@@ -140,17 +140,24 @@ def test_generate_cache_miss():
 
 def test_generate_short_not_cached():
     """Test that short documents are not cached."""
+    import uuid
+
     with tempfile.TemporaryDirectory() as tmpdir:
         mock_llm = MagicMock()
+        # Return a short result that will fail validation (< 20 chars)
         mock_llm.generate.side_effect = lambda **kwargs: "short result"
 
         generator = HyDEGenerator(
             llm_client=mock_llm, enable_cache=True, cache_dir=tmpdir
         )
-        result = generator.generate_hypothetical_doc("different query")
+        # Use unique query to avoid cache hits from previous test runs
+        unique_query = f"test query {uuid.uuid4()}"
+        result = generator.generate_hypothetical_doc(unique_query)
 
-        assert result.hypothetical_doc == "short result"
-        # Should NOT be cached (< 20 chars)
+        # When validation fails (< 20 chars), original query is used as fallback
+        assert result.hypothetical_doc == unique_query
+        assert result.from_cache is False
+        # Should NOT be cached (only validated results are cached)
         assert result.cache_key not in generator._cache
 
 

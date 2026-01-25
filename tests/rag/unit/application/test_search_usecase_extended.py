@@ -5,7 +5,7 @@ Tests clean architecture compliance with mocked dependencies.
 """
 
 from typing import List, Optional
-from unittest.mock import MagicMock, Mock
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
@@ -327,7 +327,9 @@ class TestSearchUseCaseSearch:
         store = MockVectorStore([make_search_result(chunk)])
         usecase = SearchUseCase(store, use_reranker=False, use_hybrid=False)
 
-        results = usecase.search("휴학 절차", top_k=5)
+        # Mock cache check to bypass retrieval cache
+        with patch.object(usecase, "_check_retrieval_cache", return_value=None):
+            results = usecase.search("휴학 절차", top_k=5)
 
         assert len(store.search_calls) == 1
         assert len(results) > 0
@@ -378,7 +380,9 @@ class TestSearchUseCaseSearch:
             reranker=reranker,
             use_hybrid=False,
         )
-        results = usecase.search("휴학", top_k=5)
+        # Mock cache check to bypass retrieval cache
+        with patch.object(usecase, "_check_retrieval_cache", return_value=None):
+            _results = usecase.search("휴학", top_k=5)
 
         assert len(reranker.rerank_calls) == 1
 
@@ -394,7 +398,9 @@ class TestSearchUseCaseSearch:
             use_hybrid=True,
             hybrid_searcher=hybrid,
         )
-        results = usecase.search("휴학", top_k=5)
+        # Mock cache check to bypass retrieval cache
+        with patch.object(usecase, "_check_retrieval_cache", return_value=None):
+            _results = usecase.search("휴학", top_k=5)
 
         assert (
             len(hybrid.search_sparse_calls) >= 1
@@ -487,10 +493,12 @@ class TestSearchUseCaseAsk:
             use_reranker=False,
             use_hybrid=False,
         )
-        usecase.ask(
-            question="연구년 자격은?",
-            search_query="교원인사규정 연구년",
-        )
+        # Mock cache check to bypass retrieval cache
+        with patch.object(usecase, "_check_retrieval_cache", return_value=None):
+            usecase.ask(
+                question="연구년 자격은?",
+                search_query="교원인사규정 연구년",
+            )
 
         query, _, _ = store.search_calls[0]
         assert "교원인사규정" in query.text or "연구년" in query.text
@@ -596,7 +604,9 @@ class TestSearchUseCaseQueryRewrite:
         store = MockVectorStore([make_search_result(make_chunk())])
         usecase = SearchUseCase(store, use_reranker=False, use_hybrid=False)
 
-        usecase.search("테스트 쿼리")
+        # Mock cache check to bypass retrieval cache
+        with patch.object(usecase, "_check_retrieval_cache", return_value=None):
+            usecase.search("테스트 쿼리")
 
         rewrite_info = usecase.get_last_query_rewrite()
         assert rewrite_info is not None

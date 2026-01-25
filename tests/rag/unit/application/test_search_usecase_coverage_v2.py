@@ -878,7 +878,9 @@ class TestAskStream:
             use_hybrid=False,
         )
 
-        list(usecase.ask_stream("질문", search_query="검색어"))
+        # Mock cache check to bypass retrieval cache
+        with patch.object(usecase, "_check_retrieval_cache", return_value=None):
+            list(usecase.ask_stream("질문", search_query="검색어"))
 
         query, _, _ = store.search_calls[0]
         assert "검색어" in query.text
@@ -930,7 +932,9 @@ class TestEdgeCases:
         store = MockVectorStore([make_search_result(chunk)])
         usecase = SearchUseCase(store, use_reranker=False, use_hybrid=False)
 
-        usecase.search(["term1", "term2"], top_k=5)
+        # Mock cache check to bypass retrieval cache
+        with patch.object(usecase, "_check_retrieval_cache", return_value=None):
+            usecase.search(["term1", "term2"], top_k=5)
 
         query, _, _ = store.search_calls[0]
         assert query.text == "term1 term2"
@@ -941,8 +945,10 @@ class TestEdgeCases:
         store = MockVectorStore([make_search_result(chunk)])
         usecase = SearchUseCase(store, use_reranker=False, use_hybrid=False)
 
-        # Composed character (가)
-        usecase.search("가", top_k=5)
+        # Mock cache check to bypass retrieval cache
+        with patch.object(usecase, "_check_retrieval_cache", return_value=None):
+            # Composed character (가)
+            usecase.search("가", top_k=5)
 
         query, _, _ = store.search_calls[0]
         # Should be normalized

@@ -9,9 +9,10 @@ covering the interaction between all pipeline components:
 - SearchUseCase (orchestration)
 """
 
-import pytest
-from unittest.mock import MagicMock, patch
 from typing import List
+from unittest.mock import patch
+
+import pytest
 
 from src.rag.domain.entities import Chunk, SearchResult
 
@@ -50,7 +51,7 @@ class FakeReranker:
         """Return fake scores based on keyword overlap."""
         self.call_count += 1
         self.last_query = pairs[0][0] if pairs else None
-        
+
         scores = []
         for query, doc in pairs:
             query_terms = set(query.lower().split())
@@ -69,8 +70,8 @@ def make_chunk(
     **kwargs,
 ) -> Chunk:
     """Helper to create test chunks."""
-    from src.rag.domain.entities import ChunkLevel, Keyword
-    
+    from src.rag.domain.entities import ChunkLevel
+
     return Chunk(
         id=id,
         text=text,
@@ -151,9 +152,9 @@ class TestSearchPipelineIntegration:
     def test_query_analyzer_expands_query(self, mock_store, mock_reranker):
         """쿼리 분석기가 동의어를 확장하는지 확인"""
         from src.rag.infrastructure.query_analyzer import QueryAnalyzer
-        
+
         analyzer = QueryAnalyzer()
-        
+
         # "교수" → "교원" 확장 확인
         expanded = analyzer.expand_query("교수 임용")
         assert "교원" in expanded or "교수" in expanded
@@ -161,9 +162,9 @@ class TestSearchPipelineIntegration:
     def test_query_analyzer_detects_intent(self, mock_store, mock_reranker):
         """쿼리 분석기가 의도를 감지하는지 확인"""
         from src.rag.infrastructure.query_analyzer import QueryAnalyzer, QueryType
-        
+
         analyzer = QueryAnalyzer()
-        
+
         # 자연어 의도 쿼리 - 휴학 의도를 감지
         query_type = analyzer.analyze("휴학하고 싶어")
         # 휴학 키워드가 규정명 패턴과 일치할 수 있으므로 여러 타입 허용
@@ -172,9 +173,9 @@ class TestSearchPipelineIntegration:
     def test_hybrid_searcher_combines_results(self, mock_store, mock_reranker):
         """하이브리드 검색기가 결과를 융합하는지 확인"""
         from src.rag.infrastructure.hybrid_search import HybridSearcher, ScoredDocument
-        
+
         searcher = HybridSearcher(use_dynamic_weights=False)
-        
+
         sparse_results = [
             ScoredDocument("doc1", 0.9, "교원 임용 규정", {}),
             ScoredDocument("doc2", 0.8, "장학금 규정", {}),
@@ -183,9 +184,9 @@ class TestSearchPipelineIntegration:
             ScoredDocument("doc2", 0.95, "장학금 규정", {}),
             ScoredDocument("doc1", 0.85, "교원 임용 규정", {}),
         ]
-        
+
         fused = searcher.fuse_results(sparse_results, dense_results, top_k=2)
-        
+
         # 두 결과에 모두 있는 문서들이 융합되어야 함
         assert len(fused) == 2
         doc_ids = {r.doc_id for r in fused}
@@ -194,31 +195,30 @@ class TestSearchPipelineIntegration:
     def test_reranker_reorders_by_relevance(self, mock_store, mock_reranker):
         """Reranker가 관련성에 따라 재정렬하는지 확인"""
         from src.rag.infrastructure.reranker import BGEReranker
-        
+
         with patch("src.rag.infrastructure.reranker.get_reranker", return_value=mock_reranker):
             reranker = BGEReranker()
-            
+
             docs = [
                 ("doc1", "일반 내용", {}),
                 ("doc2", "장학금 신청 방법 절차", {}),
                 ("doc3", "장학금 규정", {}),
             ]
-            
+
             result = reranker.rerank("장학금 신청", docs, top_k=3)
-            
+
             # 키워드 매칭이 더 많은 doc2가 상위에 있어야 함
             assert result[0][0] == "doc2"
 
     def test_pipeline_article_reference_query(self, mock_store, mock_reranker, sample_chunks):
         """조문 참조 쿼리 처리 파이프라인 테스트"""
         from src.rag.infrastructure.query_analyzer import QueryAnalyzer, QueryType
-        from src.rag.infrastructure.hybrid_search import HybridSearcher
-        
+
         # 1. 쿼리 분석
         analyzer = QueryAnalyzer()
         query = "교원인사규정 제15조"
         query_type = analyzer.analyze(query)
-        
+
         assert query_type == QueryType.ARTICLE_REFERENCE
 
         # 2. 동적 가중치 확인
@@ -228,10 +228,10 @@ class TestSearchPipelineIntegration:
     def test_pipeline_natural_question_query(self, mock_store, mock_reranker):
         """자연어 질문 처리 파이프라인 테스트"""
         from src.rag.infrastructure.query_analyzer import QueryAnalyzer, QueryType
-        
+
         analyzer = QueryAnalyzer()
         query = "학교 다니면서 아르바이트 해도 되나요?"
-        
+
         # 자연어 질문 타입 확인
         query_type = analyzer.analyze(query)
         # INTENT 또는 NATURAL_QUESTION
@@ -240,28 +240,28 @@ class TestSearchPipelineIntegration:
     def test_pipeline_intent_based_expansion(self, mock_store, mock_reranker):
         """의도 기반 쿼리 확장 파이프라인 테스트"""
         from src.rag.infrastructure.query_analyzer import QueryAnalyzer
-        
+
         analyzer = QueryAnalyzer()
-        
+
         # 모호한 의도 쿼리
         query = "휴학하고 싶어"
         expanded = analyzer.expand_query(query)
-        
+
         # 휴학 관련 키워드가 확장되어야 함
         assert "휴학" in expanded
 
     def test_pipeline_regulation_context_boost(self, mock_store, mock_reranker):
         """규정 컨텍스트 부스트 파이프라인 테스트"""
         from src.rag.infrastructure.reranker import BGEReranker
-        
+
         with patch("src.rag.infrastructure.reranker.get_reranker", return_value=mock_reranker):
             reranker = BGEReranker()
-            
+
             docs = [
                 ("doc1", "휴학 신청 절차", {"regulation_title": "학칙"}),
                 ("doc2", "휴학 관련 내용", {"regulation_title": "장학규정"}),
             ]
-            
+
             # 학칙 컨텍스트로 재정렬
             result = reranker.rerank_with_context(
                 "휴학",
@@ -269,7 +269,7 @@ class TestSearchPipelineIntegration:
                 context={"target_regulation": "학칙"},
                 top_k=2,
             )
-            
+
             # 학칙 문서가 부스트되어야 함
             assert result[0][0] == "doc1"
 
@@ -309,24 +309,26 @@ class TestSearchUseCaseIntegration:
     def test_search_usecase_returns_results(self, mock_store, sample_chunks):
         """SearchUseCase가 결과를 반환하는지 확인"""
         from src.rag.application.search_usecase import SearchUseCase
-        
+
         usecase = SearchUseCase(store=mock_store, use_reranker=False)
-        
+
         results = usecase.search("장학금", top_k=2)
-        
+
         assert len(results) > 0
         assert all(isinstance(r, SearchResult) for r in results)
 
     def test_search_usecase_query_rewrite_info(self, mock_store):
         """SearchUseCase가 쿼리 재작성 정보를 제공하는지 확인"""
         from src.rag.application.search_usecase import SearchUseCase
-        
+
         usecase = SearchUseCase(store=mock_store, use_reranker=False)
-        
-        usecase.search("휴학하고 싶어", top_k=2)
-        
+
+        # Mock cache check to bypass retrieval cache
+        with patch.object(usecase, "_check_retrieval_cache", return_value=None):
+            usecase.search("휴학하고 싶어", top_k=2)
+
         rewrite_info = usecase.get_last_query_rewrite()
-        
+
         # 재작성 정보가 존재해야 함
         assert rewrite_info is not None
         assert hasattr(rewrite_info, 'rewritten')
@@ -339,10 +341,10 @@ class TestEvaluationIntegration:
     def test_evaluation_loads_dataset(self):
         """평가 시스템이 데이터셋을 로드하는지 확인"""
         from src.rag.application.evaluate import EvaluationUseCase
-        
+
         eval_uc = EvaluationUseCase(search_usecase=None)
         test_cases = eval_uc.load_dataset()
-        
+
         assert len(test_cases) > 0
         assert all(hasattr(tc, 'query') for tc in test_cases)
         assert all(hasattr(tc, 'expected_intents') for tc in test_cases)
@@ -350,10 +352,10 @@ class TestEvaluationIntegration:
     def test_evaluation_test_case_structure(self):
         """테스트 케이스 구조가 올바른지 확인"""
         from src.rag.application.evaluate import EvaluationUseCase, TestCase
-        
+
         eval_uc = EvaluationUseCase(search_usecase=None)
         test_cases = eval_uc.load_dataset()
-        
+
         for tc in test_cases[:5]:  # 첫 5개만 확인
             assert isinstance(tc, TestCase)
             assert isinstance(tc.id, str)

@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG Quality Test Report - rag_quality_eval_20250125</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            padding: 30px;
+            background: #f8f9fa;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+        }
+
+        .card .value {
+            font-size: 32px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .card .value.success { color: #10b981; }
+        .card .value.warning { color: #f59e0b; }
+        .card .value.danger { color: #ef4444; }
+        .card .value.info { color: #3b82f6; }
+
+        .card .label {
+            font-size: 12px;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .filters {
+            padding: 20px 30px;
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .filter-group label {
+            font-size: 14px;
+            color: #4b5563;
+        }
+
+        .filter-group select {
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+            background: white;
+            cursor: pointer;
+        }
+
+        .charts-section {
+            padding: 30px;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .chart-container {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .chart-container h3 {
+            font-size: 16px;
+            color: #1f2937;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 300px;
+        }
+
+        .results-table {
+            padding: 0 30px 30px;
+        }
+
+        .results-table h2 {
+            font-size: 20px;
+            color: #1f2937;
+            margin-bottom: 20px;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        th {
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 14px;
+        }
+
+        tbody tr:hover {
+            background: #f3f4f6;
+        }
+
+        tbody tr.hidden {
+            display: none;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-badge.passed {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-badge.failed {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .score-bar {
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            overflow: hidden;
+            width: 100px;
+        }
+
+        .score-bar-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.3s;
+        }
+
+        .score-bar-fill.excellent { background: #10b981; }
+        .score-bar-fill.good { background: #3b82f6; }
+        .score-bar-fill.partial { background: #f59e0b; }
+        .score-bar-fill.poor { background: #ef4444; }
+
+        .quality-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .dot.excellent { background: #10b981; }
+        .dot.good { background: #3b82f6; }
+        .dot.partial { background: #f59e0b; }
+        .dot.poor { background: #ef4444; }
+
+        @media (max-width: 768px) {
+            .summary-cards {
+                grid-template-columns: 1fr;
+            }
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+            .filters {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>RAG Quality Test Report</h1>
+            <p>Session: rag_quality_eval_20250125 | Generated: 2026-01-25 16:56:25</p>
+        </div>
+
+        <div class="summary-cards">
+            <div class="card">
+                <div class="label">Total Tests</div>
+                <div class="value info" id="total-tests">-</div>
+            </div>
+            <div class="card">
+                <div class="label">Pass Rate</div>
+                <div class="value success" id="pass-rate">-</div>
+            </div>
+            <div class="card">
+                <div class="label">Avg Quality Score</div>
+                <div class="value" id="avg-quality">-</div>
+            </div>
+            <div class="card">
+                <div class="label">Avg Confidence</div>
+                <div class="value info" id="avg-confidence">-</div>
+            </div>
+            <div class="card">
+                <div class="label">Avg Execution Time</div>
+                <div class="value" id="avg-time">-</div>
+            </div>
+        </div>
+
+        <div class="filters">
+            <div class="filter-group">
+                <label for="status-filter">Status:</label>
+                <select id="status-filter">
+                    <option value="all">All</option>
+                    <option value="passed">Passed</option>
+                    <option value="failed">Failed</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="sort-by">Sort by:</label>
+                <select id="sort-by">
+                    <option value="index">Default</option>
+                    <option value="score-desc">Score (High to Low)</option>
+                    <option value="score-asc">Score (Low to High)</option>
+                    <option value="time-desc">Time (Slow to Fast)</option>
+                    <option value="time-asc">Time (Fast to Slow)</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="search-input">Search:</label>
+                <input type="text" id="search-input" placeholder="Search queries..."
+                       style="padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px;">
+            </div>
+        </div>
+
+        <div class="charts-section">
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <h3>Overall Quality Gauge</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="quality-gauge"></canvas>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <h3>Quality Dimensions (Radar)</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="dimensions-radar"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <h3>Persona Performance</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="persona-bar"></canvas>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <h3>Test Timeline</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="timeline-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="results-table">
+            <h2>Detailed Test Results</h2>
+            <div class="table-container">
+                <table id="results-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Status</th>
+                            <th>Query</th>
+                            <th>Quality Score</th>
+                            <th>Confidence</th>
+                            <th>Time (ms)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="results-tbody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data from Python
+        const stats = {"total_tests": 30, "passed_tests": 0, "failed_tests": 30, "pass_rate": 0.0, "avg_quality": 0, "avg_confidence": 0.0, "avg_time": 569358.8333333334, "min_time": 456288, "max_time": 586562, "dimension_avgs": {}, "score_ranges": {"Excellent (4.5-5.0)": 0, "Good (4.0-4.4)": 0, "Partial (3.0-3.9)": 0, "Poor (<3.0)": 0}};
+        const chartData = {"dimensions": {}, "personas": {"freshman": {"pass_rate": 0.0, "avg_score": 0}, "junior": {"pass_rate": 0.0, "avg_score": 0}, "graduate": {"pass_rate": 0.0, "avg_score": 0}, "new": {"pass_rate": 0.0, "avg_score": 0}, "professor": {"pass_rate": 0.0, "avg_score": 0}, "staff": {"pass_rate": 0.0, "avg_score": 0}, "parent": {"pass_rate": 0.0, "avg_score": 0}, "distressed": {"pass_rate": 0.0, "avg_score": 0}, "dissatisfied": {"pass_rate": 0.0, "avg_score": 0}}, "query_types": {"general": {"passed": 0, "failed": 30}}, "timeline": [{"index": 1, "score": 0, "confidence": 0.0, "time_ms": 581439, "passed": false}, {"index": 2, "score": 0, "confidence": 0.0, "time_ms": 576924, "passed": false}, {"index": 3, "score": 0, "confidence": 0.0, "time_ms": 576684, "passed": false}, {"index": 4, "score": 0, "confidence": 0.0, "time_ms": 579605, "passed": false}, {"index": 5, "score": 0, "confidence": 0.0, "time_ms": 457182, "passed": false}, {"index": 6, "score": 0, "confidence": 0.0, "time_ms": 571106, "passed": false}, {"index": 7, "score": 0, "confidence": 0.0, "time_ms": 585165, "passed": false}, {"index": 8, "score": 0, "confidence": 0.0, "time_ms": 574507, "passed": false}, {"index": 9, "score": 0, "confidence": 0.0, "time_ms": 573997, "passed": false}, {"index": 10, "score": 0, "confidence": 0.0, "time_ms": 570081, "passed": false}, {"index": 11, "score": 0, "confidence": 0.0, "time_ms": 564971, "passed": false}, {"index": 12, "score": 0, "confidence": 0.0, "time_ms": 456288, "passed": false}, {"index": 13, "score": 0, "confidence": 0.0, "time_ms": 574385, "passed": false}, {"index": 14, "score": 0, "confidence": 0.0, "time_ms": 582685, "passed": false}, {"index": 15, "score": 0, "confidence": 0.0, "time_ms": 585440, "passed": false}, {"index": 16, "score": 0, "confidence": 0.0, "time_ms": 584207, "passed": false}, {"index": 17, "score": 0, "confidence": 0.0, "time_ms": 567491, "passed": false}, {"index": 18, "score": 0, "confidence": 0.0, "time_ms": 566444, "passed": false}, {"index": 19, "score": 0, "confidence": 0.0, "time_ms": 579972, "passed": false}, {"index": 20, "score": 0, "confidence": 0.0, "time_ms": 579066, "passed": false}, {"index": 21, "score": 0, "confidence": 0.0, "time_ms": 585394, "passed": false}, {"index": 22, "score": 0, "confidence": 0.0, "time_ms": 579903, "passed": false}, {"index": 23, "score": 0, "confidence": 0.0, "time_ms": 575424, "passed": false}, {"index": 24, "score": 0, "confidence": 0.0, "time_ms": 573737, "passed": false}, {"index": 25, "score": 0, "confidence": 0.0, "time_ms": 576907, "passed": false}, {"index": 26, "score": 0, "confidence": 0.0, "time_ms": 568555, "passed": false}, {"index": 27, "score": 0, "confidence": 0.0, "time_ms": 586562, "passed": false}, {"index": 28, "score": 0, "confidence": 0.0, "time_ms": 585190, "passed": false}, {"index": 29, "score": 0, "confidence": 0.0, "time_ms": 582848, "passed": false}, {"index": 30, "score": 0, "confidence": 0.0, "time_ms": 578606, "passed": false}]};
+        const testResults = [{"id": "freshman_medium_000", "query": "장학금 신청 자격이 뭐야?", "answer": "", "confidence": 0.0, "time_ms": 581439, "passed": false, "quality_score": 0, "dimensions": null, "sources": []}, {"id": "freshman_hard_001", "query": "휴학 신청은 어떻게 하나요?", "answer": "", "confidence": 0.0, "time_ms": 576924, "passed": false, "quality_score": 0, "dimensions": null, "sources": []}, {"id": "freshman_hard_002", "query": "학생회비 내는 방법 알려주세요", "answer": "", "confidence": 0.0, "time_ms": 576684, "passed": false, "quality_score": 0, "dimensions": null, "sources": []}, {"id": "junior_medium_003", "query": "졸업 요건이 어떻게 되나요?", "answer": "", "confidence": 0.0, "time_ms": 579605, "passed": false, "quality_score": 0, "dimensions": null, "sources": []}, {"id": "junior_hard_004", "query": "교환 학생 갈 수 있는 조건이 뭐야?", "answer": "", "confidence": 0.0, "time_ms": 457182, "passed": false, "quality_score": 0, "dimensions": null, "sources": []}, {"id": "junior_hard_005", "query": "교환 학생 갈 수 있는 조건이 뭐야?", "answer": "", "confidence": 0.0, "time_ms": 571106, "passed": false, "quality_score": 0, "dimensions": null, "sources": []}, {"id": "graduate_medium_006", "query": "조교 급여 지급 일정 알려줘", "answer": "", "confidence": 0.0, "time_ms": 585165, "passed": false, "quality_score": 0, "dimensions": null, "sources": []}, {"id": "graduate_hard_007", "query": "논문 심사 규정 알려주세요", "answer": "", "confidence": 0.0, "time_ms": 574507, "passed": false, "quality_score": 0, "dimensions": null, "sources": []}, {"id": "graduate_hard_008", "query": "논문 심사 규정 알려주세요", "answer": "", "confidence": 0.0, "time_ms": 573997, "passed": false, "quality_score": 0, "dimensions": null, "sources": []}, {"id": "new_professor_medium_009", "query": "지도 학생 수 제한이 있나요?", "answer": "", "confidence": 0.0, "time_ms": 570081, "passed": false, "quality_score": 0, "dimensions": null, "sources": []}, {"id": "new_professor_hard_010", "query": "연구년 휴직 신청하는 방법 알려주세요", "answer": "", "confidence": 0.0, "time_ms": 564971, "passed": false, "quality_score": 0, "dimensions": null, "sources": []}, {"id": "new_professor_hard_011", "query": "교원 평가 기준이 어떻게 되나요?", "answer": "", "confidence": 0.0, "time_ms": 456288, "passed": false, "quality_score": 0, "dimensions": null, "sources": []}, {"id": "professor_medium_012", "query": "조교 급여 지급 일정 알려줘", "answer": "", "confidence": 0.0, "time_ms": 574385, "passed": false, "quality_score": 0, "dimensions": null, "sources": []}, {"id": "professor_hard_013", "query": "학위 과정 수료 기준이 어떻게 돼?", "answer": "", "confidence": 0.0, "time_ms": 582685, "passed": false, "quality_score": 0, "dimensions": null, "sources": []}, {"id": "professor_hard_014", "query": "학위 과정 수료 기준이 어떻게 돼?", "answer": "", "confidence": 0.0, "time_ms": 585440, "passed": false, "quality_score": 0, "dimensions": null, "sources": []}, {"id": "new_staff_medium_015", "query": "야간 근무 수당 지급 기준 알려줘", "answer": "", "confidence": 0.0, "time_ms": 584207, "passed": false, "quality_score": 0, "dimensions": null, "sources": []}, {"id": "new_staff_hard_016", "query": "연차 사용하는 방법 알려주세요", "answer": "", "confidence": 0.0, "time_ms": 567491, "passed": false, "quality_score": 0, "dimensions": null, "sources": []}, {"id": "new_staff_hard_017", "query": "연차 사용하는 방법 알려주세요", "answer": "", "confidence": 0.0, "time_ms": 566444, "passed": false, "quality_score": 0, "dimensions": null, "sources": []}, {"id": "staff_manager_medium_018", "query": "검토 기한이 며칠이야?", "answer": "", "confidence": 0.0, "time_ms": 579972, "passed": false, "quality_score": 0, "dimensions": null, "sources": []}, {"id": "staff_manager_hard_019", "query": "인사 발령 기준 알려주세요", "answer": "", "confidence": 0.0, "time_ms": 579066, "passed": false, "quality_score": 0, "dimensions": null, "sources": []}, {"id": "staff_manager_hard_020", "query": "인사 발령 기준 알려주세요", "answer": "", "confidence": 0.0, "time_ms": 585394, "passed": false, "quality_score": 0, "dimensions": null, "sources": []}, {"id": "parent_medium_021", "query": "자녀 휴학하면 등록금 환급받을 수 있나요?", "answer": "", "confidence": 0.0, "time_ms": 579903, "passed": false, "quality_score": 0, "dimensions": null, "sources": ["3-2-23 - 휴학규정"]}, {"id": "parent_hard_022", "query": "자녀가 졸업하려면 어떤 조건이 필요한가요?", "answer": "", "confidence": 0.0, "time_ms": 575424, "passed": false, "quality_score": 0, "dimensions": null, "sources": []}, {"id": "parent_hard_023", "query": "자녀가 졸업하려면 어떤 조건이 필요한가요?", "answer": "", "confidence": 0.0, "time_ms": 573737, "passed": false, "quality_score": 0, "dimensions": null, "sources": []}, {"id": "distressed_student_medium_024", "query": "간호학과 전공 바꾸고 싶어요", "answer": "관련 규정을 찾을 수 없습니다. 다른 검색어로 시도해주세요.", "confidence": 0.0, "time_ms": 576907, "passed": false, "quality_score": 0, "dimensions": null, "sources": []}, {"id": "distressed_student_hard_025", "query": "성적이 너무 안 좋아서 장학금 받을 수 있나요?", "answer": "", "confidence": 0.0, "time_ms": 568555, "passed": false, "quality_score": 0, "dimensions": null, "sources": []}, {"id": "distressed_student_hard_026", "query": "성적이 너무 안 좋아서 장학금 받을 수 있나요?", "answer": "", "confidence": 0.0, "time_ms": 586562, "passed": false, "quality_score": 0, "dimensions": null, "sources": []}, {"id": "dissatisfied_member_medium_027", "query": "규정이 자꾸 바뀌는 이유가 뭐야요?", "answer": "", "confidence": 0.0, "time_ms": 585190, "passed": false, "quality_score": 0, "dimensions": null, "sources": []}, {"id": "dissatisfied_member_hard_028", "query": "교수님이 성적을 공정하게 매기지 않았어요", "answer": "", "confidence": 0.0, "time_ms": 582848, "passed": false, "quality_score": 0, "dimensions": null, "sources": []}, {"id": "dissatisfied_member_hard_029", "query": "교수님이 성적을 공정하게 매기지 않았어요", "answer": "", "confidence": 0.0, "time_ms": 578606, "passed": false, "quality_score": 0, "dimensions": null, "sources": []}];
+
+        // Update summary cards
+        document.getElementById('total-tests').textContent = stats.total_tests;
+        document.getElementById('pass-rate').textContent = stats.pass_rate.toFixed(1) + '%';
+        document.getElementById('avg-quality').textContent = stats.avg_quality.toFixed(2) + '/5.0';
+        document.getElementById('avg-confidence').textContent = (stats.avg_confidence * 100).toFixed(1) + '%';
+        document.getElementById('avg-time').textContent = stats.avg_time.toFixed(0) + 'ms';
+
+        // Set color based on quality score
+        const qualityEl = document.getElementById('avg-quality');
+        if (stats.avg_quality >= 4.5) qualityEl.classList.add('success');
+        else if (stats.avg_quality >= 4.0) qualityEl.classList.add('info');
+        else if (stats.avg_quality >= 3.0) qualityEl.classList.add('warning');
+        else qualityEl.classList.add('danger');
+
+        // Chart.js defaults
+        Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        Chart.defaults.color = '#6b7280';
+
+        // 1. Quality Gauge Chart (Doughnut)
+        const qualityCtx = document.getElementById('quality-gauge').getContext('2d');
+        const qualityScore = stats.avg_quality;
+        const qualityColor = qualityScore >= 4.5 ? '#10b981' : qualityScore >= 4.0 ? '#3b82f6' : qualityScore >= 3.0 ? '#f59e0b' : '#ef4444';
+
+        new Chart(qualityCtx, {{
+            type: 'doughnut',
+            data: {{
+                datasets: [{{
+                    data: [qualityScore, 5 - qualityScore],
+                    backgroundColor: [qualityColor, '#e5e7eb'],
+                    borderWidth: 0,
+                }}]
+            }},
+            options: {{
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '70%',
+                plugins: {{
+                    legend: {{ display: false }},
+                    tooltip: {{ enabled: false }},
+                    title: {{
+                        display: true,
+                        text: qualityScore.toFixed(2) + '/5.0',
+                        position: 'bottom',
+                        font: {{ size: 24, weight: 'bold' }},
+                        color: qualityColor,
+                        padding: 20
+                    }}
+                }}
+            }}
+        }});
+
+        // 2. Dimensions Radar Chart
+        const radarCtx = document.getElementById('dimensions-radar').getContext('2d');
+        const dimensions = chartData.dimensions || {{}};
+        const dimensionLabels = Object.keys(dimensions).map(d => d.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()));
+        const dimensionValues = Object.values(dimensions).map(v => (v * 100).toFixed(1));
+
+        new Chart(radarCtx, {{
+            type: 'radar',
+            data: {{
+                labels: dimensionLabels,
+                datasets: [{{
+                    label: 'Score %',
+                    data: dimensionValues,
+                    backgroundColor: 'rgba(102, 126, 234, 0.2)',
+                    borderColor: 'rgba(102, 126, 234, 1)',
+                    borderWidth: 2,
+                    pointBackgroundColor: 'rgba(118, 75, 162, 1)',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: 'rgba(118, 75, 162, 1)',
+                }}]
+            }},
+            options: {{
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {{
+                    r: {{
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {{
+                            stepSize: 20,
+                            backdropColor: 'transparent'
+                        }},
+                        grid: {{ color: '#e5e7eb' }},
+                        angleLines: {{ color: '#e5e7eb' }}
+                    }}
+                }},
+                plugins: {{
+                    legend: {{ display: false }}
+                }}
+            }}
+        }});
+
+        // 3. Persona Performance Bar Chart
+        const personaCtx = document.getElementById('persona-bar').getContext('2d');
+        const personas = chartData.personas || {{}};
+        const personaLabels = Object.keys(personas);
+        const personaPassRates = Object.values(personas).map(p => p.pass_rate);
+        const personaColors = personaPassRates.map(r => r >= 80 ? '#10b981' : r >= 60 ? '#f59e0b' : '#ef4444');
+
+        new Chart(personaCtx, {{
+            type: 'bar',
+            data: {{
+                labels: personaLabels,
+                datasets: [{{
+                    label: 'Pass Rate %',
+                    data: personaPassRates,
+                    backgroundColor: personaColors,
+                    borderRadius: 6,
+                }}]
+            }},
+            options: {{
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: 'y',
+                scales: {{
+                    x: {{
+                        beginAtZero: true,
+                        max: 100,
+                        grid: {{ color: '#e5e7eb' }}
+                    }},
+                    y: {{
+                        grid: {{ display: false }}
+                    }}
+                }},
+                plugins: {{
+                    legend: {{ display: false }},
+                    tooltip: {{
+                        callbacks: {{
+                            label: (context) => context.parsed.x.toFixed(1) + '%'
+                        }}
+                    }}
+                }}
+            }}
+        }});
+
+        // 4. Timeline Chart
+        const timelineCtx = document.getElementById('timeline-chart').getContext('2d');
+        const timelineData = chartData.timeline || [];
+        const timelineLabels = timelineData.map(d => d.index);
+        const timelineScores = timelineData.map(d => d.score);
+
+        new Chart(timelineCtx, {{
+            type: 'line',
+            data: {{
+                labels: timelineLabels,
+                datasets: [{{
+                    label: 'Quality Score',
+                    data: timelineScores,
+                    borderColor: 'rgba(102, 126, 234, 1)',
+                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                }}]
+            }},
+            options: {{
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {{
+                    y: {{
+                        beginAtZero: true,
+                        max: 5,
+                        grid: {{ color: '#e5e7eb' }}
+                    }},
+                    x: {{
+                        grid: {{ display: false }},
+                        title: {{
+                            display: true,
+                            text: 'Test Number'
+                        }}
+                    }}
+                }},
+                plugins: {{
+                    legend: {{ display: false }}
+                }}
+            }}
+        }});
+
+        // Populate results table
+        function renderResults(results) {{
+            const tbody = document.getElementById('results-tbody');
+            tbody.innerHTML = '';
+
+            results.forEach((result, index) => {{
+                const scoreClass = result.quality_score >= 4.5 ? 'excellent' : result.quality_score >= 4.0 ? 'good' : result.quality_score >= 3.0 ? 'partial' : 'poor';
+                const scorePercent = (result.quality_score / 5) * 100;
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${{index + 1}}</td>
+                    <td>
+                        <span class="status-badge ${{result.passed ? 'passed' : 'failed'}}">
+                            ${{result.passed ? 'PASS' : 'FAIL'}}
+                        </span>
+                    </td>
+                    <td>
+                        <div style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${{result.query}}">
+                            ${{result.query}}
+                        </div>
+                    </td>
+                    <td>
+                        <div class="quality-indicator">
+                            <div class="dot ${{scoreClass}}"></div>
+                            <span>${{result.quality_score.toFixed(1)}}</span>
+                            <div class="score-bar">
+                                <div class="score-bar-fill ${{scoreClass}}" style="width: ${{scorePercent}}%"></div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>${{(result.confidence * 100).toFixed(1)}}%</td>
+                    <td>${{result.time_ms}}</td>
+                `;
+                tbody.appendChild(row);
+            }});
+        }}
+
+        // Initial render
+        renderResults(testResults);
+
+        // Filter functionality
+        const statusFilter = document.getElementById('status-filter');
+        const sortBy = document.getElementById('sort-by');
+        const searchInput = document.getElementById('search-input');
+
+        function applyFilters() {{
+            let filtered = [...testResults];
+
+            // Status filter
+            if (statusFilter.value !== 'all') {{
+                filtered = filtered.filter(r => r.passed === (statusFilter.value === 'passed'));
+            }}
+
+            // Search filter
+            if (searchInput.value) {{
+                const search = searchInput.value.toLowerCase();
+                filtered = filtered.filter(r => r.query.toLowerCase().includes(search));
+            }}
+
+            // Sort
+            switch (sortBy.value) {{
+                case 'score-desc':
+                    filtered.sort((a, b) => b.quality_score - a.quality_score);
+                    break;
+                case 'score-asc':
+                    filtered.sort((a, b) => a.quality_score - b.quality_score);
+                    break;
+                case 'time-desc':
+                    filtered.sort((a, b) => b.time_ms - a.time_ms);
+                    break;
+                case 'time-asc':
+                    filtered.sort((a, b) => a.time_ms - b.time_ms);
+                    break;
+            }}
+
+            renderResults(filtered);
+        }}
+
+        statusFilter.addEventListener('change', applyFilters);
+        sortBy.addEventListener('change', applyFilters);
+        searchInput.addEventListener('input', applyFilters);
+    </script>
+</body>
+</html>

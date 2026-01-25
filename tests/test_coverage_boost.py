@@ -87,7 +87,9 @@ class TestConverterMonitoringThread(unittest.TestCase):
             ):
                 with patch.object(Path, "rglob", mock_tmp_path.rglob):
                     with patch("builtins.open", create=True) as mock_open:
-                        mock_open.return_value.__enter__.return_value.read.return_value = "<html><body>Test</body></html>"
+                        mock_file = MagicMock()
+                        mock_file.read.return_value = "<html><body>Test</body></html>"
+                        mock_open.return_value.__enter__.return_value = mock_file
 
                         status_updates = []
                         reader = HwpToMarkdownReader()
@@ -143,9 +145,9 @@ class TestConverterTableConversion(unittest.TestCase):
                 "pathlib.Path.glob", return_value=[Path("/tmp/dir/index.xhtml")]
             ):
                 with patch("builtins.open", create=True) as mock_open:
-                    mock_open.return_value.__enter__.return_value.read.return_value = (
-                        html_with_table
-                    )
+                    mock_file = MagicMock()
+                    mock_file.read.return_value = html_with_table
+                    mock_open.return_value.__enter__.return_value = mock_file
 
                     with patch("src.converter.md") as mock_md:
                         mock_md.return_value = "Markdown content"
@@ -181,9 +183,9 @@ class TestConverterTableConversion(unittest.TestCase):
                 "pathlib.Path.glob", return_value=[Path("/tmp/dir/index.xhtml")]
             ):
                 with patch("builtins.open", create=True) as mock_open:
-                    mock_open.return_value.__enter__.return_value.read.return_value = (
-                        html_content
-                    )
+                    mock_file = MagicMock()
+                    mock_file.read.return_value = html_content
+                    mock_open.return_value.__enter__.return_value = mock_file
 
                     with patch("src.converter.md") as mock_md:
                         mock_md.return_value = "Test content"
@@ -232,9 +234,9 @@ class TestConverterHTMLPathFallback(unittest.TestCase):
         with patch("pathlib.Path.exists", side_effect=exists_side_effect):
             with patch("pathlib.Path.glob", return_value=[Path("/tmp/dir/index.html")]):
                 with patch("builtins.open", create=True) as mock_open:
-                    mock_open.return_value.__enter__.return_value.read.return_value = (
-                        "<html><body>Test</body></html>"
-                    )
+                    mock_file = MagicMock()
+                    mock_file.read.return_value = "<html><body>Test</body></html>"
+                    mock_open.return_value.__enter__.return_value = mock_file
 
                     reader = HwpToMarkdownReader()
                     try:
@@ -263,9 +265,9 @@ class TestConverterHTMLPathFallback(unittest.TestCase):
                     [Path("/tmp/dir/output.xhtml")],  # Second glob for .xhtml
                 ]
                 with patch("builtins.open", create=True) as mock_open:
-                    mock_open.return_value.__enter__.return_value.read.return_value = (
-                        "<html><body>Test</body></html>"
-                    )
+                    mock_file = MagicMock()
+                    mock_file.read.return_value = "<html><body>Test</body></html>"
+                    mock_open.return_value.__enter__.return_value = mock_file
 
                     reader = HwpToMarkdownReader()
                     try:
@@ -297,9 +299,9 @@ class TestConverterVerboseLogging(unittest.TestCase):
                 "pathlib.Path.glob", return_value=[Path("/tmp/dir/index.xhtml")]
             ):
                 with patch("builtins.open", create=True) as mock_open:
-                    mock_open.return_value.__enter__.return_value.read.return_value = (
-                        "<html><body>Test</body></html>"
-                    )
+                    mock_file = MagicMock()
+                    mock_file.read.return_value = "<html><body>Test</body></html>"
+                    mock_open.return_value.__enter__.return_value = mock_file
 
                     reader = HwpToMarkdownReader()
                     try:
@@ -341,9 +343,9 @@ class TestConverterLineFiltering(unittest.TestCase):
                 "pathlib.Path.glob", return_value=[Path("/tmp/dir/index.xhtml")]
             ):
                 with patch("builtins.open", create=True) as mock_open:
-                    mock_open.return_value.__enter__.return_value.read.return_value = (
-                        "<html><body>Test</body></html>"
-                    )
+                    mock_file = MagicMock()
+                    mock_file.read.return_value = "<html><body>Test</body></html>"
+                    mock_open.return_value.__enter__.return_value = mock_file
 
                     reader = HwpToMarkdownReader()
                     try:

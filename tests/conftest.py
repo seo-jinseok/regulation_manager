@@ -182,6 +182,66 @@ def pytest_sessionfinish(session, exitstatus):
             file=sys.stderr,
         )
 
+    # Memory usage report
+    try:
+        import psutil
+
+        process = psutil.Process()
+        mem_info = process.memory_info()
+        print(
+            f"\nMemory usage: {mem_info.rss / (1024**3):.2f}GB RSS, "
+            f"{mem_info.vms / (1024**3):.2f}GB VMS",
+            file=sys.stderr,
+        )
+
+        # Warn if memory usage is excessive (>8GB)
+        if mem_info.rss > 8 * 1024**3:
+            print(
+                "WARNING: High memory usage detected! Consider running tests in smaller batches.",
+                file=sys.stderr,
+            )
+    except Exception:
+        pass
+
+
+def pytest_runtest_teardown(item, nextitem):
+    """
+    Hook called after each test execution.
+
+    Performs per-test memory monitoring and cleanup.
+    """
+    # Force garbage collection after each test
+    gc.collect()
+
+    # Check memory usage every 10 tests
+    if hasattr(item, "execution_count"):
+        item.execution_count += 1
+    else:
+        item.execution_count = 1
+
+    if item.execution_count % 10 == 0:
+        try:
+            import psutil
+
+            process = psutil.Process()
+            mem_gb = process.memory_info().rss / (1024**3)
+
+            # Warn if memory usage exceeds 4GB
+            if mem_gb > 4:
+                print(
+                    f"\n[WARNING] High memory usage after {item.execution_count} tests: {mem_gb:.2f}GB",
+                    file=sys.stderr,
+                )
+
+            # Abort if memory usage exceeds 12GB to prevent system freeze
+            if mem_gb > 12:
+                pytest.fail(
+                    f"Memory usage exceeded safety limit ({mem_gb:.2f}GB > 12GB). "
+                    "Run tests in smaller batches using specific test paths."
+                )
+        except Exception:
+            pass
+
 
 # =============================================================================
 # Coverage exclusion hooks (when not using --no-cov)

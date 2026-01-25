@@ -1760,7 +1760,8 @@ class SearchUseCase:
         # Filter out low-signal headings when possible
         filtered_results = self._select_answer_sources(results, top_k)
         if not filtered_results:
-            filtered_results = results[:top_k]
+            # Normalize results before using as fallback to handle cached dicts
+            filtered_results = self._normalize_search_results(results[:top_k])
 
         # Build context from search results
         context = self._build_context(filtered_results)
@@ -1965,7 +1966,8 @@ class SearchUseCase:
         # Filter out low-signal headings
         filtered_results = self._select_answer_sources(results, top_k)
         if not filtered_results:
-            filtered_results = results[:top_k]
+            # Normalize results before using as fallback to handle cached dicts
+            filtered_results = self._normalize_search_results(results[:top_k])
 
         # Build context
         context = self._build_context(filtered_results)
@@ -2011,11 +2013,97 @@ class SearchUseCase:
 
 위 규정 내용을 바탕으로 질문에 답변해주세요."""
 
+    def _normalize_search_results(
+        self, results: List["SearchResult"]
+    ) -> List["SearchResult"]:
+        """
+        Normalize search results by converting dicts to SearchResult objects.
+
+        This handles cases where cached data was serialized/deserialized.
+        """
+        normalized = []
+        for r in results:
+            if isinstance(r, dict):
+                # Convert dict representation to SearchResult
+                try:
+                    from ..domain.entities import Chunk as ChunkEntity
+                    from ..domain.entities import ChunkLevel
+
+                    chunk_data = r.get("chunk")
+                    score = r.get("score", 0.0)
+                    rank = r.get("rank", 0)
+
+                    # Skip if chunk data is missing
+                    if chunk_data is None:
+                        logger.warning(
+                            "Skipping SearchResult with None chunk during normalization"
+                        )
+                        continue
+
+                    # Handle chunk as dict or Chunk object
+                    if isinstance(chunk_data, dict):
+                        # Convert string level to ChunkLevel enum
+                        level_value = chunk_data.get("level", "text")
+                        if isinstance(level_value, str):
+                            level = ChunkLevel.from_string(level_value)
+                        else:
+                            level = level_value
+
+                        # Convert string status to RegulationStatus enum
+                        status_value = chunk_data.get("status", "active")
+                        if isinstance(status_value, str):
+                            from ..domain.entities import RegulationStatus
+
+                            try:
+                                status = RegulationStatus(status_value)
+                            except ValueError:
+                                status = RegulationStatus.ACTIVE
+                        else:
+                            status = status_value
+
+                        chunk = ChunkEntity(
+                            id=chunk_data.get("id", ""),
+                            rule_code=chunk_data.get("rule_code", ""),
+                            level=level,
+                            title=chunk_data.get("title", ""),
+                            text=chunk_data.get("text", ""),
+                            embedding_text=chunk_data.get("embedding_text", ""),
+                            full_text=chunk_data.get("full_text", ""),
+                            parent_path=chunk_data.get("parent_path", []),
+                            token_count=chunk_data.get("token_count", 0),
+                            keywords=chunk_data.get("keywords", []),
+                            is_searchable=chunk_data.get("is_searchable", True),
+                            effective_date=chunk_data.get("effective_date"),
+                            status=status,
+                        )
+                    else:
+                        # chunk is already a Chunk object
+                        chunk = chunk_data
+
+                    normalized.append(SearchResult(chunk=chunk, score=score, rank=rank))
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to convert dict to SearchResult during normalization: {e}"
+                    )
+                    continue
+            else:
+                # Already a SearchResult object
+                normalized.append(r)
+
+        return normalized
+
     def _build_context(self, results: List[SearchResult]) -> str:
         """Build context string from search results."""
         context_parts = []
 
         for i, result in enumerate(results, 1):
+            # Defensive check for None chunk
+            if result.chunk is None:
+                logger.warning(
+                    f"Skipping result at position {i} with None chunk in _build_context"
+                )
+                continue
+
             chunk = result.chunk
             path_str = " > ".join(chunk.parent_path) if chunk.parent_path else ""
 
@@ -2036,7 +2124,81 @@ class SearchUseCase:
         selected: List[SearchResult] = []
         seen_ids = set()
 
-        for result in results:
+        # Defensive type checking: Convert dict to SearchResult if necessary
+        # This handles cases where cached data was serialized/deserialized
+        processed_results = []
+        for r in results:
+            if isinstance(r, dict):
+                # Convert dict representation to SearchResult
+                try:
+                    from ..domain.entities import Chunk as ChunkEntity
+                    from ..domain.entities import ChunkLevel
+
+                    chunk_data = r.get("chunk")
+                    score = r.get("score", 0.0)
+                    rank = r.get("rank", 0)
+
+                    # Skip if chunk data is missing
+                    if chunk_data is None:
+                        logger.warning("Skipping SearchResult with None chunk")
+                        continue
+
+                    # Handle chunk as dict or Chunk object
+                    if isinstance(chunk_data, dict):
+                        # Convert string level to ChunkLevel enum
+                        level_value = chunk_data.get("level", "text")
+                        if isinstance(level_value, str):
+                            level = ChunkLevel.from_string(level_value)
+                        else:
+                            level = level_value
+
+                        # Convert string status to RegulationStatus enum
+                        status_value = chunk_data.get("status", "active")
+                        if isinstance(status_value, str):
+                            from ..domain.entities import RegulationStatus
+
+                            try:
+                                status = RegulationStatus(status_value)
+                            except ValueError:
+                                status = RegulationStatus.ACTIVE
+                        else:
+                            status = status_value
+
+                        chunk = ChunkEntity(
+                            id=chunk_data.get("id", ""),
+                            rule_code=chunk_data.get("rule_code", ""),
+                            level=level,
+                            title=chunk_data.get("title", ""),
+                            text=chunk_data.get("text", ""),
+                            embedding_text=chunk_data.get("embedding_text", ""),
+                            full_text=chunk_data.get("full_text", ""),
+                            parent_path=chunk_data.get("parent_path", []),
+                            token_count=chunk_data.get("token_count", 0),
+                            keywords=chunk_data.get("keywords", []),
+                            is_searchable=chunk_data.get("is_searchable", True),
+                            effective_date=chunk_data.get("effective_date"),
+                            status=status,
+                        )
+                    else:
+                        # chunk is already a Chunk object
+                        chunk = chunk_data
+
+                    processed_results.append(
+                        SearchResult(chunk=chunk, score=score, rank=rank)
+                    )
+                except Exception as e:
+                    logger.warning(f"Failed to convert dict to SearchResult: {e}")
+                    continue
+            else:
+                # Already a SearchResult object
+                processed_results.append(r)
+
+        for result in processed_results:
+            # Skip if chunk is None (defensive check)
+            if result.chunk is None:
+                logger.warning("Skipping SearchResult with None chunk")
+                continue
+
             if result.chunk.id in seen_ids:
                 continue
 
@@ -2049,9 +2211,14 @@ class SearchUseCase:
                 break
 
         if len(selected) < top_k:
-            for result in results:
+            for result in processed_results:
+                # Skip if chunk is None (defensive check)
+                if result.chunk is None:
+                    continue
+
                 if result.chunk.id in seen_ids:
                     continue
+
                 selected.append(result)
                 seen_ids.add(result.chunk.id)
                 if len(selected) >= top_k:
@@ -2161,7 +2328,38 @@ class SearchUseCase:
                 logger.debug(
                     f"Cache HIT: Retrieved {len(results)} results for '{query[:30]}...'"
                 )
-                return results
+                # Deserialize cached dicts back to SearchResult objects
+                from ..domain.entities import Chunk, ChunkLevel, SearchResult
+
+                deserialized = []
+                for r in results:
+                    if isinstance(r, dict):
+                        # Reconstruct Chunk from cached dict
+                        chunk = Chunk(
+                            id=r.get("chunk_id", ""),
+                            rule_code=r.get("rule_code", ""),
+                            level=ChunkLevel.from_string(r.get("level", "text")),
+                            title=r.get("title", ""),
+                            text=r.get("text", ""),
+                            embedding_text="",
+                            full_text=r.get("text", ""),
+                            parent_path=[],
+                            token_count=0,
+                            keywords=[],
+                            is_searchable=True,
+                        )
+                        # Reconstruct SearchResult
+                        deserialized.append(
+                            SearchResult(
+                                chunk=chunk,
+                                score=r.get("score", 0.0),
+                                rank=r.get("rank", 0),
+                            )
+                        )
+                    else:
+                        # Already a SearchResult object
+                        deserialized.append(r)
+                return deserialized
         return None
 
     def _store_retrieval_cache(
