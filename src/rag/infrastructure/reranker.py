@@ -6,9 +6,16 @@ Uses BAAI/bge-reranker-v2-m3 for multilingual support (including Korean).
 """
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, List, Optional, Tuple
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 from ..domain.repositories import IReranker
+
+# Import extended functionality for Korean models and A/B testing
+try:
+    from . import reranker_extended as _extended
+    _EXTENDED_AVAILABLE = True
+except ImportError:
+    _EXTENDED_AVAILABLE = False
 
 if TYPE_CHECKING:
     from ..domain.entities import SearchResult
@@ -297,3 +304,83 @@ class BGEReranker(IReranker):
         return [
             (r.doc_id, r.content, r.score, r.metadata) for r in boosted_results[:top_k]
         ]
+
+class KoreanReranker(IReranker):
+    """
+    Korean-specific reranker with automatic model selection (Cycle 5).
+    
+    Supports:
+    - Korean-specific models (Dongjin-kr/kr-reranker, NLPai/ko-reranker)
+    - A/B testing framework
+    - Automatic fallback to multilingual model
+    
+    This is a convenience wrapper around the extended reranker functionality.
+    """
+    
+    def __init__(
+        self,
+        model_name: Optional[str] = None,
+        use_ab_testing: bool = True,
+    ):
+        """
+        Initialize Korean reranker.
+        
+        Args:
+            model_name: Specific model to use (None for auto-selection).
+            use_ab_testing: Whether to use A/B testing framework.
+        """
+        if _EXTENDED_AVAILABLE:
+            self._impl = _extended.KoreanReranker(model_name, use_ab_testing)
+        else:
+            # Fallback to BGE reranker if extended module not available
+            logger.warning("Extended reranker not available, using BGEReranker")
+            self._impl = BGEReranker(model_name)
+        self._model_name = model_name
+    
+    def rerank(
+        self,
+        query: str,
+        documents: List[Tuple[str, str, dict]],
+        top_k: int = 10,
+    ) -> List[tuple]:
+        """Rerank Korean documents."""
+        return self._impl.rerank(query, documents, top_k)
+    
+    def rerank_with_context(
+        self,
+        query: str,
+        documents: List[Tuple[str, str, dict]],
+        context: Optional[dict] = None,
+        top_k: int = 10,
+    ) -> List[tuple]:
+        """Rerank with metadata context boosting."""
+        if hasattr(self._impl, 'rerank_with_context'):
+            return self._impl.rerank_with_context(query, documents, context, top_k)
+        else:
+            # Fallback for BGEReranker
+            return self._impl.rerank_with_context(query, documents, context, top_k)
+
+
+# Convenience functions for A/B testing framework
+def get_ab_manager():
+    """Get the A/B test manager instance."""
+    if _EXTENDED_AVAILABLE:
+        return _extended.get_ab_manager()
+    else:
+        raise ImportError("Extended reranker module not available")
+
+
+def get_model_performance_summary() -> Dict:
+    """Get performance summary of all reranker models."""
+    if _EXTENDED_AVAILABLE:
+        return _extended.get_model_performance_summary()
+    else:
+        raise ImportError("Extended reranker module not available")
+
+
+def warmup_all_models() -> None:
+    """Pre-load all configured reranker models."""
+    if _EXTENDED_AVAILABLE:
+        _extended.warmup_reranker()
+    else:
+        _extended.warmup_reranker()

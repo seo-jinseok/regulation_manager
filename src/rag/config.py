@@ -67,6 +67,62 @@ class FallbackConfig:
     )
 
 
+
+@dataclass
+class RerankerConfig:
+    """Configuration for reranker models (Cycle 5: Korean Reranker Integration)."""
+
+    # Primary reranker model (multilingual)
+    primary_model: str = field(
+        default_factory=lambda: os.getenv(
+            "RERANKER_MODEL", "BAAI/bge-reranker-v2-m3"
+        )
+    )
+
+    # Korean-specific reranker models for A/B testing
+    korean_models: List[str] = field(
+        default_factory=lambda: os.getenv(
+            "KOREAN_RERANKER_MODELS",
+            "Dongjin-kr/kr-reranker,NLPai/ko-reranker"
+        ).split(",")
+        if os.getenv("KOREAN_RERANKER_MODELS")
+        else ["Dongjin-kr/kr-reranker", "NLPai/ko-reranker"]
+    )
+
+    # A/B testing configuration
+    enable_ab_testing: bool = field(
+        default_factory=lambda: os.getenv("RERANKER_AB_TESTING", "true").lower() == "true"
+    )
+    ab_test_ratio: float = field(
+        default_factory=lambda: float(os.getenv("RERANKER_AB_RATIO", "0.5"))
+    )  # 50% traffic to korean model
+
+    # Model selection strategy: "ab_test", "korean_only", "multilingual_only"
+    model_selection_strategy: str = field(
+        default_factory=lambda: os.getenv("RERANKER_STRATEGY", "ab_test")
+    )
+
+    # Performance settings
+    use_fp16: bool = field(
+        default_factory=lambda: os.getenv("RERANKER_FP16", "true").lower() == "true"
+    )
+    batch_size: int = field(
+        default_factory=lambda: int(os.getenv("RERANKER_BATCH_SIZE", "32"))
+    )
+
+    # Fallback to multilingual model if Korean model fails
+    fallback_to_multilingual: bool = True
+
+    # Warmup on startup
+    warmup_on_init: bool = field(
+        default_factory=lambda: os.getenv("RERANKER_WARMUP", "true").lower() == "true"
+    )
+
+    # Metrics tracking for A/B testing
+    track_model_performance: bool = True
+    metrics_storage_dir: str = ".metrics/reranker_ab"
+
+
 @dataclass
 class RAGConfig:
     """Configuration for RAG system.
@@ -99,6 +155,9 @@ class RAGConfig:
 
     # Fallback configuration
     llm_fallback: FallbackConfig = field(default_factory=FallbackConfig)
+
+    # Reranker configuration
+    reranker: RerankerConfig = field(default_factory=RerankerConfig)
 
     # Search settings
     use_reranker: bool = True
