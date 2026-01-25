@@ -1,0 +1,55 @@
+# Coverage configuration to prevent memory leaks during test runs
+# https://coverage.readthedocs.io/
+
+[run]
+# Data file location - using temporary directory to prevent accumulation
+data_file = .cache/coverage
+
+# Source directories to measure coverage
+source = src
+
+# Omit specific patterns to reduce overhead
+omit =
+    */tests/*
+    */test_*.py
+    */__pycache__/*
+    */site-packages/*
+    */venv/*
+    */.venv/*
+    */dist/*
+    */build/*
+    src/rag/automation/*  # Automation system has separate coverage
+    */migrations/*
+
+[report]
+# Minimum coverage threshold
+precision = 2
+show_missing = True
+skip_covered = False
+skip_empty = True
+
+# Sort order
+sort = Cover
+
+# Regex patterns for excluding lines from coverage
+exclude_lines =
+    # Default exclusions
+    pragma: no cover
+    def __repr__
+    def __str__
+    raise AssertionError
+    raise NotImplementedError
+    if __name__ == .__main__.:
+    if TYPE_CHECKING:
+    @abstractmethod
+
+[html]
+directory = htmlcov
+skip_empty = True
+
+[xml]
+output = coverage.xml
+
+[json]
+output = coverage.json
+pretty_print = True

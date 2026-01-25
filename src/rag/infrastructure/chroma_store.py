@@ -293,3 +293,35 @@ class ChromaVectorStore(IVectorStore):
         Delegates to Chunk.from_metadata() to avoid code duplication.
         """
         return Chunk.from_metadata(id_, document, metadata)
+
+    def close(self):
+        """
+        Release ChromaDB client resources.
+
+        Call this method when done using the vector store to properly
+        release memory and file handles. This is especially important
+        in test environments where many instances may be created.
+        """
+        try:
+            if hasattr(self, "_client") and self._client is not None:
+                # Reset collection reference
+                self._collection = None
+                # ChromaDB PersistentClient doesn't have explicit close in all versions
+                # but we can release references
+                self._client = None
+        except Exception:
+            # Silently fail during cleanup to avoid errors during shutdown
+            pass
+
+    def __del__(self):
+        """Destructor to ensure resources are released."""
+        self.close()
+
+    def __enter__(self):
+        """Context manager entry."""
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Context manager exit - ensures cleanup."""
+        self.close()
+        return False

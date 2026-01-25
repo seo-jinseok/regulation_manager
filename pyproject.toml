@@ -43,6 +43,8 @@ regulation = "src.rag.interface.unified_cli:main"
 dev = [
     "pytest>=9.0.0",
     "pytest-cov>=7.0.0",
+    "pytest-xdist>=3.6.0",
+    "pytest-timeout>=2.3.0",
 ]
 
 [build-system]
@@ -52,15 +54,46 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["src"]
 
-[tool.pytest.ini_options]
+[tool.pytest]
 testpaths = ["tests"]
-addopts = '-m "not debug"'
+# CRITICAL: --no-cov is DEFAULT to prevent memory explosion
+# Use scripts/run_with_coverage.sh to run coverage separately
+addopts = ["--no-cov", "-m", "not debug", "--timeout=300", "--maxfail=5", "--tb=short"]
 markers = [
     "debug: debug and diagnostic tests",
+    "slow: tests that take a long time to run",
+    "integration: integration tests that require external services",
+    "memory_intensive: tests that use large amounts of memory",
 ]
 filterwarnings = [
     "ignore::DeprecationWarning:importlib._bootstrap:241",  # SWIG bindings
     "ignore:builtin type:DeprecationWarning",  # SWIG swigvarlink
+    "ignore::pytest.PytestConfigWarning:config",  # Ignore config warnings for legacy options
+]
+
+[tool.coverage.run]
+# Coverage settings for separate execution (see scripts/run_with_coverage.sh)
+# Run coverage separately from pytest to avoid memory explosion
+source = ["src"]
+omit = [
+    "*/tests/*",
+    "*/test_*.py",
+    "*/__pycache__/*",
+    "*/site-packages/*",
+]
+branch = true
+parallel = false  # CRITICAL: Disable parallel coverage to prevent memory explosion
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "class .*\\bProtocol\\b.*:",
+    "@(abc\\.)?abstractmethod",
 ]
 
 [tool.ruff]
@@ -86,5 +119,7 @@ known-first-party = ["src"]
 dev = [
     "pytest>=9.0.2",
     "pytest-cov>=7.0.0",
+    "pytest-xdist>=3.6.0",
+    "pytest-timeout>=2.3.0",
     "ruff>=0.8.0",
 ]

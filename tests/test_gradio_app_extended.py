@@ -264,12 +264,14 @@ class TestFindLatestJson(unittest.TestCase):
 
     def test_finds_latest_by_mtime(self):
         """Test that latest file by mtime is returned."""
-        # Mock file stats
+        # Mock file stats with proper mock stat objects
         mock_files = []
         for i in range(3):
             p = MagicMock(spec=Path)
             p.name = f"file{i}.json"
-            p.stat.return_value.st_mtime = 1000 + i
+            stat_result = MagicMock()
+            stat_result.st_mtime = 1000 + i
+            p.stat.return_value = stat_result
             mock_files.append(p)
 
         # Simulate finding max
