@@ -6,13 +6,15 @@ without relying on pre-defined patterns in intents.json or synonyms.json.
 
 This addresses the pattern explosion problem by dynamically understanding
 user intent and generating appropriate search terms.
+
+Cycle 5: Added cache metrics and batch save optimization.
 """
 
 import hashlib
 import json
 import logging
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, List, Optional
 
@@ -261,16 +263,14 @@ class DynamicQueryExpander:
             # Parse JSON response
             result = self._parse_llm_response(response)
             if result:
-                keywords = result.get("keywords", [])[:self._max_keywords]
+                keywords = result.get("keywords", [])[: self._max_keywords]
                 intent = result.get("intent", "unknown")
                 confidence = result.get("confidence", 0.7)
 
                 # Build expanded query
                 expanded_query = self._build_expanded_query(query, keywords)
 
-                logger.debug(
-                    f"LLM expansion: {query[:30]}... -> {keywords[:3]}..."
-                )
+                logger.debug(f"LLM expansion: {query[:30]}... -> {keywords[:3]}...")
 
                 return QueryExpansionResult(
                     original_query=query,
@@ -369,10 +369,39 @@ class DynamicQueryExpander:
         """Extract basic keywords from query using simple heuristics."""
         # Remove common particles and short words
         stopwords = {
-            "이", "가", "을", "를", "은", "는", "의", "에", "로", "으로",
-            "와", "과", "도", "만", "부터", "까지", "에서", "처럼",
-            "어떻게", "뭐", "뭘", "무엇", "언제", "어디", "누구",
-            "해", "돼", "할", "된", "하는", "되는", "있", "없",
+            "이",
+            "가",
+            "을",
+            "를",
+            "은",
+            "는",
+            "의",
+            "에",
+            "로",
+            "으로",
+            "와",
+            "과",
+            "도",
+            "만",
+            "부터",
+            "까지",
+            "에서",
+            "처럼",
+            "어떻게",
+            "뭐",
+            "뭘",
+            "무엇",
+            "언제",
+            "어디",
+            "누구",
+            "해",
+            "돼",
+            "할",
+            "된",
+            "하는",
+            "되는",
+            "있",
+            "없",
         }
 
         words = re.findall(r"[가-힣A-Za-z0-9]+", query)
@@ -402,8 +431,16 @@ class DynamicQueryExpander:
 
         # Expand vague/informal queries
         vague_indicators = [
-            "싶어", "싫어", "어떻게", "뭐야", "있어?", "해야",
-            "받으려면", "하려면", "되려면", "가능",
+            "싶어",
+            "싫어",
+            "어떻게",
+            "뭐야",
+            "있어?",
+            "해야",
+            "받으려면",
+            "하려면",
+            "되려면",
+            "가능",
         ]
         if any(ind in query for ind in vague_indicators):
             return True
