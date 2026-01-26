@@ -17,6 +17,7 @@ from ..domain.entities import Answer, Chunk, ChunkLevel, SearchResult
 from ..domain.repositories import IHybridSearcher, ILLMClient, IReranker, IVectorStore
 from ..domain.value_objects import Query, SearchFilter
 from ..infrastructure.cache import CacheType, RAGQueryCache
+from ..infrastructure.metrics import RerankingMetrics
 from ..infrastructure.patterns import (
     ARTICLE_PATTERN,
     HEADING_ONLY_PATTERN,
