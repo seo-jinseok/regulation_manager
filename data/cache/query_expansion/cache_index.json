@@ -1,0 +1,103 @@
+{
+  "85c0fc49ab26940cde71f1ff8ecd23be": {
+    "cache_type": "query_expansion",
+    "query_hash": "85c0fc49ab26940cde71f1ff8ecd23be",
+    "data": {
+      "keywords": [
+        "kw1",
+        "kw2"
+      ],
+      "intent": "test",
+      "confidence": 0.9,
+      "expanded_query": "테스트 kw1 kw2",
+      "method": "llm"
+    },
+    "timestamp": 1769385603.0042229,
+    "ttl_hours": 168
+  },
+  "d7d06433bd0c10e66a170808afb3a9dd": {
+    "cache_type": "query_expansion",
+    "query_hash": "d7d06433bd0c10e66a170808afb3a9dd",
+    "data": {
+      "keywords": [
+        "키워드1",
+        "키워드2",
+        "키워드3"
+      ],
+      "intent": "test_intent",
+      "confidence": 0.9,
+      "expanded_query": "테스트 1 키워드1 키워드2 키워드3",
+      "method": "llm"
+    },
+    "timestamp": 1769385603.02729,
+    "ttl_hours": 168
+  },
+  "bdefccdcd3252b4a33729f9562d2c8c9": {
+    "cache_type": "query_expansion",
+    "query_hash": "bdefccdcd3252b4a33729f9562d2c8c9",
+    "data": {
+      "keywords": [
+        "키워드1",
+        "키워드2",
+        "키워드3"
+      ],
+      "intent": "test_intent",
+      "confidence": 0.9,
+      "expanded_query": "테스트 2 키워드1 키워드2 키워드3",
+      "method": "llm"
+    },
+    "timestamp": 1769385603.027531,
+    "ttl_hours": 168
+  },
+  "f66dbe151f9372ede45f5b153316c01a": {
+    "cache_type": "query_expansion",
+    "query_hash": "f66dbe151f9372ede45f5b153316c01a",
+    "data": {
+      "keywords": [
+        "키워드1",
+        "키워드2",
+        "키워드3"
+      ],
+      "intent": "test_intent",
+      "confidence": 0.9,
+      "expanded_query": "장학금 키워드1 키워드2 키워드3",
+      "method": "llm"
+    },
+    "timestamp": 1769385603.034645,
+    "ttl_hours": 168
+  },
+  "ce624e150f5ae46f03b60a0a05a0a41c": {
+    "cache_type": "query_expansion",
+    "query_hash": "ce624e150f5ae46f03b60a0a05a0a41c",
+    "data": {
+      "keywords": [
+        "키워드1",
+        "키워드2",
+        "키워드3"
+      ],
+      "intent": "test_intent",
+      "confidence": 0.9,
+      "expanded_query": "테스트 쿼리 키워드1 키워드2 키워드3",
+      "method": "llm"
+    },
+    "timestamp": 1769385684.693064,
+    "ttl_hours": 168
+  },
+  "23992a0c7f52b6cce95a799ec2145692": {
+    "cache_type": "query_expansion",
+    "query_hash": "23992a0c7f52b6cce95a799ec2145692",
+    "data": {
+      "keywords": [
+        "키워드1",
+        "키워드2",
+        "키워드3"
+      ],
+      "intent": "test_intent",
+      "confidence": 0.9,
+      "expanded_query": "영구 캐시 테스트 키워드1 키워드2 키워드3",
+      "method": "llm"
+    },
+    "timestamp": 1769385684.704222,
+    "ttl_hours": 168
+  }
+}
