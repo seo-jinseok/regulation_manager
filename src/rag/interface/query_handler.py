@@ -1431,8 +1431,8 @@ class QueryHandler:
         sources_data = []
         if answer.sources:
             norm_scores = normalize_relevance_scores(answer.sources)
-            display_sources = filter_by_relevance(answer.sources, norm_scores)
-            for r in display_sources:
+            # Use original sources (not filtered) to ensure eval script gets sources
+            for r in answer.sources:
                 reg_name = (
                     r.chunk.parent_path[0] if r.chunk.parent_path else r.chunk.title
                 )
