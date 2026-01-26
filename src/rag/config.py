@@ -189,7 +189,7 @@ class RAGConfig:
         default_factory=lambda: os.getenv("ENABLE_HYDE", "true").lower() == "true"
     )
     bm25_tokenize_mode: str = field(
-        default_factory=lambda: os.getenv("BM25_TOKENIZE_MODE", "konlpy")
+        default_factory=lambda: os.getenv("BM25_TOKENIZE_MODE", "kiwi")
     )
     corrective_rag_thresholds: dict = field(
         default_factory=lambda: {

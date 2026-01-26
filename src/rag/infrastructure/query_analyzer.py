@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 from .patterns import ARTICLE_PATTERN
+from .typo_corrector import TypoCorrector, TypoCorrectionResult
 
 if TYPE_CHECKING:
     from ..domain.repositories import ILLMClient
@@ -55,6 +56,8 @@ class QueryRewriteResult:
     used_synonyms: bool
     fallback: bool
     matched_intents: List[str]
+    typo_corrected: bool = False  # Whether typo correction was applied
+    typo_corrections: List[Tuple[str, str]] = ()  # List of (original, corrected) pairs
 
 
 @dataclass(frozen=True)
@@ -241,23 +244,15 @@ class QueryAnalyzer:
     ]
 
     # Weight presets for each query type: (bm25_weight, dense_weight)
-    # NOTE: Dense (BGE-M3) performs poorly on Korean semantic search,
-    # so we heavily favor BM25 for all query types
+    # NOTE: Dense (paraphrase-multilingual-MiniLM-L12-v2) performs poorly on Korean semantic search.
+    # BM25-only search for optimal performance and relevance.
+    # Dense retrieval code structure preserved for future tuning.
     WEIGHT_PRESETS: Dict[QueryType, Tuple[float, float]] = {
-        QueryType.ARTICLE_REFERENCE: (0.9, 0.1),  # Strongly favor keyword match
-        QueryType.REGULATION_NAME: (
-            0.85,
-            0.15,
-        ),  # Favor BM25 (Dense fails for Korean regulation names)
-        QueryType.NATURAL_QUESTION: (
-            0.75,
-            0.25,
-        ),  # Still favor BM25 even for questions
-        QueryType.INTENT: (
-            0.85,
-            0.15,
-        ),  # Intent queries: heavily favor BM25 (intent keywords injected)
-        QueryType.GENERAL: (0.8, 0.2),  # Favor BM25 as default
+        QueryType.ARTICLE_REFERENCE: (1.0, 0.0),  # BM25 only
+        QueryType.REGULATION_NAME: (1.0, 0.0),  # BM25 only
+        QueryType.NATURAL_QUESTION: (1.0, 0.0),  # BM25 only
+        QueryType.INTENT: (1.0, 0.0),  # BM25 only
+        QueryType.GENERAL: (1.0, 0.0),  # BM25 only
     }
 
     # Synonym dictionary for query expansion (minimal seed).
@@ -394,6 +389,79 @@ class QueryAnalyzer:
             re.compile(r"(지도교수|연구실).*(부당|갑질|힘들)"),
             ["학생연구자지원규정", "고충상담", "지도교수변경"],
         ),
+        # 2026-01-26: 맥락 의존 Intent 패턴 추가
+        (
+            re.compile(
+                r"(그거|이것|그게|이게|그것|저것).*(어떻게|방법|절차|신청|돼|되)"
+            ),
+            ["절차", "신청", "방법", "규정", "안내", "조건"],
+        ),
+        (
+            re.compile(r"(어떻게|방법|절차).*(해야|신청|돼|하는)"),
+            ["신청", "절차", "방법", "조건", "서류", "기간"],
+        ),
+        (
+            re.compile(r"(그게|이게|그건|이건).*(뭐야|뭔데|어떤|정체)"),
+            ["정의", "설명", "규정", "내용", "안내", "조건"],
+        ),
+        # 2026-01-26: 부정/거절 Intent 패턴 추가
+        (
+            re.compile(r".*하기.*싫지.*앞"),
+            ["거절", "반대", "철회", "포기", "취소", "변경"],
+        ),
+        (
+            re.compile(r"안.*하고.*싶"),
+            ["거절", "반대", "거부", "철회", "취소", "포기"],
+        ),
+        (
+            re.compile(r".*싫어|안.*하고.*싶"),
+            ["거절", "반대", "거부", "불만", "민원", "이의신청"],
+        ),
+        # 2026-01-26: 시간/조건 종속 Intent 패턴 추가
+        (
+            re.compile(r"(언제|마감|기간).*(까지|야|돼|신청)"),
+            ["마감", "기간", "신청기간", "학사일정", "접수마감", "종료일"],
+        ),
+        (
+            re.compile(r"(기간|시간|소요).*(얼마|며칠|몇|얼마나|동안)"),
+            ["기간", "소요기간", "처리기간", "심사기간", "승인기간"],
+        ),
+        (
+            re.compile(r"언제.*(돼|부터|까지|시작|발표|결과|나와)"),
+            ["시기", "일정", "학사일정", "개강", "종강", "성적공개"],
+        ),
+        (
+            re.compile(r"(조건|자격|요건).*(뭐|어떻|필요|무슨)"),
+            ["조건", "자격", "요건", "기준", "필요사항", "신청조건"],
+        ),
+        (
+            re.compile(r"(자격|대상|누구).*(있어|신청|가능|돼)"),
+            ["자격", "대상", "신청대상", "참여조건", "선정기준", "가능여부"],
+        ),
+        (
+            re.compile(r"안.*돼|불가능|제한"),
+            ["제한", "불가", "제외", "불가능", "제한사항", "거부"],
+        ),
+        (
+            re.compile(r"(몇|횟수|회수).*(번|회|가능|제한|자주)"),
+            ["횟수", "회수", "빈도", "제한횟수", "신청횟수", "가능횟수"],
+        ),
+        (
+            re.compile(r"(먼저|순서|절차|단계).*(뭐|어떻|해야)"),
+            ["순서", "절차", "단계", "프로세스", "진행절차", "신청방법"],
+        ),
+        (
+            re.compile(r"(신청|접수).*(기간|시작|종료|마감)"),
+            ["신청기간", "접수기간", "학사일정", "모집기간", "신청마감", "접수종료"],
+        ),
+        (
+            re.compile(r"(유효|만료|유효기간).*(얼마|언제|기간|동안)"),
+            ["유효기간", "만료일", "유효", "기간", "갱신", "연장"],
+        ),
+        (
+            re.compile(r"(먼저|선행|전제|필수).*(조건|해야|뭐|무엇)"),
+            ["선행조건", "전제조건", "필수사항", "사전준비", "선행요건", "요구사항"],
+        ),
     ]
     INTENT_MAX_MATCHES = 3
 
@@ -438,6 +506,8 @@ class QueryAnalyzer:
         llm_client: Optional["ILLMClient"] = None,
         synonyms_path: Optional[str] = None,
         intents_path: Optional[str] = None,
+        regulation_names: Optional[List[str]] = None,
+        enable_typo_correction: bool = True,
     ):
         """
         Initialize QueryAnalyzer.
@@ -445,6 +515,10 @@ class QueryAnalyzer:
         Args:
             llm_client: Optional LLM client for query rewriting.
                        If not provided, falls back to synonym-based expansion.
+            synonyms_path: Optional path to external synonyms JSON file.
+            intents_path: Optional path to external intents JSON file.
+            regulation_names: Optional list of known regulation names for typo correction.
+            enable_typo_correction: Whether to enable typo correction (default: True).
         """
         self._llm_client = llm_client
         self._cache: Dict[str, QueryRewriteResult] = {}  # Query rewrite cache
@@ -453,6 +527,14 @@ class QueryAnalyzer:
         ] = {}  # LLM-generated synonym cache
         self._synonyms = self._load_synonyms(synonyms_path)
         self._intent_rules = self._load_intents(intents_path)
+
+        # Initialize typo corrector
+        self._typo_corrector: Optional[TypoCorrector] = None
+        if enable_typo_correction:
+            self._typo_corrector = TypoCorrector(
+                llm_client=llm_client,
+                regulation_names=regulation_names,
+            )
 
     def _clean_llm_response(self, text: str) -> str:
         """Clean chatty LLM response to extract just the keywords."""
@@ -537,6 +619,8 @@ class QueryAnalyzer:
                 used_synonyms=False,
                 fallback=False,
                 matched_intents=[],
+                typo_corrected=False,
+                typo_corrections=(),
             )
 
         query = unicodedata.normalize("NFC", query)
@@ -554,7 +638,25 @@ class QueryAnalyzer:
                 used_synonyms=cached.used_synonyms,
                 fallback=cached.fallback,
                 matched_intents=list(cached.matched_intents),
+                typo_corrected=cached.typo_corrected,
+                typo_corrections=cached.typo_corrections,
             )
+
+        # Stage 0: Typo correction (before any processing)
+        original_query = query
+        typo_corrected = False
+        typo_corrections: Tuple[str, str] = ()
+
+        if self._typo_corrector:
+            typo_result = self._typo_corrector.correct(query, use_llm_fallback=True)
+            if typo_result.corrected != query:
+                query = typo_result.corrected
+                typo_corrected = True
+                typo_corrections = tuple(typo_result.corrections)
+                logger.debug(
+                    f"Typo correction: '{original_query}' -> '{query}' "
+                    f"(method={typo_result.method}, confidence={typo_result.confidence:.2f})"
+                )
 
         # No LLM client: fall back to rule-based legacy flow
         if not self._llm_client:
@@ -568,7 +670,7 @@ class QueryAnalyzer:
             rewritten = self.expand_query(query)
 
             result = QueryRewriteResult(
-                original=query,
+                original=original_query,
                 rewritten=rewritten,
                 method="rules",
                 from_cache=False,
@@ -577,6 +679,8 @@ class QueryAnalyzer:
                 used_synonyms=used_synonyms,
                 fallback=False,
                 matched_intents=matched_intents,
+                typo_corrected=typo_corrected,
+                typo_corrections=typo_corrections,
             )
             self._cache[query] = result
             return result
@@ -639,7 +743,7 @@ class QueryAnalyzer:
                 raise ValueError("Empty keywords from LLM")
 
             result = QueryRewriteResult(
-                original=query,
+                original=original_query,
                 rewritten=final_keywords,
                 method="llm",
                 from_cache=False,
@@ -648,8 +752,10 @@ class QueryAnalyzer:
                 used_synonyms=False,
                 fallback=False,
                 matched_intents=matched_intents,
+                typo_corrected=typo_corrected,
+                typo_corrections=typo_corrections,
             )
-            self._cache[query] = result
+            self._cache[original_query] = result
             return result
 
         except Exception:
@@ -661,7 +767,7 @@ class QueryAnalyzer:
             used_synonyms = bool(self._get_synonym_expansions(cleaned))
             rewritten = self.expand_query(query)
             result = QueryRewriteResult(
-                original=query,
+                original=original_query,
                 rewritten=rewritten,
                 method="rules",
                 from_cache=False,
@@ -670,8 +776,10 @@ class QueryAnalyzer:
                 used_synonyms=used_synonyms,
                 fallback=True,
                 matched_intents=matched_intents,
+                typo_corrected=typo_corrected,
+                typo_corrections=typo_corrections,
             )
-            self._cache[query] = result
+            self._cache[original_query] = result
             return result
 
     def analyze(self, query: str) -> QueryType:
@@ -867,16 +975,16 @@ class QueryAnalyzer:
     # Patterns where conjunction should NOT trigger decomposition
     # (e.g., "하고 싶어" is a single intent, not "하고" + "싶어")
     DECOMPOSITION_EXCEPTIONS = [
-        r"하고\s*싶",      # 하고 싶어, 하고싶어
-        r"하면\s*싶",      # 하면 싶어
-        r"하면서\s*싶",    # 하면서 싶어
-        r"받고\s*싶",      # 받고 싶어
-        r"알고\s*싶",      # 알고 싶어
-        r"가고\s*싶",      # 가고 싶어
-        r"싶고\s*",        # ~싶고 하다
-        r"내고\s+",        # ~내고 (화도 내고)
-        r"\S고\s+그래",    # ~고 그래
-        r"줬\S*\s",        # 줬어, 줬는데
+        r"하고\s*싶",  # 하고 싶어, 하고싶어
+        r"하면\s*싶",  # 하면 싶어
+        r"하면서\s*싶",  # 하면서 싶어
+        r"받고\s*싶",  # 받고 싶어
+        r"알고\s*싶",  # 알고 싶어
+        r"가고\s*싶",  # 가고 싶어
+        r"싶고\s*",  # ~싶고 하다
+        r"내고\s+",  # ~내고 (화도 내고)
+        r"\S고\s+그래",  # ~고 그래
+        r"줬\S*\s",  # 줬어, 줬는데
     ]
 
     def decompose_query(self, query: str) -> List[str]:
@@ -1143,7 +1251,9 @@ class QueryAnalyzer:
                 )
             )
 
-        path_value = intents_path or os.getenv("RAG_INTENTS_PATH", "data/config/intents.json")
+        path_value = intents_path or os.getenv(
+            "RAG_INTENTS_PATH", "data/config/intents.json"
+        )
         if not path_value:
             return rules
 
@@ -1306,7 +1416,13 @@ class QueryAnalyzer:
 
     # Mapping from LLM intent to expanded keywords
     INTENT_KEYWORD_MAP = {
-        "scholarship": ["장학금", "장학", "성적기준", "장학금지급규정", "성적우수장학금"],
+        "scholarship": [
+            "장학금",
+            "장학",
+            "성적기준",
+            "장학금지급규정",
+            "성적우수장학금",
+        ],
         "graduation": ["졸업", "졸업요건", "졸업학점", "어학인증", "학칙"],
         "faculty": ["교원", "교수", "승진", "교원인사규정", "업적평가"],
         "student_status": ["휴학", "복학", "전과", "제적", "학적"],
@@ -1450,3 +1566,18 @@ class QueryAnalyzer:
         except Exception as e:
             logger.warning(f"LLM intent classification failed: {e}")
             return None
+
+    def set_regulation_names(self, regulation_names: List[str]) -> None:
+        """
+        Update the list of known regulation names for typo correction.
+
+        Args:
+            regulation_names: List of regulation names to use for edit distance matching.
+        """
+        if self._typo_corrector:
+            self._typo_corrector.set_regulation_names(regulation_names)
+
+    def clear_typo_cache(self) -> None:
+        """Clear the typo correction cache."""
+        if self._typo_corrector:
+            self._typo_corrector.clear_cache()

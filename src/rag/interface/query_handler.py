@@ -1460,6 +1460,10 @@ class QueryHandler:
             )
             top_rule_code = top.chunk.rule_code
 
+        # Build results for compatibility with eval script
+        # Use sources_data as results to ensure eval script can detect sources
+        results_data = sources_data if sources_data else []
+
         return QueryResult(
             type=QueryType.ASK,
             success=True,
@@ -1469,6 +1473,7 @@ class QueryHandler:
                 "answer": answer.text,
                 "confidence": round(answer.confidence, 3),
                 "sources": sources_data,
+                "results": results_data,  # Add "results" key for eval compatibility
             },
             state_update={
                 "last_regulation": top_regulation,

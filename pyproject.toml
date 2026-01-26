@@ -33,8 +33,10 @@ dependencies = [
     "flagembedding>=1.3.5",
     "mcp[cli]>=1.9.0",
     "mlx-lm>=0.29.1",
-    "konlpy>=0.6.0",
+    "kiwipiepy>=0.20.0",  # Pure Python Korean morpheme analyzer (replaces KoNLPy)
     "sentence-transformers>=2.2.0",  # For ko-sbert-sts Korean embeddings
+    # "symspellpy-ko>=0.2.1",  # Korean typo correction with SymSpell algorithm ( temporarily disabled due to compatibility issues)
+    "editdistance>=0.6.2",  # Levenshtein distance for regulation name correction
 ]
 
 [project.scripts]

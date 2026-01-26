@@ -334,17 +334,30 @@ class CRAGRetriever:
         score: float,
         attempt_count: int = 0,
     ) -> bool:
-        """Determine if T-Fix (re-retrieval) should be triggered."""
+        """
+        Determine if T-Fix (re-retrieval) should be triggered.
+
+        Relaxed trigger conditions (Cycle 9) to increase re-retrieval opportunities:
+        - All POOR cases trigger (unchanged)
+        - All ADEQUATE cases trigger regardless of score (changed from < 0.4)
+        - GOOD cases trigger when score < 0.6 (new condition)
+        """
         if not self.enable_tfix:
             return False
 
         if attempt_count >= self._max_tfix_attempts:
             return False
 
+        # POOR quality always triggers re-retrieval
         if quality == RetrievalQuality.POOR:
             return True
 
-        if quality == RetrievalQuality.ADEQUATE and score < 0.4:
+        # All ADEQUATE cases trigger re-retrieval (relaxed from score < 0.4)
+        if quality == RetrievalQuality.ADEQUATE:
+            return True
+
+        # GOOD quality triggers when score is below 0.6 (new condition)
+        if quality == RetrievalQuality.GOOD and score < 0.6:
             return True
 
         return False

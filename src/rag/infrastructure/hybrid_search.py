@@ -22,12 +22,33 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-# Lazy-loaded KoNLPy tokenizer (singleton)
+# Lazy-loaded tokenizers (singleton)
+_kiwi = None
 _komoran = None
 
 
+def _get_kiwi():
+    """Lazy-load Kiwi tokenizer (singleton)."""
+    global _kiwi
+    if _kiwi is None:
+        try:
+            from kiwipiepy import Kiwi
+            _kiwi = Kiwi()
+            logger.debug("KiwiPiePy tokenizer initialized")
+        except ImportError:
+            logger.warning("KiwiPiePy not installed, falling back to simple mode")
+            return None
+        except Exception as e:
+            logger.warning(f"Failed to initialize Kiwi: {e}")
+            return None
+    return _kiwi
+
+
 def _get_komoran():
-    """Lazy-load Komoran tokenizer (singleton)."""
+    """Lazy-load Komoran tokenizer (singleton).
+
+    Deprecated: Use KiwiPiePy instead. This is kept for backward compatibility.
+    """
     global _komoran
     if _komoran is None:
         try:
@@ -81,13 +102,16 @@ class BM25:
 
     def _tokenize(self, text: str) -> List[str]:
         """Tokenize text into terms based on tokenize_mode.
-        
+
         Modes:
             - "simple": Regex-based tokenizer (fast, no external deps)
             - "morpheme": Rule-based Korean morpheme splitting
-            - "konlpy": KoNLPy Komoran-based tokenizer (best quality)
+            - "kiwi": KiwiPiePy-based tokenizer (best quality, no Java)
+            - "konlpy": KoNLPy Komoran-based tokenizer (deprecated, requires Java)
         """
-        if self.tokenize_mode == "konlpy":
+        if self.tokenize_mode == "kiwi":
+            return self._tokenize_kiwi(text)
+        elif self.tokenize_mode == "konlpy":
             return self._tokenize_konlpy(text)
         elif self.tokenize_mode == "morpheme":
             return self._tokenize_morpheme(text)
@@ -99,6 +123,62 @@ class BM25:
         # Split on whitespace and punctuation, keep Korean characters
         tokens = re.findall(r"[가-힣]+|[a-z0-9]+", text)
         return tokens
+
+    def _tokenize_kiwi(self, text: str) -> List[str]:
+        """
+        KiwiPiePy-based morphological analysis tokenizer.
+
+        Kiwi is a pure Python Korean morpheme analyzer with no Java dependency.
+        Provides high-quality Korean morpheme analysis for better search recall.
+
+        Args:
+            text: Input text to tokenize.
+
+        Returns:
+            List of meaningful tokens (nouns, verbs, adjectives, etc.).
+
+        Falls back to simple tokenizer if KiwiPiePy is unavailable.
+        """
+        kiwi = _get_kiwi()
+        if kiwi is None:
+            # Fallback to simple tokenizer
+            return self._tokenize_simple(text)
+
+        try:
+            text = text.lower()
+            # Tokenize using Kiwi
+            tokens = kiwi.tokenize(text)
+
+            # Filter meaningful morphemes (noun, verb, adjective, adverb, etc.)
+            # Kiwi POS tags: NNG(일반명사), NNP(고유명사), VV(동사), VA(형용사),
+            # MAG(일반부사), SL(외국어), SH(한자), SN(숫자) 등
+            meaningful_tags = {
+                "NNG", "NNP", "NNB", "NNM",  # Nouns (일반명사, 고유명사, 의존명사, 단위명사)
+                "VV", "VA", "VX", "VCP", "VCN",  # Verbs/Adjectives (동사, 형용사, 보조용언)
+                "MAG", "MAJ",  # Adverbs (일반부사, 접속부사)
+                "SL", "SH", "SN",  # Foreign loanwords, Hanja, Numbers
+                "XR",  # Root (어근)
+            }
+
+            result = []
+            for token in tokens:
+                pos = token.tag
+                form = token.form
+
+                # Keep meaningful morphemes with length >= 2
+                if pos in meaningful_tags and len(form) >= 2:
+                    result.append(form)
+                elif pos == "SL":  # Foreign language (English numbers/words)
+                    result.append(form.lower())
+
+            # If no tokens extracted, fallback to simple
+            if not result:
+                return self._tokenize_simple(text)
+
+            return result
+        except Exception as e:
+            logger.warning(f"KiwiPiePy tokenization failed: {e}, falling back to simple")
+            return self._tokenize_simple(text)
 
     def _tokenize_morpheme(self, text: str) -> List[str]:
         """
@@ -379,7 +459,11 @@ class HybridSearcher(IHybridSearcher):
             use_dynamic_weights: Enable query-based dynamic weighting (default: True).
             use_dynamic_rrf_k: Enable query-based dynamic RRF k value (default: False).
             index_cache_path: Path to cache BM25 index (default: None).
-            tokenize_mode: BM25 tokenizer mode ("simple", "morpheme", "konlpy").
+            tokenize_mode: BM25 tokenizer mode ("simple", "morpheme", "kiwi", "konlpy").
+                - "kiwi": KiwiPiePy (recommended, pure Python, no Java dependency)
+                - "simple": Regex-based (fast, no external deps)
+                - "morpheme": Rule-based Korean morpheme splitting
+                - "konlpy": KoNLPy Komoran (deprecated, requires Java)
         """
         # Get tokenize_mode from config if not specified
         if tokenize_mode is None:
