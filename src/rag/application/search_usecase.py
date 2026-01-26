@@ -1570,86 +1570,141 @@ class SearchUseCase:
         complexity: str = "medium",
     ) -> List[SearchResult]:
         """
-        Apply Corrective RAG: evaluate results and re-retrieve if needed.
+        Apply Enhanced Corrective RAG (Cycle 9).
 
-        If the initial results have low relevance, attempt to:
-        1. Expand the query using intent/synonym detection
-        2. Re-run the search with expanded query
-        3. Merge and re-rank combined results
-
-        Args:
-            query_text: Original query text
-            results: Current search results
-            filter: Optional search filter
-            top_k: Number of results to return
-            include_abolished: Whether to include abolished regulations
-            audience_override: Optional audience override
-            complexity: Query complexity for dynamic threshold selection
+        Uses CRAGRetriever for:
+        1. Optimized relevance scoring with multiple signals
+        2. T-Fix re-retrieval with adaptive thresholds
+        3. Enhanced document re-ranking
+        4. Comprehensive performance metrics
         """
-        # Lazy initialize evaluator
-        if self._retrieval_evaluator is None:
-            from ..infrastructure.retrieval_evaluator import RetrievalEvaluator
+        # Initialize CRAGRetriever on first use
+        if self._crag_retriever is None:
+            from ..infrastructure.crag_retriever import CRAGRetriever
 
-            self._retrieval_evaluator = RetrievalEvaluator()
-
-        # Evaluate current results with dynamic threshold based on complexity
-        if not self._retrieval_evaluator.needs_correction(
-            query_text, results, complexity=complexity
-        ):
-            return results  # Results are good enough
-
-        # Try to get expanded query
-        if not self.hybrid_searcher:
-            return results  # No analyzer available
-
-        analyzer = self.hybrid_searcher._query_analyzer
-        expanded_query = analyzer.expand_query(query_text)
-
-        if expanded_query == query_text:
-            # No expansion available, try LLM rewrite if we haven't already
-            try:
-                rewrite_info = analyzer.rewrite_query_with_info(query_text)
-                if rewrite_info.rewritten and rewrite_info.rewritten != query_text:
-                    expanded_query = rewrite_info.rewritten
-                else:
-                    return results  # No alternative query available
-            except Exception:
-                return results
-
-        # Re-search with expanded query (disable corrective RAG to avoid recursion)
-        self._corrective_rag_enabled = False
-        try:
-            corrected_results = self._search_general(
-                expanded_query, filter, top_k, include_abolished, audience_override
+            query_analyzer = (
+                self.hybrid_searcher._query_analyzer if self.hybrid_searcher else None
             )
-        finally:
-            self._corrective_rag_enabled = True
 
-        # Merge results: prioritize corrected results but keep unique originals
-        seen_ids = set()
-        merged = []
+            self._crag_retriever = CRAGRetriever(
+                hybrid_searcher=self.hybrid_searcher,
+                query_analyzer=query_analyzer,
+                llm_client=self.llm,
+                enable_tfix=True,
+                enable_rerank=True,
+                max_tfix_attempts=2,
+            )
 
-        # Add corrected results first
-        for r in corrected_results:
-            if r.chunk.id not in seen_ids:
-                seen_ids.add(r.chunk.id)
-                merged.append(r)
+        # Step 1: Evaluate retrieval quality
+        from ..infrastructure.crag_retriever import RetrievalQuality
 
-        # Add original results that weren't in corrected set
-        for r in results:
-            if r.chunk.id not in seen_ids:
-                seen_ids.add(r.chunk.id)
-                # Slightly lower score for non-corrected results
-                merged.append(
-                    SearchResult(
-                        chunk=r.chunk, score=r.score * 0.8, rank=len(merged) + 1
-                    )
+        quality, score = self._crag_retriever.evaluate_retrieval_quality(
+            query_text, results, complexity
+        )
+
+        # Step 2: Apply T-Fix if triggered
+        current_results = results
+        if self._crag_retriever.should_trigger_tfix(quality, score):
+            logger.info(
+                f"CRAG T-Fix triggered: quality={quality.value}, score={score:.3f}"
+            )
+
+            # Synchronous T-Fix implementation
+            for attempt in range(self._crag_retriever._max_tfix_attempts):
+                corrected_query = self._crag_retriever._generate_corrected_query(
+                    query_text, current_results, attempt
                 )
 
-        # Re-sort by score
-        merged.sort(key=lambda x: -x.score)
+                if not corrected_query or corrected_query == query_text:
+                    break
 
-        return merged[:top_k]
+                # Re-retrieve with corrected query
+                try:
+                    # Disable CRAG to avoid recursion
+                    self._corrective_rag_enabled = False
+                    try:
+                        new_results = self._search_general(
+                            corrected_query,
+                            filter,
+                            top_k * 2,
+                            include_abolished,
+                            audience_override,
+                        )
+                    finally:
+                        self._corrective_rag_enabled = True
+
+                    # Evaluate improvement
+                    _, new_score = self._crag_retriever.evaluate_retrieval_quality(
+                        query_text, new_results, complexity
+                    )
+
+                    if new_score > score + 0.05:
+                        logger.info(
+                            f"CRAG T-Fix improved: {score:.3f} -> {new_score:.3f} "
+                            f"(attempt {attempt + 1})"
+                        )
+                        current_results = new_results
+                        score = new_score
+                        quality = self._crag_retriever.evaluate_retrieval_quality(
+                            query_text, current_results, complexity
+                        )[0]
+
+                        if quality in [RetrievalQuality.EXCELLENT, RetrievalQuality.GOOD]:
+                            break
+                    else:
+                        break
+
+                except Exception as e:
+                    logger.warning(f"CRAG T-Fix attempt {attempt + 1} failed: {e}")
+                    break
+
+        # Step 3: Apply re-ranking for ADEQUATE/GOOD quality
+        if quality in [RetrievalQuality.ADEQUATE, RetrievalQuality.GOOD]:
+            current_results = self._crag_retriever.apply_rerank(query_text, current_results)
+
+        return current_results
+
+    def get_crag_metrics(self) -> Optional[dict]:
+        """Get CRAG performance metrics (Cycle 9)."""
+        if self._crag_retriever is None:
+            return None
+        return self._crag_retriever.metrics.to_dict()
+
+    def get_crag_metrics_summary(self) -> Optional[str]:
+        """Get human-readable CRAG metrics summary (Cycle 9)."""
+        if self._crag_retriever is None:
+            return None
+        return self._crag_retriever.metrics.get_summary()
+
+    def _search_single_pass(
+        self,
+        query_text: str,
+        filter: Optional[SearchFilter],
+        top_k: int,
+        include_abolished: bool,
+        audience_override: Optional["Audience"],
+    ) -> List[SearchResult]:
+        """Perform a single search pass (used by CRAG T-Fix)."""
+        query_text = _coerce_query_text(query_text).strip()
+        if not query_text:
+            return []
+
+        query_text = unicodedata.normalize("NFC", query_text)
+
+        query = Query(text=query_text, include_abolished=include_abolished)
+        fetch_k = top_k * 3
+        results = self.store.search(query, filter, fetch_k)
+
+        if self.hybrid_searcher:
+            results = self._apply_hybrid_search(
+                results, query_text, query_text, filter, include_abolished, fetch_k // 2,
+            )
+
+        audience = self._detect_audience(query_text, audience_override)
+        boosted_results = self._apply_score_bonuses(results, query_text, query_text, audience)
+        boosted_results.sort(key=lambda x: -x.score)
+
+        return boosted_results
 
     def get_last_query_rewrite(self) -> Optional[QueryRewriteInfo]:
         """Return last query rewrite info (if any)."""
