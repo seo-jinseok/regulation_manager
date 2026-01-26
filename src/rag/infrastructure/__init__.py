@@ -11,8 +11,13 @@ from .json_loader import JSONDocumentLoader
 # Cycle 3: Reranking Metrics System
 from .metrics import MetricsReporter, MetricsRepository
 
+# Typo Correction
+from .typo_corrector import TypoCorrector, TypoCorrectionResult
+
 __all__ = [
     "JSONDocumentLoader",
     "MetricsRepository",
     "MetricsReporter",
+    "TypoCorrector",
+    "TypoCorrectionResult",
 ]
