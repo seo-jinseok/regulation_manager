@@ -12,10 +12,10 @@ try:
 except ImportError:
     pass
 
+from src.rag.application.evaluate import EvaluationUseCase
+from src.rag.application.search_usecase import SearchUseCase
 from src.rag.infrastructure.chroma_store import ChromaVectorStore
 from src.rag.infrastructure.llm_adapter import LLMClientAdapter
-from src.rag.application.search_usecase import SearchUseCase
-from src.rag.application.evaluate import EvaluationUseCase
 
 # Setup - exactly like auto_evaluate.py
 store = ChromaVectorStore(persist_directory="data/chroma_db")

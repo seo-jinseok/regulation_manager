@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """실패 케이스 정밀 분석"""
 import sys
+
 sys.path.insert(0, 'src')
 
 from src.rag.domain.value_objects import Query
@@ -24,7 +25,7 @@ for query_text, expected in failed_queries:
     print(f"Query: {query_text}")
     print(f"Expected: {expected}")
     print("-"*60)
-    
+
     # Intent analysis
     intents = analyzer._match_intents(query_text)
     if intents:
@@ -33,22 +34,22 @@ for query_text, expected in failed_queries:
             print(f"  Keywords: {i.keywords}")
     else:
         print("Intent: No match")
-    
+
     # Expanded query
     expanded = analyzer.expand_query(query_text)
     print(f"Expanded: {expanded}")
-    
+
     # Actual search
     query = Query(text=expanded)
     results = store.search(query, top_k=5)
-    print(f"\nSearch Results:")
+    print("\nSearch Results:")
     for r in results:
         meta = r.chunk.to_metadata()
         parent = meta.get('parent_path', meta.get('rule_code', ''))
         content_preview = r.chunk.text[:80].replace('\n', ' ')
         print(f"  [{r.score:.3f}] {parent}")
         print(f"           -> {content_preview}...")
-    
+
     # Check expected keywords
     found_any = False
     for r in results[:3]:
@@ -60,6 +61,6 @@ for query_text, expected in failed_queries:
                 found_any = True
                 print(f"  [OK] '{exp}' found in result!")
                 break
-    
+
     if not found_any:
-        print(f"  [FAIL] Expected keywords not found in top-3")
+        print("  [FAIL] Expected keywords not found in top-3")

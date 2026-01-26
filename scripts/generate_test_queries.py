@@ -33,7 +33,7 @@ PERSONAS = {
         "label": "학생",
         "description": "학부생 또는 대학원생",
         "topics": [
-            "휴학/복학", "졸업/학위", "장학금/등록금", "전과/편입", 
+            "휴학/복학", "졸업/학위", "장학금/등록금", "전과/편입",
             "학사경고/성적", "수강신청/학점", "기숙사/생활관", "동아리/학생회"
         ],
         "styles": ["직접적 질문", "간접적 의도", "감정 표현", "불만 표현"],
@@ -97,7 +97,7 @@ QUERY_GENERATION_PROMPT = """당신은 대학 구성원의 다양한 질문을 �
 def setup_llm():
     """Initialize LLM client."""
     from src.rag.infrastructure.llm_adapter import LLMClientAdapter
-    
+
     try:
         return LLMClientAdapter(provider="ollama")
     except Exception as e:
@@ -110,7 +110,7 @@ def load_existing_queries(dataset_path: Optional[str] = None) -> set:
     path = Path(dataset_path or "data/config/evaluation_dataset.json")
     if not path.exists():
         return set()
-    
+
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
         return {tc["query"].lower().strip() for tc in data.get("test_cases", [])}
@@ -123,7 +123,7 @@ def generate_diversity_seed() -> str:
     adjectives = ["긴급한", "복잡한", "특수한", "일반적인", "예외적인", "임시", "정규"]
     situations = ["상황", "경우", "조건", "사유", "사례"]
     emotions = ["걱정되는", "궁금한", "답답한", "급한", "중요한"]
-    
+
     return f"{random.choice(adjectives)} {random.choice(situations)}, {random.choice(emotions)} 마음"
 
 
@@ -136,12 +136,12 @@ def generate_queries_with_llm(
     """Generate queries using LLM for a specific persona."""
     if persona not in PERSONAS:
         raise ValueError(f"Unknown persona: {persona}")
-    
+
     persona_info = PERSONAS[persona]
     topic = random.choice(persona_info["topics"])
     style = random.choice(persona_info["styles"])
     diversity_seed = generate_diversity_seed()
-    
+
     prompt = QUERY_GENERATION_PROMPT.format(
         persona_label=persona_info["label"],
         persona_desc=persona_info["description"],
@@ -150,39 +150,39 @@ def generate_queries_with_llm(
         diversity_seed=diversity_seed,
         count=count,
     )
-    
+
     try:
         response = llm_client.generate(
             system_prompt="대학 규정 질문 생성기. JSON 배열만 출력.",
             user_message=prompt,
             temperature=0.8,  # Higher temperature for diversity
         )
-        
+
         # Extract JSON from response
         import re
         json_match = re.search(r'\[.*\]', response, re.DOTALL)
         if not json_match:
-            print(f"  Warning: Could not parse JSON from LLM response")
+            print("  Warning: Could not parse JSON from LLM response")
             return []
-        
+
         queries = json.loads(json_match.group())
-        
+
         # Filter out existing queries
         if existing_queries:
             queries = [
-                q for q in queries 
+                q for q in queries
                 if q.get("query", "").lower().strip() not in existing_queries
             ]
-        
+
         # Add metadata
         for q in queries:
             q["persona"] = persona
             q["generated_at"] = datetime.now().isoformat()
             q["topic"] = topic
             q["style"] = style
-        
+
         return queries
-        
+
     except Exception as e:
         print(f"  Error generating queries: {e}")
         return []
@@ -192,7 +192,7 @@ def generate_fallback_queries(persona: str, count: int = 5) -> List[Dict[str, An
     """Generate queries using templates when LLM is unavailable."""
     if persona not in PERSONAS:
         return []
-    
+
     persona_info = PERSONAS[persona]
     templates = {
         "student": [
@@ -218,15 +218,15 @@ def generate_fallback_queries(persona: str, count: int = 5) -> List[Dict[str, An
             "{topic} 신고하고 싶어",
         ],
     }
-    
+
     queries = []
     persona_templates = templates.get(persona, templates["common"])
-    
+
     for _ in range(count):
         topic = random.choice(persona_info["topics"])
         template = random.choice(persona_templates)
         query_text = template.format(topic=topic)
-        
+
         queries.append({
             "query": query_text,
             "persona": persona,
@@ -234,7 +234,7 @@ def generate_fallback_queries(persona: str, count: int = 5) -> List[Dict[str, An
             "generated_at": datetime.now().isoformat(),
             "method": "fallback_template",
         })
-    
+
     return queries
 
 
@@ -243,17 +243,17 @@ def save_queries(queries: List[Dict[str, Any]], output_path: Optional[str] = Non
     if not output_path:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         output_path = f"data/output/generated_queries_{timestamp}.json"
-    
+
     path = Path(output_path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    
+
     output = {
         "version": "1.0.0",
         "generated_at": datetime.now().isoformat(),
         "total_queries": len(queries),
         "queries": queries,
     }
-    
+
     path.write_text(json.dumps(output, ensure_ascii=False, indent=2), encoding="utf-8")
     return path
 
@@ -300,52 +300,52 @@ def main():
         action="store_true",
         help="기존 쿼리와의 중복 검사 비활성화",
     )
-    
+
     args = parser.parse_args()
-    
+
     if not args.persona and not args.all:
         parser.print_help()
         print("\n오류: --persona 또는 --all 옵션을 지정하세요.")
         sys.exit(1)
-    
+
     # Setup
     print("🚀 동적 테스트 쿼리 생성기 시작")
     llm_client = setup_llm()
     existing_queries = set() if args.no_dedup else load_existing_queries()
-    
+
     if existing_queries:
         print(f"📋 기존 쿼리 {len(existing_queries)}개 로드 (중복 방지)")
-    
+
     # Generate queries
     all_queries = []
     personas_to_process = list(PERSONAS.keys()) if args.all else [args.persona]
-    
+
     for persona in personas_to_process:
         print(f"\n👤 {PERSONAS[persona]['label']} 페르소나 쿼리 생성 중...")
-        
+
         queries = []
         if llm_client:
             queries = generate_queries_with_llm(
                 llm_client, persona, args.count, existing_queries
             )
-        
+
         # Fallback to templates if LLM failed or returned empty
         if not queries:
             print("   ⚠️ LLM 생성 실패, 템플릿 사용")
             queries = generate_fallback_queries(persona, args.count)
-        
+
         print(f"   ✅ {len(queries)}개 쿼리 생성 완료")
         all_queries.extend(queries)
-        
+
         # Update existing queries set to prevent duplicates across personas
         existing_queries.update(q["query"].lower().strip() for q in queries)
-    
+
     # Save results
     if all_queries:
         output_path = save_queries(all_queries, args.output)
         print(f"\n💾 결과 저장: {output_path}")
         print(f"📊 총 {len(all_queries)}개 쿼리 생성 완료")
-        
+
         # Print sample
         print("\n📝 생성된 쿼리 샘플:")
         for q in all_queries[:5]:

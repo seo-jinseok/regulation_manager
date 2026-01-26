@@ -8,7 +8,7 @@ them against the actual database. Supports iterative correction.
 import logging
 import re
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, List, Optional, Tuple
+from typing import TYPE_CHECKING, List, Optional
 
 if TYPE_CHECKING:
     from ..domain.repositories import IVectorStore

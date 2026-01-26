@@ -99,5 +99,23 @@
     },
     "timestamp": 1769385684.704222,
     "ttl_hours": 168
+  },
+  "26ddb1b3c6f223c8f3251f2c5f5ac954": {
+    "cache_type": "query_expansion",
+    "query_hash": "26ddb1b3c6f223c8f3251f2c5f5ac954",
+    "data": {
+      "keywords": [
+        "휴학",
+        "휴학 신청",
+        "휴학 규정",
+        "休学申请"
+      ],
+      "intent": "휴학 신청 문의",
+      "confidence": 0.95,
+      "expanded_query": "휴학 신청은 어떻게 하나요? 휴학 신청 휴학 규정 休学申请",
+      "method": "llm"
+    },
+    "timestamp": 1769399451.02881,
+    "ttl_hours": 168
   }
 }

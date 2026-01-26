@@ -8,8 +8,9 @@ Tests cover:
 - CRAG metrics tracking
 """
 
+from unittest.mock import patch
+
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 
 from src.rag.domain.entities import Chunk, ChunkLevel, SearchResult
 from src.rag.infrastructure.crag_retriever import (

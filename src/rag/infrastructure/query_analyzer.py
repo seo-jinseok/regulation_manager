@@ -911,11 +911,11 @@ class QueryAnalyzer:
         # Check for composite conjunctions
         # Short particles (과, 와, 랑, 이랑) require word boundary checks
         SHORT_PARTICLES = {"과", "와", "랑", "이랑"}
-        
+
         for conj in self.COMPOSITE_CONJUNCTIONS:
             if conj not in query:
                 continue
-                
+
             # For short particles, require proper word boundaries
             # e.g., "A와 B" should split, but "교수가" should not (가 is subject marker)
             if conj in SHORT_PARTICLES:
@@ -924,14 +924,14 @@ class QueryAnalyzer:
                 pattern = rf"(\S{conj})\s+(\S)"
                 if not re.search(pattern, query):
                     continue
-            
+
             parts = query.split(conj)
             if len(parts) >= 2:
                 # Validate parts are meaningful (at least 2 chars each)
                 valid_parts = [p.strip() for p in parts if len(p.strip()) >= 2]
                 if len(valid_parts) < 2:
                     continue
-                    
+
                 # Clean and expand each part
                 sub_queries = []
                 for part in valid_parts:

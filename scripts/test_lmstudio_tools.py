@@ -5,7 +5,6 @@ Test LM Studio Tool Calling API.
 Tests whether the current LM Studio server supports function calling.
 """
 
-import json
 import os
 import sys
 from pathlib import Path
@@ -17,13 +16,13 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 def test_lmstudio_tool_calling():
     """Test LM Studio's tool calling capability."""
     import requests
-    
+
     base_url = os.getenv("LLM_BASE_URL", "http://localhost:1234")
     model = os.getenv("LLM_MODEL", "eeve-korean-instruct-7b-v2.0-preview-mlx")
-    
+
     print(f"Testing LM Studio at: {base_url}")
     print(f"Model: {model}")
-    
+
     # Define a simple tool
     tools = [
         {
@@ -44,7 +43,7 @@ def test_lmstudio_tool_calling():
             }
         }
     ]
-    
+
     # Test request
     payload = {
         "model": model,
@@ -55,7 +54,7 @@ def test_lmstudio_tool_calling():
         "tool_choice": "auto",
         "temperature": 0
     }
-    
+
     try:
         response = requests.post(
             f"{base_url}/v1/chat/completions",
@@ -63,18 +62,18 @@ def test_lmstudio_tool_calling():
             headers={"Content-Type": "application/json"},
             timeout=60
         )
-        
+
         if response.status_code != 200:
             print(f"❌ Error: {response.status_code}")
             print(response.text)
             return False
-        
+
         data = response.json()
         message = data.get("choices", [{}])[0].get("message", {})
-        
-        print(f"\nResponse:")
+
+        print("\nResponse:")
         print(f"  Content: {message.get('content', '')[:200]}")
-        
+
         tool_calls = message.get("tool_calls", [])
         if tool_calls:
             print(f"  ✅ Tool calls detected: {len(tool_calls)}")
@@ -87,7 +86,7 @@ def test_lmstudio_tool_calling():
             print("  This may mean the model doesn't support tool calling")
             print("  or the prompt wasn't interpreted as needing a tool.")
             return False
-            
+
     except Exception as e:
         print(f"❌ Error: {e}")
         return False
@@ -101,13 +100,13 @@ def main():
             if "=" in line and not line.startswith("#"):
                 key, _, value = line.partition("=")
                 os.environ.setdefault(key.strip(), value.strip())
-    
+
     print("=" * 60)
     print("LM Studio Tool Calling Test")
     print("=" * 60)
-    
+
     success = test_lmstudio_tool_calling()
-    
+
     print("\n" + "=" * 60)
     if success:
         print("✅ LM Studio supports tool calling!")
@@ -117,7 +116,7 @@ def main():
         print("Consider:")
         print("  1. Loading FunctionGemma in LM Studio")
         print("  2. Installing Ollama locally and using 'ollama pull functiongemma'")
-    
+
     return 0 if success else 1
 
 

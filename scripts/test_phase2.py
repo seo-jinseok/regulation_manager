@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 """Phase 2 테스트: 4개 실패 쿼리 검색 품질 확인"""
 
-from src.rag.infrastructure.chroma_store import ChromaVectorStore
 from src.rag.application.search_usecase import SearchUseCase
+from src.rag.infrastructure.chroma_store import ChromaVectorStore
 
 store = ChromaVectorStore(persist_directory="data/chroma_db")
 usecase = SearchUseCase(store, use_reranker=False, use_hybrid=True, enable_warmup=False)

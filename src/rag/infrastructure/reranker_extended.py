@@ -20,12 +20,11 @@ import time
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
+from ..config import get_config
 from .ab_test_framework import (
     ABTestManager,
-    RerankerModelType,
     create_ab_manager,
 )
-from ..config import get_config
 
 if TYPE_CHECKING:
     from ..domain.entities import SearchResult
@@ -57,11 +56,11 @@ def get_ab_manager() -> ABTestManager:
         ABTestManager instance.
     """
     global _ab_manager
-    
+
     if _ab_manager is None:
         config = get_config()
         reranker_config = config.reranker
-        
+
         if reranker_config.enable_ab_testing:
             _ab_manager = create_ab_manager(
                 control_model=reranker_config.primary_model,
@@ -81,7 +80,7 @@ def get_ab_manager() -> ABTestManager:
                 test_models=[],
                 test_ratio=0.0,
             )
-    
+
     return _ab_manager
 
 
@@ -100,26 +99,26 @@ def load_model(model_name: str, use_fp16: bool = True) -> "FlagReranker":
         RerankerError: If model fails to load.
     """
     global _rerankers
-    
+
     if model_name in _rerankers:
         return _rerankers[model_name]
-    
+
     try:
         from FlagEmbedding import FlagReranker
-        
+
         logger.info(f"Loading reranker model: {model_name}")
         start_time = time.time()
-        
+
         _rerankers[model_name] = FlagReranker(
             model_name,
             use_fp16=use_fp16,
         )
-        
+
         load_time = time.time() - start_time
         logger.info(f"Model {model_name} loaded in {load_time:.2f}s")
-        
+
         return _rerankers[model_name]
-        
+
     except ImportError as e:
         from ..exceptions import RerankerError
         raise RerankerError(
@@ -153,7 +152,7 @@ def select_model_for_query(
     config = get_config()
     primary_model = config.reranker.primary_model
     korean_models = korean_models or config.reranker.korean_models
-    
+
     if strategy == "korean_only" and korean_models:
         return korean_models[0]
     elif strategy == "multilingual_only":
@@ -185,13 +184,13 @@ def compute_scores(
     """
     config = get_config()
     model = load_model(model_name, use_fp16=config.reranker.use_fp16)
-    
+
     scores = model.compute_score(pairs, normalize=normalize)
-    
+
     # Handle single document case
     if isinstance(scores, float):
         scores = [scores]
-    
+
     return scores
 
 
@@ -215,19 +214,19 @@ def rerank(
     """
     if not documents:
         return []
-    
+
     config = get_config()
-    
+
     # Select model
     if model_name is None:
         model_name = select_model_for_query(
             query,
             strategy=config.reranker.model_selection_strategy,
         )
-    
+
     # Compute scores with timing
     start_time = time.time()
-    
+
     try:
         scores = compute_scores(
             model_name,
@@ -238,7 +237,7 @@ def rerank(
         error = None
     except Exception as e:
         logger.error(f"Reranking failed with {model_name}: {e}")
-        
+
         # Fallback to primary model if enabled
         if config.reranker.fallback_to_multilingual and model_name != config.reranker.primary_model:
             logger.info(f"Falling back to {config.reranker.primary_model}")
@@ -254,13 +253,13 @@ def rerank(
             success = False
             error = str(e)
             scores = [0.0] * len(documents)
-    
+
     latency_ms = (time.time() - start_time) * 1000
-    
+
     # Record metrics
     ab_manager = get_ab_manager()
     ab_manager.record_result(model_name, latency_ms, success)
-    
+
     # Create results
     results = []
     for i, (doc_id, content, metadata) in enumerate(documents):
@@ -274,10 +273,10 @@ def rerank(
                 model_used=model_name,
             )
         )
-    
+
     # Sort by score descending
     results.sort(key=lambda x: x.score, reverse=True)
-    
+
     return results[:top_k]
 
 
@@ -301,21 +300,21 @@ def rerank_search_results(
     """
     if not search_results:
         return []
-    
+
     # Import from domain layer to avoid circular imports
     from ..domain.entities import SearchResult
-    
+
     # Convert SearchResult to tuples for reranking
     documents = [
         (r.chunk.id, r.chunk.text, r.chunk.to_metadata()) for r in search_results
     ]
-    
+
     # Rerank
     reranked = rerank(query, documents, top_k=top_k, model_name=model_name)
-    
+
     # Map back to SearchResult objects
     id_to_result = {r.chunk.id: r for r in search_results}
-    
+
     reranked_results = []
     for i, rr in enumerate(reranked):
         original = id_to_result.get(rr.doc_id)
@@ -328,7 +327,7 @@ def rerank_search_results(
                     rank=i + 1,
                 )
             )
-    
+
     return reranked_results
 
 
@@ -349,12 +348,12 @@ def warmup_reranker(model_name: Optional[str] = None) -> None:
                    If None, warms up all configured models.
     """
     config = get_config()
-    
+
     if model_name:
         models = [model_name]
     else:
         models = [config.reranker.primary_model] + config.reranker.korean_models
-    
+
     for model in models:
         try:
             load_model(model, use_fp16=config.reranker.use_fp16)
@@ -381,7 +380,7 @@ class KoreanReranker:
     This class provides a simple interface for Korean document reranking
     with automatic model selection and performance tracking.
     """
-    
+
     def __init__(
         self,
         model_name: Optional[str] = None,
@@ -396,7 +395,7 @@ class KoreanReranker:
         """
         self._model_name = model_name
         self._use_ab_testing = use_ab_testing
-    
+
     def rerank(
         self,
         query: str,
@@ -420,12 +419,12 @@ class KoreanReranker:
         else:
             # A/B testing mode: let framework select model
             results = rerank(query, documents, top_k=top_k, model_name=self._model_name)
-        
+
         return [
             (r.doc_id, r.content, r.score, r.metadata)
             for r in results
         ]
-    
+
     def rerank_with_context(
         self,
         query: str,
@@ -447,35 +446,35 @@ class KoreanReranker:
         """
         if not documents:
             return []
-        
+
         context = context or {}
-        
+
         # Get base reranked results
         results = rerank(query, documents, top_k=len(documents))
-        
+
         # Apply context-based boosting
         target_regulation = context.get("target_regulation")
         target_audience = context.get("target_audience")
         regulation_boost = context.get("regulation_boost", 0.15)
         audience_boost = context.get("audience_boost", 0.1)
-        
+
         boosted_results = []
         for r in results:
             boosted_score = r.score
             metadata = r.metadata
-            
+
             # Boost matching regulation
             if target_regulation:
                 doc_regulation = metadata.get("regulation_title") or metadata.get("규정명", "")
                 if target_regulation.lower() in doc_regulation.lower():
                     boosted_score = min(1.0, boosted_score + regulation_boost)
-            
+
             # Boost matching audience
             if target_audience:
                 doc_audience = metadata.get("audience", "all")
                 if doc_audience == target_audience or doc_audience == "all":
                     boosted_score = min(1.0, boosted_score + audience_boost)
-            
+
             boosted_results.append(
                 RerankedResult(
                     doc_id=r.doc_id,
@@ -486,10 +485,10 @@ class KoreanReranker:
                     model_used=r.model_used,
                 )
             )
-        
+
         # Re-sort by boosted score
         boosted_results.sort(key=lambda x: x.score, reverse=True)
-        
+
         return [
             (r.doc_id, r.content, r.score, r.metadata)
             for r in boosted_results[:top_k]

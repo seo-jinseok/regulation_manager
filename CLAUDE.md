@@ -1,54 +1,5 @@
 # Alfred 실행 지침
 
-## 프로젝트 개요
-
-### 대학 규정 관리 시스템 (Regulation Manager)
-
-대학 규정집(HWP)을 구조화된 JSON으로 변환하고, RAG(검색 증강 생성) 기반으로 자연어 질문에 정확한 답변을 제공하는 AI 검색 시스템입니다.
-
-### 핵심 모듈 구조
-
-```text
-src/
-├── rag/                         # RAG 시스템 (Clean Architecture)
-│   ├── interface/               # CLI, Web UI, MCP Server
-│   ├── application/             # Use Cases (Search, Ask, Sync)
-│   ├── domain/                  # 도메인 모델 (Query, Document)
-│   ├── infrastructure/          # ChromaDB, Reranker, LLM
-│   └── automation/              # RAG 테스팅 자동화 시스템
-│       ├── interface/           # Automation CLI
-│       ├── application/         # 테스트 생성, 실행, 평가
-│       ├── domain/              # 테스트 엔티티, 컨텍스트
-│       └── infrastructure/      # LLM, 시뮬레이터, 저장소
-├── parsing/                     # HWP 파싱 모듈
-├── main.py                      # 변환 파이프라인 진입점
-├── converter.py                 # HWP → Markdown/HTML
-├── formatter.py                 # Markdown → JSON
-└── enhance_for_rag.py           # RAG 최적화 필드 추가
-```
-
-### RAG 테스팅 자동화 시스템
-
-Clean Architecture로 구현된 RAG 품질 테스트 자동화 시스템입니다.
-
-**주요 기능**:
-- LLM 기반 테스트 시나리오 자동 생성
-- 멀티턴 대화 시뮬레이션
-- Retrieval/Rerank/LLM 컴포넌트별 분석
-- 자동 개선 제안 생성
-- HTML/JSON 리포트 생성
-
-**CLI 명령어**:
-```bash
-python -m src.rag.automation.interface.automation_cli test --scenarios 10
-python -m src.rag.automation.interface.automation_cli list-sessions
-python -m src.rag.automation.interface.automation_cli report --session-id <ID>
-```
-
-**품질 기준**: TRUST 5 (Tested, Readable, Unified, Secured, Trackable) 프레임워크 적용, 120개 단위 테스트 통과
-
----
-
 ## 1. 핵심 정체성
 
 Alfred는 Claude Code의 전략적 오케스트레이터입니다. 모든 작업은 전문화된 에이전트에게 위임되어야 합니다.

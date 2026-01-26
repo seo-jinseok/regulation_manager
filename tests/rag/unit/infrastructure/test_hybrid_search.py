@@ -88,12 +88,12 @@ class TestBM25Tokenization:
         """토크나이저 모드에 따라 결과가 달라지는지 확인"""
         bm25_simple = BM25(tokenize_mode="simple")
         bm25_morpheme = BM25(tokenize_mode="morpheme")
-        
+
         text = "교원휴직규정에 따른 신청"
-        
+
         simple_tokens = bm25_simple._tokenize(text)
         morpheme_tokens = bm25_morpheme._tokenize(text)
-        
+
         # morpheme 모드가 더 많은 토큰을 생성할 수 있음 (복합어 분리)
         assert len(simple_tokens) >= 1
         assert len(morpheme_tokens) >= 1
@@ -189,9 +189,9 @@ class TestRRFFusion:
         """RRF 점수가 올바르게 계산되는지 확인"""
         sparse = [ScoredDocument("doc1", 0.9, "c1", {})]
         dense = [ScoredDocument("doc1", 0.95, "c1", {})]
-        
+
         result = searcher.fuse_results(sparse, dense, top_k=1)
-        
+
         # RRF score = bm25_w * 1/(k+1) + dense_w * 1/(k+1)
         # = 0.5 * 1/61 + 0.5 * 1/61 = 1/61 ≈ 0.0164
         expected_score = (0.5 / 61) + (0.5 / 61)
@@ -207,9 +207,9 @@ class TestRRFFusion:
             ScoredDocument("doc2", 0.95, "c2", {}),  # doc2가 dense에서 1등
             ScoredDocument("doc1", 0.85, "c1", {}),
         ]
-        
+
         result = searcher.fuse_results(sparse, dense, top_k=2)
-        
+
         # doc1: sparse rank 1 (1/61), dense rank 2 (1/62)
         # doc2: sparse rank 2 (1/62), dense rank 1 (1/61)
         # 둘 다 비슷한 점수를 가져야 함
@@ -220,7 +220,7 @@ class TestRRFFusion:
         """RRF 융합 시 top_k가 적용되는지 확인"""
         sparse = [ScoredDocument(f"doc{i}", 0.9 - i*0.1, f"c{i}", {}) for i in range(5)]
         dense = [ScoredDocument(f"doc{i}", 0.9 - i*0.1, f"c{i}", {}) for i in range(5)]
-        
+
         result = searcher.fuse_results(sparse, dense, top_k=3)
         assert len(result) == 3
 
@@ -236,10 +236,10 @@ class TestDynamicWeights:
         """조문 참조 쿼리는 BM25 가중치가 높아야 함"""
         sparse = [ScoredDocument("doc1", 0.9, "제15조 내용", {})]
         dense = [ScoredDocument("doc2", 0.95, "다른 내용", {})]
-        
+
         # 조문 참조 쿼리
         result = searcher.fuse_results(sparse, dense, top_k=2, query_text="제15조")
-        
+
         # sparse가 선호되어 doc1이 상위에 있어야 함
         # (동적 가중치로 bm25_weight > dense_weight)
         assert result[0].doc_id == "doc1"
@@ -252,19 +252,19 @@ class TestDynamicWeights:
         dense = [
             ScoredDocument("doc1", 0.95, "학칙 규정", {}),  # 같은 문서
         ]
-        
+
         # 동적 가중치 활성화 시
         result_dynamic = searcher.fuse_results(
-            sparse, dense, top_k=1, 
+            sparse, dense, top_k=1,
             query_text="학칙이 무엇인가요?"
         )
-        
+
         # 정적 가중치 (query_text 없이)
         result_static = searcher.fuse_results(
-            sparse, dense, top_k=1, 
+            sparse, dense, top_k=1,
             query_text=None
         )
-        
+
         # 점수가 다르면 동적 가중치가 적용된 것
         # (같은 문서이지만 가중치가 다르면 최종 점수가 다름)
         assert len(result_dynamic) == 1
@@ -277,16 +277,16 @@ class TestDynamicWeights:
             dense_weight=0.7,
             use_dynamic_weights=False,
         )
-        
+
         sparse = [ScoredDocument("doc1", 0.9, "c1", {})]
         dense = [ScoredDocument("doc2", 0.95, "c2", {})]
-        
+
         # query_text 제공해도 동적 가중치 미사용
         result = searcher.fuse_results(
-            sparse, dense, top_k=2, 
+            sparse, dense, top_k=2,
             query_text="제15조"  # 조문 참조지만 무시됨
         )
-        
+
         # 정적 가중치 0.7 dense가 높으므로 doc2 선호
         # dense: 0.7/61, sparse: 0.3/61 → doc2 점수가 더 높음
         assert result[0].doc_id == "doc2"
@@ -317,7 +317,7 @@ class TestQueryExpansion:
         searcher.add_documents([
             ("doc1", "교원인사규정에 따른 임용", {}),
         ])
-        
+
         # "교수"로 검색해도 "교원" 문서가 검색되어야 함 (동의어 확장)
         results = searcher.search_sparse("교수 임용")
         assert len(results) > 0
@@ -349,17 +349,17 @@ class TestMorphologicalTokenization:
         """형태소 분석이 재현율을 개선하는지 확인"""
         bm25_simple = BM25(tokenize_mode="simple")
         bm25_morpheme = BM25(tokenize_mode="morpheme")
-        
+
         docs = [
             ("doc1", "육아휴직에 관한 규정", {}),
         ]
         bm25_simple.add_documents(docs)
         bm25_morpheme.add_documents(docs)
-        
+
         # "휴직" 단독 검색 시 morpheme 모드가 더 잘 찾아야 함
         results_simple = bm25_simple.search("휴직 신청")
         results_morpheme = bm25_morpheme.search("휴직 신청")
-        
+
         # 형태소 분석 모드에서 더 높은 점수 기대
         assert len(results_morpheme) >= len(results_simple)
 
@@ -395,16 +395,16 @@ class TestDynamicRRFk:
     def test_fuse_uses_dynamic_rrf_k(self):
         """fuse_results가 동적 k값을 사용하는지 확인"""
         searcher = HybridSearcher(rrf_k=60, use_dynamic_rrf_k=True)
-        
+
         sparse = [ScoredDocument("doc1", 0.9, "제15조 내용", {})]
         dense = [ScoredDocument("doc1", 0.95, "제15조 내용", {})]
-        
+
         # 조문 참조 쿼리로 k가 낮아지면 점수가 달라짐
         result_dynamic = searcher.fuse_results(
-            sparse, dense, top_k=1, 
+            sparse, dense, top_k=1,
             query_text="제15조"
         )
-        
+
         # k가 낮을수록 상위 순위의 점수 차이가 커짐
         # RRF score = 1/(k+rank), k가 작을수록 점수 높음
         assert result_dynamic[0].score > 0
@@ -421,10 +421,10 @@ class TestBM25IndexPersistence:
             ("doc2", "학생 장학금 지급 규정", {}),
         ]
         bm25.add_documents(documents)
-        
+
         cache_path = tmp_path / "bm25_index.pkl"
         bm25.save_index(str(cache_path))
-        
+
         assert cache_path.exists()
         assert cache_path.stat().st_size > 0
 
@@ -438,20 +438,20 @@ class TestBM25IndexPersistence:
             ("doc3", "연구비 사용 지침 안내", {}),
         ]
         bm25_original.add_documents(documents)
-        
+
         cache_path = tmp_path / "bm25_index.pkl"
         bm25_original.save_index(str(cache_path))
-        
+
         # 2. 새 인스턴스에서 로드
         bm25_loaded = BM25()
         success = bm25_loaded.load_index(str(cache_path))
-        
+
         assert success is True
-        
+
         # 3. 검색이 동일하게 작동하는지 확인
         original_results = bm25_original.search("휴직 신청", top_k=3)
         loaded_results = bm25_loaded.search("휴직 신청", top_k=3)
-        
+
         assert len(original_results) == len(loaded_results)
         assert [r.doc_id for r in original_results] == [r.doc_id for r in loaded_results]
         for orig, loaded in zip(original_results, loaded_results):
@@ -470,13 +470,13 @@ class TestBM25IndexPersistence:
             ("doc1", "테스트 문서 내용", {"meta": "value"}),
         ]
         bm25_original.add_documents(documents)
-        
+
         cache_path = tmp_path / "bm25_index.pkl"
         bm25_original.save_index(str(cache_path))
-        
+
         bm25_loaded = BM25()
         bm25_loaded.load_index(str(cache_path))
-        
+
         # 모든 속성이 복원되었는지 확인
         assert bm25_loaded.k1 == bm25_original.k1
         assert bm25_loaded.b == bm25_original.b
@@ -493,19 +493,19 @@ class TestHybridSearcherIndexCache:
         """add_documents가 index_cache_path에 캐시를 저장하는지 확인"""
         cache_path = tmp_path / "hybrid_bm25.pkl"
         searcher = HybridSearcher(index_cache_path=str(cache_path))
-        
+
         documents = [
             ("doc1", "교원 휴직 규정", {}),
             ("doc2", "학생 장학금 규정", {}),
         ]
         searcher.add_documents(documents)
-        
+
         assert cache_path.exists()
 
     def test_add_documents_loads_from_cache(self, tmp_path):
         """add_documents가 기존 캐시에서 로드하는지 확인"""
         cache_path = tmp_path / "hybrid_bm25.pkl"
-        
+
         # 1. 첫 번째 searcher - 캐시 생성
         searcher1 = HybridSearcher(index_cache_path=str(cache_path))
         documents = [
@@ -513,14 +513,14 @@ class TestHybridSearcherIndexCache:
             ("doc2", "학생 장학금 규정", {}),
         ]
         searcher1.add_documents(documents)
-        
+
         # 2. 두 번째 searcher - 캐시에서 로드 (새 문서 리스트 전달해도 무시됨)
         searcher2 = HybridSearcher(index_cache_path=str(cache_path))
         new_documents = [
             ("doc3", "다른 내용", {}),  # 이 문서는 추가되지 않아야 함
         ]
         searcher2.add_documents(new_documents)
-        
+
         # 캐시에서 로드했으므로 원래 문서만 검색 가능
         assert searcher2.bm25.doc_count == 2
         assert "doc1" in searcher2.bm25.documents

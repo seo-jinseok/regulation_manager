@@ -5,16 +5,13 @@ Tests clean architecture compliance with mocked dependencies.
 """
 
 import json
-import pytest
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import Dict, List, Optional, Set
 
 from src.rag.application.sync_usecase import SyncUseCase
 from src.rag.domain.entities import Chunk, ChunkLevel, RegulationOverview
 from src.rag.domain.repositories import IDocumentLoader, IVectorStore
-from src.rag.domain.value_objects import SyncResult, SyncState, SearchFilter
-
+from src.rag.domain.value_objects import SyncState
 
 # ====================
 # Helper factories

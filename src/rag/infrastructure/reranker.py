@@ -316,7 +316,7 @@ class KoreanReranker(IReranker):
     
     This is a convenience wrapper around the extended reranker functionality.
     """
-    
+
     def __init__(
         self,
         model_name: Optional[str] = None,
@@ -336,7 +336,7 @@ class KoreanReranker(IReranker):
             logger.warning("Extended reranker not available, using BGEReranker")
             self._impl = BGEReranker(model_name)
         self._model_name = model_name
-    
+
     def rerank(
         self,
         query: str,
@@ -345,7 +345,7 @@ class KoreanReranker(IReranker):
     ) -> List[tuple]:
         """Rerank Korean documents."""
         return self._impl.rerank(query, documents, top_k)
-    
+
     def rerank_with_context(
         self,
         query: str,

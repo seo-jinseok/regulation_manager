@@ -4,9 +4,9 @@
 import json
 from pathlib import Path
 
-from src.rag.infrastructure.chroma_store import ChromaVectorStore
-from src.rag.application.search_usecase import SearchUseCase
 from src.rag.application.evaluate import EvaluationUseCase, TestCase
+from src.rag.application.search_usecase import SearchUseCase
+from src.rag.infrastructure.chroma_store import ChromaVectorStore
 
 # Load store
 store = ChromaVectorStore(persist_directory="data/chroma_db")
@@ -44,9 +44,9 @@ for query in failures:
         min_relevance_score=tc_data.get("min_relevance_score", 0.05),
         category=tc_data.get("category", "general"),
     )
-    
+
     result = evaluator.evaluate_single(tc, top_k=5)
-    
+
     print(f"=== {query} ===")
     print(f"  Passed: {result.passed}")
     print(f"  Intent matched: {result.intent_matched} (expected: {tc.expected_intents})")

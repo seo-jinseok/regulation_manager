@@ -1,6 +1,5 @@
 """Tests for QueryHandler input validation."""
 
-import pytest
 
 from src.rag.interface.query_handler import QueryHandler
 

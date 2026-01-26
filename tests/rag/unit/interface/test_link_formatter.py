@@ -1,11 +1,10 @@
-import pytest
 from src.rag.interface.link_formatter import (
-    RegulationRef,
+    extract_and_format_references,
     extract_regulation_references,
     format_as_markdown_links,
     format_as_numbered_list,
-    extract_and_format_references,
 )
+
 
 class TestLinkFormatter:
     def test_extract_regulation_references(self):
@@ -31,7 +30,7 @@ class TestLinkFormatter:
         # Note: rule_code is None here, so it remains blank or template might keep it?
         # The implementation replaces {rule_code} if ref.rule_code exists.
         # If ref.rule_code is None, it won't be replaced if logic is strictly "if ref.rule_code".
-        # Let's check implementation again. 
+        # Let's check implementation again.
         # "if "{rule_code}" in link_template and ref.rule_code:"
         # So if rule_code is None, it is NOT replaced.
         # Ideally we want to test with rule code or check behavior without it.

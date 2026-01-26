@@ -1,6 +1,5 @@
 """Unit tests for FactChecker."""
 
-import pytest
 
 from src.rag.infrastructure.fact_checker import Citation, FactChecker, FactCheckResult
 

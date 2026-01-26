@@ -9,8 +9,6 @@ import json
 import tempfile
 from pathlib import Path
 
-import pytest
-
 from src.rag.automation.domain.entities import (
     DifficultyLevel,
     PersonaType,

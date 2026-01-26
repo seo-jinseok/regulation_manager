@@ -2,7 +2,6 @@
 Unit tests for query_suggestions module.
 """
 
-import pytest
 
 from src.rag.interface.query_suggestions import (
     INITIAL_QUERY_EXAMPLES,

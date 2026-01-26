@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """Test query analyzer and weights after code change"""
-import sys
 import os
+import sys
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 # Search using query analyzer expansion
 from src.rag.infrastructure.query_analyzer import QueryAnalyzer
+
 analyzer = QueryAnalyzer()
 
 test_queries = [
@@ -22,21 +24,21 @@ print("=== Query Analyzer Test (after WEIGHT_PRESETS change) ===\n")
 
 for q in test_queries:
     print(f"Query: {q}")
-    
+
     # Check query type detection
     qtype = analyzer.analyze(q)
     print(f"  Query Type: {qtype}")
-    
+
     # Get weights
     weights = analyzer.get_weights(q)
     print(f"  Weights (BM25, Dense): {weights}")
-    
+
     # Expanded query
     expanded = analyzer.expand_query(q)
     if len(expanded) > 80:
         expanded = expanded[:80] + "..."
     print(f"  Expanded: {expanded}")
-    
+
     # Intent matches
     intents = analyzer._match_intents(q)
     if intents:
@@ -44,6 +46,6 @@ for q in test_queries:
         print(f"  Intent: {top_intent.intent_id} / {top_intent.label}")
         print(f"  Intent Keywords: {top_intent.keywords[:5]}...")
     else:
-        print(f"  Intent: None")
-    
+        print("  Intent: None")
+
     print()

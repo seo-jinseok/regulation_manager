@@ -10,7 +10,7 @@ Implements advanced retrieval evaluation and correction mechanisms:
 
 import logging
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
@@ -506,7 +506,7 @@ class CRAGRetriever:
 
         stopwords = {
             "은", "는", "이", "가", "을", "를", "의", "에", "로", "으로",
-            "하다", "되다", "이다", "없다", "있다", "그", "이", "저",
+            "하다", "되다", "이다", "없다", "있다", "그", "저",
         }
 
         return [t for t in tokens if len(t) >= 2 and t not in stopwords]

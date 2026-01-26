@@ -7,10 +7,10 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
+from src.rag.application.evaluate import EvaluationUseCase
+from src.rag.application.search_usecase import SearchUseCase
 from src.rag.infrastructure.chroma_store import ChromaVectorStore
 from src.rag.infrastructure.llm_adapter import LLMClientAdapter
-from src.rag.application.search_usecase import SearchUseCase
-from src.rag.application.evaluate import EvaluationUseCase
 
 # Load dataset
 dataset_path = PROJECT_ROOT / "data" / "config" / "evaluation_dataset.json"
@@ -42,36 +42,36 @@ for query in failed_queries:
     if not tc:
         print(f"[NOT FOUND] {query}")
         continue
-    
+
     # Run search
     results = search.search(query, top_k=5)
     rewrite_info = search.get_last_query_rewrite()
-    
+
     # Get metrics
     matched_intents = rewrite_info.matched_intents if rewrite_info else []
     rewritten = rewrite_info.rewritten if rewrite_info else query
     found_codes = [r.chunk.rule_code for r in results[:5]]
     top_score = results[0].score if results else 0.0
-    
+
     # Check conditions
     expected_intents = tc.get("expected_intents", [])
     expected_keywords = tc.get("expected_keywords", [])
     expected_codes = tc.get("expected_rule_codes", [])
     min_score = tc.get("min_relevance_score", 0.1)
-    
+
     # Intent match
     intent_matched = bool(set([i.lower() for i in expected_intents]) & set([m.lower() for m in matched_intents])) if expected_intents else True
-    
+
     # Keyword coverage
     found_keywords = [kw for kw in expected_keywords if kw.lower() in rewritten.lower()]
     keyword_coverage = len(found_keywords) / len(expected_keywords) if expected_keywords else 1.0
-    
+
     # Code match
     code_matched = bool(set(expected_codes) & set(found_codes)) if expected_codes else True
-    
+
     # Score pass
     score_pass = top_score >= min_score
-    
+
     # Overall
     passed = (
         (not expected_intents or intent_matched)
@@ -79,7 +79,7 @@ for query in failed_queries:
         and (not expected_codes or code_matched)
         and score_pass
     )
-    
+
     print(f"Query: {query}")
     print(f"  ID: {tc['id']}")
     print()

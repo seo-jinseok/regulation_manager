@@ -5,6 +5,7 @@ Provides mock responses for testing without actual API calls.
 """
 
 from typing import List
+
 from src.rag.domain.repositories import ILLMClient
 
 

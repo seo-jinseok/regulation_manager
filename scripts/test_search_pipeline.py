@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Test full search pipeline with updated weights"""
-import sys
 import os
+import sys
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from src.rag.application.search_usecase import SearchUseCase
@@ -25,35 +26,35 @@ for query, expected_codes, expected_keywords in failed_queries:
     print(f"Query: {query}")
     print(f"  Expected codes: {expected_codes}")
     print(f"  Expected keywords: {expected_keywords}")
-    
+
     results = search.search(query, top_k=5)
-    
+
     # Get query rewrite info
     rewrite = search.get_last_query_rewrite()
     if rewrite:
         print(f"  Rewritten: {rewrite.rewritten[:80]}...")
-    
-    print(f"  Results:")
+
+    print("  Results:")
     found_codes = []
     found_keywords_in_results = set()
-    
+
     for r in results:
         code = r.chunk.rule_code
         found_codes.append(code)
         content = r.chunk.text.lower()
-        
+
         # Check keywords in result
         for kw in expected_keywords:
             if kw.lower() in content:
                 found_keywords_in_results.add(kw)
-        
+
         parent = ' > '.join(r.chunk.parent_path) if r.chunk.parent_path else code
         print(f"    [{r.score:.3f}] {code} | {parent[:50]}...")
-    
+
     # Check pass/fail
     code_match = not expected_codes or any(c in found_codes for c in expected_codes)
     kw_coverage = len(found_keywords_in_results) / len(expected_keywords) if expected_keywords else 1.0
-    
+
     status = "PASS" if code_match and kw_coverage >= 0.5 else "FAIL"
     print(f"  Code Match: {code_match} | KW Coverage: {kw_coverage:.1%} | Status: {status}")
     print()

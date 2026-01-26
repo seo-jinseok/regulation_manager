@@ -8,6 +8,8 @@ for Korean-specific semantic search.
 import logging
 from typing import List, Optional
 
+import numpy as np
+
 logger = logging.getLogger(__name__)
 
 # Singleton pattern for embedding models
@@ -90,22 +92,25 @@ def get_default_embedding_function():
     Get the default embedding function based on RAG configuration.
 
     Returns:
-        ChromaDB-compatible embedding function using the configured model.
+        ChromaDB-compatible EmbeddingFunctionWrapper instance using the configured model.
 
     Raises:
         ImportError: If sentence-transformers is not installed.
     """
     try:
         from ..config import get_config
+
         config = get_config()
         model_name = config.get_embedding_model_name()
         logger.info(f"Using configured embedding model: {model_name}")
     except Exception:
-        # Fallback to ko-sbert if config is unavailable
-        model_name = "jhgan/ko-sbert-sts"
+        # Fallback to multilingual model if config is unavailable
+        # Using paraphrase-multilingual-MiniLM-L12-v2 (384 dims) for compatibility with existing DB
+        model_name = "paraphrase-multilingual-MiniLM-L12-v2"
         logger.warning(f"Config unavailable, using fallback model: {model_name}")
 
-    return get_embedding_function(model_name)
+    # Return EmbeddingFunctionWrapper instance instead of plain function
+    return EmbeddingFunctionWrapper(model_name)
 
 
 class EmbeddingFunctionWrapper:
@@ -113,6 +118,7 @@ class EmbeddingFunctionWrapper:
     Wrapper class for sentence-transformers embedding functions.
 
     Provides a clean interface compatible with ChromaDB's expectations.
+    Implements the ChromaDB 0.4.16+ EmbeddingFunction interface.
     """
 
     def __init__(self, model_name: Optional[str] = None):
@@ -127,27 +133,77 @@ class EmbeddingFunctionWrapper:
         else:
             self._model_name = model_name
         self._embedding_func = None
+        self._model = None  # Will load the actual SentenceTransformer model
 
-    def _get_function(self):
-        """Lazy-load the embedding function."""
-        if self._embedding_func is None:
-            if self._model_name is None:
-                self._embedding_func = get_default_embedding_function()
-            else:
-                self._embedding_func = get_embedding_function(self._model_name)
-        return self._embedding_func
+    def _get_model(self):
+        """Lazy-load the SentenceTransformer model."""
+        if self._model is None:
+            try:
+                from sentence_transformers import SentenceTransformer
 
-    def __call__(self, texts: List[str]) -> List[List[float]]:
+                if self._model_name is None:
+                    self._model_name = "jhgan/ko-sbert-sts"
+                self._model = SentenceTransformer(self._model_name)
+                logger.info(f"Loaded SentenceTransformer model: {self._model_name}")
+            except Exception as e:
+                logger.error(f"Failed to load model: {e}")
+                raise
+        return self._model
+
+    def __call__(self, input: List[str]) -> List[np.ndarray]:
         """
-        Generate embeddings for texts.
+        Generate embeddings for texts (ChromaDB 0.4.16+ interface).
 
         Args:
-            texts: List of text strings to embed.
+            input: List of text strings to embed.
+
+        Returns:
+            List of embedding vectors as numpy arrays.
+        """
+        model = self._get_model()
+        embeddings = model.encode(
+            input,
+            convert_to_numpy=True,
+            show_progress_bar=False,
+            normalize_embeddings=True,
+        )
+        # Handle both single and multiple inputs
+        if embeddings.ndim == 1:
+            # Single input, convert to 2D array
+            embeddings = embeddings.reshape(1, -1)
+        # Convert to list of 1D numpy arrays
+        return [embeddings[i].astype(np.float32) for i in range(len(embeddings))]
+
+    def embed_query(self, input) -> List[np.ndarray]:
+        """
+        Embed a single query string (ChromaDB query interface).
+
+        Args:
+            input: Query text to embed (can be string or list).
+
+        Returns:
+            List of embedding vectors as numpy arrays.
+        """
+        # For queries, just call __call__ with the input
+        # ChromaDB passes either a string or list of strings
+        if isinstance(input, str):
+            return self([input])
+        elif isinstance(input, list):
+            return self(input)
+        else:
+            return self([str(input)])
+
+    def embed_documents(self, input: List[str]) -> List[List[float]]:
+        """
+        Embed multiple documents (ChromaDB document interface).
+
+        Args:
+            input: List of document texts to embed.
 
         Returns:
             List of embedding vectors.
         """
-        return self._get_function()(texts)
+        return self(input)
 
 
 # Convenience function for backward compatibility

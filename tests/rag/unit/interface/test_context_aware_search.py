@@ -1,5 +1,6 @@
 from src.rag.interface.chat_logic import expand_followup_query
 
+
 def test_expand_followup_query_with_article_reference():
     """Test that context is applied when user queries for a specific article."""
     context = "교원인사규정"

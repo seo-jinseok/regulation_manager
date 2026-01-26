@@ -17,7 +17,7 @@ def main():
     print(f"\nMatched intents: {rewrite.matched_intents if rewrite else []}")
     print(f"Rewritten query: {rewrite.rewritten if rewrite else query}")
 
-    print(f"\n=== Top 10 Results ===")
+    print("\n=== Top 10 Results ===")
     for i, r in enumerate(results[:10]):
         c = r.chunk
         print(f"{i+1}. [{c.rule_code}] {c.title} (score: {r.score:.4f})")

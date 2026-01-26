@@ -6,10 +6,7 @@ Tests query generation and intent analysis logic.
 
 from unittest.mock import Mock
 
-import pytest
-
 from src.rag.automation.domain.entities import DifficultyLevel, PersonaType
-from src.rag.automation.domain.value_objects import IntentAnalysis
 from src.rag.automation.infrastructure.llm_persona_generator import PersonaGenerator
 from src.rag.automation.infrastructure.llm_query_generator import (
     LLMQueryGenerator,

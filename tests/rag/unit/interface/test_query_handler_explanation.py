@@ -8,11 +8,12 @@ from dataclasses import dataclass, field
 from typing import List, Optional
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 from src.rag.domain.entities import ChunkLevel
-from src.rag.interface.query_handler import QueryHandler, QueryOptions, QueryResult, QueryType
-
+from src.rag.interface.query_handler import (
+    QueryHandler,
+    QueryOptions,
+    QueryType,
+)
 
 # ============================================================================
 # Mock Classes

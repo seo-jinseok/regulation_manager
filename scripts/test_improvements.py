@@ -4,10 +4,11 @@
 from src.rag.infrastructure.query_analyzer import QueryAnalyzer
 from src.rag.interface.query_handler import detect_deletion_warning
 
+
 def test_decompose_query():
     """Test query decomposition."""
     qa = QueryAnalyzer()
-    
+
     test_queries = [
         "장학금 받으면서 휴학",
         "교원 휴직 그리고 복직",
@@ -15,7 +16,7 @@ def test_decompose_query():
         "학교 그만두고 싶어",
         "휴학하고 장학금 어떻게 되나요",
     ]
-    
+
     print("=== decompose_query 테스트 ===")
     for q in test_queries:
         result = qa.decompose_query(q)
@@ -35,7 +36,7 @@ def test_deletion_warning():
         "삭제(2020)",
         "본 항은 삭제함",
     ]
-    
+
     print("=== 삭제 조항 감지 테스트 ===")
     for t in test_texts:
         result = detect_deletion_warning(t)
@@ -49,14 +50,14 @@ def test_deletion_warning():
 def test_intent_patterns():
     """Test intent pattern matching for new patterns."""
     qa = QueryAnalyzer()
-    
+
     test_queries = [
         "부당대우 당했어요",
-        "교수님이 갑질해요", 
+        "교수님이 갑질해요",
         "학자금 대출 받고 싶어요",
         "장학금 받으면서 휴학하면 어떻게 되나요",
     ]
-    
+
     print("=== 인텐트 매칭 테스트 ===")
     for q in test_queries:
         matches = qa._match_intents(q)

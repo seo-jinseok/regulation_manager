@@ -3,8 +3,6 @@
 import json
 from pathlib import Path
 
-import pytest
-
 
 class TestPromptLoading:
     """Test prompt loading from prompts.json."""

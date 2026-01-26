@@ -93,6 +93,11 @@ FALLBACK_RULES: List[ExpansionRule] = [
         intent="교원 승진 문의",
     ),
     ExpansionRule(
+        patterns=["평가", "교수 평가", "교원 평가", "업적 평가", "성과 평가"],
+        keywords=["업적평가", "교원", "교원인사규정", "연구성과", "교육성과"],
+        intent="교원 업적 평가 문의",
+    ),
+    ExpansionRule(
         patterns=["휴학", "휴직", "가기 싫", "쉬고 싶"],
         keywords=["휴학", "휴직", "연구년", "안식년", "복학"],
         intent="휴학/휴직 문의",

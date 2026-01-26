@@ -170,19 +170,10 @@ Step 4 - Completion Check:
 
 Language-Specific Commands:
 
-Python:
-  - Full suite: pytest --tb=short (use batch mode for 2000+ tests)
-  - Quick test: pytest tests/rag/unit/application/ -n 2 --no-cov --maxfail=5
-  - Batch script: ./scripts/run_tests_batched.sh
-  - Coverage: coverage run -m pytest (separate execution)
+Python: pytest --tb=short for tests, coverage run -m pytest for coverage
 TypeScript: npm test or jest for tests, npm run coverage for coverage
 Go: go test ./... for tests, go test -cover ./... for coverage
 Rust: cargo test for tests, cargo tarpaulin for coverage
-
-**MEMORY SAFETY**: For projects with 1000+ tests, use batched testing:
-  - Quick: ./scripts/quick_test.sh (critical tests only)
-  - Batch: ./scripts/run_tests_batched.sh (all tests in chunks)
-  - Manual: pytest -n 2 --no-cov (limit workers, disable coverage)
 
 ## TODO-Obsessive Rule
 
@@ -374,13 +365,6 @@ Simply send any message to interrupt the loop. The loop state is automatically s
 
 ---
 
-Version: 2.2.0
-Last Updated: 2026-01-25
+Version: 2.1.0
+Last Updated: 2026-01-11
 Core: Agentic AI Autonomous Loop
-
-## Changelog
-
-### v2.2.0 (2026-01-25)
-- Added memory safety guidance for large test suites (1000+ tests)
-- Added batched testing script references for Python projects
-- Quick test mode for rapid feedback during development

@@ -81,12 +81,14 @@ class LLMClient:
             )
 
         elif self.provider == "ollama":
-            # Default to a good small korean model if not specified
-            model_name = self.model or "gemma2"
+            # Default to a model that's commonly available
+            # Try llama3.2 first (most commonly available), then gemma2
+            model_name = self.model or "llama3.2:latest"
             return Ollama(
                 model=model_name,
                 base_url=self.base_url or "http://localhost:11434",
-                request_timeout=300.0,
+                request_timeout=600.0,  # Increased from 300.0 for slower models
+                timeout=600.0,  # Additional timeout for some llama-index versions
             )
 
         elif self.provider in ["local", "lmstudio", "mlx"]:

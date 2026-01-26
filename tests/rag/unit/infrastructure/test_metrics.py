@@ -11,13 +11,13 @@ Tests cover:
 """
 
 import json
-import pytest
-from pathlib import Path
 from datetime import datetime, timedelta
-from typing import Dict, Any
+from pathlib import Path
+
+import pytest
 
 from src.rag.domain.entities import RerankingMetrics
-from src.rag.infrastructure.metrics import MetricsRepository, MetricsReporter
+from src.rag.infrastructure.metrics import MetricsReporter, MetricsRepository
 
 
 @pytest.fixture

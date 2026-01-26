@@ -2,7 +2,6 @@
 Unit tests for _extract_source_metadata in main.py
 """
 
-import pytest
 
 from src.main import _extract_source_metadata
 

@@ -7,19 +7,19 @@ Tests cover:
 - Component score evaluation (top score, keyword overlap, diversity)
 """
 
-import pytest
 from unittest.mock import MagicMock
-from typing import List
+
+import pytest
 
 from src.rag.infrastructure.retrieval_evaluator import (
-    RetrievalEvaluator,
     CorrectionStrategy,
+    RetrievalEvaluator,
 )
 
 
 class FakeChunk:
     """Fake Chunk for testing."""
-    
+
     def __init__(
         self,
         id: str,
@@ -35,7 +35,7 @@ class FakeChunk:
 
 class FakeSearchResult:
     """Fake SearchResult for testing."""
-    
+
     def __init__(self, chunk: FakeChunk, score: float, rank: int = 1):
         self.chunk = chunk
         self.score = score
@@ -81,8 +81,8 @@ class TestRetrievalEvaluatorBasic:
         """관련성 높은 결과는 높은 점수"""
         results = [
             make_result(
-                "doc1", 
-                "장학금 신청 절차와 방법에 대한 규정", 
+                "doc1",
+                "장학금 신청 절차와 방법에 대한 규정",
                 0.95,
                 title="장학금 규정",
                 rule_code="3-1-24",
@@ -164,15 +164,15 @@ class TestNeedsCorrection:
     def test_custom_threshold(self):
         """사용자 정의 임계값 적용"""
         strict_evaluator = RetrievalEvaluator(relevance_threshold=0.8)
-        
+
         results = [
             make_result("doc1", "장학금 내용", 0.6, title="장학규정"),
             make_result("doc2", "장학금 신청", 0.55, title="장학세칙"),
         ]
-        
+
         # 0.8 임계값으로는 수정 필요
         assert strict_evaluator.needs_correction("장학금", results) is True
-        
+
         # 0.4 임계값으로는 수정 불필요
         lenient_evaluator = RetrievalEvaluator(relevance_threshold=0.4)
         assert lenient_evaluator.needs_correction("장학금", results) is False
@@ -189,10 +189,10 @@ class TestComponentScores:
         """Top result score가 반영되는지 확인"""
         high_score_results = [make_result("doc1", "content", 0.95)]
         low_score_results = [make_result("doc1", "content", 0.3)]
-        
+
         high_eval = evaluator._evaluate_top_score(high_score_results)
         low_eval = evaluator._evaluate_top_score(low_score_results)
-        
+
         assert high_eval > low_eval
 
     def test_keyword_overlap_component(self, evaluator: RetrievalEvaluator):
@@ -205,10 +205,10 @@ class TestComponentScores:
         low_overlap = [
             make_result("doc1", "무관한 내용", 0.8, title="다른규정"),
         ]
-        
+
         high_score = evaluator._evaluate_keyword_overlap("장학금 신청", high_overlap)
         low_score = evaluator._evaluate_keyword_overlap("장학금 신청", low_overlap)
-        
+
         assert high_score > low_score
 
     def test_diversity_component(self, evaluator: RetrievalEvaluator):
@@ -225,10 +225,10 @@ class TestComponentScores:
             make_result("doc2", "content", 0.7, rule_code="1-1-2"),
             make_result("doc3", "content", 0.6, rule_code="1-1-3"),
         ]
-        
+
         diverse_score = evaluator._evaluate_diversity(diverse_results)
         same_score = evaluator._evaluate_diversity(same_source)
-        
+
         assert diverse_score > same_score
 
 
@@ -274,10 +274,10 @@ class TestCorrectionStrategy:
         """쿼리 확장으로 수정된 쿼리 반환"""
         mock_analyzer = MagicMock()
         mock_analyzer.expand_query.return_value = "original query 동의어1 동의어2"
-        
+
         strategy = CorrectionStrategy(query_analyzer=mock_analyzer)
         result = strategy.get_corrected_query("original query")
-        
+
         assert result == "original query 동의어1 동의어2"
         mock_analyzer.expand_query.assert_called_once_with("original query")
 
@@ -285,24 +285,24 @@ class TestCorrectionStrategy:
         """확장되지 않으면 LLM 리라이팅 시도"""
         mock_analyzer = MagicMock()
         mock_analyzer.expand_query.return_value = "original query"  # 변화 없음
-        
+
         mock_rewrite_result = MagicMock()
         mock_rewrite_result.rewritten = "rewritten query"
         mock_analyzer.rewrite_query_with_info.return_value = mock_rewrite_result
-        
+
         strategy = CorrectionStrategy(query_analyzer=mock_analyzer)
         result = strategy.get_corrected_query("original query")
-        
+
         assert result == "rewritten query"
 
     def test_get_corrected_query_expansion_preferred(self):
         """확장이 있으면 LLM 리라이팅보다 우선"""
         mock_analyzer = MagicMock()
         mock_analyzer.expand_query.return_value = "expanded query"
-        
+
         strategy = CorrectionStrategy(query_analyzer=mock_analyzer)
         result = strategy.get_corrected_query("original query")
-        
+
         # LLM 리라이팅이 호출되지 않아야 함
         mock_analyzer.rewrite_query_with_info.assert_not_called()
         assert result == "expanded query"
@@ -315,13 +315,13 @@ class TestDynamicThresholds:
         """쿼리 유형별 임계값 딕셔너리를 받을 수 있어야 함."""
         thresholds = {"simple": 0.3, "medium": 0.4, "complex": 0.5}
         evaluator = RetrievalEvaluator(relevance_threshold=thresholds)
-        
+
         assert evaluator._thresholds == thresholds
 
     def test_float_threshold_converted_to_dict(self):
         """단일 float 임계값은 내부적으로 딕셔너리로 변환."""
         evaluator = RetrievalEvaluator(relevance_threshold=0.35)
-        
+
         # 모든 쿼리 유형에 동일한 임계값 적용
         assert evaluator._thresholds["simple"] == 0.35
         assert evaluator._thresholds["medium"] == 0.35
@@ -331,16 +331,16 @@ class TestDynamicThresholds:
         """needs_correction이 쿼리 복잡도를 고려해야 함."""
         thresholds = {"simple": 0.3, "medium": 0.4, "complex": 0.5}
         evaluator = RetrievalEvaluator(relevance_threshold=thresholds)
-        
+
         # 점수 0.35인 결과
         results = [
             make_result("doc1", "내용", 0.35, rule_code="1-1-1"),
             make_result("doc2", "내용2", 0.30, rule_code="2-1-1"),
         ]
-        
+
         # simple (임계값 0.3): 0.35 > 0.3 → 수정 불필요
         assert evaluator.needs_correction("쿼리", results, complexity="simple") is False
-        
+
         # complex (임계값 0.5): 0.35 < 0.5 → 수정 필요
         assert evaluator.needs_correction("쿼리", results, complexity="complex") is True
 
@@ -348,12 +348,12 @@ class TestDynamicThresholds:
         """complexity 미지정 시 medium 사용."""
         thresholds = {"simple": 0.3, "medium": 0.4, "complex": 0.5}
         evaluator = RetrievalEvaluator(relevance_threshold=thresholds)
-        
+
         results = [
             make_result("doc1", "내용", 0.35, rule_code="1-1-1"),
             make_result("doc2", "내용2", 0.30, rule_code="2-1-1"),
         ]
-        
+
         # medium (임계값 0.4): 0.35 < 0.4 → 수정 필요
         assert evaluator.needs_correction("쿼리", results) is True
 
@@ -361,10 +361,10 @@ class TestDynamicThresholds:
         """설정에서 기본 임계값을 가져와야 함."""
         from src.rag.config import get_config, reset_config
         reset_config()
-        
+
         evaluator = RetrievalEvaluator()
         config = get_config()
-        
+
         assert evaluator._thresholds == config.corrective_rag_thresholds
         reset_config()
 
@@ -375,7 +375,7 @@ class TestEvaluatorWeights:
     def test_weight_distribution(self):
         """가중치 분포 확인: top 50%, keyword 30%, diversity 20%"""
         evaluator = RetrievalEvaluator()
-        
+
         # 모든 컴포넌트가 1.0일 때 최종 점수도 1.0
         results = [
             make_result(
@@ -400,8 +400,8 @@ class TestEvaluatorWeights:
                 rule_code="3-1-1",
             ),
         ]
-        
+
         score = evaluator.evaluate("장학금 신청", results)
-        
+
         # 모든 컴포넌트가 높으면 최종 점수도 높아야 함
         assert score >= 0.7

@@ -17,7 +17,7 @@ for intent in intents:
         if trigger in query:
             matches.append((intent["id"], intent["label"], trigger, "trigger"))
             break
-    
+
     for pattern in intent.get("patterns", []):
         if re.search(pattern, query):
             matches.append((intent["id"], intent["label"], pattern, "pattern"))

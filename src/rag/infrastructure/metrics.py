@@ -7,7 +7,6 @@ for RerankingMetrics collected from SearchUseCase.
 
 import json
 import logging
-from dataclasses import asdict
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional

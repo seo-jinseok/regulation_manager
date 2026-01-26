@@ -5,15 +5,16 @@ Tests the sentence-transformers based embedding functions
 for Korean semantic search with ko-sbert-sts model.
 """
 
-import pytest
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from src.rag.infrastructure.embedding_function import (
-    get_embedding_function,
-    get_default_embedding_function,
+    EmbeddingFunctionWrapper,
     clear_embedding_cache,
     create_embedding_function,
-    EmbeddingFunctionWrapper,
+    get_default_embedding_function,
+    get_embedding_function,
 )
 
 

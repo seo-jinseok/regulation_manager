@@ -26,6 +26,7 @@ from ..infrastructure.patterns import (
     RULE_CODE_PATTERN,
     normalize_article_token,
 )
+from ..infrastructure.query_analyzer import Audience, QueryType
 
 logger = logging.getLogger(__name__)
 
@@ -191,11 +192,32 @@ class SearchUseCase:
         """
         # Use config defaults if not explicitly specified
         from ..config import get_config
+        from ..infrastructure.llm_adapter import LLMClientAdapter
 
         config = get_config()
 
         self.store = store
-        self.llm = llm_client
+
+        # Auto-wrap LLMClient with LLMClientAdapter for generate() method
+        if llm_client is not None:
+            # Check if it's already an LLMClientAdapter (has generate method)
+            if hasattr(llm_client, "generate"):
+                self.llm = llm_client
+            else:
+                # Wrap raw LLMClient with LLMClientAdapter
+                logger.info(
+                    "Wrapping LLMClient with LLMClientAdapter for generate() method"
+                )
+                # Extract provider, model, base_url from LLMClient if possible
+                provider = getattr(llm_client, "provider", "ollama")
+                model = getattr(llm_client, "model", None)
+                base_url = getattr(llm_client, "base_url", None)
+                self.llm = LLMClientAdapter(
+                    provider=provider, model=model, base_url=base_url
+                )
+        else:
+            self.llm = None
+
         self.use_reranker = (
             use_reranker if use_reranker is not None else config.use_reranker
         )
@@ -209,6 +231,7 @@ class SearchUseCase:
         # Corrective RAG components
         self._retrieval_evaluator = None
         self._corrective_rag_enabled = True
+        self._crag_retriever = None  # Lazy initialized in _apply_corrective_rag
 
         # HyDE components (from config)
         self._enable_hyde = config.enable_hyde
@@ -939,8 +962,9 @@ class SearchUseCase:
 
         # Get query type for conditional reranking
         query_type = None
-        if self.hybrid_searcher:
-            query_type = self.hybrid_searcher._query_analyzer.classify_query(query_text)
+        # Note: classify_query method not available, using classify_intent if needed
+        # if self.hybrid_searcher:
+        #     query_type = self.hybrid_searcher._query_analyzer.classify_intent(query_text)
 
         # Phase 4 (Hybrid): Apply LLM-based dynamic expansion FIRST (primary)
         # Then merge with intent/synonym matching (secondary)
@@ -1067,7 +1091,11 @@ class SearchUseCase:
             query_text, boosted_results, filter, top_k, include_abolished
         )
 
-        return self._deduplicate_by_article(boosted_results, top_k)
+        final_results = self._deduplicate_by_article(boosted_results, top_k)
+        logger.info(
+            f"DEBUG: _search_general returning {len(final_results)} results (boosted: {len(boosted_results)})"
+        )
+        return final_results
 
     def _perform_query_rewriting(
         self, query_text: str, include_abolished: bool
@@ -1649,7 +1677,10 @@ class SearchUseCase:
                             query_text, current_results, complexity
                         )[0]
 
-                        if quality in [RetrievalQuality.EXCELLENT, RetrievalQuality.GOOD]:
+                        if quality in [
+                            RetrievalQuality.EXCELLENT,
+                            RetrievalQuality.GOOD,
+                        ]:
                             break
                     else:
                         break
@@ -1660,7 +1691,9 @@ class SearchUseCase:
 
         # Step 3: Apply re-ranking for ADEQUATE/GOOD quality
         if quality in [RetrievalQuality.ADEQUATE, RetrievalQuality.GOOD]:
-            current_results = self._crag_retriever.apply_rerank(query_text, current_results)
+            current_results = self._crag_retriever.apply_rerank(
+                query_text, current_results
+            )
 
         return current_results
 
@@ -1697,11 +1730,18 @@ class SearchUseCase:
 
         if self.hybrid_searcher:
             results = self._apply_hybrid_search(
-                results, query_text, query_text, filter, include_abolished, fetch_k // 2,
+                results,
+                query_text,
+                query_text,
+                filter,
+                include_abolished,
+                fetch_k // 2,
             )
 
         audience = self._detect_audience(query_text, audience_override)
-        boosted_results = self._apply_score_bonuses(results, query_text, query_text, audience)
+        boosted_results = self._apply_score_bonuses(
+            results, query_text, query_text, audience
+        )
         boosted_results.sort(key=lambda x: -x.score)
 
         return boosted_results

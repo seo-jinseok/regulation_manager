@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
 """실제 반환되는 인텐트 확인"""
-import json
 import sys
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
+from src.rag.application.search_usecase import SearchUseCase
 from src.rag.infrastructure.chroma_store import ChromaVectorStore
 from src.rag.infrastructure.llm_adapter import LLMClientAdapter
-from src.rag.application.search_usecase import SearchUseCase
 
 # Setup
 store = ChromaVectorStore(persist_directory="data/chroma_db")
@@ -30,7 +29,7 @@ print("=== 실제 반환 인텐트 확인 ===\n")
 for q in test_queries:
     results = search.search(q, top_k=5)
     rewrite_info = search.get_last_query_rewrite()
-    
+
     print(f"Query: {q}")
     print(f"  Rewritten: {rewrite_info.rewritten[:80] if rewrite_info else 'N/A'}...")
     print(f"  Matched Intents: {rewrite_info.matched_intents if rewrite_info else []}")

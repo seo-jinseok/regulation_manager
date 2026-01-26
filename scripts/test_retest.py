@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """재테스트 스크립트"""
 import os
+
 from dotenv import load_dotenv
+
 load_dotenv()
 
 from src.rag.application.search_usecase import SearchUseCase
@@ -24,21 +26,21 @@ test_queries = [
 for query in test_queries:
     print("=" * 70)
     print(f"[원본 쿼리] {query}")
-    
+
     # 인텐트 매칭
     matches = analyzer._match_intents(query)
     if matches:
         print(f"[인텐트 매칭] {matches[0].intent_id} ({matches[0].label}), score={matches[0].score}")
     else:
         print("[인텐트 매칭] 없음")
-    
+
     # 쿼리 확장
     expanded = analyzer.expand_query(query)
     print(f"[확장 쿼리] {expanded[:100]}...")
-    
+
     # 검색
     results = usecase.search(expanded, top_k=3)
-    print(f"\n[검색 결과]")
+    print("\n[검색 결과]")
     for i, r in enumerate(results, 1):
         chunk = r.chunk
         meta = chunk.to_metadata()

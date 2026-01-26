@@ -12,7 +12,7 @@ from pathlib import Path
 
 def main():
     data_path = Path(__file__).parent.parent / "data" / "config" / "evaluation_dataset.json"
-    
+
     with open(data_path, "r", encoding="utf-8") as f:
         data = json.load(f)
 
@@ -21,7 +21,7 @@ def main():
         # 규정명/조문 직접 검색은 정확도 높아야 하므로 0.15 유지
         "regulation_name_01": 0.15,
         "article_reference_01": 0.1,
-        
+
         # 일반적인 자연어 쿼리는 0.05~0.1로 하향
         "student_leave_01": 0.1,
         "edge_overseas_conference": 0.1,
@@ -49,7 +49,7 @@ def main():
         "employment_support_01": 0.1,
         "bullying_report_01": 0.1,
         "academic_warning_01": 0.1,
-        
+
         # 모호한 쿼리는 0.05로 하향
         "edge_quit_ambiguous": 0.05,
         "transfer_admission_01": 0.1,

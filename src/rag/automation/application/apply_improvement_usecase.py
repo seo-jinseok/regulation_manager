@@ -13,9 +13,9 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Dict, List, Optional
 
 if TYPE_CHECKING:
+    from ...domain.repositories import ILLMClient
     from ..domain.entities import TestResult
     from ..domain.value_objects import FiveWhyAnalysis
-    from ...domain.repositories import ILLMClient
 
 logger = logging.getLogger(__name__)
 
@@ -24,8 +24,8 @@ try:
     from ...infrastructure.dictionary_manager import (
         DictionaryManager,
         IntentEntry,
-        SynonymEntry,
         RecommendationResult,
+        SynonymEntry,
     )
 except ImportError:
     DictionaryManager = None

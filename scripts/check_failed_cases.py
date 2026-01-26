@@ -15,7 +15,7 @@ def analyze_query(usecase, query, expected_intents, expected_rule_codes, min_sco
     print("=" * 60)
 
     # Intent check
-    print(f"\n[Intent Check]")
+    print("\n[Intent Check]")
     print(f"  Expected: {expected_intents}")
     matched = rewrite.matched_intents if rewrite else []
     print(f"  Matched: {matched}")
@@ -25,7 +25,7 @@ def analyze_query(usecase, query, expected_intents, expected_rule_codes, min_sco
     print(f"  Result: {'✅ PASS' if intent_ok else '❌ FAIL'}")
 
     # Rule code check
-    print(f"\n[Rule Code Check]")
+    print("\n[Rule Code Check]")
     print(f"  Expected: {expected_rule_codes}")
     found_codes = [r.chunk.rule_code for r in results if r.chunk]
     print(f"  Found: {found_codes}")
@@ -33,7 +33,7 @@ def analyze_query(usecase, query, expected_intents, expected_rule_codes, min_sco
     print(f"  Result: {'✅ PASS' if rule_code_ok else '❌ FAIL'}")
 
     # Score check
-    print(f"\n[Score Check]")
+    print("\n[Score Check]")
     top_score = results[0].score if results else 0.0
     print(f"  Top score: {top_score:.4f}")
     print(f"  Min threshold: {min_score}")
@@ -49,7 +49,7 @@ def analyze_query(usecase, query, expected_intents, expected_rule_codes, min_sco
 def main():
     # Load store
     store = ChromaVectorStore(persist_directory="data/chroma_db")
-    
+
     # Test cases - matching evaluation_dataset.json
     test_queries = [
         (

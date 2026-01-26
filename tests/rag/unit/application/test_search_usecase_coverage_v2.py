@@ -510,28 +510,26 @@ class TestShouldSkipReranker:
     """Tests for _should_skip_reranker method."""
 
     def test_should_skip_reranker_always_false(self):
-        """Reranker is never skipped in current implementation."""
+        """Reranker skip behavior based on query characteristics."""
         store = MockVectorStore([])
         usecase = SearchUseCase(store, use_reranker=False, use_hybrid=False)
 
-        # Various conditions should all return False
-        assert usecase._should_skip_reranker("simple") is False
-        assert usecase._should_skip_reranker("complex") is False
-        assert usecase._should_skip_reranker("medium") is False
+        # Simple query with empty/short text skips reranker
+        assert usecase._should_skip_reranker("simple") == (True, "short_simple")
 
-        # With matched intents
-        assert (
-            usecase._should_skip_reranker(
-                "complex", matched_intents=["intent1", "intent2"]
-            )
-            is False
-        )
+        # Complex and medium queries apply reranker
+        assert usecase._should_skip_reranker("complex") == (False, "apply")
+        assert usecase._should_skip_reranker("medium") == (False, "apply")
 
-        # With expanded query
-        assert (
-            usecase._should_skip_reranker("complex", query_significantly_expanded=True)
-            is False
-        )
+        # With matched intents - apply reranker
+        assert usecase._should_skip_reranker(
+            "complex", matched_intents=["intent1", "intent2"]
+        ) == (False, "apply")
+
+        # With expanded query - apply reranker
+        assert usecase._should_skip_reranker(
+            "complex", query_significantly_expanded=True
+        ) == (False, "apply")
 
 
 # ====================

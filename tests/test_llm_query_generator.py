@@ -5,8 +5,12 @@ Test both template-based and LLM-based query generation.
 """
 
 import pytest
+
 from src.rag.automation.domain.entities import Persona, PersonaType
-from src.rag.automation.infrastructure.llm_query_generator import LLMQueryGenerator, QueryGenerator
+from src.rag.automation.infrastructure.llm_query_generator import (
+    LLMQueryGenerator,
+    QueryGenerator,
+)
 from src.rag.automation.infrastructure.mock_llm_client import MockLLMClientForQueryGen
 
 
@@ -172,13 +176,13 @@ class TestBackwardCompatibility:
         # because the method now requires an instance (self)
         # Verify it's not a classmethod by checking it needs an instance
         import inspect
-        
+
         # Should be a regular method that requires self, not a classmethod
         sig = inspect.signature(QueryGenerator.generate_for_persona)
         params = list(sig.parameters.keys())
-        
+
         # First parameter should be 'self', not 'cls'
-        assert params[0] == 'self', "Method should use 'self' not 'cls'"        
+        assert params[0] == 'self', "Method should use 'self' not 'cls'"
         # Should require at least self and persona
         assert len(params) >= 2, "Method should have at least self and persona parameters"
 

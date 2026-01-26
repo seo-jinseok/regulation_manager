@@ -11,12 +11,13 @@ Features:
 - Failure caching to avoid repeated failed attempts
 """
 
-import asyncio
 import logging
 import os
+import sys
 import time
 from collections import defaultdict
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import Dict, Generator, List, Optional
 
 from ..domain.repositories import ILLMClient
@@ -126,7 +127,23 @@ class LLMClientAdapter(ILLMClient):
             fallback_chain: Custom fallback chain (overrides config)
         """
         # Lazy import to avoid circular dependencies
-        from ...llm_client import LLMClient
+
+        # Add project root to path
+        project_root = str(Path(__file__).parent.parent.parent.parent.parent)
+        if project_root not in sys.path:
+            sys.path.insert(0, project_root)
+
+        # Add src to path if not already there
+        src_path = str(Path(__file__).parent.parent.parent.parent)
+        if src_path not in sys.path:
+            sys.path.insert(0, src_path)
+
+        try:
+            from llm_client import LLMClient
+        except ImportError:
+            # Fallback to absolute import
+            from src.llm_client import LLMClient
+
         from ..config import get_config
 
         # Get configuration
@@ -189,7 +206,8 @@ class LLMClientAdapter(ILLMClient):
         Returns:
             LLMClient instance
         """
-        from ...llm_client import LLMClient
+        # Import with absolute path (project root already added to sys.path)
+        from src.llm_client import LLMClient
 
         provider = config["provider"]
         model = config.get("model")

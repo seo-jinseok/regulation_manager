@@ -9,7 +9,7 @@ defined in the domain layer.
 from .json_loader import JSONDocumentLoader
 
 # Cycle 3: Reranking Metrics System
-from .metrics import MetricsRepository, MetricsReporter
+from .metrics import MetricsReporter, MetricsRepository
 
 __all__ = [
     "JSONDocumentLoader",

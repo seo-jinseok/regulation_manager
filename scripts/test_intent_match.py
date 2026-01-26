@@ -5,6 +5,7 @@ from src.rag.application.evaluate import EvaluationUseCase, TestCase
 from src.rag.application.search_usecase import SearchUseCase
 from src.rag.infrastructure.chroma_store import ChromaVectorStore
 
+
 def test_evaluation():
     store = ChromaVectorStore()
     search = SearchUseCase(store, use_reranker=False)

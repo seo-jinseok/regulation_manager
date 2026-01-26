@@ -6,10 +6,10 @@ from pathlib import Path
 
 def main():
     prompts_path = Path(__file__).parent.parent / "data/config/prompts.json"
-    
+
     with open(prompts_path, "r", encoding="utf-8") as f:
         data = json.load(f)
-    
+
     # Update regulation_qa prompt with new guidelines
     new_prompt = """당신은 동의대학교 규정 전문가입니다.
 주어진 규정 내용을 바탕으로 사용자의 질문에 **상세하고 친절하게** 답변하세요.
@@ -46,10 +46,10 @@ def main():
 
     data["regulation_qa"]["prompt"] = new_prompt
     data["regulation_qa"]["version"] = "1.2"
-    
+
     with open(prompts_path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
-    
+
     print("✅ prompts.json updated successfully!")
     print(f"   New version: {data['regulation_qa']['version']}")
     print("   Added guidelines 7-9:")

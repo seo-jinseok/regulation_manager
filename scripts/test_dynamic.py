@@ -5,18 +5,16 @@ Phase 2: Dynamic Query Testing
 """
 
 import time
-import json
-import os
-from pathlib import Path
 from dataclasses import dataclass, field
 from typing import List, Optional
 
 # .env 파일 로드
 from dotenv import load_dotenv
+
 load_dotenv()
 
-from src.rag.infrastructure.chroma_store import ChromaVectorStore
 from src.rag.application.search_usecase import SearchUseCase
+from src.rag.infrastructure.chroma_store import ChromaVectorStore
 from src.rag.infrastructure.llm_adapter import LLMClientAdapter
 
 
@@ -30,7 +28,7 @@ class DynamicTestCase:
     category: str = "general"
 
 
-@dataclass 
+@dataclass
 class DynamicTestResult:
     """동적 테스트 결과"""
     test_case: DynamicTestCase
@@ -110,29 +108,29 @@ DYNAMIC_TEST_CASES = [
 
 def run_dynamic_tests(verbose: bool = True) -> dict:
     """동적 테스트 실행"""
-    
+
     print("=" * 60)
     print("Phase 2: Dynamic Query Testing")
     print("=" * 60)
     print()
-    
+
     # 초기화
     store = ChromaVectorStore(persist_directory="data/chroma_db")
     search = SearchUseCase(store, use_reranker=True)
     llm = LLMClientAdapter()
-    
+
     results: List[DynamicTestResult] = []
-    
+
     for i, tc in enumerate(DYNAMIC_TEST_CASES, 1):
         print(f"[{i}/{len(DYNAMIC_TEST_CASES)}] Testing: {tc.query}")
-        
+
         try:
             # 시간 측정 시작
             start_time = time.time()
-            
+
             # 검색 + 답변 생성
             search_results = search.search(tc.query, top_k=5)
-            
+
             # 컨텍스트 구성
             context_parts = []
             found_regulations = set()
@@ -142,9 +140,9 @@ def run_dynamic_tests(verbose: bool = True) -> dict:
                     # 규정명은 parent_path[0]에 있음
                     if r.chunk.parent_path:
                         found_regulations.add(r.chunk.parent_path[0])
-            
+
             context = "\n\n".join(context_parts)
-            
+
             # LLM 답변 생성
             answer = ""
             if context:
@@ -160,25 +158,25 @@ def run_dynamic_tests(verbose: bool = True) -> dict:
                     system_prompt="당신은 대학 규정 전문가입니다. 질문에 간결하게 답변하세요.",
                     user_message=prompt
                 )
-            
+
             response_time = time.time() - start_time
-            
+
             # 평가
             answer_lower = answer.lower() if answer else ""
             found_topics = [t for t in tc.expected_topics if t.lower() in answer_lower]
             topic_coverage = len(found_topics) / len(tc.expected_topics) if tc.expected_topics else 1.0
-            
-            found_regs = [r for r in tc.expected_regulations 
+
+            found_regs = [r for r in tc.expected_regulations
                          if any(r in reg for reg in found_regulations)]
             reg_coverage = len(found_regs) / len(tc.expected_regulations) if tc.expected_regulations else 1.0
-            
+
             # 통과 조건: 토픽 50%+, 응답시간 30초 이내, 답변 존재
             passed = (
                 topic_coverage >= 0.5 and
                 response_time <= tc.min_response_time and
                 len(answer) > 50
             )
-            
+
             result = DynamicTestResult(
                 test_case=tc,
                 passed=passed,
@@ -188,11 +186,11 @@ def run_dynamic_tests(verbose: bool = True) -> dict:
                 answer_length=len(answer),
                 has_answer=len(answer) > 50,
             )
-            
+
             if verbose:
                 status = "✓" if passed else "✗"
                 print(f"  {status} Time: {response_time:.2f}s, Topics: {topic_coverage:.0%}, Answer: {len(answer)} chars")
-            
+
         except Exception as e:
             result = DynamicTestResult(
                 test_case=tc,
@@ -206,15 +204,15 @@ def run_dynamic_tests(verbose: bool = True) -> dict:
             )
             if verbose:
                 print(f"  ✗ Error: {e}")
-        
+
         results.append(result)
-    
+
     # 요약
     total = len(results)
     passed = sum(1 for r in results if r.passed)
     avg_time = sum(r.response_time for r in results) / total if total else 0
     avg_topic = sum(r.topic_coverage for r in results) / total if total else 0
-    
+
     print()
     print("=" * 60)
     print("Dynamic Test Summary")
@@ -224,7 +222,7 @@ def run_dynamic_tests(verbose: bool = True) -> dict:
     print(f"평균 응답 시간: {avg_time:.2f}초")
     print(f"평균 토픽 커버리지: {avg_topic:.1%}")
     print("=" * 60)
-    
+
     return {
         "total": total,
         "passed": passed,

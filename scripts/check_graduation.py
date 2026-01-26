@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Check graduation delay results"""
-import sys
 import os
+import sys
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from src.rag.application.search_usecase import SearchUseCase

@@ -1,8 +1,7 @@
 """Tests for RAGConfig advanced RAG settings."""
 
-import pytest
 
-from src.rag.config import RAGConfig, get_config, reset_config
+from src.rag.config import RAGConfig, reset_config
 
 
 class TestAdvancedRAGSettings:
@@ -35,7 +34,7 @@ class TestAdvancedRAGSettings:
         """Corrective RAG 임계값은 쿼리 유형별 딕셔너리여야 함."""
         config = RAGConfig()
         thresholds = config.corrective_rag_thresholds
-        
+
         assert isinstance(thresholds, dict)
         assert "simple" in thresholds
         assert "medium" in thresholds
