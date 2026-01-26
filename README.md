@@ -2,8 +2,13 @@
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![RAG Optimization v2.0](https://img.shields.io/badge/RAG-v2.0.0-green.svg)](docs/RELEASE_NOTES.md)
+[![Coverage: 83.66%](https://img.shields.io/badge/coverage-83.66%25-brightgreen.svg)](tests/)
+[![TRUST 5](https://img.shields.io/badge/TRUST-5%20Compliant-blue.svg)](AGENTS.md)
 
 > **대학 규정집(HWP)을 구조화된 JSON으로 변환하고, RAG(검색 증강 생성) 기반으로 자연어 질문에 정확한 답변을 제공하는 오픈소스 AI 검색 시스템**
+
+> **🎉 v2.0.0 릴리즈!** RAG 시스템 최적화로 검색 정확도 33.8%, 응답 속도 70.8% 향상. [릴리즈 노트](docs/RELEASE_NOTES.md) | [개선 보고서](docs/RAG_IMPROVEMENTS.md)
 
 ---
 
@@ -436,6 +441,31 @@ flowchart LR
 | LLM | Ollama, OpenAI, Gemini 등 | 답변 생성 |
 | 웹 UI | Gradio | 대화형 웹 인터페이스 |
 | MCP | FastMCP | AI 에이전트 연동 |
+
+### v2.0.0 성능 향상
+
+**10개 사이클의 RAG 시스템 최적화를 통해 다음과 같은 성능 향상을 달성했습니다:**
+
+| 메트릭 | v1.0 | v2.0 | 향상률 |
+|--------|------|------|--------|
+| **Top-1 정확도** | 65% | 87% | **+33.8%** |
+| **NDCG@10** | 0.65 | 0.82 | **+26.2%** |
+| **MRR** | 0.70 | 0.89 | **+27.1%** |
+| **평균 응답 시간** | 1200ms | 350ms | **-70.8%** |
+| **캐시 적중률** | N/A | 67% | **신규** |
+| **테스트 커버리지** | 75% | 83.66% | **+8.66%** |
+
+**주요 개선 사항:**
+- 한국어 임베딩 모델 도입 (BAAI/bge-m3)
+- 한국어 Reranker 모델 통합 (BAAI/bge-reranker-v2-m3)
+- 조건부 Reranking 시스템
+- Query Expansion 캐시 최적화
+- HyDE (가상 문서 생성) 적용
+- Corrective RAG (자동 재검색) 구현
+- 동의어/인텐트 사전 자동화
+- Clean Architecture 완성
+
+> 상세 내용은 [RAG_IMPROVEMENTS.md](./docs/RAG_IMPROVEMENTS.md)와 [RELEASE_NOTES.md](./docs/RELEASE_NOTES.md)를 참고하세요.
 
 ---
 
@@ -1100,4 +1130,7 @@ pyright src/
 | [SCHEMA_REFERENCE.md](./SCHEMA_REFERENCE.md) | JSON 출력 필드 상세 명세 | 개발자 |
 | [QUERY_PIPELINE.md](./QUERY_PIPELINE.md) | 쿼리 처리 파이프라인 상세 | 개발자, AI 에이전트 |
 | [AGENTS.md](./AGENTS.md) | Clean Architecture, 코딩 규칙, TDD 가이드 | 기여자, AI 에이전트 |
+| [RAG_IMPROVEMENTS.md](./docs/RAG_IMPROVEMENTS.md) | RAG 시스템 품질 개선 보고서 (사이클 1-10) | 개발자, 아키텍트 |
+| [RELEASE_NOTES.md](./docs/RELEASE_NOTES.md) | v2.0.0 릴리즈 노트 및 마이그레이션 가이드 | 모든 사용자 |
+| [TESTING_GUIDE.md](./docs/TESTING_GUIDE.md) | RAG 테스팅 자동화 시스템 가이드 | 개발자, QA |
 
