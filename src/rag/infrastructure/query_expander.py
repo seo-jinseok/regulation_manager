@@ -8,15 +8,17 @@ This addresses the pattern explosion problem by dynamically understanding
 user intent and generating appropriate search terms.
 
 Cycle 5: Added cache metrics and batch save optimization.
+Cycle 6: Integrated with RAGQueryCache for centralized caching and metrics.
 """
 
 import hashlib
 import json
 import logging
 import re
+import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Any, List, Optional
 
 if TYPE_CHECKING:
     from ..domain.repositories import ILLMClient
@@ -121,7 +123,7 @@ class DynamicQueryExpander:
     1. Uses LLM to understand user intent dynamically
     2. Generates relevant keywords without pre-defined mappings
     3. Falls back to lightweight patterns when LLM unavailable
-    4. Caches results for performance
+    4. Caches results using centralized RAGQueryCache (Cycle 6)
 
     This solves the "pattern explosion" problem where every new
     expression requires manual addition to configuration files.
@@ -133,20 +135,23 @@ class DynamicQueryExpander:
         cache_dir: Optional[str] = None,
         enable_cache: bool = True,
         max_keywords: int = 7,
+        expansion_cache: Optional[Any] = None,  # QueryExpansionCache from cache.py
     ):
         """
         Initialize dynamic query expander.
 
         Args:
             llm_client: LLM client for generating expansions.
-            cache_dir: Directory to cache expansions.
+            cache_dir: Directory to cache expansions (legacy, for backward compatibility).
             enable_cache: Whether to use caching.
             max_keywords: Maximum number of keywords to generate.
+            expansion_cache: Optional QueryExpansionCache instance (Cycle 6).
         """
         self._llm_client = llm_client
         self._enable_cache = enable_cache
         self._max_keywords = max_keywords
 
+        # Cache directory (legacy, for backward compatibility)
         if cache_dir:
             self._cache_dir = Path(cache_dir)
         else:
@@ -157,11 +162,25 @@ class DynamicQueryExpander:
                 / "query_expansion"
             )
 
-        if self._enable_cache:
-            self._cache_dir.mkdir(parents=True, exist_ok=True)
-            self._cache: dict = self._load_cache()
+        # Cycle 6: Use centralized cache
+        if expansion_cache is not None:
+            self._expansion_cache = expansion_cache
+        elif enable_cache:
+            from .cache import QueryExpansionCache
+
+            self._expansion_cache = QueryExpansionCache(
+                enabled=True,
+                ttl_hours=168,  # 7 days
+            )
         else:
-            self._cache = {}
+            self._expansion_cache = None
+
+        # Legacy cache for migration (deprecated)
+        if self._enable_cache and expansion_cache is None:
+            self._cache_dir.mkdir(parents=True, exist_ok=True)
+            self._legacy_cache: dict = self._load_cache()
+        else:
+            self._legacy_cache = {}
 
     def _load_cache(self) -> dict:
         """Load expansion cache from disk."""
@@ -199,9 +218,10 @@ class DynamicQueryExpander:
         Expand query with relevant keywords.
 
         Tries in order:
-        1. Cache lookup
-        2. LLM-based expansion
-        3. Pattern-based fallback
+        1. QueryExpansionCache lookup (Cycle 6)
+        2. Legacy cache lookup (backward compatibility)
+        3. LLM-based expansion
+        4. Pattern-based fallback
 
         Args:
             query: User's search query.
@@ -209,12 +229,37 @@ class DynamicQueryExpander:
         Returns:
             QueryExpansionResult with keywords and expanded query.
         """
-        cache_key = self._get_cache_key(query)
+        # 1. Check new centralized cache (Cycle 6)
+        if self._expansion_cache:
+            cached = self._expansion_cache.get_expansion(query)
+            if cached:
+                logger.debug(f"Expansion cache hit (centralized): {query[:30]}...")
+                return QueryExpansionResult(
+                    original_query=query,
+                    keywords=cached["keywords"],
+                    expanded_query=cached["expanded_query"],
+                    intent=cached["intent"],
+                    confidence=cached["confidence"],
+                    from_cache=True,
+                    cache_key=self._get_cache_key(query),
+                    method="cache",
+                )
 
-        # 1. Check cache
-        if cache_key in self._cache:
-            cached = self._cache[cache_key]
-            logger.debug(f"Expansion cache hit for: {query[:30]}...")
+        # 2. Check legacy cache (backward compatibility)
+        cache_key = self._get_cache_key(query)
+        if cache_key in self._legacy_cache:
+            cached = self._legacy_cache[cache_key]
+            logger.debug(f"Expansion cache hit (legacy): {query[:30]}...")
+            # Migrate to new cache
+            if self._expansion_cache:
+                self._expansion_cache.set_expansion(
+                    query=query,
+                    keywords=cached["keywords"],
+                    expanded_query=cached["expanded_query"],
+                    intent=cached["intent"],
+                    confidence=cached["confidence"],
+                    method="cache",
+                )
             return QueryExpansionResult(
                 original_query=query,
                 keywords=cached["keywords"],
@@ -226,12 +271,22 @@ class DynamicQueryExpander:
                 method="cache",
             )
 
-        # 2. Try LLM expansion
+        # 3. Try LLM expansion
         if self._llm_client:
             result = self._llm_expand(query)
             if result and result.confidence >= 0.5:
-                # Cache successful result
-                self._cache[cache_key] = {
+                # Cache successful result in both systems
+                if self._expansion_cache:
+                    self._expansion_cache.set_expansion(
+                        query=query,
+                        keywords=result.keywords,
+                        expanded_query=result.expanded_query,
+                        intent=result.intent,
+                        confidence=result.confidence,
+                        method="llm",
+                    )
+                # Legacy cache (deprecated)
+                self._legacy_cache[cache_key] = {
                     "keywords": result.keywords,
                     "expanded_query": result.expanded_query,
                     "intent": result.intent,
@@ -240,7 +295,7 @@ class DynamicQueryExpander:
                 self._save_cache()
                 return result
 
-        # 3. Fallback to pattern matching
+        # 4. Fallback to pattern matching
         return self._pattern_expand(query)
 
     def _llm_expand(self, query: str) -> Optional[QueryExpansionResult]:
@@ -253,12 +308,19 @@ class DynamicQueryExpander:
         Returns:
             QueryExpansionResult or None if failed.
         """
+        start_time = time.time()
         try:
             response = self._llm_client.generate(
                 system_prompt=QUERY_EXPANSION_PROMPT,
                 user_message=f"질문: {query}",
                 temperature=0.3,
             )
+
+            elapsed_ms = (time.time() - start_time) * 1000
+
+            # Record LLM call metrics (Cycle 6)
+            if self._expansion_cache:
+                self._expansion_cache.record_llm_call(elapsed_ms)
 
             # Parse JSON response
             result = self._parse_llm_response(response)
@@ -270,7 +332,9 @@ class DynamicQueryExpander:
                 # Build expanded query
                 expanded_query = self._build_expanded_query(query, keywords)
 
-                logger.debug(f"LLM expansion: {query[:30]}... -> {keywords[:3]}...")
+                logger.debug(
+                    f"LLM expansion: {query[:30]}... -> {keywords[:3]}... ({elapsed_ms:.1f}ms)"
+                )
 
                 return QueryExpansionResult(
                     original_query=query,
@@ -283,7 +347,8 @@ class DynamicQueryExpander:
                 )
 
         except Exception as e:
-            logger.warning(f"LLM expansion failed: {e}")
+            elapsed_ms = (time.time() - start_time) * 1000
+            logger.warning(f"LLM expansion failed after {elapsed_ms:.1f}ms: {e}")
 
         return None
 
@@ -315,6 +380,10 @@ class DynamicQueryExpander:
         Returns:
             QueryExpansionResult based on pattern matching.
         """
+        # Record pattern fallback (Cycle 6)
+        if self._expansion_cache:
+            self._expansion_cache.record_pattern_fallback()
+
         query_lower = query.lower()
 
         for rule in FALLBACK_RULES:
@@ -408,6 +477,22 @@ class DynamicQueryExpander:
         keywords = [w for w in words if w not in stopwords and len(w) >= 2]
 
         return keywords[:5] if keywords else [query]
+
+    def get_metrics(self) -> Optional[dict]:
+        """
+        Get query expansion cache metrics (Cycle 6).
+
+        Returns:
+            Dictionary with cache metrics or None if cache not enabled.
+        """
+        if self._expansion_cache:
+            return self._expansion_cache.stats()
+        return None
+
+    def reset_metrics(self) -> None:
+        """Reset query expansion cache metrics (Cycle 6)."""
+        if self._expansion_cache:
+            self._expansion_cache.reset_metrics()
 
     def should_expand(self, query: str) -> bool:
         """

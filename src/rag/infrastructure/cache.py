@@ -29,13 +29,16 @@ logger = logging.getLogger(__name__)
 
 class CacheType(Enum):
     """Type of cached data."""
+
     RETRIEVAL = "retrieval"  # ChromaDB query results
     LLM_RESPONSE = "llm_response"  # LLM-generated answers
+    QUERY_EXPANSION = "query_expansion"  # Query expansion results (Cycle 6)
 
 
 @dataclass
 class CacheEntry:
     """A cached entry with metadata."""
+
     cache_type: CacheType
     query_hash: str
     data: Dict[str, Any]
@@ -72,6 +75,7 @@ class CacheEntry:
 @dataclass
 class CacheStats:
     """Cache statistics tracking."""
+
     hits: int = 0
     misses: int = 0
     stampede_prevented: int = 0
@@ -277,10 +281,13 @@ class RedisBackend:
         """Establish Redis connection."""
         try:
             import redis
+
             self._client = redis.Redis(**self._connection_params)
             # Test connection
             self._client.ping()
-            logger.info(f"Connected to Redis at {self._connection_params['host']}:{self._connection_params['port']}")
+            logger.info(
+                f"Connected to Redis at {self._connection_params['host']}:{self._connection_params['port']}"
+            )
         except ImportError:
             logger.warning("redis package not installed. Redis backend unavailable.")
             self._client = None
@@ -532,7 +539,9 @@ class RAGQueryCache:
             entry = self._redis.get(cache_key)
             if entry:
                 self._stats.hits += 1
-                logger.debug(f"Cache HIT (Redis): {cache_type.value} for '{query[:30]}...'")
+                logger.debug(
+                    f"Cache HIT (Redis): {cache_type.value} for '{query[:30]}...'"
+                )
                 return entry.data
 
         # Fallback to file backend
@@ -762,3 +771,219 @@ class SingleFlight:
 
 # Global single-flight instance
 _single_flight = SingleFlight()
+
+
+@dataclass
+class QueryExpansionMetrics:
+    """Metrics for query expansion cache performance."""
+
+    total_expansions: int = 0
+    cache_hits: int = 0
+    llm_calls: int = 0
+    pattern_fallbacks: int = 0
+    total_llm_time_ms: float = 0.0
+
+    @property
+    def cache_hit_rate(self) -> float:
+        """Cache hit rate (0.0 to 1.0)."""
+        if self.total_expansions == 0:
+            return 0.0
+        return self.cache_hits / self.total_expansions
+
+    @property
+    def llm_call_reduction_rate(self) -> float:
+        """LLM call reduction rate due to caching."""
+        if self.total_expansions == 0:
+            return 0.0
+        return 1.0 - (self.llm_calls / self.total_expansions)
+
+    @property
+    def avg_llm_time_ms(self) -> float:
+        """Average LLM expansion time in milliseconds."""
+        if self.llm_calls == 0:
+            return 0.0
+        return self.total_llm_time_ms / self.llm_calls
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary."""
+        return {
+            "total_expansions": self.total_expansions,
+            "cache_hits": self.cache_hits,
+            "llm_calls": self.llm_calls,
+            "pattern_fallbacks": self.pattern_fallbacks,
+            "cache_hit_rate": f"{self.cache_hit_rate:.2%}",
+            "llm_call_reduction_rate": f"{self.llm_call_reduction_rate:.2%}",
+            "total_llm_time_ms": self.total_llm_time_ms,
+            "avg_llm_time_ms": self.avg_llm_time_ms,
+        }
+
+
+class QueryExpansionCache:
+    """
+    Specialized cache for query expansion results (Cycle 6).
+
+    Integrates with RAGQueryCache to provide:
+    - Centralized caching with Redis/File backend
+    - LLM call reduction metrics
+    - Cache invalidation strategy
+    - Performance tracking
+
+    This replaces the standalone JSON cache in DynamicQueryExpander.
+    """
+
+    def __init__(
+        self,
+        rag_cache: Optional[RAGQueryCache] = None,
+        enabled: bool = True,
+        ttl_hours: int = 168,  # 7 days (expansion patterns change rarely)
+    ):
+        """
+        Initialize query expansion cache.
+
+        Args:
+            rag_cache: Optional RAGQueryCache instance. If None, creates new instance.
+            enabled: Whether caching is enabled.
+            ttl_hours: TTL for expansion cache entries (default 7 days).
+        """
+        if rag_cache:
+            self._cache = rag_cache
+        else:
+            self._cache = RAGQueryCache(
+                enabled=enabled,
+                ttl_hours=ttl_hours,
+                cache_dir="data/cache/query_expansion",
+            )
+
+        self._metrics = QueryExpansionMetrics()
+        self._lock = threading.Lock()
+
+    def get_expansion(
+        self, query: str, temperature: float = 0.3
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Get cached expansion result.
+
+        Args:
+            query: Original query text.
+            temperature: LLM temperature used (affects output).
+
+        Returns:
+            Cached expansion data or None if not found.
+        """
+        with self._lock:
+            self._metrics.total_expansions += 1
+
+        result = self._cache.get(
+            cache_type=CacheType.QUERY_EXPANSION,
+            query=query,
+            temperature=temperature,
+        )
+
+        if result:
+            with self._lock:
+                self._metrics.cache_hits += 1
+            logger.debug(f"Expansion cache HIT: {query[:30]}...")
+        else:
+            logger.debug(f"Expansion cache MISS: {query[:30]}...")
+
+        return result
+
+    def set_expansion(
+        self,
+        query: str,
+        keywords: List[str],
+        intent: str,
+        confidence: float,
+        expanded_query: str,
+        method: str,
+        temperature: float = 0.3,
+    ) -> None:
+        """
+        Cache expansion result.
+
+        Args:
+            query: Original query text.
+            keywords: Extracted/Generated keywords.
+            intent: Query intent.
+            confidence: Confidence score.
+            expanded_query: Expanded query text.
+            method: Expansion method (llm, pattern, cache).
+            temperature: LLM temperature used.
+        """
+        data = {
+            "keywords": keywords,
+            "intent": intent,
+            "confidence": confidence,
+            "expanded_query": expanded_query,
+            "method": method,
+        }
+
+        self._cache.set(
+            cache_type=CacheType.QUERY_EXPANSION,
+            query=query,
+            data=data,
+            temperature=temperature,
+        )
+
+        logger.debug(f"Cached expansion for: {query[:30]}... (method={method})")
+
+    def record_llm_call(self, time_ms: float) -> None:
+        """
+        Record LLM call for metrics.
+
+        Args:
+            time_ms: Time taken for LLM call in milliseconds.
+        """
+        with self._lock:
+            self._metrics.llm_calls += 1
+            self._metrics.total_llm_time_ms += time_ms
+
+    def record_pattern_fallback(self) -> None:
+        """Record pattern-based expansion (no LLM call)."""
+        with self._lock:
+            self._metrics.pattern_fallbacks += 1
+
+    def get_metrics(self) -> QueryExpansionMetrics:
+        """
+        Get cache metrics.
+
+        Returns:
+            QueryExpansionMetrics copy.
+        """
+        with self._lock:
+            return QueryExpansionMetrics(
+                total_expansions=self._metrics.total_expansions,
+                cache_hits=self._metrics.cache_hits,
+                llm_calls=self._metrics.llm_calls,
+                pattern_fallbacks=self._metrics.pattern_fallbacks,
+                total_llm_time_ms=self._metrics.total_llm_time_ms,
+            )
+
+    def reset_metrics(self) -> None:
+        """Reset metrics counters."""
+        with self._lock:
+            self._metrics = QueryExpansionMetrics()
+
+    def invalidate(self, query_pattern: Optional[str] = None) -> int:
+        """
+        Invalidate cache entries.
+
+        Args:
+            query_pattern: Optional pattern to match. If None, clears all.
+
+        Returns:
+            Number of entries invalidated.
+        """
+        return self._cache.invalidate()
+
+    def stats(self) -> Dict[str, Any]:
+        """
+        Get combined cache and metrics stats.
+
+        Returns:
+            Dictionary with all statistics.
+        """
+        return {
+            **self._metrics.to_dict(),
+            "backend": self._cache.stats(),
+        }
