@@ -72,7 +72,6 @@ class MockLLMClientForQueryGen(ILLMClient):
         # Extract persona hints
         is_professor = "교수" in system_prompt or "Professor" in system_prompt
         is_student = "학생" in system_prompt or "Student" in system_prompt
-        is_staff = "직원" in system_prompt or "Staff" in system_prompt
 
         queries = []
 

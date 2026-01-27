@@ -18,9 +18,12 @@ import time
 from collections import defaultdict
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Dict, Generator, List, Optional
+from typing import TYPE_CHECKING, Dict, Generator, List, Optional
 
 from ..domain.repositories import ILLMClient
+
+if TYPE_CHECKING:
+    from llm_client import LLMClient
 
 # Configure logger for fallback events
 logger = logging.getLogger(__name__)

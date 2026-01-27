@@ -146,7 +146,7 @@ class ABTestRepository:
     def __init__(self, storage_dir: str = ".metrics/reranker_ab"):
         """
         Initialize repository.
-        
+
         Args:
             storage_dir: Directory to store test results.
         """
@@ -156,10 +156,10 @@ class ABTestRepository:
     def save_session(self, session: ABTestSession) -> str:
         """
         Save A/B test session to file.
-        
+
         Args:
             session: ABTestSession to save.
-            
+
         Returns:
             Path to saved file.
         """
@@ -175,10 +175,10 @@ class ABTestRepository:
     def load_session(self, session_id: str) -> Optional[ABTestSession]:
         """
         Load A/B test session from file.
-        
+
         Args:
             session_id: Session identifier.
-            
+
         Returns:
             ABTestSession if found, None otherwise.
         """
@@ -239,7 +239,7 @@ class ABTestManager:
     ):
         """
         Initialize A/B test manager.
-        
+
         Args:
             control_model: Primary model name (multilingual).
             test_models: List of Korean model names to test.
@@ -266,7 +266,7 @@ class ABTestManager:
     def select_model(self) -> str:
         """
         Select a model for the current query using A/B testing.
-        
+
         Returns:
             Selected model name.
         """
@@ -284,7 +284,7 @@ class ABTestManager:
     ) -> None:
         """
         Record query result for the selected model.
-        
+
         Args:
             model_name: Model that was used.
             latency_ms: Query latency in milliseconds.
@@ -300,7 +300,7 @@ class ABTestManager:
     def get_summary(self) -> Dict[str, Any]:
         """
         Get summary of A/B test results.
-        
+
         Returns:
             Summary dictionary with comparison metrics.
         """
@@ -374,12 +374,12 @@ def create_ab_manager(
 ) -> ABTestManager:
     """
     Create an A/B test manager with default Korean models.
-    
+
     Args:
         control_model: Primary multilingual model.
         test_models: List of Korean models to test.
         test_ratio: Ratio of traffic to test models.
-        
+
     Returns:
         Configured ABTestManager.
     """

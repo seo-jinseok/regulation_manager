@@ -1,0 +1,7 @@
+{
+  "total_iterations": 100,
+  "average_pass_rate": 0.9545454545454546,
+  "min_pass_rate": 0.9545454545454546,
+  "max_pass_rate": 0.9545454545454546,
+  "stability": "STABLE"
+}

@@ -17,6 +17,7 @@ from ..domain.entities import Answer, Chunk, ChunkLevel, SearchResult
 from ..domain.repositories import IHybridSearcher, ILLMClient, IReranker, IVectorStore
 from ..domain.value_objects import Query, SearchFilter
 from ..infrastructure.cache import CacheType, RAGQueryCache
+from ..infrastructure.hybrid_search import ScoredDocument
 from ..infrastructure.metrics import RerankingMetrics
 from ..infrastructure.patterns import (
     ARTICLE_PATTERN,
@@ -40,7 +41,6 @@ class SearchStrategy(Enum):
 
     DIRECT = "direct"  # Simple factual queries - bypass tool calling
     TOOL_CALLING = "tool_calling"  # Complex queries - use agent with tools
-    from ..infrastructure.hybrid_search import ScoredDocument
 
 
 def _extract_regulation_only_query(query: str) -> Optional[str]:
@@ -650,7 +650,7 @@ class SearchUseCase:
         # Collect results from each sub-query
         all_results: Dict[str, List[tuple]] = {}  # chunk_id -> [(rank, result), ...]
 
-        for sq_idx, sub_query in enumerate(sub_queries):
+        for _sq_idx, sub_query in enumerate(sub_queries):
             # Search each sub-query (avoid recursive decomposition)
             query = Query(text=sub_query, include_abolished=include_abolished)
 

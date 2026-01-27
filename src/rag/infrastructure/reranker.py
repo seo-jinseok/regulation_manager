@@ -5,14 +5,18 @@ Provides cross-encoder based reranking to improve search result quality.
 Uses BAAI/bge-reranker-v2-m3 for multilingual support (including Korean).
 """
 
+import logging
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 from ..domain.repositories import IReranker
 
+logger = logging.getLogger(__name__)
+
 # Import extended functionality for Korean models and A/B testing
 try:
     from . import reranker_extended as _extended
+
     _EXTENDED_AVAILABLE = True
 except ImportError:
     _EXTENDED_AVAILABLE = False
@@ -305,15 +309,16 @@ class BGEReranker(IReranker):
             (r.doc_id, r.content, r.score, r.metadata) for r in boosted_results[:top_k]
         ]
 
+
 class KoreanReranker(IReranker):
     """
     Korean-specific reranker with automatic model selection (Cycle 5).
-    
+
     Supports:
     - Korean-specific models (Dongjin-kr/kr-reranker, NLPai/ko-reranker)
     - A/B testing framework
     - Automatic fallback to multilingual model
-    
+
     This is a convenience wrapper around the extended reranker functionality.
     """
 
@@ -324,7 +329,7 @@ class KoreanReranker(IReranker):
     ):
         """
         Initialize Korean reranker.
-        
+
         Args:
             model_name: Specific model to use (None for auto-selection).
             use_ab_testing: Whether to use A/B testing framework.
@@ -354,7 +359,7 @@ class KoreanReranker(IReranker):
         top_k: int = 10,
     ) -> List[tuple]:
         """Rerank with metadata context boosting."""
-        if hasattr(self._impl, 'rerank_with_context'):
+        if hasattr(self._impl, "rerank_with_context"):
             return self._impl.rerank_with_context(query, documents, context, top_k)
         else:
             # Fallback for BGEReranker

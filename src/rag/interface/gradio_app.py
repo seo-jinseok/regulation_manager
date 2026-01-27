@@ -299,8 +299,8 @@ def create_app(
 """
 
     # Initialize use cases
-    query_analyzer = QueryAnalyzer()
-    full_view_usecase = FullViewUseCase(JSONDocumentLoader())
+    QueryAnalyzer()
+    FullViewUseCase(JSONDocumentLoader())
 
     def _parse_audience(selection: str) -> Optional[Audience]:
         if selection == "교수":
@@ -815,7 +815,7 @@ def create_app(
         # Header - Minimal & Clean
         gr.HTML("""
             <div style="text-align: center; padding: 28px 20px 20px;">
-                <h1 style="font-size: 1.6rem; font-weight: 600; color: #fafafa; 
+                <h1 style="font-size: 1.6rem; font-weight: 600; color: #fafafa;
                            letter-spacing: -0.025em; margin: 0;">
                     📚 대학 규정집 Q&A
                 </h1>

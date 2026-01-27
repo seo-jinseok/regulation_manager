@@ -12,7 +12,7 @@ from .json_loader import JSONDocumentLoader
 from .metrics import MetricsReporter, MetricsRepository
 
 # Typo Correction
-from .typo_corrector import TypoCorrector, TypoCorrectionResult
+from .typo_corrector import TypoCorrectionResult, TypoCorrector
 
 __all__ = [
     "JSONDocumentLoader",

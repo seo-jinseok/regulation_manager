@@ -17,7 +17,7 @@ import re
 from typing import TYPE_CHECKING, Dict, List, Tuple
 
 if TYPE_CHECKING:
-    from ..domain.entities import SearchResult
+    from ..domain.entities import Chunk, SearchResult
 
 
 # ============================================================================
@@ -574,7 +574,7 @@ def format_regulation_content(text: str) -> str:
         if match_num:
             prefix_space = match_num.group(1)
             number = match_num.group(2)
-            rest = match_num.group(3)
+            match_num.group(3)
             full_rest = clean_line[match_num.end(2) :]
 
             # Apply generally for regulation numbering (typically 1-3 digits)

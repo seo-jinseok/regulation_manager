@@ -146,7 +146,6 @@ class SelfRAGEvaluator:
         # Build context from top results
         context_parts = []
         current_len = 0
-        relevant_results = []
 
         for result in results[:5]:  # Evaluate top 5
             text = result.chunk.text[:500]

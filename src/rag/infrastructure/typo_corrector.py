@@ -15,6 +15,8 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 if TYPE_CHECKING:
+    from symspellpy import Verbosity
+
     from ..domain.repositories import ILLMClient
 
 logger = logging.getLogger(__name__)
@@ -150,18 +152,22 @@ class TypoCorrector:
         # Initialize SymSpell if dictionary path is provided
         if symspell_dictionary_path:
             try:
-                from symspellpy import SymSpell, Verbosity
+                from symspellpy import SymSpell
 
                 self._symspell_checker = SymSpell(max_dictionary_edit_distance=2)
                 self._symspell_checker.load_dictionary(
                     symspell_dictionary_path, term_index=0, count_index=1
                 )
-                logger.info(f"Loaded SymSpell dictionary from {symspell_dictionary_path}")
+                logger.info(
+                    f"Loaded SymSpell dictionary from {symspell_dictionary_path}"
+                )
             except Exception as e:
                 logger.warning(f"Failed to load SymSpell dictionary: {e}")
                 self._symspell_checker = None
 
-    def correct(self, query: str, use_llm_fallback: bool = True) -> TypoCorrectionResult:
+    def correct(
+        self, query: str, use_llm_fallback: bool = True
+    ) -> TypoCorrectionResult:
         """
         Correct typos in query using hybrid approach.
 
@@ -354,6 +360,7 @@ class TypoCorrector:
         self, token: str, max_distance: int = 2
     ) -> Optional[str]:
         """Fallback edit distance implementation using Python."""
+
         def levenshtein_distance(s1: str, s2: str) -> int:
             """Calculate Levenshtein distance between two strings."""
             if len(s1) < len(s2):

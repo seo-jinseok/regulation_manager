@@ -15,15 +15,14 @@ from unittest import mock
 
 import pytest
 
-from src.rag.automation.application.apply_improvement_usecase import ApplyImprovementUseCase
+from src.rag.automation.application.apply_improvement_usecase import (
+    ApplyImprovementUseCase,
+)
 from src.rag.infrastructure.dictionary_manager import (
-    ConflictInfo,
     DictionaryManager,
     IntentEntry,
-    RecommendationResult,
     SynonymEntry,
 )
-
 
 # ============================================================================
 # Test Fixtures
@@ -84,9 +83,9 @@ def temp_synonyms_file():
 def mock_llm_client():
     """Create a mock LLM client for testing."""
     client = mock.MagicMock()
-    
+
     # Mock response for intent recommendation
-    client.generate.return_value = '''```json
+    client.generate.return_value = """```json
 {
   "intents": [
     {
@@ -106,8 +105,8 @@ def mock_llm_client():
     }
   ]
 }
-```'''
-    
+```"""
+
     return client
 
 
@@ -229,7 +228,9 @@ class TestDictionaryManager:
         assert conflicts[0].conflict_type == "duplicate_id"
         assert conflicts[0].severity == "error"
 
-    def test_detect_conflicts_duplicate_synonym(self, temp_intents_file, temp_synonyms_file):
+    def test_detect_conflicts_duplicate_synonym(
+        self, temp_intents_file, temp_synonyms_file
+    ):
         """Test conflict detection for duplicate synonym term."""
         manager = DictionaryManager(
             intents_path=temp_intents_file,
@@ -241,9 +242,7 @@ class TestDictionaryManager:
             synonyms=["추가"],
         )
 
-        conflicts = manager.detect_conflicts(
-            IntentEntry("", "", []), [synonym]
-        )
+        conflicts = manager.detect_conflicts(IntentEntry("", "", []), [synonym])
         assert len(conflicts) > 0
         assert conflicts[0].conflict_type == "duplicate_synonym_term"
 
@@ -391,7 +390,9 @@ class TestDictionaryManager:
 class TestApplyImprovementAutomation:
     """Test suite for ApplyImprovementUseCase automation features."""
 
-    def test_init_with_llm(self, temp_intents_file, temp_synonyms_file, mock_llm_client):
+    def test_init_with_llm(
+        self, temp_intents_file, temp_synonyms_file, mock_llm_client
+    ):
         """Test ApplyImprovementUseCase initialization with LLM client."""
         use_case = ApplyImprovementUseCase(
             intents_path=temp_intents_file,
@@ -426,7 +427,13 @@ class TestApplyImprovementAutomation:
         analysis = FiveWhyAnalysis(
             test_case_id="test_001",
             original_failure="검색 실패",
-            why_chain=["왜?", "인텐트 없음", "인텐트 없음", "인텐트 없음", "인텐트 없음"],
+            why_chain=[
+                "왜?",
+                "인텐트 없음",
+                "인텐트 없음",
+                "인텐트 없음",
+                "인텐트 없음",
+            ],
             root_cause="인텐트 부족",
             suggested_fix="인텐트 추가",
             component_to_patch="intents.json",
@@ -455,7 +462,7 @@ class TestApplyImprovementAutomation:
         failure_data = [
             {
                 "query": "첫번째 실패 쿼리",
-                "root_cause":인텐트 부족",
+                "root_cause": "인텐트 부족",
                 "suggested_fix": "인텐트 추가",
             },
             {
@@ -545,9 +552,7 @@ class TestDictionaryAutomationIntegration:
         # Check that new synonyms were added
         assert "새로운" in updated_synonyms
 
-    def test_conflict_resolution_strategy(
-        self, temp_intents_file, temp_synonyms_file
-    ):
+    def test_conflict_resolution_strategy(self, temp_intents_file, temp_synonyms_file):
         """Test different conflict resolution strategies."""
         manager = DictionaryManager(
             intents_path=temp_intents_file,
@@ -589,11 +594,13 @@ class TestDictionaryAutomationEdgeCases:
     def test_empty_dictionary_files(self):
         """Test handling of empty dictionary files."""
         # Create empty temp files
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f1, \
-                tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f2:
+        with (
+            tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f1,
+            tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f2,
+        ):
             json.dump({}, f1)
             json.dump({}, f2)
-            
+
             manager = DictionaryManager(
                 intents_path=Path(f1.name),
                 synonyms_path=Path(f2.name),
@@ -610,8 +617,10 @@ class TestDictionaryAutomationEdgeCases:
     def test_malformed_json_files(self):
         """Test handling of malformed JSON files."""
         # Create files with invalid JSON
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f1, \
-                tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f2:
+        with (
+            tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f1,
+            tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f2,
+        ):
             f1.write("{ invalid json")
             f2.write("{ invalid json")
 

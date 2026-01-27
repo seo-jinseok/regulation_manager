@@ -352,7 +352,7 @@ class FunctionGemmaAdapter:
             logger.warning(f"Failed to apply chat template ({e}), using manual format.")
             prompt = f"<start_of_turn>system\n{system_content}<end_of_turn>\n<start_of_turn>user\n{user_content}<end_of_turn>\n<start_of_turn>model\n"
 
-        for iteration in range(self._max_iterations):
+        for _iteration in range(self._max_iterations):
             # Generate response
             response = mlx_generate(
                 self._mlx_model,
@@ -569,7 +569,7 @@ class FunctionGemmaAdapter:
         if context:
             messages[1]["content"] = f"{context}\n\n질문: {query}"
 
-        for iteration in range(self._max_iterations):
+        for _iteration in range(self._max_iterations):
             payload = {
                 "model": self._model,
                 "messages": messages,
@@ -756,7 +756,7 @@ class FunctionGemmaAdapter:
         # Get tool functions for Ollama
         tools = self._get_ollama_tools()
 
-        for iteration in range(self._max_iterations):
+        for _iteration in range(self._max_iterations):
             response = ollama.chat(
                 model=self._model,
                 messages=messages,
@@ -830,7 +830,7 @@ class FunctionGemmaAdapter:
         tool_results: List[ToolResult] = []
         conversation = self._build_initial_prompt(query, context)
 
-        for iteration in range(self._max_iterations):
+        for _iteration in range(self._max_iterations):
             # Get model response
             response = client.generate(
                 system_prompt=self.SYSTEM_PROMPT,

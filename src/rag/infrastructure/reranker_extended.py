@@ -27,6 +27,8 @@ from .ab_test_framework import (
 )
 
 if TYPE_CHECKING:
+    from FlagReranker import FlagReranker
+
     from ..domain.entities import SearchResult
 
 logger = logging.getLogger(__name__)
@@ -51,7 +53,7 @@ class RerankedResult:
 def get_ab_manager() -> ABTestManager:
     """
     Get or initialize the A/B test manager.
-    
+
     Returns:
         ABTestManager instance.
     """
@@ -87,14 +89,14 @@ def get_ab_manager() -> ABTestManager:
 def load_model(model_name: str, use_fp16: bool = True) -> "FlagReranker":
     """
     Load a reranker model.
-    
+
     Args:
         model_name: HuggingFace model identifier.
         use_fp16: Whether to use FP16 precision.
-        
+
     Returns:
         FlagReranker instance.
-        
+
     Raises:
         RerankerError: If model fails to load.
     """
@@ -121,12 +123,14 @@ def load_model(model_name: str, use_fp16: bool = True) -> "FlagReranker":
 
     except ImportError as e:
         from ..exceptions import RerankerError
+
         raise RerankerError(
             "FlagEmbedding is required. Install with: uv add FlagEmbedding",
             model=model_name,
         ) from e
     except Exception as e:
         from ..exceptions import RerankerError
+
         raise RerankerError(
             f"Failed to load reranker model {model_name}: {e}",
             model=model_name,
@@ -140,12 +144,12 @@ def select_model_for_query(
 ) -> str:
     """
     Select appropriate reranker model for the query.
-    
+
     Args:
         query: Search query text.
         strategy: Model selection strategy.
         korean_models: List of Korean model names.
-        
+
     Returns:
         Selected model name.
     """
@@ -173,12 +177,12 @@ def compute_scores(
 ) -> List[float]:
     """
     Compute relevance scores using specified model.
-    
+
     Args:
         model_name: Model to use for scoring.
         pairs: List of (query, document) pairs.
         normalize: Whether to normalize scores.
-        
+
     Returns:
         List of relevance scores.
     """
@@ -202,13 +206,13 @@ def rerank(
 ) -> List[RerankedResult]:
     """
     Rerank documents using cross-encoder model.
-    
+
     Args:
         query: The search query.
         documents: List of (doc_id, content, metadata) tuples.
         top_k: Maximum number of results to return.
         model_name: Optional specific model to use.
-        
+
     Returns:
         List of RerankedResult sorted by relevance score.
     """
@@ -234,12 +238,14 @@ def rerank(
             normalize=True,
         )
         success = True
-        error = None
     except Exception as e:
         logger.error(f"Reranking failed with {model_name}: {e}")
 
         # Fallback to primary model if enabled
-        if config.reranker.fallback_to_multilingual and model_name != config.reranker.primary_model:
+        if (
+            config.reranker.fallback_to_multilingual
+            and model_name != config.reranker.primary_model
+        ):
             logger.info(f"Falling back to {config.reranker.primary_model}")
             model_name = config.reranker.primary_model
             scores = compute_scores(
@@ -248,10 +254,10 @@ def rerank(
                 normalize=True,
             )
             success = True
-            error = str(e)
+            str(e)
         else:
             success = False
-            error = str(e)
+            str(e)
             scores = [0.0] * len(documents)
 
     latency_ms = (time.time() - start_time) * 1000
@@ -288,13 +294,13 @@ def rerank_search_results(
 ) -> List["SearchResult"]:
     """
     Rerank SearchResult objects from the RAG system.
-    
+
     Args:
         query: The search query.
         search_results: List of SearchResult objects.
         top_k: Maximum number of results to return.
         model_name: Optional specific model to use.
-        
+
     Returns:
         List of SearchResult objects, reranked by relevance.
     """
@@ -342,7 +348,7 @@ def clear_reranker():
 def warmup_reranker(model_name: Optional[str] = None) -> None:
     """
     Pre-load reranker models for faster first query.
-    
+
     Args:
         model_name: Optional specific model to warmup.
                    If None, warms up all configured models.
@@ -365,7 +371,7 @@ def warmup_reranker(model_name: Optional[str] = None) -> None:
 def get_model_performance_summary() -> Dict:
     """
     Get performance summary of all reranker models.
-    
+
     Returns:
         Dictionary with model performance metrics.
     """
@@ -376,7 +382,7 @@ def get_model_performance_summary() -> Dict:
 class KoreanReranker:
     """
     Korean-specific reranker with automatic model selection.
-    
+
     This class provides a simple interface for Korean document reranking
     with automatic model selection and performance tracking.
     """
@@ -388,7 +394,7 @@ class KoreanReranker:
     ):
         """
         Initialize Korean reranker.
-        
+
         Args:
             model_name: Specific model to use (None for auto-selection).
             use_ab_testing: Whether to use A/B testing framework.
@@ -404,12 +410,12 @@ class KoreanReranker:
     ) -> List[tuple]:
         """
         Rerank Korean documents.
-        
+
         Args:
             query: Search query in Korean.
             documents: List of (doc_id, content, metadata) tuples.
             top_k: Maximum number of results.
-            
+
         Returns:
             List of (doc_id, content, score, metadata) tuples.
         """
@@ -420,10 +426,7 @@ class KoreanReranker:
             # A/B testing mode: let framework select model
             results = rerank(query, documents, top_k=top_k, model_name=self._model_name)
 
-        return [
-            (r.doc_id, r.content, r.score, r.metadata)
-            for r in results
-        ]
+        return [(r.doc_id, r.content, r.score, r.metadata) for r in results]
 
     def rerank_with_context(
         self,
@@ -434,13 +437,13 @@ class KoreanReranker:
     ) -> List[tuple]:
         """
         Rerank with metadata context boosting.
-        
+
         Args:
             query: Search query.
             documents: List of (doc_id, content, metadata) tuples.
             context: Optional context dict for boosting.
             top_k: Maximum number of results.
-            
+
         Returns:
             List of (doc_id, content, score, metadata) tuples.
         """
@@ -465,7 +468,9 @@ class KoreanReranker:
 
             # Boost matching regulation
             if target_regulation:
-                doc_regulation = metadata.get("regulation_title") or metadata.get("규정명", "")
+                doc_regulation = metadata.get("regulation_title") or metadata.get(
+                    "규정명", ""
+                )
                 if target_regulation.lower() in doc_regulation.lower():
                     boosted_score = min(1.0, boosted_score + regulation_boost)
 
@@ -490,6 +495,5 @@ class KoreanReranker:
         boosted_results.sort(key=lambda x: x.score, reverse=True)
 
         return [
-            (r.doc_id, r.content, r.score, r.metadata)
-            for r in boosted_results[:top_k]
+            (r.doc_id, r.content, r.score, r.metadata) for r in boosted_results[:top_k]
         ]

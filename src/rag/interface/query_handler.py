@@ -744,7 +744,7 @@ class QueryHandler:
             display_sources = filter_by_relevance(sources, norm_scores)
 
             citations_text = ""
-            for i, r in enumerate(display_sources, 1):
+            for _i, r in enumerate(display_sources, 1):
                 citation_block = format_regulation_citation(r.chunk)
                 norm_score = norm_scores.get(r.chunk.id, 0.0)
                 rel_pct = int(norm_score * 100)
@@ -1405,7 +1405,7 @@ class QueryHandler:
             norm_scores = normalize_relevance_scores(answer.sources)
             display_sources = filter_by_relevance(answer.sources, norm_scores)
 
-            for i, r in enumerate(display_sources, 1):
+            for _i, r in enumerate(display_sources, 1):
                 citation_block = format_regulation_citation(r.chunk)
                 norm_score = norm_scores.get(r.chunk.id, 0.0)
                 rel_pct = int(norm_score * 100)

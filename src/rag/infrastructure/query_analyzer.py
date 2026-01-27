@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 from .patterns import ARTICLE_PATTERN
-from .typo_corrector import TypoCorrector, TypoCorrectionResult
+from .typo_corrector import TypoCorrector
 
 if TYPE_CHECKING:
     from ..domain.repositories import ILLMClient
