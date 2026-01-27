@@ -13,7 +13,6 @@ from typing import TYPE_CHECKING, List, Optional
 
 if TYPE_CHECKING:
     from ...infrastructure.llm_client import ILLMClient
-    from ..domain.entities import TestResult
     from ..domain.value_objects import FactCheck, QualityDimensions, QualityScore
 
 from .evaluation_constants import ScoringThresholds
@@ -81,7 +80,7 @@ class QualityEvaluator:
 
     def evaluate(
         self,
-        test_result: "TestResult",
+        test_result: "QualityTestResult",
         fact_checks: List["FactCheck"],
     ) -> "QualityScore":
         """

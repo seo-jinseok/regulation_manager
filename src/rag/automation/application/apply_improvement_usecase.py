@@ -14,7 +14,6 @@ from typing import TYPE_CHECKING, Dict, List, Optional
 
 if TYPE_CHECKING:
     from ...domain.repositories import ILLMClient
-    from ..domain.entities import TestResult
     from ..domain.value_objects import FiveWhyAnalysis
 
 logger = logging.getLogger(__name__)
@@ -77,7 +76,7 @@ class ApplyImprovementUseCase:
     def apply_improvements(
         self,
         analyses: List["FiveWhyAnalysis"],
-        test_results: List["TestResult"],
+        test_results: List["QualityTestResult"],
         dry_run: bool = True,
     ) -> Dict[str, any]:
         """
@@ -166,7 +165,7 @@ class ApplyImprovementUseCase:
     def _apply_llm_recommendation(
         self,
         analysis: "FiveWhyAnalysis",
-        test_result: "TestResult",
+        test_result: "QualityTestResult",
         dry_run: bool,
     ) -> Optional[Dict]:
         """
@@ -192,7 +191,10 @@ class ApplyImprovementUseCase:
                 use_llm=True,
             )
 
-            if not recommendation.recommended_intents and not recommendation.recommended_synonyms:
+            if (
+                not recommendation.recommended_intents
+                and not recommendation.recommended_synonyms
+            ):
                 return None
 
             result = {
@@ -287,12 +289,14 @@ class ApplyImprovementUseCase:
                 results["synonyms_added"] += len(recommendation.recommended_synonyms)
                 results["conflicts_detected"] += len(recommendation.conflicts)
 
-                results["recommendations"].append({
-                    "query": query,
-                    "intents": len(recommendation.recommended_intents),
-                    "synonyms": len(recommendation.recommended_synonyms),
-                    "conflicts": len(recommendation.conflicts),
-                })
+                results["recommendations"].append(
+                    {
+                        "query": query,
+                        "intents": len(recommendation.recommended_intents),
+                        "synonyms": len(recommendation.recommended_synonyms),
+                        "conflicts": len(recommendation.conflicts),
+                    }
+                )
 
                 # Auto-apply if requested and no conflicts
                 if auto_apply and not dry_run and not recommendation.conflicts:
@@ -323,7 +327,7 @@ class ApplyImprovementUseCase:
     def _patch_intents(
         self,
         analysis: "FiveWhyAnalysis",
-        test_result: "TestResult",
+        test_result: "QualityTestResult",
         dry_run: bool,
     ) -> Optional[Dict]:
         """
@@ -391,7 +395,7 @@ class ApplyImprovementUseCase:
     def _patch_synonyms(
         self,
         analysis: "FiveWhyAnalysis",
-        test_result: "TestResult",
+        test_result: "QualityTestResult",
         dry_run: bool,
     ) -> Optional[Dict]:
         """
@@ -497,7 +501,7 @@ class ApplyImprovementUseCase:
     def _generate_code_suggestion(
         self,
         analysis: "FiveWhyAnalysis",
-        test_result: "TestResult",
+        test_result: "QualityTestResult",
     ) -> Dict:
         """
         Generate code change suggestion.
@@ -523,7 +527,7 @@ class ApplyImprovementUseCase:
     def _generate_config_suggestion(
         self,
         analysis: "FiveWhyAnalysis",
-        test_result: "TestResult",
+        test_result: "QualityTestResult",
     ) -> Dict:
         """
         Generate configuration change suggestion.
@@ -548,7 +552,16 @@ class ApplyImprovementUseCase:
         """Extract keywords from query."""
         # Simple extraction: remove stop words, keep meaningful terms
         stop_words = {
-            "은", "는", "이", "가", "을", "를", "의", "에", "에서", "으로",
+            "은",
+            "는",
+            "이",
+            "가",
+            "을",
+            "를",
+            "의",
+            "에",
+            "에서",
+            "으로",
         }
 
         # Split by whitespace and filter
@@ -598,7 +611,9 @@ class ApplyImprovementUseCase:
         if "prompt" in root_cause_lower:
             return "Update LLM prompt to enforce source-based generation and reduce hallucination"
         elif "parameters" in root_cause_lower:
-            return "Adjust component hyperparameters (e.g., top_k, threshold, temperature)"
+            return (
+                "Adjust component hyperparameters (e.g., top_k, threshold, temperature)"
+            )
         elif "retrieval" in root_cause_lower:
             return "Review retrieval strategy and consider improving embeddings or indexing"
         else:
@@ -621,7 +636,7 @@ class ApplyImprovementUseCase:
     def preview_improvements(
         self,
         analyses: List["FiveWhyAnalysis"],
-        test_results: List["TestResult"],
+        test_results: List["QualityTestResult"],
     ) -> str:
         """
         Generate a human-readable preview of improvements.
@@ -649,7 +664,9 @@ class ApplyImprovementUseCase:
 
             if analysis.component_to_patch:
                 lines.append(f"**Target:** {analysis.component_to_patch}")
-                lines.append(f"**Code Change Required:** {analysis.code_change_required}")
+                lines.append(
+                    f"**Code Change Required:** {analysis.code_change_required}"
+                )
 
             lines.append("")
 

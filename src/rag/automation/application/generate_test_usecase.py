@@ -10,7 +10,7 @@ Clean Architecture: Application layer orchestrates domain and infrastructure.
 from datetime import datetime
 from typing import List, Optional
 
-from src.rag.automation.domain.entities import TestCase, TestSession
+from src.rag.automation.domain.entities import EvaluationCase, TestSession
 from src.rag.automation.domain.repository import SessionRepository
 from src.rag.automation.domain.value_objects import DifficultyDistribution
 from src.rag.automation.infrastructure.llm_persona_generator import PersonaGenerator
@@ -82,7 +82,7 @@ class GenerateTestUseCase:
         )
 
         # Generate test cases for all personas
-        all_test_cases: List[TestCase] = []
+        all_test_cases: List[EvaluationCase] = []
 
         for persona in all_personas:
             # Generate queries for this persona

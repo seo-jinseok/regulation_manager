@@ -251,6 +251,11 @@ class SearchUseCase:
         self._enable_query_expansion = config.enable_query_expansion
         self._query_expander = None  # Lazy initialized
 
+        # Ambiguity Classifier (SPEC-RAG-001 Component 2)
+        from ..domain.llm.ambiguity_classifier import AmbiguityClassifier
+
+        self.ambiguity_classifier = AmbiguityClassifier()
+
         # Reranking metrics (Cycle 3)
         self._reranking_metrics = RerankingMetrics()
 
@@ -392,6 +397,63 @@ class SearchUseCase:
             Recommended SearchStrategy.
         """
         return self._determine_search_strategy(query)
+
+    def check_ambiguity(
+        self, query_text: str
+    ) -> tuple[bool, Optional["DisambiguationDialog"]]:
+        """
+        Check query for ambiguity and return disambiguation dialog if needed.
+
+        This method implements REQ-AMB-001 through REQ-AMB-015 from SPEC-RAG-001.
+
+        Args:
+            query_text: User's search query text.
+
+        Returns:
+            Tuple of (needs_clarification, disambiguation_dialog).
+            - needs_clarification: True if query is AMBIGUOUS or HIGHLY_AMBIGUOUS
+            - disambiguation_dialog: Dialog with clarification options, or None if CLEAR
+        """
+        from ..domain.llm.ambiguity_classifier import AmbiguityLevel
+
+        classification = self.ambiguity_classifier.classify(query_text)
+
+        if classification.level == AmbiguityLevel.CLEAR:
+            return False, None
+
+        # Generate disambiguation dialog for ambiguous queries
+        dialog = self.ambiguity_classifier.generate_disambiguation_dialog(
+            classification
+        )
+        return True, dialog
+
+    def apply_disambiguation(
+        self, original_query: str, selected_option_index: int
+    ) -> str:
+        """
+        Apply user's disambiguation selection to clarify query.
+
+        Args:
+            original_query: Original user query.
+            selected_option_index: Index of selected option from disambiguation dialog.
+
+        Returns:
+            Clarified query text.
+        """
+
+        classification = self.ambiguity_classifier.classify(original_query)
+        dialog = self.ambiguity_classifier.generate_disambiguation_dialog(
+            classification
+        )
+
+        if dialog and 0 <= selected_option_index < len(dialog.options):
+            selected_option = dialog.options[selected_option_index]
+            return self.ambiguity_classifier.apply_user_selection(
+                original_query, selected_option
+            )
+
+        # If invalid selection, return original
+        return original_query
 
     def search(
         self,

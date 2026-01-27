@@ -16,7 +16,7 @@ from ..domain.value_objects import FactCheck, FactCheckStatus
 
 if TYPE_CHECKING:
     from ...domain.repositories import ILLMClient, IVectorStore
-    from ..domain.entities import TestResult
+    from ..domain.entities import QualityTestResult
 
 logger = logging.getLogger(__name__)
 
@@ -130,7 +130,9 @@ class AutoFactChecker:
                 return True
         return False
 
-    def extract_claims(self, answer: str, test_result: "TestResult") -> List[str]:
+    def extract_claims(
+        self, answer: str, test_result: "QualityTestResult"
+    ) -> List[str]:
         """
         Extract key claims from the answer.
 
@@ -312,12 +314,12 @@ class AutoFactChecker:
                 explanation="No sources available for verification",
             )
 
-    def check_facts(self, test_result: "TestResult") -> List["FactCheck"]:
+    def check_facts(self, test_result: "QualityTestResult") -> List["FactCheck"]:
         """
         Perform fact checking on a test result.
 
         Args:
-            test_result: TestResult with answer to verify.
+            test_result: QualityTestResult with answer to verify.
 
         Returns:
             List of FactCheck results.

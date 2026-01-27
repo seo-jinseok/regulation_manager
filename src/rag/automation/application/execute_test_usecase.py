@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, Callable, Dict, List, Optional
 
 if TYPE_CHECKING:
     from ...application.search_usecase import SearchUseCase
-    from ..domain.entities import TestCase, TestResult
+    from ..domain.entities import EvaluationCase, QualityTestResult
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +50,7 @@ class ExecuteTestUseCase:
         test_case_id: str,
         enable_answer: bool = True,
         top_k: int = 5,
-    ) -> "TestResult":
+    ) -> "QualityTestResult":
         """
         Execute a single query test.
 
@@ -61,9 +61,9 @@ class ExecuteTestUseCase:
             top_k: Number of chunks to retrieve.
 
         Returns:
-            TestResult with answer, sources, and pipeline logs.
+            QualityTestResult with answer, sources, and pipeline logs.
         """
-        from ..domain.entities import TestResult
+        from ..domain.entities import QualityTestResult
 
         start_time = time.time()
         rag_pipeline_log: Dict = {}
@@ -134,8 +134,8 @@ class ExecuteTestUseCase:
             rag_pipeline_log["execution_time_ms"] = execution_time_ms
             rag_pipeline_log["query_analyzed"] = True
 
-            # Create TestResult
-            result = TestResult(
+            # Create QualityTestResult
+            result = QualityTestResult(
                 test_case_id=test_case_id,
                 query=query,
                 answer=answer,
@@ -156,7 +156,7 @@ class ExecuteTestUseCase:
             logger.error(f"Test execution failed: {e}")
 
             # Return result with error
-            return TestResult(
+            return QualityTestResult(
                 test_case_id=test_case_id,
                 query=query,
                 answer="",
@@ -168,15 +168,15 @@ class ExecuteTestUseCase:
                 passed=False,
             )
 
-    def execute_test_case(self, test_case: "TestCase") -> "TestResult":
+    def execute_test_case(self, test_case: "EvaluationCase") -> "QualityTestResult":
         """
-        Execute a TestCase entity.
+        Execute an EvaluationCase entity.
 
         Args:
-            test_case: TestCase entity with query and metadata.
+            test_case: EvaluationCase entity with query and metadata.
 
         Returns:
-            TestResult with execution results.
+            QualityTestResult with execution results.
         """
         return self.execute_query(
             query=test_case.query,
@@ -189,7 +189,7 @@ class ExecuteTestUseCase:
         self,
         queries: List[str],
         test_case_prefix: str = "batch",
-    ) -> List["TestResult"]:
+    ) -> List["QualityTestResult"]:
         """
         Execute multiple queries in batch.
 
@@ -198,7 +198,7 @@ class ExecuteTestUseCase:
             test_case_prefix: Prefix for test case IDs.
 
         Returns:
-            List of TestResult objects.
+            List of QualityTestResult objects.
         """
         results = []
 
@@ -219,8 +219,10 @@ class ExecuteTestUseCase:
         test_case_prefix: str = "batch",
         max_workers: Optional[int] = None,
         rate_limit_per_second: float = 5.0,
-        progress_callback: Optional[Callable[[int, int, "TestResult"], None]] = None,
-    ) -> List["TestResult"]:
+        progress_callback: Optional[
+            Callable[[int, int, "QualityTestResult"], None]
+        ] = None,
+    ) -> List["QualityTestResult"]:
         """
         Execute multiple queries in parallel with rate limiting and progress tracking.
 
@@ -233,7 +235,7 @@ class ExecuteTestUseCase:
                                 Called with (completed, total, latest_result).
 
         Returns:
-            List of TestResult objects in the same order as input queries.
+            List of QualityTestResult objects in the same order as input queries.
         """
         if max_workers is None:
             max_workers = os.cpu_count() or 4
@@ -244,14 +246,14 @@ class ExecuteTestUseCase:
         )
 
         # Thread-safe result storage using a dictionary
-        results: Dict[int, "TestResult"] = {}
+        results: Dict[int, "QualityTestResult"] = {}
 
         async def execute_with_rate_limit(
             semaphore: "asyncio.Semaphore",
             results_lock: "asyncio.Lock",
             idx: int,
             query: str,
-        ) -> tuple[int, "TestResult"]:
+        ) -> tuple[int, "QualityTestResult"]:
             """Execute a single query with rate limiting."""
             # Acquire semaphore for rate limiting
             async with semaphore:
@@ -321,11 +323,13 @@ class ExecuteTestUseCase:
 
     def batch_execute_test_cases(
         self,
-        test_cases: List["TestCase"],
+        test_cases: List["EvaluationCase"],
         max_workers: Optional[int] = None,
         rate_limit_per_second: float = 5.0,
-        progress_callback: Optional[Callable[[int, int, "TestResult"], None]] = None,
-    ) -> List["TestResult"]:
+        progress_callback: Optional[
+            Callable[[int, int, "QualityTestResult"], None]
+        ] = None,
+    ) -> List["QualityTestResult"]:
         """
         Execute multiple TestCase entities in parallel.
 
@@ -336,7 +340,7 @@ class ExecuteTestUseCase:
             progress_callback: Optional callback for progress updates.
 
         Returns:
-            List of TestResult objects in the same order as input test cases.
+            List of QualityTestResult objects in the same order as input test cases.
         """
         # Extract queries and create mapping
         queries = [tc.query for tc in test_cases]

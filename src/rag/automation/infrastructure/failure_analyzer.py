@@ -11,7 +11,6 @@ import logging
 from typing import TYPE_CHECKING, Dict, List, Optional
 
 if TYPE_CHECKING:
-    from ..domain.entities import TestResult
     from ..domain.value_objects import ComponentAnalysis, FiveWhyAnalysis
 
 logger = logging.getLogger(__name__)
@@ -37,7 +36,7 @@ class FailureAnalyzer:
 
     def analyze_failure(
         self,
-        test_result: "TestResult",
+        test_result: "QualityTestResult",
         component_analysis: Optional["ComponentAnalysis"] = None,
     ) -> "FiveWhyAnalysis":
         """
@@ -53,7 +52,9 @@ class FailureAnalyzer:
         from ..domain.value_objects import FiveWhyAnalysis
 
         if test_result.passed:
-            self.logger.warning(f"Test {test_result.test_case_id} passed, no failure to analyze")
+            self.logger.warning(
+                f"Test {test_result.test_case_id} passed, no failure to analyze"
+            )
             return FiveWhyAnalysis(
                 test_case_id=test_result.test_case_id,
                 original_failure="No failure",
@@ -68,13 +69,17 @@ class FailureAnalyzer:
         failure_type = self._classify_failure(test_result, component_analysis)
 
         # Perform 5-Why chain
-        why_chain = self._perform_five_why(test_result, failure_type, component_analysis)
+        why_chain = self._perform_five_why(
+            test_result, failure_type, component_analysis
+        )
 
         # Extract root cause (last why)
         root_cause = why_chain[-1] if why_chain else "Unknown"
 
         # Generate suggested fix
-        suggested_fix = self._generate_suggested_fix(root_cause, failure_type, test_result)
+        suggested_fix = self._generate_suggested_fix(
+            root_cause, failure_type, test_result
+        )
 
         # Determine what to patch
         component_to_patch = self._determine_patch_target(root_cause, failure_type)
@@ -98,7 +103,7 @@ class FailureAnalyzer:
 
     def _classify_failure(
         self,
-        test_result: "TestResult",
+        test_result: "QualityTestResult",
         component_analysis: Optional["ComponentAnalysis"],
     ) -> str:
         """
@@ -113,7 +118,9 @@ class FailureAnalyzer:
         """
         # Check fact check failures
         if test_result.fact_checks:
-            failed_checks = [fc for fc in test_result.fact_checks if fc.status.value != "pass"]
+            failed_checks = [
+                fc for fc in test_result.fact_checks if fc.status.value != "pass"
+            ]
             if failed_checks:
                 return f"Fact check failure: {failed_checks[0].claim}"
 
@@ -136,7 +143,9 @@ class FailureAnalyzer:
 
         # Check component analysis
         if component_analysis and component_analysis.critical_failures:
-            critical_components = [cf.component.value for cf in component_analysis.critical_failures]
+            critical_components = [
+                cf.component.value for cf in component_analysis.critical_failures
+            ]
             return f"Component failure: {', '.join(critical_components)}"
 
         # Check for errors
@@ -152,7 +161,7 @@ class FailureAnalyzer:
 
     def _perform_five_why(
         self,
-        test_result: "TestResult",
+        test_result: "QualityTestResult",
         failure_type: str,
         component_analysis: Optional["ComponentAnalysis"],
     ) -> List[str]:
@@ -193,7 +202,7 @@ class FailureAnalyzer:
 
     def _get_second_why(
         self,
-        test_result: "TestResult",
+        test_result: "QualityTestResult",
         failure_type: str,
         component_analysis: Optional["ComponentAnalysis"],
     ) -> str:
@@ -212,7 +221,9 @@ class FailureAnalyzer:
         else:
             return "RAG system did not process the query correctly"
 
-    def _get_third_why(self, second_why: str, component_analysis: Optional["ComponentAnalysis"]) -> str:
+    def _get_third_why(
+        self, second_why: str, component_analysis: Optional["ComponentAnalysis"]
+    ) -> str:
         """Get the third why."""
         if "intent" in second_why.lower():
             return "Query analysis did not correctly identify user intent"
@@ -253,7 +264,7 @@ class FailureAnalyzer:
         self,
         root_cause: str,
         failure_type: str,
-        test_result: "TestResult",
+        test_result: "QualityTestResult",
     ) -> str:
         """
         Generate suggested fix based on root cause.
@@ -273,7 +284,9 @@ class FailureAnalyzer:
             return "Review and update LLM generation prompt to enforce source-based answers"
 
         elif "parameters" in root_cause:
-            return "Retune RAG component parameters (e.g., top_k, temperature, thresholds)"
+            return (
+                "Retune RAG component parameters (e.g., top_k, temperature, thresholds)"
+            )
 
         elif "indexing" in root_cause:
             return "Re-index knowledge base with updated embeddings"
@@ -281,7 +294,9 @@ class FailureAnalyzer:
         else:
             return f"Investigate {root_cause} and implement appropriate fix"
 
-    def _determine_patch_target(self, root_cause: str, failure_type: str) -> Optional[str]:
+    def _determine_patch_target(
+        self, root_cause: str, failure_type: str
+    ) -> Optional[str]:
         """
         Determine which file/component needs patching.
 
@@ -315,7 +330,9 @@ class FailureAnalyzer:
             True if code change is required, False otherwise.
         """
         # JSON file updates are not code changes
-        if any(json_file in root_cause for json_file in ["intents.json", "synonyms.json"]):
+        if any(
+            json_file in root_cause for json_file in ["intents.json", "synonyms.json"]
+        ):
             return False
 
         # Config changes are not code changes
@@ -336,7 +353,7 @@ class FailureAnalyzer:
     def generate_patch_suggestion(
         self,
         analysis: "FiveWhyAnalysis",
-        test_result: "TestResult",
+        test_result: "QualityTestResult",
     ) -> Dict[str, any]:
         """
         Generate a concrete patch suggestion.

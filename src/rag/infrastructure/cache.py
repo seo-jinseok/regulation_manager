@@ -246,7 +246,7 @@ class FileBackend:
 
 
 class RedisBackend:
-    """Redis cache backend for high-performance caching."""
+    """Redis cache backend for high-performance caching with connection pooling."""
 
     def __init__(
         self,
@@ -255,9 +255,14 @@ class RedisBackend:
         db: int = 0,
         password: Optional[str] = None,
         prefix: str = "rag_cache:",
+        max_connections: int = 50,
+        socket_timeout: float = 5.0,
+        socket_connect_timeout: float = 5.0,
+        retry_on_timeout: bool = True,
+        health_check_interval: int = 30,
     ):
         """
-        Initialize Redis backend.
+        Initialize Redis backend with connection pooling.
 
         Args:
             host: Redis host.
@@ -265,8 +270,14 @@ class RedisBackend:
             db: Redis database number.
             password: Optional Redis password.
             prefix: Key prefix for all cache entries.
+            max_connections: Maximum connections in pool (REQ-PER-001).
+            socket_timeout: Socket timeout in seconds.
+            socket_connect_timeout: Connection timeout in seconds.
+            retry_on_timeout: Retry commands on timeout.
+            health_check_interval: Health check interval in seconds (REQ-PER-011).
         """
         self._client = None
+        self._pool = None
         self._prefix = prefix
         self._connection_params = {
             "host": host,
@@ -274,26 +285,74 @@ class RedisBackend:
             "db": db,
             "password": password,
             "decode_responses": True,
+            "max_connections": max_connections,
+            "socket_timeout": socket_timeout,
+            "socket_connect_timeout": socket_connect_timeout,
+            "retry_on_timeout": retry_on_timeout,
+            "health_check_interval": health_check_interval,
         }
         self._connect()
 
     def _connect(self) -> None:
-        """Establish Redis connection."""
+        """Establish Redis connection pool (REQ-PER-001: Connection pooling)."""
         try:
             import redis
 
-            self._client = redis.Redis(**self._connection_params)
-            # Test connection
+            # Create connection pool (REQ-PER-001)
+            self._pool = redis.ConnectionPool(**self._connection_params)
+            self._client = redis.Redis(connection_pool=self._pool)
+
+            # Test connection with health check (REQ-PER-011)
             self._client.ping()
             logger.info(
-                f"Connected to Redis at {self._connection_params['host']}:{self._connection_params['port']}"
+                f"Connected to Redis pool at {self._connection_params['host']}:{self._connection_params['port']} "
+                f"(max_connections={self._connection_params['max_connections']})"
             )
         except ImportError:
             logger.warning("redis package not installed. Redis backend unavailable.")
             self._client = None
+            self._pool = None
         except Exception as e:
             logger.warning(f"Failed to connect to Redis: {e}")
             self._client = None
+            self._pool = None
+
+    def get_pool_status(self) -> Dict[str, Any]:
+        """
+        Get connection pool status for metrics (REQ-PER-002).
+
+        Returns:
+            Dict with pool statistics.
+        """
+        if self._pool is None:
+            return {
+                "available": False,
+                "total_connections": 0,
+                "active_connections": 0,
+                "idle_connections": 0,
+            }
+
+        try:
+            # Get pool stats if available
+            pool_stats = {
+                "available": True,
+                "max_connections": self._connection_params["max_connections"],
+                "total_connections": getattr(self._pool, "created_connections", 0),
+            }
+
+            # Try to get more detailed stats if available (Redis-py 5.0+)
+            if hasattr(self._pool, "_created_connections"):
+                pool_stats["active_connections"] = len(
+                    [c for c in self._pool._available_connections if c is not None]
+                )
+                pool_stats["idle_connections"] = len(
+                    [c for c in self._pool._available_connections if c is None]
+                )
+
+            return pool_stats
+        except Exception as e:
+            logger.warning(f"Failed to get pool status: {e}")
+            return {"available": False, "error": str(e)}
 
     @property
     def available(self) -> bool:
@@ -413,14 +472,16 @@ class RedisBackend:
 
 class RAGQueryCache:
     """
-    Main cache manager for RAG query results.
+    Main cache manager for RAG query results with performance optimization.
 
     Features:
-    - Redis primary with file fallback
+    - Redis primary with connection pooling (REQ-PER-001)
+    - File-based fallback with graceful degradation (REQ-PER-008)
     - Cache stampede prevention with single-flight pattern
-    - Cache statistics tracking
+    - Enhanced cache metrics (REQ-PER-002)
+    - Cache warming support (REQ-PER-003, REQ-PER-004)
     - Separate namespaces for retrieval and LLM responses
-    - Cache warming support
+    - Connection pool health monitoring (REQ-PER-011)
     """
 
     def __init__(
@@ -431,9 +492,11 @@ class RAGQueryCache:
         redis_port: int = 6379,
         redis_password: Optional[str] = None,
         cache_dir: str = "data/cache/rag",
+        max_connections: int = 50,  # REQ-PER-001
+        enable_enhanced_metrics: bool = True,  # REQ-PER-002
     ):
         """
-        Initialize RAG query cache.
+        Initialize RAG query cache with performance enhancements.
 
         Args:
             enabled: Whether caching is enabled.
@@ -442,12 +505,26 @@ class RAGQueryCache:
             redis_port: Redis port.
             redis_password: Optional Redis password.
             cache_dir: Directory for file-based fallback cache.
+            max_connections: Max Redis connection pool size (REQ-PER-001).
+            enable_enhanced_metrics: Enable enhanced metrics tracking (REQ-PER-002).
         """
         self.enabled = enabled
         self.ttl_hours = ttl_hours
         self._stats = CacheStats()
         self._lock = threading.Lock()
         self._pending: Dict[str, threading.Event] = {}  # For stampede prevention
+
+        # Initialize enhanced metrics (REQ-PER-002)
+        self._enhanced_metrics_enabled = enable_enhanced_metrics
+        self._enhanced_metrics = None
+        if enable_enhanced_metrics:
+            try:
+                from ..domain.performance.metrics import EnhancedCacheMetrics
+
+                self._enhanced_metrics = EnhancedCacheMetrics()
+                logger.info("Enhanced cache metrics enabled")
+            except ImportError:
+                logger.warning("Enhanced metrics module unavailable, using basic stats")
 
         # Initialize backends
         self._redis: Optional[RedisBackend] = None
@@ -458,11 +535,12 @@ class RAGQueryCache:
                 host=redis_host,
                 port=redis_port,
                 password=redis_password,
+                max_connections=max_connections,  # REQ-PER-001
             )
             if self._redis.available:
-                logger.info("RAG cache using Redis backend")
+                logger.info("RAG cache using Redis backend with connection pooling")
             else:
-                logger.warning("Redis unavailable, using file backend")
+                logger.warning("Redis unavailable, using file backend (REQ-PER-008)")
                 self._redis = None
         else:
             logger.info("RAG cache using file backend")
@@ -518,7 +596,7 @@ class RAGQueryCache:
         **kwargs,
     ) -> Optional[Dict[str, Any]]:
         """
-        Get cached data if available.
+        Get cached data if available with enhanced metrics tracking (REQ-PER-002).
 
         Args:
             cache_type: Type of cached data.
@@ -532,6 +610,9 @@ class RAGQueryCache:
         if not self.enabled:
             return None
 
+        # Start timing for enhanced metrics
+        start_time = time.time()
+
         cache_key = self._compute_hash(cache_type, query, filter_options, **kwargs)
 
         # Try Redis first
@@ -539,21 +620,63 @@ class RAGQueryCache:
             entry = self._redis.get(cache_key)
             if entry:
                 self._stats.hits += 1
+                latency_ms = (time.time() - start_time) * 1000
+                self._record_enhanced_metrics("redis", "hit", latency_ms)
                 logger.debug(
                     f"Cache HIT (Redis): {cache_type.value} for '{query[:30]}...'"
                 )
                 return entry.data
 
-        # Fallback to file backend
+        # Fallback to file backend (REQ-PER-008: graceful degradation)
         entry = self._file.get(cache_key)
         if entry:
             self._stats.hits += 1
+            latency_ms = (time.time() - start_time) * 1000
+            self._record_enhanced_metrics("file", "hit", latency_ms)
             logger.debug(f"Cache HIT (File): {cache_type.value} for '{query[:30]}...'")
             return entry.data
 
         self._stats.misses += 1
+        latency_ms = (time.time() - start_time) * 1000
+        self._record_enhanced_metrics("all", "miss", latency_ms)
         logger.debug(f"Cache MISS: {cache_type.value} for '{query[:30]}...'")
         return None
+
+    def _record_enhanced_metrics(
+        self, backend: str, result_type: str, latency_ms: float
+    ) -> None:
+        """
+        Record enhanced metrics if enabled (REQ-PER-002).
+
+        Args:
+            backend: Backend type (redis, file, all).
+            result_type: Result type (hit, miss, error).
+            latency_ms: Operation latency in milliseconds.
+        """
+        if not self._enhanced_metrics_enabled or self._enhanced_metrics is None:
+            return
+
+        try:
+            from ..domain.performance.metrics import CacheLayer
+
+            # Map backend to cache layer
+            layer_map = {
+                "redis": CacheLayer.L2_REDIS,
+                "file": CacheLayer.L1_MEMORY,
+                "all": CacheLayer.L1_MEMORY,  # Overall miss
+            }
+
+            layer = layer_map.get(backend, CacheLayer.L1_MEMORY)
+
+            if result_type == "hit":
+                self._enhanced_metrics.record_layer_hit(layer, latency_ms)
+            elif result_type == "miss":
+                self._enhanced_metrics.record_layer_miss(layer, latency_ms)
+            elif result_type == "error":
+                self._enhanced_metrics.record_layer_error(layer)
+
+        except Exception as e:
+            logger.warning(f"Failed to record enhanced metrics: {e}")
 
     def set(
         self,
@@ -653,10 +776,10 @@ class RAGQueryCache:
 
     def stats(self) -> Dict[str, Any]:
         """
-        Get cache statistics.
+        Get cache statistics with enhanced metrics (REQ-PER-002).
 
         Returns:
-            Dict with cache statistics.
+            Dict with cache statistics including connection pool status.
         """
         stats_dict = self._stats.to_dict()
 
@@ -666,6 +789,26 @@ class RAGQueryCache:
             "cache_enabled": self.enabled,
             "ttl_hours": self.ttl_hours,
         }
+
+        # Add connection pool status (REQ-PER-002)
+        if self._redis and self._redis.available:
+            pool_status = self._redis.get_pool_status()
+            backend_info["connection_pool"] = pool_status
+
+        # Add enhanced metrics if available (REQ-PER-002)
+        if self._enhanced_metrics_enabled and self._enhanced_metrics:
+            try:
+                enhanced_stats = self._enhanced_metrics.to_dict()
+                backend_info["enhanced_metrics"] = enhanced_stats
+
+                # Add low hit rate warning (REQ-PER-004)
+                if self._enhanced_metrics.check_low_hit_rate(threshold=0.6):
+                    backend_info["low_hit_rate_warning"] = True
+                    logger.warning(
+                        "Cache hit rate below 60%, consider cache warming (REQ-PER-004)"
+                    )
+            except Exception as e:
+                logger.warning(f"Failed to include enhanced metrics: {e}")
 
         return {**stats_dict, **backend_info}
 

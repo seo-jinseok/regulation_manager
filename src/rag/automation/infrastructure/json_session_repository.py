@@ -12,7 +12,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Optional
 
-from src.rag.automation.domain.entities import TestCase, TestSession
+from src.rag.automation.domain.entities import EvaluationCase, TestSession
 from src.rag.automation.domain.repository import SessionRepository
 
 
@@ -37,8 +37,8 @@ class JSONSessionRepository(SessionRepository):
         """Get file path for a session."""
         return self.base_path / f"{session_id}.json"
 
-    def _serialize_test_case(self, test_case: TestCase) -> dict:
-        """Serialize TestCase to dict."""
+    def _serialize_test_case(self, test_case: EvaluationCase) -> dict:
+        """Serialize EvaluationCase to dict."""
         return {
             "query": test_case.query,
             "persona_type": test_case.persona_type.value,
@@ -58,8 +58,8 @@ class JSONSessionRepository(SessionRepository):
             "metadata": test_case.metadata,
         }
 
-    def _deserialize_test_case(self, data: dict) -> TestCase:
-        """Deserialize dict to TestCase."""
+    def _deserialize_test_case(self, data: dict) -> EvaluationCase:
+        """Deserialize dict to EvaluationCase."""
         from src.rag.automation.domain.entities import (
             DifficultyLevel,
             PersonaType,
@@ -76,7 +76,7 @@ class JSONSessionRepository(SessionRepository):
                 behavioral_intent=intent_data["behavioral_intent"],
             )
 
-        return TestCase(
+        return EvaluationCase(
             query=data["query"],
             persona_type=PersonaType(data["persona_type"]),
             difficulty=DifficultyLevel(data["difficulty"]),
@@ -101,7 +101,9 @@ class JSONSessionRepository(SessionRepository):
             "started_at": session.started_at.isoformat(),
             "total_test_cases": session.total_test_cases,
             "test_cases": [self._serialize_test_case(tc) for tc in session.test_cases],
-            "completed_at": session.completed_at.isoformat() if session.completed_at else None,
+            "completed_at": session.completed_at.isoformat()
+            if session.completed_at
+            else None,
             "metadata": session.metadata,
         }
 
@@ -134,7 +136,9 @@ class JSONSessionRepository(SessionRepository):
             total_test_cases=data["total_test_cases"],
             test_cases=test_cases,
             completed_at=(
-                datetime.fromisoformat(data["completed_at"]) if data.get("completed_at") else None
+                datetime.fromisoformat(data["completed_at"])
+                if data.get("completed_at")
+                else None
             ),
             metadata=data.get("metadata", {}),
         )

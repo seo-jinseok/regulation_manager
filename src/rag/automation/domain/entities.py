@@ -71,9 +71,9 @@ class Persona:
 
 
 @dataclass
-class TestCase:
+class EvaluationCase:
     """
-    A single test case for RAG testing.
+    A single evaluation case for RAG testing.
 
     Contains a query with its metadata including persona, difficulty,
     and intent analysis.
@@ -100,7 +100,7 @@ class TestSession:
     session_id: str
     started_at: datetime
     total_test_cases: int
-    test_cases: List[TestCase]
+    test_cases: List["EvaluationCase"]
     completed_at: Optional[datetime] = None
     metadata: Dict[str, Any] = field(default_factory=dict)
 
@@ -118,14 +118,14 @@ class TestSession:
 
 
 @dataclass
-class TestResult:
+class QualityTestResult:
     """
-    Result of executing a single test case.
+    Result of executing a single evaluation case.
 
     Contains the query, answer, and evaluation metrics.
     """
 
-    test_case_id: str  # Reference to TestCase
+    test_case_id: str  # Reference to EvaluationCase
     query: str
     answer: str  # Generated answer
     sources: List[str]  # Source regulation references

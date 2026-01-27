@@ -332,9 +332,9 @@ def test(
                     except Exception as e:
                         logger.error(f"Test case {idx} failed: {e}")
                         # Create error result
-                        from ..domain.entities import TestResult
+                        from ..domain.entities import QualityTestResult
 
-                        error_result = TestResult(
+                        error_result = QualityTestResult(
                             test_case_id=f"error_{idx}",
                             query=test_case.query,
                             answer="",
@@ -373,9 +373,9 @@ def test(
         # Step 3: Generate report
         click.echo("📊 Generating report...")
 
-        from ..infrastructure.test_report_generator import TestReportGenerator
+        from ..infrastructure.test_report_generator import ReportGenerator
 
-        report_generator = TestReportGenerator(output_dir=output_dir)
+        report_generator = ReportGenerator(output_dir=output_dir)
 
         # Generate HTML or Markdown report
         if html_report and test_results:
@@ -526,7 +526,7 @@ def report(
 
     try:
         from ..infrastructure.json_session_repository import JSONSessionRepository
-        from ..infrastructure.test_report_generator import TestReportGenerator
+        from ..infrastructure.test_report_generator import ReportGenerator
 
         # Load test results
         session_repo = JSONSessionRepository(results_dir)
@@ -537,13 +537,13 @@ def report(
             sys.exit(1)
 
         # Initialize report generator
-        report_generator = TestReportGenerator(output_dir=results_dir)
+        report_generator = ReportGenerator(output_dir=results_dir)
 
         # For demonstration, we'll create empty results
-        # In production, would load actual TestResult objects
-        from ..domain.entities import TestResult
+        # In production, would load actual QualityTestResult objects
+        from ..domain.entities import QualityTestResult
 
-        test_results: list[TestResult] = []
+        test_results: list[QualityTestResult] = []
 
         # Generate report based on format
         if format == "html":

@@ -14,9 +14,9 @@ from typing import Dict, List, Optional
 
 from src.rag.automation.domain.entities import (
     DifficultyLevel,
+    EvaluationCase,
     PersonaType,
     QueryType,
-    TestCase,
 )
 from src.rag.automation.domain.value_objects import IntentAnalysis
 
@@ -46,7 +46,7 @@ class QueryCache:
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self._enabled = enabled
 
-    def get(self, key: str) -> Optional[List[TestCase]]:
+    def get(self, key: str) -> Optional[List[EvaluationCase]]:
         """
         Retrieve cached test cases.
 
@@ -54,7 +54,7 @@ class QueryCache:
             key: Cache key (typically MD5 hash).
 
         Returns:
-            List of TestCase if cached, None otherwise.
+            List of EvaluationCase if cached, None otherwise.
         """
         if not self._enabled:
             return None
@@ -73,15 +73,15 @@ class QueryCache:
             # Invalid cache file, treat as cache miss
             return None
 
-    def _dict_to_test_case(self, data: Dict) -> TestCase:
+    def _dict_to_test_case(self, data: Dict) -> EvaluationCase:
         """
-        Convert dictionary to TestCase with proper Enum conversion.
+        Convert dictionary to EvaluationCase with proper Enum conversion.
 
         Args:
             data: Dictionary from JSON cache.
 
         Returns:
-            TestCase instance.
+            EvaluationCase instance.
         """
         # Convert string values to Enums
         persona_type = PersonaType(data["persona_type"])
@@ -98,7 +98,7 @@ class QueryCache:
                 behavioral_intent=ia_data["behavioral_intent"],
             )
 
-        return TestCase(
+        return EvaluationCase(
             query=data["query"],
             persona_type=persona_type,
             difficulty=difficulty,
@@ -109,20 +109,20 @@ class QueryCache:
             metadata=data.get("metadata", {}),
         )
 
-    def set(self, key: str, test_cases: List[TestCase]) -> None:
+    def set(self, key: str, test_cases: List[EvaluationCase]) -> None:
         """
         Store test cases in cache.
 
         Args:
             key: Cache key.
-            test_cases: List of TestCase to cache.
+            test_cases: List of EvaluationCase to cache.
         """
         if not self._enabled:
             return
 
         cache_file = self.cache_dir / f"{key}.json"
 
-        # Convert TestCase dataclasses to dicts for JSON serialization
+        # Convert EvaluationCase dataclasses to dicts for JSON serialization
         data = []
         for tc in test_cases:
             tc_dict = {

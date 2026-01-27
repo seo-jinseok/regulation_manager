@@ -37,34 +37,33 @@ class FallbackConfig:
 
     # Fallback chain: providers tried in order
     # Each entry defines a provider configuration
-    provider_chain: List[Dict[str, Any]] = field(default_factory=lambda: [
-        {
-            "provider": "openrouter",
-            "model": "google/gemini-2.0-flash-exp:free",
-            "api_key_env_var": "OPENROUTER_API_KEY",
-            "priority": 1,
-        },
-        {
-            "provider": "lmstudio",
-            "model": None,  # Uses LM Studio default
-            "base_url": "http://localhost:1234",
-            "api_key_env_var": None,
-            "priority": 2,
-        },
-        {
-            "provider": "openrouter",
-            "model": "deepseek/deepseek-r1:free",
-            "api_key_env_var": "OPENROUTER_API_KEY",
-            "priority": 3,
-        },
-    ])
+    provider_chain: List[Dict[str, Any]] = field(
+        default_factory=lambda: [
+            {
+                "provider": "openrouter",
+                "model": "google/gemini-2.0-flash-exp:free",
+                "api_key_env_var": "OPENROUTER_API_KEY",
+                "priority": 1,
+            },
+            {
+                "provider": "lmstudio",
+                "model": None,  # Uses LM Studio default
+                "base_url": "http://localhost:1234",
+                "api_key_env_var": None,
+                "priority": 2,
+            },
+            {
+                "provider": "openrouter",
+                "model": "deepseek/deepseek-r1:free",
+                "api_key_env_var": "OPENROUTER_API_KEY",
+                "priority": 3,
+            },
+        ]
+    )
 
     # Graceful degradation settings
     allow_partial_results: bool = True
-    partial_result_fallback_message: str = (
-        "[Note: Response generated using fallback provider due to primary provider unavailability.]"
-    )
-
+    partial_result_fallback_message: str = "[Note: Response generated using fallback provider due to primary provider unavailability.]"
 
 
 @dataclass
@@ -73,16 +72,13 @@ class RerankerConfig:
 
     # Primary reranker model (multilingual)
     primary_model: str = field(
-        default_factory=lambda: os.getenv(
-            "RERANKER_MODEL", "BAAI/bge-reranker-v2-m3"
-        )
+        default_factory=lambda: os.getenv("RERANKER_MODEL", "BAAI/bge-reranker-v2-m3")
     )
 
     # Korean-specific reranker models for A/B testing
     korean_models: List[str] = field(
         default_factory=lambda: os.getenv(
-            "KOREAN_RERANKER_MODELS",
-            "Dongjin-kr/kr-reranker,NLPai/ko-reranker"
+            "KOREAN_RERANKER_MODELS", "Dongjin-kr/kr-reranker,NLPai/ko-reranker"
         ).split(",")
         if os.getenv("KOREAN_RERANKER_MODELS")
         else ["Dongjin-kr/kr-reranker", "NLPai/ko-reranker"]
@@ -90,7 +86,8 @@ class RerankerConfig:
 
     # A/B testing configuration
     enable_ab_testing: bool = field(
-        default_factory=lambda: os.getenv("RERANKER_AB_TESTING", "true").lower() == "true"
+        default_factory=lambda: os.getenv("RERANKER_AB_TESTING", "true").lower()
+        == "true"
     )
     ab_test_ratio: float = field(
         default_factory=lambda: float(os.getenv("RERANKER_AB_RATIO", "0.5"))
@@ -193,8 +190,8 @@ class RAGConfig:
     )
     corrective_rag_thresholds: dict = field(
         default_factory=lambda: {
-            "simple": 0.3,   # 단순 쿼리는 낮은 임계값
-            "medium": 0.4,   # 기본 임계값
+            "simple": 0.3,  # 단순 쿼리는 낮은 임계값
+            "medium": 0.4,  # 기본 임계값
             "complex": 0.5,  # 복잡 쿼리는 더 엄격
         }
     )
@@ -202,15 +199,19 @@ class RAGConfig:
         default_factory=lambda: os.getenv("HYDE_CACHE_DIR", "data/cache/hyde")
     )
     hyde_cache_enabled: bool = field(
-        default_factory=lambda: os.getenv("HYDE_CACHE_ENABLED", "true").lower() == "true"
+        default_factory=lambda: os.getenv("HYDE_CACHE_ENABLED", "true").lower()
+        == "true"
     )
 
     # Dynamic Query Expansion settings (Phase 3)
     enable_query_expansion: bool = field(
-        default_factory=lambda: os.getenv("ENABLE_QUERY_EXPANSION", "true").lower() == "true"
+        default_factory=lambda: os.getenv("ENABLE_QUERY_EXPANSION", "true").lower()
+        == "true"
     )
     query_expansion_cache_dir: str = field(
-        default_factory=lambda: os.getenv("QUERY_EXPANSION_CACHE_DIR", "data/cache/query_expansion")
+        default_factory=lambda: os.getenv(
+            "QUERY_EXPANSION_CACHE_DIR", "data/cache/query_expansion"
+        )
     )
 
     # Fact check settings
@@ -241,7 +242,43 @@ class RAGConfig:
         default_factory=lambda: os.getenv("RAG_REDIS_PASSWORD")
     )
     cache_warm_queries_path: Optional[str] = field(
-        default_factory=lambda: os.getenv("RAG_CACHE_WARM_QUERIES_PATH", "data/config/warm_queries.json")
+        default_factory=lambda: os.getenv(
+            "RAG_CACHE_WARM_QUERIES_PATH", "data/config/warm_queries.json"
+        )
+    )
+
+    # Performance optimization settings (REQ-PER-001, REQ-PER-002, REQ-PER-003)
+    enable_enhanced_metrics: bool = field(  # REQ-PER-002
+        default_factory=lambda: os.getenv("RAG_ENABLE_ENHANCED_METRICS", "true").lower()
+        == "true"
+    )
+    redis_max_connections: int = field(  # REQ-PER-001
+        default_factory=lambda: int(os.getenv("RAG_REDIS_MAX_CONNECTIONS", "50"))
+    )
+    redis_socket_timeout: float = field(  # REQ-PER-001
+        default_factory=lambda: float(os.getenv("RAG_SOCKET_TIMEOUT", "5.0"))
+    )
+    redis_health_check_interval: int = field(  # REQ-PER-011
+        default_factory=lambda: int(os.getenv("RAG_HEALTH_CHECK_INTERVAL", "30"))
+    )
+    enable_cache_warming: bool = field(  # REQ-PER-003
+        default_factory=lambda: os.getenv("RAG_ENABLE_CACHE_WARMING", "true").lower()
+        == "true"
+    )
+    cache_warming_top_n: int = field(  # REQ-PER-006
+        default_factory=lambda: int(os.getenv("RAG_CACHE_WARMING_TOP_N", "100"))
+    )
+    cache_warming_schedule_hour: int = field(  # REQ-PER-010
+        default_factory=lambda: int(os.getenv("RAG_CACHE_WARMING_HOUR", "2"))
+    )
+    cache_hit_rate_threshold: float = field(  # REQ-PER-004
+        default_factory=lambda: float(os.getenv("RAG_CACHE_HIT_RATE_THRESHOLD", "0.6"))
+    )
+    http_connection_pool_size: int = field(  # REQ-PER-001 (for LLM adapter)
+        default_factory=lambda: int(os.getenv("HTTP_CONNECTION_POOL_SIZE", "100"))
+    )
+    http_max_keepalive_connections: int = field(  # REQ-PER-001
+        default_factory=lambda: int(os.getenv("HTTP_MAX_KEEPALIVE", "20"))
     )
 
     # Supported LLM providers
@@ -264,11 +301,15 @@ class RAGConfig:
 
         # Load fallback config from environment if provided
         if os.getenv("LLM_FALLBACK_ENABLED"):
-            self.llm_fallback.enabled = os.getenv("LLM_FALLBACK_ENABLED").lower() == "true"
+            self.llm_fallback.enabled = (
+                os.getenv("LLM_FALLBACK_ENABLED").lower() == "true"
+            )
         if os.getenv("LLM_FALLBACK_MAX_RETRIES"):
             self.llm_fallback.max_retries = int(os.getenv("LLM_FALLBACK_MAX_RETRIES"))
         if os.getenv("LLM_FALLBACK_BACKOFF_SECONDS"):
-            self.llm_fallback.initial_backoff_seconds = float(os.getenv("LLM_FALLBACK_BACKOFF_SECONDS"))
+            self.llm_fallback.initial_backoff_seconds = float(
+                os.getenv("LLM_FALLBACK_BACKOFF_SECONDS")
+            )
 
     @property
     def db_path_resolved(self) -> Path:

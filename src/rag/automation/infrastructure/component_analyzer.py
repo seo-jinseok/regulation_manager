@@ -11,7 +11,6 @@ import logging
 from typing import TYPE_CHECKING, Dict, List
 
 if TYPE_CHECKING:
-    from ..domain.entities import TestResult
     from ..domain.value_objects import (
         ComponentAnalysis,
         ComponentContribution,
@@ -59,7 +58,7 @@ class ComponentAnalyzer:
 
     def analyze_components(
         self,
-        test_result: "TestResult",
+        test_result: "QualityTestResult",
     ) -> "ComponentAnalysis":
         """
         Analyze which RAG components contributed to the test result.
@@ -158,7 +157,7 @@ class ComponentAnalyzer:
     def _evaluate_component_contribution(
         self,
         component: "RAGComponent",
-        test_result: "TestResult",
+        test_result: "QualityTestResult",
     ) -> tuple[int, str]:
         """
         Evaluate the contribution of an executed component.
@@ -280,7 +279,7 @@ class ComponentAnalyzer:
     def _evaluate_missing_component(
         self,
         component: "RAGComponent",
-        test_result: "TestResult",
+        test_result: "QualityTestResult",
     ) -> tuple[int, str]:
         """
         Evaluate the impact of a component not being executed.
@@ -353,7 +352,7 @@ class ComponentAnalyzer:
         else:
             return "Some components negatively impacted result"
 
-    def _check_timing_importance(self, test_result: "TestResult") -> bool:
+    def _check_timing_importance(self, test_result: "QualityTestResult") -> bool:
         """
         Check if execution time was a factor in the result.
 

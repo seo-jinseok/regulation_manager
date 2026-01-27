@@ -14,12 +14,12 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Dict, List, Optional
 
 if TYPE_CHECKING:
-    from ..domain.entities import MultiTurnScenario, TestResult
+    from ..domain.entities import MultiTurnScenario, QualityTestResult
 
 logger = logging.getLogger(__name__)
 
 
-class TestReportGenerator:
+class ReportGenerator:
     """
     Infrastructure service for generating test reports.
 
@@ -41,7 +41,7 @@ class TestReportGenerator:
     def generate_report(
         self,
         session_id: str,
-        test_results: List["TestResult"],
+        test_results: List["QualityTestResult"],
         multi_turn_scenarios: Optional[List["MultiTurnScenario"]] = None,
         component_analyses: Optional[Dict[str, any]] = None,
         failure_analyses: Optional[Dict[str, any]] = None,
@@ -117,7 +117,7 @@ class TestReportGenerator:
     def _generate_summary(
         self,
         session_id: str,
-        test_results: List["TestResult"],
+        test_results: List["QualityTestResult"],
         metadata: Optional[Dict],
     ) -> str:
         """Generate summary section."""
@@ -163,7 +163,7 @@ class TestReportGenerator:
 
         return "\n".join(lines)
 
-    def _generate_test_overview(self, test_results: List["TestResult"]) -> str:
+    def _generate_test_overview(self, test_results: List["QualityTestResult"]) -> str:
         """Generate test results overview section."""
         lines = [
             "# Test Results Overview",
@@ -200,7 +200,9 @@ class TestReportGenerator:
 
         return "\n".join(lines)
 
-    def _generate_detailed_results(self, test_results: List["TestResult"]) -> str:
+    def _generate_detailed_results(
+        self, test_results: List["QualityTestResult"]
+    ) -> str:
         """Generate detailed test results section."""
         lines = [
             "# Detailed Test Results",
@@ -398,7 +400,7 @@ class TestReportGenerator:
 
         return "\n".join(lines)
 
-    def _generate_quality_metrics(self, test_results: List["TestResult"]) -> str:
+    def _generate_quality_metrics(self, test_results: List["QualityTestResult"]) -> str:
         """Generate quality metrics section."""
         lines = [
             "# Quality Metrics",
@@ -483,7 +485,7 @@ class TestReportGenerator:
 
     def _generate_recommendations(
         self,
-        test_results: List["TestResult"],
+        test_results: List["QualityTestResult"],
         component_analyses: Optional[Dict],
         failure_analyses: Optional[Dict],
     ) -> str:
@@ -536,7 +538,7 @@ class TestReportGenerator:
     def generate_html_report(
         self,
         session_id: str,
-        test_results: List["TestResult"],
+        test_results: List["QualityTestResult"],
         multi_turn_scenarios: Optional[List["MultiTurnScenario"]] = None,
         component_analyses: Optional[Dict[str, any]] = None,
         failure_analyses: Optional[Dict[str, any]] = None,
@@ -587,7 +589,7 @@ class TestReportGenerator:
 
         return report_path
 
-    def _calculate_statistics(self, test_results: List["TestResult"]) -> Dict:
+    def _calculate_statistics(self, test_results: List["QualityTestResult"]) -> Dict:
         """Calculate comprehensive statistics from test results."""
         total_tests = len(test_results)
         passed_tests = sum(1 for r in test_results if r.passed)
@@ -666,7 +668,7 @@ class TestReportGenerator:
 
     def _generate_chart_data(
         self,
-        test_results: List["TestResult"],
+        test_results: List["QualityTestResult"],
         multi_turn_scenarios: Optional[List["MultiTurnScenario"]],
     ) -> Dict:
         """Generate data structures for Chart.js visualizations."""
@@ -771,7 +773,7 @@ class TestReportGenerator:
         session_id: str,
         stats: Dict,
         chart_data: Dict,
-        test_results: List["TestResult"],
+        test_results: List["QualityTestResult"],
         multi_turn_scenarios: Optional[List["MultiTurnScenario"]],
         component_analyses: Optional[Dict],
         failure_analyses: Optional[Dict],

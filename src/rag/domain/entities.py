@@ -77,6 +77,7 @@ class Chunk:
     is_searchable: bool
     effective_date: Optional[str] = None
     status: RegulationStatus = RegulationStatus.ACTIVE
+    article_number: Optional[str] = None  # Enhanced citation support (Component 3)
 
     @classmethod
     def from_json_node(cls, node: Dict[str, Any], rule_code: str) -> "Chunk":
@@ -100,6 +101,20 @@ class Chunk:
             else RegulationStatus.ACTIVE
         )
 
+        # Extract article number for enhanced citation support (Component 3)
+        article_number = None
+        if title:
+            try:
+                from .citation.article_number_extractor import ArticleNumberExtractor
+
+                extractor = ArticleNumberExtractor()
+                result = extractor.extract(title)
+                if result:
+                    article_number = result.to_citation_format()
+            except ImportError:
+                # Gracefully handle if citation module not available
+                pass
+
         return cls(
             id=node.get("id", ""),
             rule_code=rule_code,
@@ -114,6 +129,7 @@ class Chunk:
             is_searchable=node.get("is_searchable", True),
             effective_date=node.get("effective_date"),
             status=status,
+            article_number=article_number,
         )
 
     def to_metadata(self) -> Dict[str, Any]:
@@ -128,6 +144,8 @@ class Chunk:
             "is_searchable": self.is_searchable,
             "effective_date": self.effective_date or "",
             "status": self.status.value,
+            "article_number": self.article_number
+            or "",  # Enhanced citation (Component 3)
         }
         if self.keywords:
             payload["keywords"] = json.dumps(
@@ -187,6 +205,8 @@ class Chunk:
             is_searchable=metadata.get("is_searchable", True),
             effective_date=metadata.get("effective_date") or None,
             status=RegulationStatus(metadata.get("status", "active")),
+            article_number=metadata.get("article_number")
+            or None,  # Enhanced citation (Component 3)
         )
 
 
