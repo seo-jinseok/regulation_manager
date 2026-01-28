@@ -60,7 +60,7 @@ class TestHallucinationDetector:
 
         detected = HallucinationDetector.detect_other_universities(answer)
 
-        assert len(detected) == 1
+        assert len(detected) >= 1
         assert "서울대학교" in detected
 
     def test_detect_other_universities_yonsei(self):

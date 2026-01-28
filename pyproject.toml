@@ -37,6 +37,9 @@ dependencies = [
     "sentence-transformers>=2.2.0",  # For ko-sbert-sts Korean embeddings
     # "symspellpy-ko>=0.2.1",  # Korean typo correction with SymSpell algorithm ( temporarily disabled due to compatibility issues)
     "editdistance>=0.6.2",  # Levenshtein distance for regulation name correction
+    "ragas>=0.4.3",
+    "deepeval>=3.8.1",
+    "pytest-asyncio>=1.3.0",
 ]
 
 [project.scripts]
@@ -48,7 +51,10 @@ dev = [
     "pytest-cov>=7.0.0",
     "pytest-xdist>=3.6.0",
     "pytest-timeout>=2.3.0",
+    "pytest-asyncio>=0.21.0",
     "psutil>=5.9.0",  # Memory monitoring in conftest.py
+    "ragas>=0.1.0",  # LLM-as-Judge evaluation framework
+    "deepeval>=0.21.0",  # Alternative evaluation framework
 ]
 
 [build-system]
