@@ -58,8 +58,8 @@ class ApplyImprovementUseCase:
             llm_client: Optional LLM client for recommendations.
         """
         # Default paths (can be overridden)
-        self.intents_path = intents_path or Path("data/config/intents.json")
-        self.synonyms_path = synonyms_path or Path("data/config/synonyms.json")
+        self.intents_path = intents_path or Path("src/rag/data/intents.json")
+        self.synonyms_path = synonyms_path or Path("src/rag/data/synonyms.json")
 
         self.logger = logging.getLogger(__name__)
 
@@ -358,8 +358,9 @@ class ApplyImprovementUseCase:
 
         # Check if intent already exists
         intent_exists = any(
-            intent.get("intent") == new_intent["intent"]
+            intent.get("intent") == new_intent.get("intent")
             for intent in intents_data.get("intents", [])
+            if "intent" in intent
         )
 
         patch_result = {
@@ -470,10 +471,12 @@ class ApplyImprovementUseCase:
 
         return {
             "id": intent_name,
+            "intent": intent_name,  # Add 'intent' field for compatibility
             "label": f"Query: {query[:30]}...",
             "triggers": [query],
             "patterns": [],
             "keywords": keywords,
+            "examples": [query],  # Add examples field
             "metadata": {
                 "generated_from": "automated_testing",
                 "root_cause": analysis.root_cause,

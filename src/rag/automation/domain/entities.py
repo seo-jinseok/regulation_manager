@@ -245,3 +245,8 @@ class ContextHistory:
         self.conversation_history.append(turn)
         if turn.intent_evolution:
             self.intent_history.append(turn.intent_evolution)
+
+
+# Type aliases for backward compatibility with tests
+TestResult = QualityTestResult
+TestCase = EvaluationCase

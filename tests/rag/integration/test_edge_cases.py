@@ -16,6 +16,7 @@ from src.rag.automation.domain.context_tracker import ContextTracker
 from src.rag.automation.domain.entities import ContextHistory, Turn
 from src.rag.domain.entities import Chunk, ChunkLevel
 from src.rag.infrastructure.query_analyzer import QueryAnalyzer, QueryType
+from src.rag.infrastructure.query_expander import DynamicQueryExpander
 
 
 def make_chunk(

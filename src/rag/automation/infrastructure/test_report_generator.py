@@ -1493,3 +1493,7 @@ class ReportGenerator:
             lines.append("")
 
         return "\n".join(lines)
+
+
+# Type alias for backward compatibility with tests
+TestReportGenerator = ReportGenerator

@@ -149,6 +149,19 @@ class QueryAnalyzer:
         "할까",
         "인가",
         "?",
+        "방법",  # Method/how-to questions (e.g., "~발급 방법")
+        "절차",  # Procedure questions (e.g., "~신청 절차")
+        "과정",  # Process questions (e.g., "~하는 과정")
+        "설명",  # Explanation requests (e.g., "~설명해주세요")
+        "알려",  # Information requests (e.g., "~알려주세요")
+        "알려줘",  # Casual information request
+        "알려주세요",  # Polite information request
+        "설명해",  # Explanation request
+        "설명해주세요",  # Polite explanation request
+        "가르쳐",  # Teaching requests (e.g., "~가르쳐주세요")
+        "가르쳐줘",  # Casual teaching request
+        "가르쳐주세요",  # Polite teaching request
+        "법",  # How-to pattern (e.g., "~하는법")
     ]
 
     # Audience keywords - explicit mention of target group
@@ -807,17 +820,19 @@ class QueryAnalyzer:
         if has_intent_marker and self.has_intent(query):
             return QueryType.INTENT
 
+        # Check for natural language questions (procedural "how to" queries)
+        # This should be checked BEFORE academic keywords to handle cases like "휴학 방법"
+        if any(marker in query for marker in self.QUESTION_MARKERS):
+            return QueryType.NATURAL_QUESTION
+
         # Check for academic keywords (treat like regulation names)
+        # Only applies if no question markers were found
         if any(keyword in query for keyword in self.ACADEMIC_KEYWORDS):
             return QueryType.REGULATION_NAME
 
         # Check for intent expressions (fallback for other intent patterns)
         if self.has_intent(query):
             return QueryType.INTENT
-
-        # Check for natural language questions
-        if any(marker in query for marker in self.QUESTION_MARKERS):
-            return QueryType.NATURAL_QUESTION
 
         return QueryType.GENERAL
 

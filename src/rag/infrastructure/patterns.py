@@ -12,9 +12,9 @@ from typing import Pattern
 # Article Reference Patterns
 # ====================
 
-# Matches: 제N조, 제N조의M, 제N항, 제N호
+# Matches: 제N조, 제N조의M, 제N항, 제N호, §N조 (section sign format)
 ARTICLE_PATTERN: Pattern[str] = re.compile(
-    r"제\s*\d+\s*조(?:\s*의\s*\d+)?|제\s*\d+\s*항|제\s*\d+\s*호"
+    r"§\s*\d+\s*조|제\s*\d+\s*조(?:\s*의\s*\d+)?|제\s*\d+\s*항|제\s*\d+\s*호"
 )
 
 # Matches article numbers more loosely (with optional 제)

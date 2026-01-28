@@ -419,9 +419,11 @@ class TestApplyImprovementAutomation:
         test_result = TestResult(
             test_case_id="test_001",
             query="새로운 질문",
-            persona_type="student",
-            difficulty="easy",
-            query_type="fact_check",
+            answer="",
+            sources=[],
+            confidence=0.5,
+            execution_time_ms=100,
+            rag_pipeline_log={},
         )
 
         analysis = FiveWhyAnalysis(
