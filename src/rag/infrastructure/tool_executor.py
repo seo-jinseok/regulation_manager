@@ -137,7 +137,7 @@ class ToolExecutor:
     # ========== Search Tool Handlers ==========
 
     def _handle_search_regulations(self, args: Dict[str, Any]) -> Dict[str, Any]:
-        """Handle search_regulations tool."""
+        """Handle search_regulations tool with clarification detection."""
         if not self._search_usecase:
             raise RuntimeError("SearchUseCase not initialized")
 
@@ -165,6 +165,21 @@ class ToolExecutor:
             top_k=top_k,
             audience_override=audience,
         )
+
+        # Check if clarification is needed
+        from ..infrastructure.clarification_detector import ClarificationDetector
+
+        detector = ClarificationDetector()
+
+        if detector.is_clarification_needed(query, results):
+            clarification = detector.generate_clarification(query, results)
+            return {
+                "type": "clarification_needed",
+                "query": query,
+                "reason": clarification.reason,
+                "clarification_questions": clarification.clarification_questions,
+                "suggested_options": clarification.suggested_options,
+            }
 
         return {
             "count": len(results),
@@ -369,7 +384,7 @@ class ToolExecutor:
     # ========== Response Tool Handlers ==========
 
     def _handle_generate_answer(self, args: Dict[str, Any]) -> str:
-        """Handle generate_answer tool."""
+        """Handle generate_answer tool with quality enhancements."""
         if not self._llm_client:
             raise RuntimeError("LLM client not initialized")
 
@@ -400,11 +415,48 @@ class ToolExecutor:
 
 위 컨텍스트를 바탕으로 질문에 답변해주세요."""
 
-        return self._llm_client.generate(
+        answer = self._llm_client.generate(
             system_prompt=system_prompt,
             user_message=user_message,
             temperature=0.0,
         )
+
+        # Post-process answer with quality enhancements
+        answer = self._apply_quality_enhancements(answer, context)
+
+        return answer
+
+    def _apply_quality_enhancements(self, answer: str, context: str) -> str:
+        """
+        Apply quality enhancements to the generated answer.
+
+        Args:
+            answer: The generated answer
+            context: The context used for generation
+
+        Returns:
+            Enhanced answer
+        """
+        # Import here to avoid circular imports
+        from ..automation.infrastructure.evaluation_helpers import HallucinationDetector
+
+        # Check for hallucination (phone numbers, other universities, evasive responses)
+        should_block, block_reason, issues = (
+            HallucinationDetector.block_if_hallucination(answer)
+        )
+
+        if should_block:
+            # Sanitize the answer instead of blocking completely
+            sanitized, changes = HallucinationDetector.sanitize_answer(answer)
+            if changes:
+                # Log the changes for monitoring
+                import logging
+
+                logger = logging.getLogger(__name__)
+                logger.warning(f"Answer sanitized: {changes}")
+            return sanitized
+
+        return answer
 
     def _handle_clarify_query(self, args: Dict[str, Any]) -> Dict[str, Any]:
         """Handle clarify_query tool."""

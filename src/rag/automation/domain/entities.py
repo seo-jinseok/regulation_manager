@@ -250,3 +250,70 @@ class ContextHistory:
 # Type aliases for backward compatibility with tests
 TestResult = QualityTestResult
 TestCase = EvaluationCase
+
+
+@dataclass
+class TurnResult:
+    """
+    Result of a single turn in multi-turn conversation testing.
+
+    Contains the query, response, and context preservation metrics.
+    """
+
+    turn_number: int  # Turn number (1-indexed)
+    query: str  # User query for this turn
+    answer: str  # System response
+    follow_up_type: str  # Type of follow-up expected
+    context_preserved: bool  # Whether system maintained context
+    confidence: float  # Confidence score
+    execution_time_ms: int  # Execution time in milliseconds
+    sources: List[str] = field(default_factory=list)  # Source references
+    timestamp: datetime = field(default_factory=datetime.now)
+
+
+@dataclass
+class MultiTurnScenarioResult:
+    """
+    Result of a multi-turn conversation scenario test.
+
+    Contains all turns and overall metrics for the scenario.
+    """
+
+    scenario_id: str  # Unique identifier
+    persona_type: PersonaType  # User persona
+    description: str  # Scenario description
+    turns: List[TurnResult]  # All turn results
+    total_turns: int  # Total number of turns
+    context_preservation_rate: float  # Rate of context preservation
+    resolved: bool  # Whether conversation was successfully resolved
+    timestamp: datetime = field(default_factory=datetime.now)
+
+
+@dataclass
+class ConversationTurn:
+    """
+    Expected behavior for a single turn in multi-turn testing.
+
+    Used to define test scenario expectations.
+    """
+
+    query: str  # Expected query
+    expected_follow_up_type: (
+        str  # Type of follow-up ("clarification", "deepen", "shift", "refine")
+    )
+    should_preserve_context: bool  # Whether context should be preserved
+
+
+@dataclass
+class MultiTurnScenarioDefinition:
+    """
+    Multi-turn conversation scenario definition for testing.
+
+    Contains conversation turns and expected behavior.
+    """
+
+    scenario_id: str
+    persona: PersonaType
+    turns: List[ConversationTurn]
+    expected_resolution: bool
+    description: str

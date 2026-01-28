@@ -5,10 +5,12 @@ Provides reusable metric calculation functions for quality evaluation.
 Separates calculation logic from evaluation orchestration.
 
 Enhanced version with better accuracy, completeness, and relevance calculation.
+Includes Hallucination Prevention for phone numbers and other university references.
 """
 
 import logging
-from typing import Set
+import re
+from typing import List, Set, Tuple
 
 from .evaluation_constants import AutoFailPatterns, ScoringThresholds
 
@@ -286,3 +288,203 @@ class AutoFailChecker:
             return True, reason
 
         return False, ""
+
+
+class HallucinationDetector:
+    """
+    Detects and prevents hallucinations in RAG answers.
+
+    Features:
+    - Detects phone numbers (XX-XXXX-XXXX, 02-XXX-XXXX, etc.)
+    - Detects other university names (서울대, 연세대, 고려대, etc.)
+    - Detects evasive responses ("대학마다 다릅니다", "일반적으로")
+    - Sanitizes answers by blocking or filtering detected patterns
+    """
+
+    # Phone number patterns (Korean format)
+    PHONE_PATTERNS = [
+        re.compile(r"\d{2,3}-\d{3,4}-\d{4}"),  # 02-1234-5678, 010-123-4567
+        re.compile(r"\d{10,11}"),  # 0212345678, 01012345678
+        re.compile(r"\(\d{2,3}\)\s*\d{3,4}-\d{4}"),  # (02) 1234-5678
+    ]
+
+    # Other university names to detect
+    OTHER_UNIVERSITIES = [
+        "서울대학교",
+        "서울대",
+        "연세대학교",
+        "연세대",
+        "고려대학교",
+        "고려대",
+        "카이스트",
+        "KAIST",
+        "포항공대",
+        "POSTECH",
+        "서강대학교",
+        "서강대",
+        "이화여대",
+        "한국외대",
+        "홍익대학교",
+        "홍익대",
+        "성균관대학교",
+        "성균관대",
+        "건국대학교",
+        "건국대",
+        "동국대학교",
+        "동국대",
+    ]
+
+    # Evasive response patterns (also check for generalization)
+    EVASIVE_PATTERNS = [
+        re.compile(r"대학마다\s*다를\s*수"),
+        re.compile(r"각\s*대학의\s*상황에\s*따라"),
+        re.compile(r"일반적으로"),
+        re.compile(r"보통은"),
+        re.compile(r"대체로"),
+        re.compile(r"기관에\s*따라\s*다르"),
+        re.compile(r"상황에\s*따라\s*다르"),
+    ]
+
+    @staticmethod
+    def detect_phone_numbers(answer: str) -> List[str]:
+        """
+        Detect phone numbers in the answer.
+
+        Args:
+            answer: The answer text to check
+
+        Returns:
+            List of detected phone numbers
+        """
+        detected = []
+        for pattern in HallucinationDetector.PHONE_PATTERNS:
+            matches = pattern.findall(answer)
+            detected.extend(matches)
+        return detected
+
+    @staticmethod
+    def detect_other_universities(answer: str) -> List[str]:
+        """
+        Detect references to other universities in the answer.
+
+        Args:
+            answer: The answer text to check
+
+        Returns:
+            List of detected university references
+        """
+        detected = []
+        for university in HallucinationDetector.OTHER_UNIVERSITIES:
+            if university in answer:
+                detected.append(university)
+        return detected
+
+    @staticmethod
+    def detect_evasive_responses(answer: str) -> List[str]:
+        """
+        Detect evasive responses in the answer.
+
+        Args:
+            answer: The answer text to check
+
+        Returns:
+            List of detected evasive phrases
+        """
+        detected = []
+        for pattern in HallucinationDetector.EVASIVE_PATTERNS:
+            matches = pattern.findall(answer)
+            detected.extend(matches)
+        return detected
+
+    @staticmethod
+    def has_hallucination(answer: str) -> Tuple[bool, List[str]]:
+        """
+        Check if the answer contains any hallucination patterns.
+
+        Args:
+            answer: The answer text to check
+
+        Returns:
+            Tuple of (has_hallucination, list_of_issues)
+        """
+        issues = []
+
+        # Check for phone numbers
+        phone_numbers = HallucinationDetector.detect_phone_numbers(answer)
+        if phone_numbers:
+            issues.append(f"전화번호 포함: {', '.join(phone_numbers)}")
+
+        # Check for other universities
+        universities = HallucinationDetector.detect_other_universities(answer)
+        if universities:
+            issues.append(f"다른 대학교 언급: {', '.join(universities)}")
+
+        # Check for evasive responses
+        evasive = HallucinationDetector.detect_evasive_responses(answer)
+        if evasive:
+            issues.append(f"회피성 답변: {', '.join(evasive)}")
+
+        return (len(issues) > 0, issues)
+
+    @staticmethod
+    def sanitize_answer(answer: str) -> Tuple[str, List[str]]:
+        """
+        Sanitize the answer by removing or blocking detected hallucinations.
+
+        Args:
+            answer: The answer text to sanitize
+
+        Returns:
+            Tuple of (sanitized_answer, list_of_changes)
+        """
+        sanitized = answer
+        changes = []
+
+        # Remove phone numbers
+        for pattern in HallucinationDetector.PHONE_PATTERNS:
+            matches = list(pattern.finditer(sanitized))
+            for match in reversed(matches):  # Reverse to maintain positions
+                phone = match.group(0)
+                replacement = "[연락처는 학교 홈페이지를 확인하세요]"
+                sanitized = (
+                    sanitized[: match.start()] + replacement + sanitized[match.end() :]
+                )
+                changes.append(f"전화번호 '{phone}' 제거됨")
+
+        # Replace other university references
+        for university in HallucinationDetector.OTHER_UNIVERSITIES:
+            if university in sanitized:
+                sanitized = sanitized.replace(university, "[다른 대학교]")
+                changes.append(f"대학교명 '{university}' 수정됨")
+
+        # Replace evasive responses with clearer message
+        evasive_found = HallucinationDetector.detect_evasive_responses(sanitized)
+        for evasive in evasive_found:
+            sanitized = sanitized.replace(
+                evasive,
+                "[정확한 정보는 동의대학교 규정을 확인하세요]",
+            )
+            changes.append(f"회피성 답변 '{evasive}' 수정됨")
+
+        return sanitized, changes
+
+    @staticmethod
+    def block_if_hallucination(answer: str) -> Tuple[bool, str, List[str]]:
+        """
+        Block the answer if hallucination is detected.
+
+        Args:
+            answer: The answer text to check
+
+        Returns:
+            Tuple of (should_block, blocking_reason, list_of_issues)
+        """
+        has_hallucination, issues = HallucinationDetector.has_hallucination(answer)
+
+        if has_hallucination:
+            reason = "답변에 신뢰할 수 없는 정보가 포함되어 있습니다. " + "; ".join(
+                issues
+            )
+            return True, reason, issues
+
+        return False, "", issues
