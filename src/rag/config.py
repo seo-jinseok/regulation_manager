@@ -294,6 +294,32 @@ class RAGConfig:
         ]
     )
 
+    # Conversation Memory (Long-term Memory) settings
+    enable_conversation_memory: bool = field(
+        default_factory=lambda: os.getenv(
+            "RAG_ENABLE_CONVERSATION_MEMORY", "true"
+        ).lower()
+        == "true"
+    )
+    enable_memory_mcp: bool = field(
+        default_factory=lambda: os.getenv("RAG_ENABLE_MEMORY_MCP", "false").lower()
+        == "true"
+    )
+    conversation_summary_threshold: int = field(
+        default_factory=lambda: int(
+            os.getenv("RAG_CONVERSATION_SUMMARY_THRESHOLD", "10")
+        )
+    )
+    memory_expiry_hours: int = field(
+        default_factory=lambda: int(
+            os.getenv("RAG_MEMORY_EXPIRY_HOURS", "168")
+        )  # 7 days
+    )
+    enable_topic_inference: bool = field(
+        default_factory=lambda: os.getenv("RAG_ENABLE_TOPIC_INFERENCE", "true").lower()
+        == "true"
+    )
+
     def __post_init__(self):
         """Validate configuration after initialization."""
         if self.llm_provider not in self.llm_providers:

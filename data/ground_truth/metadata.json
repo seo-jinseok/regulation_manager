@@ -1,0 +1,99 @@
+{
+  "dataset_id": "rag_gt_v1.0",
+  "description": "RAG 시스템 평가를 위한 Ground Truth 데이터셋",
+  "total_pairs": 200,
+  "splits": {
+    "train": {
+      "count": 133,
+      "ratio": 0.7
+    },
+    "val": {
+      "count": 25,
+      "ratio": 0.15
+    },
+    "test": {
+      "count": 42,
+      "ratio": 0.15
+    }
+  },
+  "generation_method": {
+    "flip_the_rag": {
+      "count": 100,
+      "ratio": 0.5
+    },
+    "expert_templates": {
+      "count": 100,
+      "ratio": 0.5
+    }
+  },
+  "validation": {
+    "total_pairs": 50,
+    "validation_timestamp": 1769673689.812839,
+    "question_diversity": {
+      "total_questions": 50,
+      "unique_questions": 8,
+      "duplicate_ratio": 0.84,
+      "avg_question_length": 17.46,
+      "length_distribution": {
+        "short": 38,
+        "medium": 12,
+        "long": 0
+      }
+    },
+    "category_balance": {
+      "total_categories": 8,
+      "category_distribution": {
+        "졸업": 7,
+        "휴학": 7,
+        "복학": 6,
+        "장학금": 6,
+        "등록": 6,
+        "성적": 6,
+        "교과과정": 6,
+        "교환학생": 6
+      },
+      "min_count": 6,
+      "max_count": 7,
+      "balance_ratio": 0.8571428571428571
+    },
+    "difficulty_distribution": {
+      "difficulty_distribution": {
+        "초급": 17,
+        "중급": 17,
+        "고급": 16
+      },
+      "total_pairs": 50
+    },
+    "query_types": {
+      "query_type_distribution": {
+        "정확한 쿼리": 17,
+        "구어체 쿼리": 17,
+        "복합 질문": 16
+      },
+      "total_types": 3,
+      "type_diversity": 0.06
+    },
+    "answer_completeness": {
+      "total_pairs": 50,
+      "empty_answers": 0,
+      "short_answers": 37,
+      "template_answers": 0,
+      "completeness_ratio": 1.0
+    },
+    "answer_quality": {
+      "sample_size": 50,
+      "avg_score": 0.9061999999999999,
+      "min_score": 0.5,
+      "max_score": 1.0
+    },
+    "overall_assessment": {
+      "status": "GOOD",
+      "issues": [
+        "높은 중복 비율"
+      ],
+      "recommendations": [],
+      "quality_score": 0.7308357142857143
+    }
+  },
+  "created_at": 1769673878.756767
+}

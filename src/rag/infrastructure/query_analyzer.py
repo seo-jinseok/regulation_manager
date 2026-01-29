@@ -257,15 +257,15 @@ class QueryAnalyzer:
     ]
 
     # Weight presets for each query type: (bm25_weight, dense_weight)
-    # NOTE: Dense (paraphrase-multilingual-MiniLM-L12-v2) performs poorly on Korean semantic search.
-    # BM25-only search for optimal performance and relevance.
-    # Dense retrieval code structure preserved for future tuning.
+    # Hybrid search with Korean-optimized Dense retrieval (jhgan/ko-sbert-multinli)
+    # BM25 excels at exact matching (article references, regulation names)
+    # Dense excels at semantic understanding (natural questions, intent queries)
     WEIGHT_PRESETS: Dict[QueryType, Tuple[float, float]] = {
-        QueryType.ARTICLE_REFERENCE: (1.0, 0.0),  # BM25 only
-        QueryType.REGULATION_NAME: (1.0, 0.0),  # BM25 only
-        QueryType.NATURAL_QUESTION: (1.0, 0.0),  # BM25 only
-        QueryType.INTENT: (1.0, 0.0),  # BM25 only
-        QueryType.GENERAL: (1.0, 0.0),  # BM25 only
+        QueryType.ARTICLE_REFERENCE: (1.0, 0.0),  # BM25 only (정확한 조호 참조)
+        QueryType.REGULATION_NAME: (0.7, 0.3),  # BM25 + Dense (규정명 검색)
+        QueryType.NATURAL_QUESTION: (0.6, 0.4),  # BM25 + Dense (자연어 질문)
+        QueryType.INTENT: (0.5, 0.5),  # BM25 + Dense (의도 기반 검색)
+        QueryType.GENERAL: (0.6, 0.4),  # BM25 + Dense (기본 검색)
     }
 
     # Synonym dictionary for query expansion (minimal seed).
@@ -1581,6 +1581,302 @@ class QueryAnalyzer:
         except Exception as e:
             logger.warning(f"LLM intent classification failed: {e}")
             return None
+
+    # --- Phase 3: Ambiguity Detection & Context Inference ---
+
+    # Pre-built disambiguation options for common ambiguous terms
+    DISAMBIGUATION_OPTIONS: Dict[str, List[Dict[str, any]]] = {
+        "졸업": [
+            {
+                "label": "졸업 요건",
+                "description": "학점, 어학, 논문 등 졸업에 필요한 조건",
+                "keywords": ["졸업요건", "졸업학점", "졸업조건"],
+            },
+            {
+                "label": "졸업 신청",
+                "description": "졸업 신청 방법, 절차, 기간",
+                "keywords": ["졸업신청", "졸업절차", "졸업예정자"],
+            },
+            {
+                "label": "졸업 유예",
+                "description": "졸업 시기 연기 (학사학위취득유예)",
+                "keywords": ["졸업유예", "학사학위취득유예", "졸업미루기"],
+            },
+            {
+                "label": "조기 졸업",
+                "description": "정규 학기보다 일찍 졸업하는 절차",
+                "keywords": ["조기졸업", "조기졸업신청", "조기졸업요건"],
+            },
+        ],
+        "휴학": [
+            {
+                "label": "휴학 요건",
+                "description": "휴학 가능한 조건, 신청 자격",
+                "keywords": ["휴학요건", "휴학자격", "휴학조건"],
+            },
+            {
+                "label": "휴학 신청",
+                "description": "휴학 신청 방법, 절차, 기간",
+                "keywords": ["휴학신청", "휴학절차", "휴학원서"],
+            },
+            {
+                "label": "휴학 복학",
+                "description": "휴학 후 복학 절차 및 기간",
+                "keywords": ["복학", "복학신청", "복학절차", "휴학후복학"],
+            },
+            {
+                "label": "군휴학",
+                "description": "입영 휴학 (군대 입대로 인한 휴학)",
+                "keywords": ["군휴학", "입영휴학", "군입대휴학"],
+            },
+        ],
+        "장학금": [
+            {
+                "label": "장학금 종류",
+                "description": "성적우수, 근로, 장학재단 등 장학금 유형",
+                "keywords": ["장학금종류", "장학금유형", "장학금분류"],
+            },
+            {
+                "label": "장학금 신청",
+                "description": "장학금 신청 방법, 기간, 조건",
+                "keywords": ["장학금신청", "장학금지원", "장학금신청기간"],
+            },
+            {
+                "label": "장학금 지급",
+                "description": "장학금 지급 일정, 방법, 등록금 감면",
+                "keywords": ["장학금지급", "장학금지급일정", "등록금감면"],
+            },
+            {
+                "label": "성적 장학금",
+                "description": "성적 기준 장학금 (성적우수장학금)",
+                "keywords": ["성적우수장학금", "성적장학금", "학점장학금"],
+            },
+        ],
+        "교수": [
+            {
+                "label": "교원 승진",
+                "description": "교수 승진, 정년, 호봉 체계",
+                "keywords": ["교원승진", "정년", "호봉", "승진규정"],
+            },
+            {
+                "label": "교원 인사",
+                "description": "교원 채용, 임용, 평가",
+                "keywords": ["교원인사", "교원채용", "교원임용", "업적평가"],
+            },
+            {
+                "label": "교원 연구년",
+                "description": "안식년, 연구년 휴직 규정",
+                "keywords": ["연구년", "안식년", "교원연구년", "연구휴직"],
+            },
+            {
+                "label": "교수 책임시수",
+                "description": "교수별 강의 책임 시수 기준",
+                "keywords": ["책임시수", "강의책임시수", "교수책임"],
+            },
+        ],
+        "전과": [
+            {
+                "label": "전과 자격",
+                "description": "전과 가능한 조건, 시기, 횟수",
+                "keywords": ["전과자격", "전과조건", "전과요건", "전과신청자격"],
+            },
+            {
+                "label": "전과 신청",
+                "description": "전과 신청 방법, 절차, 기간",
+                "keywords": ["전과신청", "전과절차", "전과방법"],
+            },
+            {
+                "label": "전과 학점",
+                "description": "전과 후 학점 인정, 이수 규정",
+                "keywords": ["전과학점", "학점인정", "전과이수"],
+            },
+        ],
+    }
+
+    def is_query_ambiguous(self, query: str) -> bool:
+        """
+        Detect if query is ambiguous (1-2 words without clear context).
+
+        Short queries like "졸업", "휴학", "장학금" are inherently ambiguous
+        because they could mean:
+        - Graduation requirements vs application vs deferral
+        - Leave of absence requirements vs application vs return
+        - Scholarship types vs application vs payment
+
+        Args:
+            query: The search query text.
+
+        Returns:
+            True if query is ambiguous and requires user clarification.
+        """
+        if not query:
+            return False
+
+        query = unicodedata.normalize("NFC", query)
+        cleaned = self.clean_query(query)
+        words = cleaned.split()
+
+        # Rule 1: 1-2 word queries that match ACADEMIC_KEYWORDS are ambiguous
+        # (unless they have question markers that clarify intent)
+        if len(words) <= 2:
+            # Check if it's a simple academic keyword without context
+            for word in words:
+                if word in self.ACADEMIC_KEYWORDS:
+                    # But not if it has question markers (e.g., "졸업 방법")
+                    if not any(marker in query for marker in self.QUESTION_MARKERS):
+                        return True
+
+        # Rule 2: Query matches known ambiguous terms but no clear intent
+        if cleaned in self.DISAMBIGUATION_OPTIONS:
+            # Still ambiguous if no question markers
+            if not any(marker in query for marker in self.QUESTION_MARKERS):
+                return True
+
+        return False
+
+    def infer_from_context(
+        self, query: str, session: Optional["ConversationSession"]
+    ) -> Optional[IntentClassificationResult]:
+        """
+        Infer query intent from conversation history context.
+
+        Uses previous turns in the conversation to disambiguate short queries.
+        For example:
+        - Previous: "장학금 신청 방법"
+        - Current: "그거 언제까지야?" → Infers scholarship deadline
+
+        Args:
+            query: Current query text.
+            session: Optional conversation session with history.
+
+        Returns:
+            IntentClassificationResult if context provides clear intent, None otherwise.
+        """
+        if not session or session.turn_count == 0:
+            return None
+
+        # Get recent turns for context
+        recent_turns = session.get_recent_turns(max_turns=3)
+        if not recent_turns:
+            return None
+
+        # Clean current query
+        query = unicodedata.normalize("NFC", query)
+        cleaned_query = self.clean_query(query)
+        query_words = set(cleaned_query.split())
+
+        # Check if current query is a follow-up question
+        # (contains pronouns like "그거", "이거", context references)
+        context_markers = [
+            "그거",
+            "이것",
+            "그게",
+            "이게",
+            "그것",
+            "저것",
+            "어떻게",
+            "방법",
+        ]
+        is_followup = any(marker in cleaned_query for marker in context_markers)
+
+        if not is_followup and len(cleaned_query.split()) > 2:
+            # Not a follow-up, and query has enough context
+            return None
+
+        # Analyze previous queries to extract context
+        context_keywords: List[str] = []
+        for turn in recent_turns:
+            # Extract keywords from previous query
+            prev_query = turn.query
+            prev_intents = self._match_intents(prev_query)
+            for intent in prev_intents[:2]:  # Top 2 intents
+                context_keywords.extend(intent.keywords)
+
+        # If we have strong context keywords, use them for current query
+        if context_keywords:
+            # Merge context keywords with current query
+            merged_keywords = self._merge_token_list(
+                cleaned_query.split(), context_keywords[:5]
+            )
+
+            # Try to classify with merged context
+            enhanced_query = " ".join(merged_keywords)
+            enhanced_intents = self._match_intents(enhanced_query)
+
+            if enhanced_intents:
+                best_match = enhanced_intents[0]
+                confidence = min(1.0, (best_match.score + 2) / 6.0)  # Boost confidence
+
+                logger.debug(
+                    f"Context inference: '{query}' -> {best_match.intent_id} "
+                    f"(confidence={confidence:.2f})"
+                )
+
+                return IntentClassificationResult(
+                    intent_id=best_match.intent_id,
+                    label=best_match.label,
+                    keywords=best_match.keywords,
+                    confidence=confidence,
+                    method="context",
+                )
+
+        return None
+
+    def create_disambiguation_dialog(
+        self, query: str
+    ) -> Optional["DisambiguationDialog"]:
+        """
+        Create a disambiguation dialog for ambiguous queries.
+
+        When a query is ambiguous (e.g., "졸업"), this creates a dialog
+        with multiple options to clarify user intent.
+
+        Args:
+            query: The ambiguous query text.
+
+        Returns:
+            DisambiguationDialog with options, or None if query is not ambiguous.
+        """
+        if not self.is_query_ambiguous(query):
+            return None
+
+        query = unicodedata.normalize("NFC", query)
+        cleaned = self.clean_query(query)
+        words = cleaned.split()
+
+        # Find matching disambiguation options
+        options_data: List[Dict] = []
+        for word in words:
+            if word in self.DISAMBIGUATION_OPTIONS:
+                options_data = self.DISAMBIGUATION_OPTIONS[word]
+                break
+
+        if not options_data:
+            return None
+
+        # Create DisambiguationOption objects
+        # Note: Import here to avoid circular dependency
+        from ..domain.conversation import DisambiguationDialog as Dialog
+        from ..domain.conversation import DisambiguationOption
+
+        options: List[DisambiguationOption] = []
+        for idx, opt_data in enumerate(options_data):
+            options.append(
+                DisambiguationOption(
+                    option_id=f"opt_{idx + 1}",
+                    label=opt_data["label"],
+                    description=opt_data["description"],
+                    keywords=opt_data["keywords"],
+                    confidence=0.0,  # All options equally likely initially
+                )
+            )
+
+        dialog = Dialog.create(query=query, options=options)
+        logger.debug(
+            f"Created disambiguation dialog for query '{query}' with {len(options)} options"
+        )
+
+        return dialog
 
     def set_regulation_names(self, regulation_names: List[str]) -> None:
         """

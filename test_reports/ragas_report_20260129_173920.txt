@@ -1,0 +1,60 @@
+================================================================================
+RAGAS Evaluation Report
+================================================================================
+
+Timestamp: 2026-01-29 17:39:20
+Total Samples: 3
+Passed: 0/3 (0.0%)
+
+## Average Scores
+
+✦ Faithfulness (환각 감지):     0.806 ❌
+✦ Answer Relevancy (답변 관련성): 0.500 ❌
+✦ Contextual Precision (검색 정밀도): 0.500 ❌
+✦ Contextual Recall (검색 재현율):   0.500 ❌
+✦ Overall Score:                   0.576
+
+## Results by Category
+
+### 졸업
+  Samples: 1
+  Pass Rate: 0.0%
+  Avg Overall: 0.587
+
+### 교과과정
+  Samples: 1
+  Pass Rate: 0.0%
+  Avg Overall: 0.572
+
+### 휴학
+  Samples: 1
+  Pass Rate: 0.0%
+  Avg Overall: 0.570
+
+## Failed Samples
+
+### 1. 졸업 요건은 어떻게 되나요? (자세히 알려주세요)...
+**Failures:**
+  - Faithfulness below threshold: 0.848 < 0.9
+  - Answer Relevancy below threshold: 0.500 < 0.85
+  - Contextual Precision below threshold: 0.500 < 0.8
+  - Contextual Recall below threshold: 0.500 < 0.8
+**Scores:** F=0.85 R=0.50 P=0.50 Rec=0.50
+
+### 2. 교양 과목을 몇 학점 이수해야 하나요?...
+**Failures:**
+  - Faithfulness below threshold: 0.789 < 0.9
+  - Answer Relevancy below threshold: 0.500 < 0.85
+  - Contextual Precision below threshold: 0.500 < 0.8
+  - Contextual Recall below threshold: 0.500 < 0.8
+**Scores:** F=0.79 R=0.50 P=0.50 Rec=0.50
+
+### 3. 저 이번 학기에 휴학하고 싶은데, 등록금 납부 후에도 가능한가요?...
+**Failures:**
+  - Faithfulness below threshold: 0.781 < 0.9
+  - Answer Relevancy below threshold: 0.500 < 0.85
+  - Contextual Precision below threshold: 0.500 < 0.8
+  - Contextual Recall below threshold: 0.500 < 0.8
+**Scores:** F=0.78 R=0.50 P=0.50 Rec=0.50
+
+================================================================================

@@ -33,6 +33,7 @@ logger = logging.getLogger(__name__)
 
 # Forward references for type hints
 if TYPE_CHECKING:
+    from ..domain.llm.ambiguity_classifier import DisambiguationDialog
     from ..infrastructure.query_analyzer import Audience
 
 
@@ -157,6 +158,17 @@ class QueryRewriteInfo:
     matched_intents: Optional[List[str]] = None
 
 
+@dataclass
+class MultiHopResult:
+    """Result of multi-hop query execution."""
+
+    answer: Answer
+    hops: List[Dict[str, Any]]
+    execution_time: float
+    success: bool
+    error_message: Optional[str] = None
+
+
 class SearchUseCase:
     """
     Use case for searching regulations and generating answers.
@@ -251,6 +263,12 @@ class SearchUseCase:
         self._enable_query_expansion = config.enable_query_expansion
         self._query_expander = None  # Lazy initialized
 
+        # Multi-hop Question Answering components
+        self._enable_multi_hop = getattr(config, "enable_multi_hop", True)
+        self._multi_hop_handler = None  # Lazy initialized
+        self._max_hops = getattr(config, "max_hops", 5)
+        self._hop_timeout_seconds = getattr(config, "hop_timeout_seconds", 30)
+
         # Ambiguity Classifier (SPEC-RAG-001 Component 2)
         from ..domain.llm.ambiguity_classifier import AmbiguityClassifier
 
@@ -272,6 +290,20 @@ class SearchUseCase:
                 cache_dir=str(config.cache_dir_resolved),
             )
             logger.info(f"RAG query cache enabled (TTL={config.cache_ttl_hours}h)")
+
+        # Long-term Memory (conversation context) initialization
+        self._enable_conversation_memory = getattr(
+            config, "enable_conversation_memory", True
+        )
+        self._memory_manager = None
+        if self._enable_conversation_memory:
+            from .conversation_memory import create_memory_manager
+
+            enable_mcp = getattr(config, "enable_memory_mcp", False)
+            self._memory_manager = create_memory_manager(
+                llm_client=self.llm, enable_mcp=enable_mcp
+            )
+            logger.info("Conversation memory enabled with MCP=%s", enable_mcp)
 
         # Background warmup
         if enable_warmup is None:
@@ -2011,6 +2043,51 @@ class SearchUseCase:
                     confidence=0.5,
                 )
 
+        # Multi-hop: Check if query requires multi-hop processing
+        # Only apply if no explicit search_query override (user wants normal search)
+        if self._should_use_multi_hop(question) and search_query is None:
+            logger.info("Multi-hop query detected, routing to multi-hop handler")
+            try:
+                multi_hop_result = self.ask_multi_hop_sync(
+                    question=question,
+                    filter=filter,
+                    top_k=top_k,
+                    include_abolished=include_abolished,
+                )
+
+                # Convert MultiHopResult to Answer
+                # Collect all sources from all hops
+                all_sources = []
+                for hop_result in multi_hop_result.hop_results:
+                    all_sources.extend(hop_result.sources)
+
+                # Deduplicate sources by chunk ID
+                seen_ids = set()
+                unique_sources = []
+                for source in all_sources:
+                    if source.chunk.id not in seen_ids:
+                        seen_ids.add(source.chunk.id)
+                        unique_sources.append(source)
+
+                # Update ranks
+                for i, source in enumerate(unique_sources[:top_k]):
+                    unique_sources[i] = SearchResult(
+                        chunk=source.chunk,
+                        score=source.score,
+                        rank=i + 1,
+                    )
+
+                return Answer(
+                    text=multi_hop_result.final_answer,
+                    sources=unique_sources[:top_k],
+                    confidence=0.8 if multi_hop_result.success else 0.3,
+                )
+            except Exception as e:
+                logger.warning(
+                    f"Multi-hop processing failed: {e}, falling back to single-hop"
+                )
+                # Fall through to normal single-hop processing
+
         # Get relevant chunks
         results = self.search(
             retrieval_query,
@@ -2077,6 +2154,8 @@ class SearchUseCase:
         context: str,
         history_text: Optional[str] = None,
         debug: bool = False,
+        custom_prompt: Optional[str] = None,
+        custom_user_message: Optional[str] = None,
     ) -> str:
         """
         Generate answer with iterative fact-checking and correction.
@@ -2089,15 +2168,24 @@ class SearchUseCase:
             context: Search result context.
             history_text: Optional conversation history.
             debug: Whether to print debug info.
+            custom_prompt: Optional custom system prompt (e.g., for English).
+            custom_user_message: Optional pre-built user message.
 
         Returns:
             Verified answer text.
         """
-        user_message = self._build_user_message(question, context, history_text)
+        # Use custom user message if provided, otherwise build default
+        if custom_user_message:
+            user_message = custom_user_message
+        else:
+            user_message = self._build_user_message(question, context, history_text)
+
+        # Use custom prompt if provided, otherwise use default
+        system_prompt = custom_prompt or REGULATION_QA_PROMPT
 
         # Initial generation
         answer_text = self.llm.generate(
-            system_prompt=REGULATION_QA_PROMPT,
+            system_prompt=system_prompt,
             user_message=user_message,
             temperature=0.0,
         )
@@ -2285,6 +2373,160 @@ class SearchUseCase:
 {context}
 
 위 규정 내용을 바탕으로 질문에 답변해주세요."""
+
+    def _ensure_multi_hop_handler(self) -> None:
+        """Initialize MultiHopHandler if not already initialized."""
+        if self._multi_hop_handler is None and self._enable_multi_hop:
+            if self.llm is None:
+                logger.warning(
+                    "Multi-hop handler requires LLM client, skipping initialization"
+                )
+                return
+
+            self._multi_hop_handler = MultiHopHandler(
+                vector_store=self.store,
+                llm_client=self.llm,
+                max_hops=self._max_hops,
+                hop_timeout_seconds=self._hop_timeout_seconds,
+                enable_self_rag=self._enable_self_rag,
+            )
+            logger.info(f"Multi-hop handler initialized (max_hops={self._max_hops})")
+
+    def _should_use_multi_hop(self, query: str) -> bool:
+        """
+        Determine if a query requires multi-hop processing.
+
+        Multi-hop queries typically contain:
+        - Multiple questions (using "and", "or", "then")
+        - Nested dependencies ("prerequisites for X which is required for Y")
+        - Complex reasoning ("what if", "how does X affect Y")
+
+        Args:
+            query: The query text to analyze
+
+        Returns:
+            True if multi-hop processing should be used
+        """
+        if not self._enable_multi_hop:
+            return False
+
+        query_lower = query.lower()
+
+        # Multi-hop indicators
+        multi_hop_indicators = [
+            # Dependency indicators
+            ("선이수", "prerequisite"),
+            ("선행", "preceding"),
+            ("요건", "requirement"),
+            ("조건", "condition"),
+            # Sequential indicators
+            ("그리고", "and then"),
+            ("다음으로", "next"),
+            ("이후", "after"),
+            # Nested questions
+            (" 어떻게", "how"),
+            (" 왜", "why"),
+            # Multiple items
+            ("각각", "each"),
+            ("모든", "all"),
+            ("모든", "every"),
+        ]
+
+        # Check for multi-hop indicators
+        for ko_term, en_term in multi_hop_indicators:
+            if ko_term in query_lower or en_term in query_lower:
+                return True
+
+        # Check query complexity indicators
+        # Long queries with multiple clauses often require multi-hop
+        if len(query) > 100 and (" 그리고 " in query or " 및 " in query):
+            return True
+
+        # Queries with "what about" patterns
+        if " 어떤 " in query and " 과목" in query:
+            return True
+
+        return False
+
+    async def ask_multi_hop(
+        self,
+        question: str,
+        filter: Optional[SearchFilter] = None,
+        top_k: int = 10,
+        include_abolished: bool = False,
+    ) -> MultiHopResult:
+        """
+        Ask a multi-hop question and get a comprehensive answer.
+
+        This method decomposes complex questions into sequential sub-queries,
+        executes each hop with context from previous hops, and synthesizes
+        a comprehensive final answer.
+
+        Args:
+            question: The complex multi-hop question
+            filter: Optional metadata filters
+            top_k: Number of results to retrieve per hop
+            include_abolished: Whether to include abolished regulations
+
+        Returns:
+            MultiHopResult with final answer and execution details
+
+        Raises:
+            ConfigurationError: If LLM client is not configured
+        """
+        if not self.llm:
+            from ..exceptions import ConfigurationError
+
+            raise ConfigurationError(
+                "LLM client not configured for multi-hop processing"
+            )
+
+        self._ensure_multi_hop_handler()
+        if self._multi_hop_handler is None:
+            raise ConfigurationError("Multi-hop handler initialization failed")
+
+        logger.info(f"Multi-hop query: {question[:100]}...")
+
+        # Execute multi-hop processing
+        result = await self._multi_hop_handler.execute_multi_hop(question, top_k)
+
+        logger.info(
+            f"Multi-hop completed: {result.hop_count} hops, "
+            f"{result.total_execution_time_ms:.0f}ms, success={result.success}"
+        )
+
+        return result
+
+    def ask_multi_hop_sync(
+        self,
+        question: str,
+        filter: Optional[SearchFilter] = None,
+        top_k: int = 10,
+        include_abolished: bool = False,
+    ) -> MultiHopResult:
+        """
+        Synchronous wrapper for ask_multi_hop.
+
+        Args:
+            question: The complex multi-hop question
+            filter: Optional metadata filters
+            top_k: Number of results to retrieve per hop
+            include_abolished: Whether to include abolished regulations
+
+        Returns:
+            MultiHopResult with final answer and execution details
+        """
+        import asyncio
+
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+
+        return loop.run_until_complete(
+            self.ask_multi_hop(question, filter, top_k, include_abolished)
+        )
 
     def _normalize_search_results(
         self, results: List["SearchResult"]
@@ -2735,3 +2977,373 @@ class SearchUseCase:
     def print_reranking_metrics(self) -> None:
         """Print reranking metrics summary to log (Cycle 3)."""
         logger.info(self._reranking_metrics.get_summary())
+
+    # --- Phase 3: Multilingual Answer Support ---
+
+    @staticmethod
+    def detect_language(query: str) -> str:
+        """
+        Detect the language of a query based on character composition.
+
+        Args:
+            query: The query text to analyze.
+
+        Returns:
+            "english" if query is primarily English, "korean" otherwise.
+        """
+        if not query:
+            return "korean"
+
+        # Count English alphabet characters (ASCII range)
+        english_char_count = sum(1 for c in query if c.isalpha() and ord(c) < 128)
+        total_alpha_count = sum(1 for c in query if c.isalpha())
+
+        # If no alphabetic characters, default to Korean
+        if total_alpha_count == 0:
+            return "korean"
+
+        # Calculate ratio of English characters
+        english_ratio = english_char_count / total_alpha_count
+
+        # If more than 50% English characters, classify as English query
+        if english_ratio > 0.5:
+            logger.debug(f"Detected English query (ratio={english_ratio:.2f})")
+            return "english"
+
+        return "korean"
+
+    def ask_multilingual(
+        self,
+        question: str,
+        filter: Optional[SearchFilter] = None,
+        top_k: int = 5,
+        include_abolished: bool = False,
+        audience_override: Optional["Audience"] = None,
+        history_text: Optional[str] = None,
+        search_query: Optional[str] = None,
+        language: Optional[str] = None,
+        debug: bool = False,
+    ) -> Answer:
+        """
+        Ask a question and get an LLM-generated answer in the detected language.
+
+        Supports both Korean and English queries. Automatically detects query language
+        and generates responses in the same language.
+
+        Args:
+            question: The user's question.
+            filter: Optional metadata filters.
+            top_k: Number of chunks to use as context.
+            include_abolished: Whether to include abolished regulations.
+            audience_override: Optional audience override for ranking penalties.
+            history_text: Optional conversation context for the LLM.
+            search_query: Optional override for retrieval query.
+            language: Optional language override ("english" or "korean").
+            debug: Whether to print debug info (prompt).
+
+        Returns:
+            Answer with generated text and sources.
+        """
+        if not self.llm:
+            from ..exceptions import ConfigurationError
+
+            raise ConfigurationError("LLM client not configured. Use search() instead.")
+
+        # Auto-detect language if not specified
+        detected_language = language or self.detect_language(question)
+
+        # Generate answer in the detected language
+        if detected_language == "english":
+            logger.info("Generating English answer for query")
+            return self._ask_english(
+                question=question,
+                filter=filter,
+                top_k=top_k,
+                include_abolished=include_abolished,
+                audience_override=audience_override,
+                history_text=history_text,
+                search_query=search_query,
+                debug=debug,
+            )
+        else:
+            # Use standard Korean ask method
+            return self.ask(
+                question=question,
+                filter=filter,
+                top_k=top_k,
+                include_abolished=include_abolished,
+                audience_override=audience_override,
+                history_text=history_text,
+                search_query=search_query,
+                debug=debug,
+            )
+
+    def _ask_english(
+        self,
+        question: str,
+        filter: Optional[SearchFilter] = None,
+        top_k: int = 5,
+        include_abolished: bool = False,
+        audience_override: Optional["Audience"] = None,
+        history_text: Optional[str] = None,
+        search_query: Optional[str] = None,
+        debug: bool = False,
+    ) -> Answer:
+        """
+        Generate an English answer for an English query.
+
+        Uses a specialized English prompt that instructs the LLM to respond in English
+        while still referencing Korean regulations.
+
+        Args:
+            question: The user's English question.
+            filter: Optional metadata filters.
+            top_k: Number of chunks to use as context.
+            include_abolished: Whether to include abolished regulations.
+            audience_override: Optional audience override.
+            history_text: Optional conversation context.
+            search_query: Optional override for retrieval query.
+            debug: Whether to print debug info.
+
+        Returns:
+            Answer with English text and sources.
+        """
+        # Self-RAG: Check if retrieval is needed
+        retrieval_query = search_query or question
+        if self._enable_self_rag:
+            self._ensure_self_rag()
+            if self._self_rag_pipeline and not self._self_rag_pipeline.should_retrieve(
+                question
+            ):
+                logger.debug("Self-RAG: Skipping retrieval for simple query")
+                return Answer(
+                    text="This question does not require regulation search. Please ask a specific regulation-related question.",
+                    sources=[],
+                    confidence=0.5,
+                )
+
+        # Get relevant chunks
+        results = self.search(
+            retrieval_query,
+            filter=filter,
+            top_k=top_k * 3,
+            include_abolished=include_abolished,
+            audience_override=audience_override,
+        )
+
+        if not results:
+            return Answer(
+                text="No relevant regulations found. Please try different search terms.",
+                sources=[],
+                confidence=0.0,
+            )
+
+        # Self-RAG: Apply relevance filtering
+        results = self._apply_self_rag_relevance_filter(question, results)
+
+        # Filter out low-signal headings
+        filtered_results = self._select_answer_sources(results, top_k)
+        if not filtered_results:
+            filtered_results = self._normalize_search_results(results[:top_k])
+
+        # Build context from search results
+        context = self._build_context(filtered_results)
+
+        # Get English prompt
+        english_prompt = self._get_english_prompt()
+
+        # Build user message
+        user_message = self._build_english_user_message(question, context, history_text)
+
+        if debug:
+            logger.debug("=" * 40 + " ENGLISH PROMPT " + "=" * 40)
+            logger.debug(f"[System]\n{english_prompt}\n")
+            logger.debug(f"[User]\n{user_message}")
+            logger.debug("=" * 80)
+
+        # Generate answer
+        answer_text = self._generate_with_fact_check(
+            question=question,
+            context=context,
+            history_text=history_text,
+            debug=debug,
+            custom_prompt=english_prompt,
+            custom_user_message=user_message,
+        )
+
+        # Self-RAG: Start async support verification
+        if self._enable_self_rag and self._self_rag_pipeline:
+            self._self_rag_pipeline.start_async_support_check(
+                question, context, answer_text
+            )
+
+        # Compute confidence
+        confidence = self._compute_confidence(filtered_results)
+
+        return Answer(
+            text=answer_text,
+            sources=filtered_results,
+            confidence=confidence,
+        )
+
+    # Conversation Memory Methods
+
+    def create_conversation_session(
+        self, user_id: Optional[str] = None, expiry_hours: int = 24 * 7
+    ) -> str:
+        """
+        Create a new conversation session for long-term memory.
+
+        Args:
+            user_id: Optional user identifier
+            expiry_hours: Hours until memory expires (default: 7 days)
+
+        Returns:
+            Session ID for tracking conversation
+        """
+        if not self._enable_conversation_memory or self._memory_manager is None:
+            logger.warning("Conversation memory is not enabled")
+            return ""
+
+        from .conversation_memory import MemoryExpiryPolicy
+
+        expiry_policy = MemoryExpiryPolicy.HOURS_24
+        if expiry_hours >= 24 * 30:
+            expiry_policy = MemoryExpiryPolicy.DAYS_30
+        elif expiry_hours >= 24 * 7:
+            expiry_policy = MemoryExpiryPolicy.DAYS_7
+
+        session_id = self._memory_manager.create_session(
+            user_id=user_id, expiry_policy=expiry_policy
+        )
+        logger.info(f"Created conversation session {session_id} for user {user_id}")
+        return session_id
+
+    def add_conversation_message(
+        self,
+        session_id: str,
+        role: str,
+        content: str,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> bool:
+        """
+        Add a message to conversation memory.
+
+        Args:
+            session_id: Conversation session ID
+            role: Message role ("user" or "assistant")
+            content: Message content
+            metadata: Optional metadata
+
+        Returns:
+            True if message was added successfully
+        """
+        if not self._enable_conversation_memory or self._memory_manager is None:
+            return False
+
+        context = self._memory_manager.add_message(
+            session_id=session_id, role=role, content=content, metadata=metadata
+        )
+        return context is not None
+
+    def get_conversation_context(self, session_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Get conversation context for search enhancement.
+
+        Args:
+            session_id: Conversation session ID
+
+        Returns:
+            Dictionary with context information or None
+        """
+        if not self._enable_conversation_memory or self._memory_manager is None:
+            return None
+
+        return self._memory_manager.get_context_for_search(session_id)
+
+    def expand_query_with_context(self, session_id: str, query: str) -> str:
+        """
+        Expand query using conversation context.
+
+        This improves retrieval for context-dependent questions by:
+        - Adding topic-related terms
+        - Including key entities from conversation
+        - Maintaining conversation continuity
+
+        Args:
+            session_id: Conversation session ID
+            query: Original search query
+
+        Returns:
+            Context-expanded query
+        """
+        if not self._enable_conversation_memory or self._memory_manager is None:
+            return query
+
+        return self._memory_manager.expand_query(session_id, query)
+
+    def cleanup_expired_conversations(self) -> int:
+        """
+        Remove expired conversation sessions from memory.
+
+        Returns:
+            Number of sessions cleaned up
+        """
+        if not self._enable_conversation_memory or self._memory_manager is None:
+            return 0
+
+        return self._memory_manager.cleanup_expired_sessions()
+
+    @staticmethod
+    def _get_english_prompt() -> str:
+        """Get the system prompt for English Q&A."""
+        return """You are a university regulation expert for Dong-A University.
+
+Your task is to provide **detailed and helpful answers** in English to questions based on the provided Korean regulations.
+
+## ⚠️ Strict Prohibition (Hallucination Prevention)
+1. **NO phone number/contact creation**: Do NOT fabricate phone numbers like "02-XXXX-XXXX" or "02-1234-5678".
+2. **NO other school examples**: Do NOT mention regulations or examples from Korea University, Seoul National University, etc.
+3. **NO numerical fabrication**: Do NOT create percentages or deadlines like "40%", "30 days" that are not in the regulations.
+4. **NO generic avoidance**: Do NOT say "it varies by university" or "generally..." to avoid answering.
+
+## Basic Principles
+- **Answer ONLY based on the provided regulation content.**
+- Do NOT guess or mention general practices for content not in the regulations.
+- Translate key Korean regulation terms accurately and provide context.
+- If the regulation does not contain information to answer the question, state clearly that the regulation does not specify it.
+
+## Response Format
+- Provide responses in clear, professional English.
+- Include specific article references (e.g., "Article 8", "Section 3") when citing regulations.
+- For procedure questions, explain step-by-step.
+- For deadline questions, provide exact dates if specified in regulations.
+
+## Important Notes
+- The source text is in Korean, but you must respond in English.
+- Preserve accuracy when translating regulation content.
+- If uncertain about a translation, provide the original Korean term in parentheses.
+"""
+
+    @staticmethod
+    def _build_english_user_message(
+        question: str, context: str, history_text: Optional[str]
+    ) -> str:
+        """Build user message for English Q&A."""
+        if history_text:
+            return f"""Conversation History:
+{history_text}
+
+Current Question: {question}
+
+Reference Regulations:
+{context}
+
+Based on the above regulations, please answer the question in English."""
+
+        return f"""Question: {question}
+
+Reference Regulations:
+{context}
+
+Based on the above regulations, please answer the question in English."""

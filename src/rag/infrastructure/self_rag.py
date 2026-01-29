@@ -127,8 +127,19 @@ class SelfRAGEvaluator:
             )
 
     def evaluate_relevance(
-        self, query: str, results: List["SearchResult"], max_context_chars: int = 2000
+        self, query: str, results: List["SearchResult"], max_context_chars: int = 4000
     ) -> tuple:
+        """
+        Evaluate relevance of search results.
+
+        Args:
+            query: User's question
+            results: Search results to evaluate
+            max_context_chars: Maximum context length to send to LLM (increased to 4000 for long procedure regulations)
+
+        Returns:
+            Tuple of (is_relevant: bool, relevant_results: List[SearchResult])
+        """
         """
         Evaluate relevance of search results.
 
