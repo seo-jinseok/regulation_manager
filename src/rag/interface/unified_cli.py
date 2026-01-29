@@ -532,6 +532,140 @@ def _add_analyze_parser(subparsers):
     )
 
 
+def _add_quality_parser(subparsers):
+    """Add quality subcommand parser for RAGAS-based evaluation."""
+    parser = subparsers.add_parser(
+        "quality",
+        help="RAG 시스템 품질 평가 (RAGAS LLM-as-Judge)",
+        description="RAGAS 프레임워크를 사용한 LLM-as-Judge 평가를 실행합니다.",
+    )
+    parser.add_argument(
+        "--judge-model",
+        default=os.getenv("RAG_JUDGE_MODEL", "gpt-4o"),
+        help="Judge LLM 모델 (기본: gpt-4o)",
+    )
+    parser.add_argument(
+        "--no-ragas",
+        action="store_true",
+        help="RAGAS 사용 안 함 (모의 평가)",
+    )
+    parser.add_argument(
+        "--output-dir",
+        default="data/evaluations",
+        help="평가 결과 출력 디렉터리",
+    )
+    parser.add_argument(
+        "--db-path",
+        type=str,
+        default="data/chroma_db",
+        help="ChromaDB 저장 경로",
+    )
+
+    # Subcommands for quality
+    quality_subparsers = parser.add_subparsers(dest="quality_cmd", title="평가 명령어")
+
+    # quality baseline
+    baseline_parser = quality_subparsers.add_parser(
+        "baseline",
+        help="기준선 평가 실행 (모든 페르소나)",
+    )
+    baseline_parser.add_argument(
+        "--queries-per-persona",
+        type=int,
+        default=5,
+        help="페르소나당 쿼리 수 (기본: 5)",
+    )
+    baseline_parser.add_argument(
+        "--topic",
+        help="특정 주제로만 테스트",
+    )
+    baseline_parser.add_argument(
+        "-n",
+        "--top-k",
+        type=int,
+        default=5,
+        help="검색할 문서 수 (기본: 5)",
+    )
+
+    # quality persona
+    persona_parser = quality_subparsers.add_parser(
+        "persona",
+        help="특정 페르소나로 평가",
+    )
+    persona_parser.add_argument(
+        "--id",
+        required=True,
+        choices=[
+            "freshman",
+            "graduate",
+            "professor",
+            "staff",
+            "parent",
+            "international",
+        ],
+        help="페르소나 ID",
+    )
+    persona_parser.add_argument(
+        "--count",
+        type=int,
+        default=10,
+        help="생성할 쿼리 수 (기본: 10)",
+    )
+    persona_parser.add_argument("--topic", help="특정 주제")
+    persona_parser.add_argument(
+        "-n",
+        "--top-k",
+        type=int,
+        default=5,
+        help="검색할 문서 수",
+    )
+
+    # quality synthetic
+    synthetic_parser = quality_subparsers.add_parser(
+        "synthetic",
+        help="합성 데이터 생성",
+    )
+    synthetic_parser.add_argument(
+        "--count",
+        type=int,
+        default=50,
+        help="생성할 질문 수 (기본: 50)",
+    )
+    synthetic_parser.add_argument(
+        "--difficulty",
+        choices=["easy", "medium", "hard", "mixed"],
+        default="mixed",
+        help="난이도 (기본: mixed)",
+    )
+    synthetic_parser.add_argument(
+        "--scenarios",
+        action="store_true",
+        help="시나리오 생성 모드",
+    )
+    synthetic_parser.add_argument(
+        "--regulation",
+        default="학칙",
+        help="시나리오 생성할 규정 (기본: 학칙)",
+    )
+
+    # quality stats
+    stats_parser = quality_subparsers.add_parser(
+        "stats",
+        help="평가 통계 확인",
+    )
+    stats_parser.add_argument(
+        "--days",
+        type=int,
+        help="최근 N일간 통계만",
+    )
+
+    # quality dashboard
+    quality_subparsers.add_parser(
+        "dashboard",
+        help="Gradio 품질 대시보드 실행",
+    )
+
+
 def _add_synonym_parser(subparsers):
     """Add synonym subcommand parser."""
     # Get LLM settings for suggest command
@@ -644,6 +778,7 @@ def create_parser() -> argparse.ArgumentParser:
     _add_extract_keywords_parser(subparsers)
     _add_feedback_parser(subparsers)
     _add_analyze_parser(subparsers)
+    _add_quality_parser(subparsers)
     _add_synonym_parser(subparsers)
 
     return parser
@@ -880,6 +1015,183 @@ def cmd_synonym(args) -> int:
     return _cmd_synonym(args)
 
 
+def cmd_quality(args) -> int:
+    """Execute quality command - RAGAS-based RAG quality evaluation."""
+    from rich.console import Console
+
+    from ..domain.evaluation import RAGQualityEvaluator
+    from ..domain.evaluation.personas import PersonaManager
+    from ..domain.evaluation.synthetic_data import SyntheticDataGenerator
+    from ..infrastructure.json_loader import JSONDocumentLoader
+    from ..infrastructure.storage.evaluation_store import EvaluationStore
+
+    console = Console()
+
+    # Initialize components
+    evaluator = RAGQualityEvaluator(
+        judge_model=args.judge_model,
+        use_ragas=not args.no_ragas,
+    )
+    store = EvaluationStore(storage_dir=args.output_dir)
+    persona_mgr = PersonaManager()
+    loader = JSONDocumentLoader("data/output/규정집.json")
+
+    # Initialize RAG system for answer generation
+    from ..application.search_usecase import SearchUseCase
+    from ..infrastructure.chroma_store import ChromaVectorStore
+    from ..infrastructure.llm_adapter import LLMClientAdapter
+
+    vector_store = ChromaVectorStore(persist_directory=args.db_path)
+    _, provider, model, base_url = _get_default_llm_settings()
+    llm_client = LLMClientAdapter(provider=provider, model=model, base_url=base_url)
+    search_usecase = SearchUseCase(
+        store=vector_store, llm_client=llm_client, use_reranker=True
+    )
+
+    # Subcommand handling
+    if args.quality_cmd == "baseline":
+        console.print("[bold]🔍 기준선 평가 시작...[/bold]")
+        results = []
+
+        for persona_id in persona_mgr.list_personas():
+            console.print(f"[dim]페르소나 {persona_id} 테스트 중...[/dim]")
+            queries = persona_mgr.generate_queries(
+                persona_id, count=args.queries_per_persona, topic=args.topic
+            )
+
+            for query in queries:
+                try:
+                    # RAG 시스템 실행
+                    search_results = search_usecase.search(
+                        query_text=query,
+                        top_k=args.top_k,
+                    )
+                    contexts = (
+                        [r.chunk.text for r in search_results] if search_results else []
+                    )
+
+                    # 답변 생성
+                    from ..infrastructure.tool_executor import ToolExecutor
+
+                    tool_executor = ToolExecutor(
+                        search_usecase=search_usecase,
+                        llm_client=llm_client,
+                    )
+                    answer = tool_executor._handle_generate_answer(
+                        {"question": query, "context": "\n\n".join(contexts)}
+                    )
+
+                    # 평가 실행
+                    result = evaluator.evaluate_single_turn(query, contexts, answer)
+                    result.persona = persona_id
+                    results.append(result)
+                    store.save_evaluation(result)
+
+                    console.print(
+                        f"[dim]  Query: {query[:40]}... Score: {result.overall_score:.2f}[/dim]"
+                    )
+                except Exception as e:
+                    console.print(f"[red]평가 실패: {e}[/red]")
+                    continue
+
+        # 통계 출력
+        stats = store.get_statistics()
+        console.print("\n[bold]기준선 평가 결과[/bold]")
+        console.print(f"전체 평가: {stats.total_evaluations}")
+        console.print(f"평균 점수: {stats.avg_overall_score:.2f}")
+        console.print(f"합격률: {stats.pass_rate:.1%}")
+        console.print(f"추세: {stats.trend}")
+        console.print("\n[bold]메트릭별 점수:[/bold]")
+        console.print(f"  Faithfulness: {stats.avg_faithfulness:.2f}")
+        console.print(f"  Answer Relevancy: {stats.avg_answer_relevancy:.2f}")
+        console.print(f"  Contextual Precision: {stats.avg_contextual_precision:.2f}")
+        console.print(f"  Contextual Recall: {stats.avg_contextual_recall:.2f}")
+
+    elif args.quality_cmd == "persona":
+        console.print(f"[bold]🔍 페르소나 {args.id} 테스트 시작...[/bold]")
+        queries = persona_mgr.generate_queries(
+            args.id, count=args.count, topic=args.topic
+        )
+        console.print(f"[dim]{len(queries)}개 쿼리 생성 완료[/dim]")
+
+        for query in queries:
+            try:
+                search_results = search_usecase.search(
+                    query_text=query, top_k=args.top_k
+                )
+                contexts = (
+                    [r.chunk.text for r in search_results] if search_results else []
+                )
+
+                from ..infrastructure.tool_executor import ToolExecutor
+
+                tool_executor = ToolExecutor(
+                    search_usecase=search_usecase,
+                    llm_client=llm_client,
+                )
+                answer = tool_executor._handle_generate_answer(
+                    {"question": query, "context": "\n\n".join(contexts)}
+                )
+
+                result = evaluator.evaluate_single_turn(query, contexts, answer)
+                result.persona = args.id
+                store.save_evaluation(result)
+
+                console.print(
+                    f"Score: {result.overall_score:.2f} | Query: {query[:50]}..."
+                )
+            except Exception as e:
+                console.print(f"[red]평가 실패: {e}[/red]")
+
+    elif args.quality_cmd == "synthetic":
+        console.print("[bold]📝 합성 테스트 데이터 생성 시작...[/bold]")
+        generator = SyntheticDataGenerator(loader)
+
+        if args.scenarios:
+            scenarios = generator.generate_scenarios_from_regulations(
+                regulation=args.regulation, num_scenarios=args.count
+            )
+            console.print(f"[green]✅ {len(scenarios)}개 시나리오 생성 완료[/green]")
+        else:
+            queries = generator.generate_queries_from_documents(
+                num_questions=args.count, difficulty=args.difficulty
+            )
+            console.print(f"[green]✅ {len(queries)}개 질문 생성 완료[/green]")
+
+    elif args.quality_cmd == "stats":
+        if args.days:
+            stats = store.get_statistics(days=args.days)
+        else:
+            stats = store.get_statistics()
+
+        console.print("\n[bold]평가 통계[/bold]")
+        console.print(f"전체 평가: {stats.total_evaluations}")
+        console.print(f"평균 점수: {stats.avg_overall_score:.2f}")
+        console.print(f"합격률: {stats.pass_rate:.1%}")
+        console.print(f"최저 점수: {stats.min_score:.2f}")
+        console.print(f"최고 점수: {stats.max_score:.2f}")
+        console.print(f"표준 편차: {stats.std_deviation:.2f}")
+        console.print(f"추세: {stats.trend}")
+        console.print("\n[bold]메트릭별 평균:[/bold]")
+        console.print(f"  Faithfulness: {stats.avg_faithfulness:.2f}")
+        console.print(f"  Answer Relevancy: {stats.avg_answer_relevancy:.2f}")
+        console.print(f"  Contextual Precision: {stats.avg_contextual_precision:.2f}")
+        console.print(f"  Contextual Recall: {stats.avg_contextual_recall:.2f}")
+
+    elif args.quality_cmd == "dashboard":
+        console.print("[bold]🚀 Gradio 품질 대시보드 시작...[/bold]")
+
+        from .web.quality_dashboard import app as quality_app
+
+        quality_app.launch(
+            server_port=7861,
+            share=False,
+            show_error=True,
+        )
+
+    return 0
+
+
 # =============================================================================
 # Entry Point
 # =============================================================================
@@ -930,6 +1242,7 @@ def main(argv: Optional[list] = None) -> int:
         "feedback": cmd_feedback,
         "analyze": cmd_analyze,
         "synonym": cmd_synonym,
+        "quality": cmd_quality,
     }
 
     if args.command in commands:
