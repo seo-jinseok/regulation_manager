@@ -34,8 +34,10 @@ def _load_metrics(metrics_path: str = DEFAULT_METRICS_PATH) -> Dict:
     try:
         with open(path, "r", encoding="utf-8") as f:
             return json.load(f)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to load metrics: {e}")
+    except Exception as err:
+        raise HTTPException(
+            status_code=500, detail=f"Failed to load metrics: {err}"
+        ) from err
 
 
 def _load_history(
@@ -331,7 +333,7 @@ async def generate_report(
         )
 
         metrics = _load_metrics(metrics_path)
-        history = _load_history(history_path, 30)
+        _load_history(history_path, 30)
 
         # Generate PDF
         pdf_filename = f"quality_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
@@ -421,8 +423,10 @@ async def generate_report(
             "url": f"/api/quality/report/download/{pdf_filename}",
         }
 
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Report generation failed: {e}")
+    except Exception as err:
+        raise HTTPException(
+            status_code=500, detail=f"Report generation failed: {err}"
+        ) from err
 
 
 @router.get("/report/download/{filename}")

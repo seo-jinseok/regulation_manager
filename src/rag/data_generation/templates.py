@@ -463,7 +463,7 @@ class ExpertTemplateGenerator:
 def main():
     """테스트 메인 함수"""
     generator = ExpertTemplateGenerator()
-    templates = generator.generate_templates(target_count=200)
+    generator.generate_templates(target_count=200)
     generator.save(Path("data/ground_truth/expert_templates.json"))
 
 

@@ -54,7 +54,7 @@ from .query_handler import (
 
 # Rich for pretty output (optional)
 try:
-    from rich.console import Console, Group
+    from rich.console import Console
     from rich.markdown import Markdown
     from rich.panel import Panel
     from rich.table import Table

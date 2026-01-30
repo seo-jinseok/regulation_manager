@@ -138,11 +138,11 @@ class DenseRetriever:
                 f"Embedding model loaded: {self.model_name} "
                 f"(dims={_embedding_dims[self.model_name]})"
             )
-        except ImportError:
+        except ImportError as err:
             raise ImportError(
                 "sentence-transformers is required for dense retrieval. "
                 "Install with: uv add sentence-transformers"
-            )
+            ) from err
         except Exception as e:
             logger.error(f"Failed to load model {self.model_name}: {e}")
             raise
@@ -236,7 +236,9 @@ class DenseRetriever:
             )
 
             # Store embeddings
-            for (doc_id, content, metadata), embedding in zip(batch, embeddings):
+            for (doc_id, content, metadata), embedding in zip(
+                batch, embeddings, strict=False
+            ):
                 self._doc_embeddings[doc_id] = embedding
                 self._doc_texts[doc_id] = content
                 self._doc_metadata[doc_id] = metadata

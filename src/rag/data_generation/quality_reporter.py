@@ -283,7 +283,7 @@ class QualityReporter:
         for label, count in sorted(
             distribution.items(), key=lambda x: x[1], reverse=True
         ):
-            percentage = (count / total) * 100
+            _ = (count / total) * 100
             bar_width = (count / max_count) * 100
 
             html += f"""

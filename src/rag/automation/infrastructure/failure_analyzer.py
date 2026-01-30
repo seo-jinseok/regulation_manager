@@ -11,6 +11,7 @@ import logging
 from typing import TYPE_CHECKING, Dict, List, Optional
 
 if TYPE_CHECKING:
+    from ..domain.entities import QualityTestResult
     from ..domain.value_objects import ComponentAnalysis, FiveWhyAnalysis
 
 logger = logging.getLogger(__name__)

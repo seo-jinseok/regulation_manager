@@ -388,7 +388,7 @@ def generate_pdf_report(metrics_path: str, history_path: str) -> str:
         )
 
         metrics = _load_metrics(metrics_path)
-        history = _load_history(history_path, 30)
+        _load_history(history_path, 30)
 
         # Generate PDF
         pdf_path = f"data/quality_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"

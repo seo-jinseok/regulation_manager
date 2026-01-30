@@ -35,11 +35,11 @@ def get_embedding_function(model_name: str = "jhgan/ko-sbert-sts"):
     # Check if sentence-transformers is available
     try:
         from sentence_transformers import SentenceTransformer
-    except ImportError:
+    except ImportError as err:
         raise ImportError(
             "sentence-transformers is required for embedding functions. "
             "Install with: uv add sentence-transformers"
-        )
+        ) from err
 
     # Return cached model if available
     if model_name in _embedding_models:

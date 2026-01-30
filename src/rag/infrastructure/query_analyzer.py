@@ -19,6 +19,7 @@ from .patterns import ARTICLE_PATTERN
 from .typo_corrector import TypoCorrector
 
 if TYPE_CHECKING:
+    from ..domain.conversation import ConversationSession, DisambiguationDialog
     from ..domain.repositories import ILLMClient
 
 logger = logging.getLogger(__name__)
@@ -1763,7 +1764,7 @@ class QueryAnalyzer:
         # Clean current query
         query = unicodedata.normalize("NFC", query)
         cleaned_query = self.clean_query(query)
-        query_words = set(cleaned_query.split())
+        _ = set(cleaned_query.split())
 
         # Check if current query is a follow-up question
         # (contains pronouns like "그거", "이거", context references)

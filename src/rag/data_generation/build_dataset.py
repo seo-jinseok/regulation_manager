@@ -250,7 +250,7 @@ class GroundTruthDatasetBuilder:
 
         train, val, test = [], [], []
 
-        for category, category_pairs in by_category.items():
+        for _category, category_pairs in by_category.items():
             random.shuffle(category_pairs)
 
             n_total = len(category_pairs)

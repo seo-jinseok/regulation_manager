@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional, Set
 
-from ..domain.entities import Answer, Chunk, SearchResult
+from ..domain.entities import SearchResult
 from ..domain.repositories import ILLMClient, IVectorStore
 from ..domain.value_objects import Query
 
@@ -187,7 +187,6 @@ class DependencyCycleDetector:
         """
         visited: Set[str] = set()
         rec_stack: Set[str] = set()
-        path: List[str] = []
 
         def dfs(node: str, current_path: List[str]) -> Optional[List[str]]:
             visited.add(node)

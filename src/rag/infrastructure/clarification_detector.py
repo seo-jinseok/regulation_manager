@@ -231,7 +231,8 @@ class ClarificationDetector:
             Reason string for clarification
         """
         if analysis.is_single_word:
-            return "단어 검색은 여러 규정에서 관련 내용을 찾을 수 있어 구체적인 정보가 필요합니다."
+            term = analysis.key_terms[0] if analysis.key_terms else "검색어"
+            return f"'{term}' 검색은 여러 규정에서 관련 내용을 찾을 수 있어 구체적인 정보가 필요합니다."
 
         if analysis.is_short:
             return "검색어가 너무 짧아 정확한 답변을 드리기 어렵습니다."

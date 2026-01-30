@@ -1,15 +1,16 @@
-import os
-import re
-
-# Suppress Transformers/PyTorch warnings
-os.environ["TRANSFORMERS_NO_ADVISORY_WARNINGS"] = "true"
 import argparse
 import json
+import os
+import re
 import shutil
 import sys
 import time
+from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, Optional
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
+
+# Suppress Transformers/PyTorch warnings
+os.environ["TRANSFORMERS_NO_ADVISORY_WARNINGS"] = "true"
 
 if TYPE_CHECKING:
     from rich.console import Console
@@ -83,8 +84,6 @@ def _build_pipeline_signature(rules_hash: str, llm_signature: str) -> str:
 
 
 # --- Helper dataclasses for pipeline context ---
-from dataclasses import dataclass
-from typing import Any, Callable, List
 
 
 @dataclass

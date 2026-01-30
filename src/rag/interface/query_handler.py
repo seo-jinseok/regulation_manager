@@ -30,8 +30,6 @@ from ..application.search_usecase import (
 from ..domain.entities import RegulationStatus
 from ..infrastructure.json_loader import JSONDocumentLoader
 from ..infrastructure.query_analyzer import Audience, QueryAnalyzer
-
-logger = logging.getLogger(__name__)
 from .chat_logic import (
     attachment_label_variants,
     expand_followup_query,
@@ -54,6 +52,8 @@ from .formatters import (
     strip_path_prefix,
 )
 from .query_suggestions import format_suggestions_for_cli, get_followup_suggestions
+
+logger = logging.getLogger(__name__)
 
 # Optional FunctionGemma imports
 try:

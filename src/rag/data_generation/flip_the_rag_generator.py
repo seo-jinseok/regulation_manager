@@ -345,7 +345,7 @@ def main():
     )
 
     if regulation_dir.exists():
-        pairs = generator.generate(regulation_dir, target_pairs=300)
+        generator.generate(regulation_dir, target_pairs=300)
         generator.save(Path("data/ground_truth/train/flip_the_rag.jsonl"))
     else:
         logger.error(f"규정 디렉토리를 찾을 수 없음: {regulation_dir}")

@@ -95,8 +95,8 @@ class QuestionGenerator:
 
         # Extract numbered steps and generate step-specific questions
         steps = cls._extract_numbered_steps(content)
-        for i in range(min(count, len(steps))):
-            questions.append(f"{title} {i + 1}단계는 뭔가요?")
+        for _i in range(min(count, len(steps))):
+            questions.append(f"{title} {_i + 1}단계는 뭔가요?")
 
         # Add prerequisite question
         questions.append(f"{title} 전에 필요한 준비가 뭐예요?")
@@ -126,7 +126,7 @@ class QuestionGenerator:
 
         # Extract criteria and generate criteria-specific questions
         criteria = cls._extract_criteria(content)
-        for i, criterion in enumerate(criteria[:count]):
+        for _i, criterion in enumerate(criteria[:count]):
             # Truncate long criteria
             criterion_short = (
                 criterion[:30] + "..." if len(criterion) > 30 else criterion

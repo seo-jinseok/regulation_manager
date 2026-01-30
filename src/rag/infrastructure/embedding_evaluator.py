@@ -170,7 +170,7 @@ class EmbeddingEvaluator:
 
         # Measure accuracy (cosine similarity on gold standard)
         accuracy_scores = []
-        for query, expected_context in self.TEST_QUERIES:
+        for query, _expected_context in self.TEST_QUERIES:
             results = retriever.search(query, top_k=3)
             if results:
                 # Check if any top-3 result matches expected context

@@ -571,7 +571,7 @@ class ExperimentService:
                 # Determine winner
                 if treatment_metrics.conversion_rate > control_metrics.conversion_rate:
                     result.winner = treatment_name
-                    improvement = (
+                    _ = (
                         (
                             treatment_metrics.conversion_rate
                             - control_metrics.conversion_rate

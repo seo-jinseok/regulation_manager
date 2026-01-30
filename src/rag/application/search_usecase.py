@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 # Forward references for type hints
 if TYPE_CHECKING:
     from ..domain.llm.ambiguity_classifier import DisambiguationDialog
-    from ..infrastructure.query_analyzer import Audience
+    from .multi_hop_handler import MultiHopHandler
 
 
 class SearchStrategy(Enum):

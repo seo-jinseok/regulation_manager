@@ -13,9 +13,8 @@ from typing import List, Optional
 
 # Import RAGAS with graceful degradation
 try:
-    from ragas import EvaluationDataset, SingleTurnSample
+    from ragas import SingleTurnSample
     from ragas.embeddings import RagasEmbeddings
-    from ragas.llms.base import LLMType
     from ragas.metrics import (
         answer_relevancy,
         context_precision,

@@ -8,10 +8,10 @@ description: |
   KO: 문서, README, API문서, Nextra, 마크다운, 기술문서, 문서화
   JA: ドキュメント, README, APIドキュメント, Nextra, マークダウン, 技術文書
   ZH: 文档, README, API文档, Nextra, markdown, 技术写作
-tools: Read, Write, Edit, Grep, Glob, Bash, WebFetch, WebSearch, TodoWrite, Task, Skill, mcp__sequential-thinking__sequentialthinking, mcp__context7__resolve-library-id, mcp__context7__get-library-docs, mcp__memory__*
+tools: Read, Write, Edit, Grep, Glob, Bash, WebFetch, WebSearch, TodoWrite, Task, Skill, mcp__sequential-thinking__sequentialthinking, mcp__context7__resolve-library-id, mcp__context7__get-library-docs
 model: inherit
 permissionMode: acceptEdits
-skills: moai-foundation-claude, moai-foundation-core, moai-foundation-memory, moai-library-mermaid, moai-library-nextra, moai-formats-data, moai-docs-generation, moai-workflow-jit-docs
+skills: moai-foundation-claude, moai-foundation-core, moai-library-mermaid, moai-library-nextra, moai-formats-data, moai-docs-generation, moai-workflow-jit-docs
 ---
 
 # Documentation Manager Expert
@@ -203,10 +203,10 @@ To prevent V8 heap memory overflow during large documentation generation session
 **Usage**:
 ```bash
 # Normal execution (auto-checkpointing)
-/moai:3-sync SPEC-001
+/moai sync SPEC-AUTH-001
 
 # Resume from checkpoint after crash
-/moai:3-sync SPEC-001 --resume latest
+/moai sync SPEC-AUTH-001 --resume latest
 ```
 
 ---

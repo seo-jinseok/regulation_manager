@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING, Dict, List, Optional
 
 if TYPE_CHECKING:
     from ...domain.repositories import ILLMClient
+    from ..domain.entities import QualityTestResult
     from ..domain.value_objects import FiveWhyAnalysis
 
 logger = logging.getLogger(__name__)
