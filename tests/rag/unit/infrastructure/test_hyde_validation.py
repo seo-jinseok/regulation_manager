@@ -314,9 +314,16 @@ class TestHyDESearcherValidation:
         from src.rag.infrastructure.hyde import HyDESearcher
 
         mock_generator = MagicMock()
-        mock_generator.generate_hypothetical_doc.return_value = MagicMock(
-            original_query="", hypothetical_doc="", from_cache=False
+        # Return a proper HyDEResult instead of MagicMock to avoid __format__ issues
+        from src.rag.infrastructure.hyde import HyDEResult
+
+        mock_result = HyDEResult(
+            original_query="",
+            hypothetical_doc="",
+            from_cache=False,
+            quality_score=0.0,
         )
+        mock_generator.generate_hypothetical_doc.return_value = mock_result
 
         mock_store = MagicMock()
         mock_store.search.return_value = []
@@ -332,9 +339,14 @@ class TestHyDESearcherValidation:
         from src.rag.infrastructure.hyde import HyDEResult, HyDESearcher
 
         mock_generator = MagicMock()
-        mock_generator.generate_hypothetical_doc.return_value = HyDEResult(
-            original_query="test", hypothetical_doc="test", from_cache=False
+        # quality_score >= 0.3 triggers both HyDE and original query searches
+        hyde_result = HyDEResult(
+            original_query="test",
+            hypothetical_doc="hypothetical document",  # Different from query to use HyDE
+            from_cache=False,
+            quality_score=0.7,  # High quality to trigger both searches
         )
+        mock_generator.generate_hypothetical_doc.return_value = hyde_result
 
         mock_store = MagicMock()
         mock_store.search.return_value = []  # Empty results

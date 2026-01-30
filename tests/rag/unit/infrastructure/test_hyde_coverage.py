@@ -101,16 +101,17 @@ def test_generate_no_llm():
 
 
 def test_generate_cache_hit():
-    """Test cache hit returns cached document."""
+    """Test cache hit validates cached document."""
     generator = HyDEGenerator(enable_cache=True)
     cache_key = generator._get_cache_key("test query")
     generator._cache[cache_key] = "cached result"
 
     result = generator.generate_hypothetical_doc("test query")
 
-    assert result.hypothetical_doc == "cached result"
-    assert result.from_cache is True
-    assert result.cache_key == cache_key
+    # Cached result is too short (< 30 chars), so validation fails
+    # Implementation returns original query as fallback when cache validation fails
+    assert result.hypothetical_doc == "test query"
+    assert result.from_cache is False  # Validation failed, not counted as cache hit
 
 
 def test_generate_cache_miss():
@@ -232,7 +233,9 @@ def test_merge_results():
     ]
 
     searcher = HyDESearcher(mock_generator, mock_store)
-    merged = searcher._merge_results(hyde_results, orig_results, top_k=10)
+    merged = searcher._merge_results(
+        hyde_results, orig_results, top_k=10, hyde_quality=0.7
+    )
 
     # Should have all 3 results
     assert len(merged) == 3

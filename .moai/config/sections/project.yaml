@@ -1,6 +1,6 @@
 project:
   name: regulation_manager
-  description: ''
+  description: '대학 규정집(HWP)을 구조화된 JSON으로 변환하고, RAG 기반 AI 검색 시스템을 통해 자연어 질문에 정확한 답변을 제공하는 오픈소스 프로젝트'
   type: ''
   locale: '{{LOCALE}}'
   created_at: '2026-01-24T12:14:45.621351Z'

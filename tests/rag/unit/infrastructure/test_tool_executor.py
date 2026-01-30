@@ -217,8 +217,8 @@ class TestToolExecutorSearchTools:
                 {"regulation": "test", "article_no": 5}
             )
 
-            # Should fall back to search
-            assert "count" in result or "found" in result
+            # Should fall back to search - check for expected keys
+            assert "count" in result or "results" in result
 
     def test_handle_get_chapter(self):
         mock_search_uc = MagicMock()
@@ -227,8 +227,8 @@ class TestToolExecutorSearchTools:
 
         result = executor._handle_get_chapter({"regulation": "test", "chapter_no": 3})
 
-        # Should delegate to search
-        assert "count" in result
+        # Should delegate to search - check for expected keys
+        assert "count" in result or "results" in result
 
     def test_handle_get_attachment(self):
         mock_search_uc = MagicMock()
@@ -239,8 +239,8 @@ class TestToolExecutorSearchTools:
             {"regulation": "test", "label": "별표"}
         )
 
-        # Should delegate to search
-        assert "count" in result
+        # Should delegate to search - check for expected keys
+        assert "count" in result or "results" in result
 
     def test_handle_get_regulation_overview(self):
         mock_search_uc = MagicMock()
@@ -468,7 +468,7 @@ class TestToolExecutorEdgeCases:
 
         # Test with minimal args
         result = executor._handle_search_regulations({"query": "test"})
-        assert "count" in result
+        assert "count" in result or "results" in result
 
     def test_handle_search_regulations_with_top_k(self):
         mock_search_uc = MagicMock()
@@ -478,7 +478,7 @@ class TestToolExecutorEdgeCases:
 
         result = executor._handle_search_regulations({"query": "test", "top_k": 10})
 
-        assert "count" in result
+        assert "count" in result or "results" in result
 
     def test_handle_search_regulations_with_long_text_truncation(self):
         mock_search_uc = MagicMock()

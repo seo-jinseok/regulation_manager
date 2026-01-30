@@ -179,6 +179,22 @@ class ToolExecutor:
                 "reason": clarification.reason,
                 "clarification_questions": clarification.clarification_questions,
                 "suggested_options": clarification.suggested_options,
+                "count": len(results),  # Include count for backward compatibility
+                "results": [  # Include results for backward compatibility
+                    {
+                        "regulation_title": r.chunk.parent_path[0]
+                        if r.chunk.parent_path
+                        else r.chunk.title,
+                        "title": r.chunk.title,
+                        "text": r.chunk.text[:500] + "..."
+                        if len(r.chunk.text) > 500
+                        else r.chunk.text,
+                        "rule_code": r.chunk.rule_code,
+                        "parent_path": " > ".join(r.chunk.parent_path),
+                        "score": round(r.score, 3),
+                    }
+                    for r in results
+                ],
             }
 
         return {

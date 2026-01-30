@@ -135,6 +135,14 @@ class EmbeddingFunctionWrapper:
         self._embedding_func = None
         self._model = None  # Will load the actual SentenceTransformer model
 
+    def name(self) -> str:
+        """Return the model name for ChromaDB identification."""
+        return self._model_name or "default"
+
+    def is_legacy(self) -> bool:
+        """ChromaDB compatibility: mark as non-legacy embedding function."""
+        return False
+
     def _get_model(self):
         """Lazy-load the SentenceTransformer model."""
         if self._model is None:

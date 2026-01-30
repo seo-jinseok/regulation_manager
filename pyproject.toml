@@ -70,8 +70,8 @@ packages = ["src"]
 testpaths = ["tests"]
 # CRITICAL: --no-cov is DEFAULT to prevent memory explosion
 # Use scripts/run_with_coverage.sh to run coverage separately
-# Limit xdist workers to prevent memory overload (2198 tests total)
-addopts = ["--no-cov", "-m", "not debug", "--timeout=300", "--maxfail=5", "--tb=short", "-n", "2"]
+# Removed -n 2 (xdist) and --timeout due to plugin compatibility issues
+addopts = ["--no-cov", "-m", "not debug", "--maxfail=5", "--tb=short"]
 markers = [
     "debug: debug and diagnostic tests",
     "slow: tests that take a long time to run",

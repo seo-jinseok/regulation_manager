@@ -60,11 +60,13 @@ class ChromaVectorStore(IVectorStore):
 
         self.persist_directory = persist_directory
         self.collection_name = collection_name
+        self._embedding_function = None  # Initialize with default
 
         # Handle embedding function
         if embedding_function is None and auto_create_embedding:
             try:
                 from .embedding_function import get_default_embedding_function
+
                 self._embedding_function = get_default_embedding_function()
                 logger.info("Using default embedding function (ko-sbert-sts)")
             except Exception as e:
@@ -106,7 +108,7 @@ class ChromaVectorStore(IVectorStore):
             return 0
 
         # Check if embedding function is available
-        if self._embedding_function is None:
+        if not hasattr(self, "_embedding_function") or self._embedding_function is None:
             logger.error(
                 "Cannot add chunks: no embedding function available. "
                 "Provide an embedding_function during initialization."
@@ -165,7 +167,9 @@ class ChromaVectorStore(IVectorStore):
         ids_to_delete = results.get("ids", [])
         if ids_to_delete:
             self._collection.delete(ids=ids_to_delete)
-            logger.info(f"Deleted {len(ids_to_delete)} chunks for rule codes: {rule_codes}")
+            logger.info(
+                f"Deleted {len(ids_to_delete)} chunks for rule codes: {rule_codes}"
+            )
 
         return len(ids_to_delete)
 
@@ -187,7 +191,7 @@ class ChromaVectorStore(IVectorStore):
             List of SearchResult sorted by relevance.
         """
         # Check if embedding function is available
-        if self._embedding_function is None:
+        if not hasattr(self, "_embedding_function") or self._embedding_function is None:
             logger.error(
                 "Cannot search: no embedding function available. "
                 "Provide an embedding_function during initialization."

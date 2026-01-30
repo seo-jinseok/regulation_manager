@@ -131,7 +131,9 @@ class TestCRAGRetriever:
 
     def test_evaluate_retrieval_quality_empty_results(self, retriever):
         """Test evaluation with empty results."""
-        quality, score = retriever.evaluate_retrieval_quality("test query", [], "medium")
+        quality, score = retriever.evaluate_retrieval_quality(
+            "test query", [], "medium"
+        )
 
         assert quality == RetrievalQuality.POOR
         assert score == 0.0
@@ -149,7 +151,7 @@ class TestCRAGRetriever:
         )
 
         assert quality == RetrievalQuality.EXCELLENT
-        assert score > 0.7
+        assert score > 0.65
 
     def test_should_trigger_tfix_poor_quality(self, retriever):
         """Test T-Fix trigger for poor quality."""

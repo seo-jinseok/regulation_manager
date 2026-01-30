@@ -91,7 +91,11 @@ def test_search_coerces_non_string_query_text():
             self.text = text
             self.include_abolished = False
 
+    def dummy_embedding(texts):
+        return [[0.0] * 768 for _ in texts]
+
     store = ChromaVectorStore.__new__(ChromaVectorStore)
+    store._embedding_function = dummy_embedding
     store._collection = DummyCollection()
 
     query = DummyQuery(["휴학", "관련", "규정"])
@@ -153,6 +157,7 @@ def test_add_chunks_deduplicates_by_id():
     from src.rag.domain.entities import Chunk, ChunkLevel
 
     store = ChromaVectorStore.__new__(ChromaVectorStore)
+    store._embedding_function = object()
     store._collection = DummyCollection()
 
     chunk1 = Chunk(
@@ -216,6 +221,7 @@ def test_add_chunks_batch_processing():
     from src.rag.domain.entities import Chunk, ChunkLevel
 
     store = ChromaVectorStore.__new__(ChromaVectorStore)
+    store._embedding_function = object()
     store._collection = DummyCollection()
 
     # Create a smaller batch for testing (BATCH_SIZE is 5000)
@@ -304,7 +310,11 @@ def test_search_empty_query_text():
         text = "   "  # Whitespace only
         include_abolished = False
 
+    def dummy_embedding(texts):
+        return [[0.0] * 768 for _ in texts]
+
     store = ChromaVectorStore.__new__(ChromaVectorStore)
+    store._embedding_function = dummy_embedding
     store._collection = DummyCollection()
 
     results = store.search(DummyQuery(), None, 5)
@@ -327,7 +337,11 @@ def test_search_with_valid_results():
         text = "test query"
         include_abolished = False
 
+    def dummy_embedding(texts):
+        return [[0.0] * 768 for _ in texts]
+
     store = ChromaVectorStore.__new__(ChromaVectorStore)
+    store._embedding_function = dummy_embedding
     store._collection = DummyCollection()
 
     results = store.search(DummyQuery(), None, 5)

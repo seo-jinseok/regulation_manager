@@ -7,7 +7,7 @@ paths:
 
 # Python Rules
 
-Version: Python 3.13+
+Version: Python 3.11+
 
 ## Tooling
 

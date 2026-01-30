@@ -14,6 +14,8 @@ import time
 from pathlib import Path
 from unittest.mock import Mock, patch
 
+import pytest
+
 from src.rag.infrastructure.cache import CacheType, RAGQueryCache
 from src.rag.infrastructure.cache_warming import (
     CacheWarmer,
@@ -66,6 +68,24 @@ class TestWarmingSchedule:
 
 class TestCacheWarmer:
     """Tests for CacheWarmer."""
+
+    @pytest.fixture(autouse=True)
+    def patch_config_loading(self, request):
+        """Patch config loading to avoid loading queries from actual config file."""
+        # Skip this fixture for tests that handle their own config patching
+        if request.node.name in [
+            "test_load_warm_queries_from_file",
+            "test_check_and_warm_with_low_hit_rate",
+        ]:
+            yield
+            return
+
+        # Patch at the source module where get_config is defined
+        with patch("src.rag.config.get_config") as mock_config:
+            mock_config_obj = Mock()
+            mock_config_obj.cache_warm_queries_path_resolved = None
+            mock_config.return_value = mock_config_obj
+            yield
 
     def test_initialization(self):
         """Test CacheWarmer initialization."""
@@ -276,20 +296,19 @@ class TestCacheWarmer:
                 data={"result": "test"},
             )
 
-            # Create low hit rate by recording misses
-            if cache._enhanced_metrics:
-                for _ in range(10):
-                    cache._enhanced_metrics.record_layer_miss(
-                        cache._enhanced_metrics.get_layer_metrics.__self__._layers[
-                            list(cache._enhanced_metrics._layers.keys())[0]
-                        ].__class__.__name__,
-                        10.0,
-                    )
-
-            # Note: This test is limited because we can't easily set the hit rate
-            # without complex setup. The important part is that the method exists
-            # and doesn't error.
+            # Note: This test verifies the check_and_warm method exists and runs
+            # without errors. Triggering actual low hit rate warming requires
+            # complex setup of metrics that is difficult to achieve in unit tests.
             warmer.check_and_warm()
+
+            # Wait for async warming to complete if triggered
+            max_wait = 5
+            start = time.time()
+            while warmer._warming_in_progress and (time.time() - start) < max_wait:
+                time.sleep(0.1)
+
+            # Verify the warmer completed without errors
+            assert warmer._warming_in_progress is False
 
     def test_get_warming_stats(self):
         """Test getting warming statistics."""
@@ -349,9 +368,7 @@ class TestCacheWarmer:
                 json.dump(config_data, f)
 
             # Mock config to return our temp file
-            with patch(
-                "src.rag.infrastructure.cache_warming.get_config"
-            ) as mock_config:
+            with patch("src.rag.config.get_config") as mock_config:
                 mock_config_obj = Mock()
                 mock_config_obj.cache_warm_queries_path_resolved = config_file
                 mock_config.return_value = mock_config_obj

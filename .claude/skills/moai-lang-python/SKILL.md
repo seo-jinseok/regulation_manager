@@ -1,7 +1,7 @@
 ---
 name: moai-lang-python
 description: >
-  Python 3.13+ development specialist covering FastAPI, Django, async patterns, data science, testing with pytest, and modern Python features. Use when developing Python APIs, web applications, data pipelines, or writing tests.
+  Python 3.11+ development specialist covering FastAPI, Django, async patterns, data science, testing with pytest, and modern Python features. Use when developing Python APIs, web applications, data pipelines, or writing tests.
 license: Apache-2.0
 compatibility: Designed for Claude Code
 allowed-tools: Read Grep Glob Bash mcp__context7__resolve-library-id mcp__context7__get-library-docs
@@ -28,7 +28,7 @@ triggers:
 
 ## Quick Reference (30 seconds)
 
-Python 3.13+ Development Specialist - FastAPI, Django, async patterns, pytest, and modern Python features.
+Python 3.11+ Development Specialist - FastAPI, Django, async patterns, pytest, and modern Python features.
 
 Auto-Triggers: Python files with .py extension, pyproject.toml, requirements.txt, pytest.ini, FastAPI or Django discussions
 
@@ -219,7 +219,7 @@ Common Issues:
 
 Python Version Check:
 
-Run python with version flag to verify 3.13 or later. Use python with -c flag to print sys.version_info for detailed version information.
+Run python with version flag to verify 3.11 or later. Use python with -c flag to print sys.version_info for detailed version information.
 
 Async Session Detached Error:
 

@@ -1,4 +1,5 @@
 import json
+from unittest.mock import patch
 
 from src.rag.application.full_view_usecase import FullViewUseCase
 from src.rag.config import get_config, reset_config
@@ -536,8 +537,11 @@ def test_get_article_view_not_found(tmp_path):
     assert article is None
 
 
-def test_get_article_view_no_json_path(tmp_path):
+@patch("src.rag.application.full_view_usecase.FullViewUseCase._resolve_json_path")
+def test_get_article_view_no_json_path(mock_resolve_json_path, tmp_path):
     """Test get_article_view with no valid json path."""
+    mock_resolve_json_path.return_value = None
+
     loader = JSONDocumentLoader()
     usecase = FullViewUseCase(loader, str(tmp_path / "nonexistent.json"))
 
@@ -829,8 +833,11 @@ def test_get_full_view_returns_none_on_error(tmp_path):
     assert view is None
 
 
-def test_get_full_view_no_json_path(tmp_path):
+@patch("src.rag.application.full_view_usecase.FullViewUseCase._resolve_json_path")
+def test_get_full_view_no_json_path(mock_resolve_json_path, tmp_path):
     """Test get_full_view with no valid json path."""
+    mock_resolve_json_path.return_value = None
+
     loader = JSONDocumentLoader()
     usecase = FullViewUseCase(loader, str(tmp_path / "nonexistent.json"))
 

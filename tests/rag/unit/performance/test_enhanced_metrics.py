@@ -8,6 +8,9 @@ Tests verify:
 - Overall health indicators
 """
 
+import time
+
+import pytest
 
 from src.rag.domain.performance.metrics import (
     CacheLayer,
@@ -80,7 +83,7 @@ class TestLayerMetrics:
 
         # Should only keep last 10
         assert len(metrics.latencies) == 10
-        assert list(range(10, 20)) == [int(l) for l in metrics.latencies]
+        assert list(range(10, 20)) == [int(latency) for latency in metrics.latencies]
 
     def test_record_eviction(self):
         """Test recording evictions."""
@@ -217,7 +220,8 @@ class TestCacheWarmingMetrics:
         metrics._current_warming_start = time.time() - 0.2  # Simulate 200ms
         metrics.record_warming_complete(50)
 
-        assert metrics.avg_warming_time_ms == 150.0
+        # Allow for floating-point precision and timing variations
+        assert metrics.avg_warming_time_ms == pytest.approx(150.0, abs=1.0)
 
     def test_success_rate(self):
         """Test success rate calculation."""
@@ -332,8 +336,9 @@ class TestEnhancedCacheMetrics:
         # Should be below 60% threshold
         assert metrics.check_low_hit_rate(threshold=0.6) is True
 
-        # Add more hits to reach 70%
-        for _ in range(7):
+        # Add more hits to reach above 60% (need ~13 more hits)
+        # 10 + 13 = 23 hits, 7 misses = 76.7% hit rate
+        for _ in range(13):
             metrics.record_layer_hit(CacheLayer.L1_MEMORY, 5.0)
 
         assert metrics.check_low_hit_rate(threshold=0.6) is False

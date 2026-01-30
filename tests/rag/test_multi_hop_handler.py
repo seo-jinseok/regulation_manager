@@ -5,8 +5,7 @@ This module contains test cases for validating the multi-hop question
 answering functionality in the regulation RAG system.
 """
 
-import asyncio
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -114,14 +113,20 @@ class TestDependencyCycleDetector:
         # Valid: 3 hops
         sub_queries = [
             SubQuery(query_id="hop_1", query_text="Q1", hop_order=1, depends_on=[]),
-            SubQuery(query_id="hop_2", query_text="Q2", hop_order=2, depends_on=["hop_1"]),
-            SubQuery(query_id="hop_3", query_text="Q3", hop_order=3, depends_on=["hop_2"]),
+            SubQuery(
+                query_id="hop_2", query_text="Q2", hop_order=2, depends_on=["hop_1"]
+            ),
+            SubQuery(
+                query_id="hop_3", query_text="Q3", hop_order=3, depends_on=["hop_2"]
+            ),
         ]
         assert detector.validate_max_hops(sub_queries) is True
 
         # Invalid: 5 hops (exceeds max_hops=3)
         sub_queries = [
-            SubQuery(query_id=f"hop_{i}", query_text=f"Q{i}", hop_order=i, depends_on=[])
+            SubQuery(
+                query_id=f"hop_{i}", query_text=f"Q{i}", hop_order=i, depends_on=[]
+            )
             for i in range(1, 6)
         ]
         assert detector.validate_max_hops(sub_queries) is False
@@ -249,12 +254,18 @@ class TestMultiHopHandler:
         )
 
     @pytest.mark.asyncio
-    async def test_execute_single_hop(self, handler, mock_vector_store, mock_llm_client):
+    async def test_execute_single_hop(
+        self, handler, mock_vector_store, mock_llm_client
+    ):
         """Test execution of a single-hop query."""
         # Mock decomposer to return single sub-query
-        handler.decomposer.decompose = MagicMock(return_value=asyncio.coroutine(
-            lambda: [SubQuery(query_id="hop_1", query_text="test", hop_order=1, depends_on=[])]
-        )())
+        handler.decomposer.decompose = AsyncMock(
+            return_value=[
+                SubQuery(
+                    query_id="hop_1", query_text="test", hop_order=1, depends_on=[]
+                )
+            ]
+        )
 
         # Mock vector store search
         mock_chunk = MagicMock(spec=Chunk)
@@ -280,36 +291,41 @@ class TestMultiHopHandler:
         """Test that cyclic dependencies are detected and rejected."""
         # Create sub-queries with a cycle
         sub_queries = [
-            SubQuery(query_id="hop_1", query_text="Q1", hop_order=1, depends_on=["hop_2"]),
-            SubQuery(query_id="hop_2", query_text="Q2", hop_order=2, depends_on=["hop_1"]),
+            SubQuery(
+                query_id="hop_1", query_text="Q1", hop_order=1, depends_on=["hop_2"]
+            ),
+            SubQuery(
+                query_id="hop_2", query_text="Q2", hop_order=2, depends_on=["hop_1"]
+            ),
         ]
 
-        handler.decomposer.decompose = MagicMock(return_value=asyncio.coroutine(
-            lambda: sub_queries
-        )())
+        handler.decomposer.decompose = AsyncMock(return_value=sub_queries)
 
         result = await handler.execute_multi_hop("cyclic query")
 
         assert result.success is False
-        assert "cycle" in result.final_answer.lower()
+        assert "cyclic" in result.final_answer.lower()
 
     @pytest.mark.asyncio
     async def test_max_hops_exceeded(self, handler, mock_vector_store, mock_llm_client):
         """Test that exceeding max hops is rejected."""
         # Create sub-queries exceeding max_hops (5)
         sub_queries = [
-            SubQuery(query_id=f"hop_{i}", query_text=f"Q{i}", hop_order=i, depends_on=[])
+            SubQuery(
+                query_id=f"hop_{i}", query_text=f"Q{i}", hop_order=i, depends_on=[]
+            )
             for i in range(1, 7)  # 6 hops
         ]
 
-        handler.decomposer.decompose = MagicMock(return_value=asyncio.coroutine(
-            lambda: sub_queries
-        )())
+        handler.decomposer.decompose = AsyncMock(return_value=sub_queries)
 
         result = await handler.execute_multi_hop("complex query")
 
         assert result.success is False
-        assert "exceeds maximum" in result.final_answer.lower() or "hop count" in result.final_answer.lower()
+        assert (
+            "exceeds maximum" in result.final_answer.lower()
+            or "hop count" in result.final_answer.lower()
+        )
 
 
 class TestMultiHopIntegration:

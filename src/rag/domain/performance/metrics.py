@@ -17,7 +17,7 @@ Tracks:
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from threading import Lock
+from threading import RLock
 from typing import Dict, List, Optional
 
 
@@ -254,7 +254,7 @@ class EnhancedCacheMetrics:
         self._layers: Dict[CacheLayer, LayerMetrics] = {}
         self._connection_pool: ConnectionPoolMetrics = ConnectionPoolMetrics()
         self._warming: CacheWarmingMetrics = CacheWarmingMetrics()
-        self._lock = Lock()
+        self._lock = RLock()
 
         # Initialize layer metrics
         for layer in CacheLayer:
@@ -337,9 +337,20 @@ class EnhancedCacheMetrics:
     def to_dict(self) -> Dict:
         """Convert all metrics to dictionary."""
         with self._lock:
+            # Calculate hit rate directly while lock is held to avoid deadlock
+            # get_overall_hit_rate() and check_low_hit_rate() would try to acquire
+            # the lock again, causing issues in nested scenarios
+            total_hits = sum(layer.hits for layer in self._layers.values())
+            total_requests = sum(
+                layer.hits + layer.misses for layer in self._layers.values()
+            )
+            overall_hit_rate = (
+                0.0 if total_requests == 0 else total_hits / total_requests
+            )
+
             return {
-                "overall_hit_rate": f"{self.get_overall_hit_rate():.2%}",
-                "low_hit_rate_warning": self.check_low_hit_rate(),
+                "overall_hit_rate": f"{overall_hit_rate:.2%}",
+                "low_hit_rate_warning": overall_hit_rate < 0.6,
                 "layers": {
                     layer.value: metrics.to_dict()
                     for layer, metrics in self._layers.items()

@@ -26,7 +26,7 @@ _embedding_dims = {}
 class DenseRetrieverConfig:
     """Configuration for Dense Retriever."""
 
-    model_name: str = "jhgan/ko-sbert-multinli"  # Default: Korean SBERT
+    model_name: str = "jhgan/ko-sbert-sts"  # Default: Korean SBERT
     batch_size: int = 32
     cache_embeddings: bool = True
     normalize_embeddings: bool = True
@@ -470,7 +470,7 @@ class DenseRetriever:
 
 
 def create_dense_retriever(
-    model_name: str = "jhgan/ko-sbert-multinli",
+    model_name: str = "jhgan/ko-sbert-sts",
     config: Optional[DenseRetrieverConfig] = None,
 ) -> DenseRetriever:
     """
@@ -485,7 +485,7 @@ def create_dense_retriever(
 
     Example:
         >>> from src.rag.infrastructure.dense_retriever import create_dense_retriever
-        >>> retriever = create_dense_retriever("jhgan/ko-sbert-multinli")
+        >>> retriever = create_dense_retriever("jhgan/ko-sbert-sts")
         >>> retriever.add_documents([("doc1", "휴학 규정", {})])
         >>> results = retriever.search("휴학 절차", top_k=5)
     """
@@ -493,7 +493,7 @@ def create_dense_retriever(
 
 
 # Convenience function for backward compatibility
-def get_embedding_function(model_name: str = "jhgan/ko-sbert-multinli"):
+def get_embedding_function(model_name: str = "jhgan/ko-sbert-sts"):
     """
     Get sentence-transformers embedding function.
 

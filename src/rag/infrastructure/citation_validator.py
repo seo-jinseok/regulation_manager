@@ -56,20 +56,18 @@ class CitationValidator:
 
     # Citation patterns
     CITATION_PATTERNS = [
-        # 규정명 제N조 pattern (preferred)
+        # 규정명 제N조 pattern (preferred) - use \S* to match any non-whitespace before keyword
         re.compile(
-            r"(\w+(?:규정|학칙|시행세칙|요령|지침|규칙))\s*제(\d+)[조항](?:\s*제(\d+)[항])?"
+            r"(\S*(?:규정|학칙|시행세칙|요령|지침|규칙))\s*제(\d+)(?:조|항)(?:\s*제(\d+)(?:조|항))?"
         ),
         # 제N조 pattern (requires regulation name in context)
-        re.compile(r"제(\d+)[조항](?:\s*제(\d+)[항])?"),
-        # N조 pattern (requires regulation name in context)
-        re.compile(r"(\d+)[조항](?:\s*제(\d+)[항])?"),
+        re.compile(r"제(\d+)(?:조|항)(?:\s*제(\d+)(?:조|항))?"),
     ]
 
     # Regulation name patterns (must appear before citation)
     REGULATION_PATTERNS = [
-        re.compile(r"(\w+(?:규정|학칙|시행세칙|요령|지침|규칙))"),
-        re.compile(r"(\w+학칙)"),
+        re.compile(r"((?:[\w가-힣]+\s+)?(?:규정|학칙|시행세칙|요령|지침|규칙))"),
+        re.compile(r"((?:[\w가-힣]+\s+)?학칙)"),
     ]
 
     # Minimum citation density (citations per 500 characters)
@@ -208,24 +206,23 @@ class CitationValidator:
                 article_number = ""
 
                 if len(groups) >= 2:
-                    # Pattern 1: (regulation, article, subsection)
-                    if groups[0] and groups[1]:
-                        # Check if groups[0] looks like a regulation name
-                        if any(
-                            suffix in groups[0]
-                            for suffix in [
-                                "규정",
-                                "학칙",
-                                "시행세칙",
-                                "요령",
-                                "지침",
-                                "규칙",
-                            ]
-                        ):
-                            is_valid = True
-                            regulation_name = groups[0]
-                            article_number = groups[1]
-                    # Pattern 2 & 3: (article, subsection) - need to check for regulation name in context
+                    # Check if groups[0] looks like a regulation name (Pattern 1)
+                    if groups[0] and any(
+                        suffix in groups[0]
+                        for suffix in [
+                            "규정",
+                            "학칙",
+                            "시행세칙",
+                            "요령",
+                            "지침",
+                            "규칙",
+                        ]
+                    ):
+                        # Pattern 1: (regulation, article, subsection)
+                        is_valid = True
+                        regulation_name = groups[0]
+                        article_number = groups[1]
+                    # Pattern 2: (article, subsection) - need to check for regulation name in context
                     elif groups[0]:
                         article_number = groups[0]
                         # Look for regulation name before the citation
@@ -248,7 +245,98 @@ class CitationValidator:
                         )
                     )
 
+        # Remove duplicate citations (those with overlapping positions)
+        citations = self._deduplicate_citations(citations)
+
         return citations
+
+    def _deduplicate_citations(
+        self, citations: List[CitationMatch]
+    ) -> List[CitationMatch]:
+        """
+        Remove duplicate citations based on overlapping positions and normalized content.
+
+        Prefers citations with regulation names over those without.
+
+        Args:
+            citations: List of extracted citations
+
+        Returns:
+            Deduplicated list of citations
+        """
+        if not citations:
+            return citations
+
+        # Sort by: valid citations first, then by start position
+        citations.sort(key=lambda c: (not c.is_valid, c.start_pos))
+
+        # Track normalized citation keys and position ranges
+        seen_keys = set()
+        seen_ranges = []
+        deduplicated = []
+
+        for citation in citations:
+            # Normalize the citation text for comparison
+            # "제15조" and "15조" should both normalize to "15"
+            # "학칙 제15조" should also normalize to "15"
+            normalized_key = self._normalize_citation_key(citation)
+
+            # Check for key-based duplicates (same article number)
+            is_key_duplicate = normalized_key in seen_keys
+
+            # Check for position-based duplicates (overlapping text)
+            overlaps = False
+            for existing_start, existing_end in seen_ranges:
+                if not (
+                    citation.end_pos <= existing_start
+                    or existing_end <= citation.start_pos
+                ):
+                    overlaps = True
+                    break
+
+            # Only add citation if not a duplicate by key or position
+            if not is_key_duplicate and not overlaps:
+                seen_keys.add(normalized_key)
+                seen_ranges.append((citation.start_pos, citation.end_pos))
+                deduplicated.append(citation)
+
+        return deduplicated
+
+    def _normalize_citation_key(self, citation: CitationMatch) -> str:
+        """
+        Normalize citation to a unique key for deduplication.
+
+        Normalizes "제15조", "15조", "학칙 제15조" all to the same key.
+
+        Args:
+            citation: The citation to normalize
+
+        Returns:
+            Normalized key string
+        """
+        # The article_number is the core identifier
+        # Add regulation_name if present for distinct citations
+        if citation.regulation_name:
+            return f"{citation.regulation_name}:{citation.article_number}"
+        return citation.article_number
+
+    def _citations_overlap(
+        self, citation1: CitationMatch, citation2: CitationMatch
+    ) -> bool:
+        """
+        Check if two citations overlap in position.
+
+        Args:
+            citation1: First citation
+            citation2: Second citation
+
+        Returns:
+            True if citations overlap
+        """
+        return not (
+            citation1.end_pos <= citation2.start_pos
+            or citation2.end_pos <= citation1.start_pos
+        )
 
     def _check_missing_regulation_names(
         self,

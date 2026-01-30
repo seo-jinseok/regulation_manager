@@ -163,6 +163,7 @@ class QueryAnalyzer:
         "가르쳐줘",  # Casual teaching request
         "가르쳐주세요",  # Polite teaching request
         "법",  # How-to pattern (e.g., "~하는법")
+        "신청",  # Application requests (e.g., "~신청")
     ]
 
     # Audience keywords - explicit mention of target group
@@ -262,11 +263,11 @@ class QueryAnalyzer:
     # BM25 excels at exact matching (article references, regulation names)
     # Dense excels at semantic understanding (natural questions, intent queries)
     WEIGHT_PRESETS: Dict[QueryType, Tuple[float, float]] = {
-        QueryType.ARTICLE_REFERENCE: (1.0, 0.0),  # BM25 only (정확한 조호 참조)
-        QueryType.REGULATION_NAME: (0.7, 0.3),  # BM25 + Dense (규정명 검색)
-        QueryType.NATURAL_QUESTION: (0.6, 0.4),  # BM25 + Dense (자연어 질문)
-        QueryType.INTENT: (0.5, 0.5),  # BM25 + Dense (의도 기반 검색)
-        QueryType.GENERAL: (0.6, 0.4),  # BM25 + Dense (기본 검색)
+        QueryType.ARTICLE_REFERENCE: (0.9, 0.1),  # BM25 강화 + Dense (정확한 조호 참조)
+        QueryType.REGULATION_NAME: (0.85, 0.15),  # BM25 강화 + Dense (규정명 검색)
+        QueryType.NATURAL_QUESTION: (0.75, 0.25),  # BM25 강화 + Dense (자연어 질문)
+        QueryType.INTENT: (0.85, 0.15),  # BM25 강화 + Dense (의도 기반 검색)
+        QueryType.GENERAL: (0.85, 0.15),  # BM25 강화 + Dense (기본 검색)
     }
 
     # Synonym dictionary for query expansion (minimal seed).
@@ -639,9 +640,14 @@ class QueryAnalyzer:
 
         query = unicodedata.normalize("NFC", query)
 
-        # Check cache first
-        if query in self._cache:
-            cached = self._cache[query]
+        # Stage 0: Typo correction (before any processing)
+        original_query = query
+        typo_corrected = False
+        typo_corrections: Tuple[str, str] = ()
+
+        # Check cache first (using original query before any modifications)
+        if original_query in self._cache:
+            cached = self._cache[original_query]
             return QueryRewriteResult(
                 original=cached.original,
                 rewritten=cached.rewritten,
@@ -656,13 +662,9 @@ class QueryAnalyzer:
                 typo_corrections=cached.typo_corrections,
             )
 
-        # Stage 0: Typo correction (before any processing)
-        original_query = query
-        typo_corrected = False
-        typo_corrections: Tuple[str, str] = ()
-
         if self._typo_corrector:
-            typo_result = self._typo_corrector.correct(query, use_llm_fallback=True)
+            # Disable LLM fallback to avoid extra LLM calls in rewrite flow
+            typo_result = self._typo_corrector.correct(query, use_llm_fallback=False)
             if typo_result.corrected != query:
                 query = typo_result.corrected
                 typo_corrected = True

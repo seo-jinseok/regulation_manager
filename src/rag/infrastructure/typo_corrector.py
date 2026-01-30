@@ -254,23 +254,27 @@ class TypoCorrector:
         corrected = text
 
         for pattern, replacement in self.RULE_PATTERNS:
-            matches = pattern.findall(corrected)
-            if matches:
-                for match in matches:
-                    if isinstance(match, str):
-                        corrected = pattern.sub(replacement, corrected)
-                        corrections.append((match, replacement))
+            # Check if pattern matches in the current text
+            if pattern.search(corrected):
+                # Find what matched (the pattern itself, not findall result)
+                # For simple patterns, the matched text is what we're replacing
+                old_text = corrected
+                corrected = pattern.sub(replacement, corrected)
+                if old_text != corrected:
+                    # Extract the actual matched substring
+                    match = pattern.search(old_text)
+                    if match:
+                        corrections.append((match.group(0), replacement))
 
         # Apply particle normalization
         for pattern, replacement in self.PARTICLE_NORMALIZATION:
-            matches = pattern.findall(corrected)
-            if matches:
-                for match in matches:
-                    if isinstance(match, str) and match != replacement:
-                        old_text = match
-                        corrected = pattern.sub(replacement, corrected)
-                        if old_text != corrected:
-                            corrections.append((old_text, replacement))
+            old_text = corrected
+            corrected = pattern.sub(replacement, corrected)
+            if old_text != corrected:
+                match = pattern.search(old_text)
+                if match and match.group(0) != replacement:
+                    # Extract what was actually changed
+                    corrections.append((match.group(0), replacement))
 
         return corrected, corrections
 

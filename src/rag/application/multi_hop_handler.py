@@ -591,10 +591,7 @@ class MultiHopHandler:
             context_text = self._build_context_text(sub_query, context)
 
             # Execute search
-            search_query = Query(
-                text=sub_query.query_text,
-                embedding_text=context_text + sub_query.query_text,
-            )
+            search_query = Query(text=sub_query.query_text)
             search_results = self.vector_store.search(search_query, top_k=top_k)
 
             # Apply Self-RAG if enabled

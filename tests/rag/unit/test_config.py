@@ -1,6 +1,5 @@
 """Tests for RAGConfig advanced RAG settings."""
 
-
 from src.rag.config import RAGConfig, reset_config
 
 
@@ -25,10 +24,10 @@ class TestAdvancedRAGSettings:
         config = RAGConfig()
         assert config.enable_hyde is True
 
-    def test_bm25_tokenize_mode_default_konlpy(self):
-        """BM25 토크나이저는 기본적으로 konlpy 모드여야 함."""
+    def test_bm25_tokenize_mode_default_kiwi(self):
+        """BM25 토크나이저는 기본적으로 kiwi 모드여야 함."""
         config = RAGConfig()
-        assert config.bm25_tokenize_mode == "konlpy"
+        assert config.bm25_tokenize_mode == "kiwi"
 
     def test_corrective_rag_thresholds_default(self):
         """Corrective RAG 임계값은 쿼리 유형별 딕셔너리여야 함."""
