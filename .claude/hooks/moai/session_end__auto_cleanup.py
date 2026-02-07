@@ -28,6 +28,13 @@ import sys
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
+
+# Ensure UTF-8 output on Windows (cp949/cp1252 cannot encode emoji)
+if sys.platform == "win32":
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    if hasattr(sys.stderr, "reconfigure"):
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 from typing import Any
 
 # =============================================================================
@@ -786,14 +793,12 @@ def main() -> None:
                 config=timeout_config,
             )
 
-            # Print results
-            output_lines = [json.dumps(results, ensure_ascii=False, indent=2)]
+            # Print results (stdout must contain ONLY valid JSON)
+            print(json.dumps(results, ensure_ascii=False, indent=2))
 
-            # Print migration report separately for visibility
+            # Print migration report to stderr for visibility
             if migration_report:
-                output_lines.append(migration_report)
-
-            print("\n".join(output_lines))
+                print(migration_report, file=sys.stderr)
 
         except HookTimeoutError as e:
             # Enhanced timeout error handling
@@ -847,14 +852,12 @@ def main() -> None:
             try:
                 results, migration_report = execute_session_end_workflow()
 
-                # Print results
-                output_lines = [json.dumps(results, ensure_ascii=False, indent=2)]
+                # Print results (stdout must contain ONLY valid JSON)
+                print(json.dumps(results, ensure_ascii=False, indent=2))
 
-                # Print migration report separately for visibility
+                # Print migration report to stderr for visibility
                 if migration_report:
-                    output_lines.append(migration_report)
-
-                print("\n".join(output_lines))
+                    print(migration_report, file=sys.stderr)
 
             finally:
                 signal.alarm(0)  # Clear timeout
