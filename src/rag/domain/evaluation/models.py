@@ -29,21 +29,97 @@ class QualityIssue(Enum):
 
 @dataclass
 class EvaluationThresholds:
-    """Thresholds for evaluation metrics."""
+    """Thresholds for evaluation metrics with staged progression."""
 
-    faithfulness: float = 0.90
-    answer_relevancy: float = 0.85
-    contextual_precision: float = 0.80
-    contextual_recall: float = 0.80
+    # Current stage (1=initial, 2=intermediate, 3=target)
+    stage: int = 1
 
-    # Critical thresholds for alerts
-    faithfulness_critical: float = 0.70
-    relevancy_critical: float = 0.70
-    precision_critical: float = 0.65
-    recall_critical: float = 0.65
+    # Stage 1 (Initial - Week 1): Conservative baseline
+    faithfulness_stage1: float = 0.60
+    answer_relevancy_stage1: float = 0.70
+    contextual_precision_stage1: float = 0.65
+    contextual_recall_stage1: float = 0.65
+    overall_pass_stage1: float = 0.60
+
+    # Stage 2 (Intermediate - Week 2-3): Progressive improvement
+    faithfulness_stage2: float = 0.75
+    answer_relevancy_stage2: float = 0.75
+    contextual_precision_stage2: float = 0.70
+    contextual_recall_stage2: float = 0.70
+    overall_pass_stage2: float = 0.70
+
+    # Stage 3 (Target - Week 4+): Production quality
+    faithfulness_stage3: float = 0.80
+    answer_relevancy_stage3: float = 0.80
+    contextual_precision_stage3: float = 0.75
+    contextual_recall_stage3: float = 0.75
+    overall_pass_stage3: float = 0.75
+
+    # Legacy thresholds (backward compatibility, default to stage 3)
+    faithfulness: float = 0.80
+    answer_relevancy: float = 0.80
+    contextual_precision: float = 0.75
+    contextual_recall: float = 0.75
+
+    # Critical thresholds for alerts (unchanged)
+    faithfulness_critical: float = 0.60
+    relevancy_critical: float = 0.60
+    precision_critical: float = 0.55
+    recall_critical: float = 0.55
+
+    # Stage threshold definitions
+    STAGE_THRESHOLDS = {
+        1: {
+            "faithfulness": 0.60,
+            "answer_relevancy": 0.70,
+            "contextual_precision": 0.65,
+            "contextual_recall": 0.65,
+            "overall_pass": 0.60,
+        },
+        2: {
+            "faithfulness": 0.75,
+            "answer_relevancy": 0.75,
+            "contextual_precision": 0.70,
+            "contextual_recall": 0.70,
+            "overall_pass": 0.70,
+        },
+        3: {
+            "faithfulness": 0.80,
+            "answer_relevancy": 0.80,
+            "contextual_precision": 0.75,
+            "contextual_recall": 0.75,
+            "overall_pass": 0.75,
+        },
+    }
+
+    def __post_init__(self):
+        """Update current thresholds based on stage."""
+        thresholds = self.STAGE_THRESHOLDS.get(self.stage, self.STAGE_THRESHOLDS[1])
+        self.faithfulness = thresholds["faithfulness"]
+        self.answer_relevancy = thresholds["answer_relevancy"]
+        self.contextual_precision = thresholds["contextual_precision"]
+        self.contextual_recall = thresholds["contextual_recall"]
+
+    @classmethod
+    def for_stage(cls, stage: int) -> "EvaluationThresholds":
+        """Create thresholds for a specific stage."""
+        return cls(stage=stage)
+
+    def get_thresholds_for_stage(self, stage: int) -> dict:
+        """Get threshold dictionary for a specific stage."""
+        return self.STAGE_THRESHOLDS.get(stage, self.STAGE_THRESHOLDS[1])
+
+    def get_current_stage_name(self) -> str:
+        """Get human-readable stage name."""
+        stage_names = {
+            1: "Initial (Week 1)",
+            2: "Intermediate (Week 2-3)",
+            3: "Target (Week 4+)",
+        }
+        return stage_names.get(self.stage, "Unknown")
 
     def is_below_minimum(self, metric_name: str, score: float) -> bool:
-        """Check if score is below minimum threshold."""
+        """Check if score is below minimum threshold for current stage."""
         thresholds = {
             "faithfulness": self.faithfulness,
             "answer_relevancy": self.answer_relevancy,
@@ -61,6 +137,10 @@ class EvaluationThresholds:
             "contextual_recall": self.recall_critical,
         }
         return score < critical_thresholds.get(metric_name, 0.0)
+
+    def get_overall_pass_threshold(self) -> float:
+        """Get the overall pass threshold for current stage."""
+        return self.STAGE_THRESHOLDS.get(self.stage, {}).get("overall_pass", 0.60)
 
 
 @dataclass

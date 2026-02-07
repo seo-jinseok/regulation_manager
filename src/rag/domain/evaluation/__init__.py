@@ -5,6 +5,11 @@ Contains core evaluation entities and value objects following Clean Architecture
 This layer has no external dependencies and defines the evaluation domain model.
 """
 
+from .custom_judge import (
+    CustomEvaluationResult,
+    CustomJudgeConfig,
+    CustomLLMJudge,
+)
 from .models import (
     EvaluationFramework,
     EvaluationResult,
@@ -35,6 +40,10 @@ __all__ = [
     "PersonaManager",
     "QualityAnalyzer",
     "SyntheticDataGenerator",
+    # Custom LLM-as-Judge
+    "CustomLLMJudge",
+    "CustomJudgeConfig",
+    "CustomEvaluationResult",
     # Constants
     "PERSONAS",
 ]
