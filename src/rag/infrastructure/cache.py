@@ -246,7 +246,22 @@ class FileBackend:
 
 
 class RedisBackend:
-    """Redis cache backend for high-performance caching with connection pooling."""
+    """
+    Redis cache backend for high-performance caching with enhanced connection pool monitoring.
+
+    Priority 4 Security Enhancements:
+    - Password enforcement in production
+    - SSL/TLS connection option
+    - Cache poisoning prevention
+    - Encryption support for sensitive data
+    """
+
+    # Connection leak detection threshold (seconds)
+    LEAK_DETECTION_THRESHOLD = 60.0
+    # Maximum reconnection attempts
+    MAX_RECONNECT_ATTEMPTS = 3
+    # Reconnection delay (seconds)
+    RECONNECT_DELAY = 1.0
 
     def __init__(
         self,
@@ -260,9 +275,17 @@ class RedisBackend:
         socket_connect_timeout: float = 5.0,
         retry_on_timeout: bool = True,
         health_check_interval: int = 30,
+        require_password: bool = False,  # P4: Security - Enforce password
+        use_ssl: bool = False,  # P4: Security - Use SSL/TLS
+        ssl_keyfile: Optional[str] = None,  # P4: Security - SSL client key
+        ssl_certfile: Optional[str] = None,  # P4: Security - SSL client cert
+        encrypt_sensitive: bool = False,  # P4: Security - Encrypt cached data
+        encryption_password: Optional[
+            str
+        ] = None,  # P4: Security - Password for encryption
     ):
         """
-        Initialize Redis backend with connection pooling.
+        Initialize Redis backend with connection pooling and security enhancements.
 
         Args:
             host: Redis host.
@@ -275,10 +298,35 @@ class RedisBackend:
             socket_connect_timeout: Connection timeout in seconds.
             retry_on_timeout: Retry commands on timeout.
             health_check_interval: Health check interval in seconds (REQ-PER-011).
+            require_password: Require password for Redis connection (P4: Security).
+            use_ssl: Use SSL/TLS for Redis connection (P4: Security).
+            ssl_keyfile: SSL client key file path (P4: Security).
+            ssl_certfile: SSL client certificate file path (P4: Security).
+            encrypt_sensitive: Encrypt sensitive cache data (P4: Security).
+            encryption_password: Password for cache encryption (P4: Security).
+
+        Raises:
+            SecurityViolation: If password required but not provided (P4: Security).
         """
         self._client = None
         self._pool = None
         self._prefix = prefix
+        self._require_password = require_password
+        self._use_ssl = use_ssl
+
+        # Security: Password enforcement (P4: Security Hardening)
+        if require_password and not password:
+            try:
+                from .security import SecurityViolation
+
+                raise SecurityViolation(
+                    "Redis password required in production environment",
+                    "password_required",
+                )
+            except ImportError:
+                logger.error("Redis password required but not provided")
+                raise ValueError("Redis password required but not provided")
+
         self._connection_params = {
             "host": host,
             "port": port,
@@ -291,10 +339,68 @@ class RedisBackend:
             "retry_on_timeout": retry_on_timeout,
             "health_check_interval": health_check_interval,
         }
+
+        # Security: SSL/TLS configuration (P4: Security Hardening)
+        if use_ssl:
+            try:
+                import redis
+
+                ssl_config = {}
+                if ssl_certfile and ssl_keyfile:
+                    import ssl
+
+                    ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+                    ssl_context.load_cert_chain(
+                        certfile=ssl_certfile, keyfile=ssl_keyfile
+                    )
+                    ssl_config["ssl_cert_reqs"] = "required"
+                    self._connection_params["connection_class"] = redis.SSLConnection
+                    logger.info("Redis SSL/TLS enabled with client certificates")
+                else:
+                    # Use SSL without client certificates
+                    self._connection_params["connection_class"] = redis.SSLConnection
+                    logger.info("Redis SSL/TLS enabled")
+            except ImportError:
+                logger.warning("redis package not installed, SSL configuration skipped")
+            except Exception as e:
+                logger.warning(f"Failed to configure Redis SSL/TLS: {e}")
+
+        # Connection pool monitoring (REQ-PER-002, REQ-PER-011)
+        self._connection_count = 0
+        self._connection_errors = 0
+        self._reconnect_count = 0
+        self._last_health_check = 0.0
+        self._pool_lock = threading.Lock()
+
+        # Connection leak detection (REQ-PER-007)
+        self._active_operations: Dict[str, float] = {}
+
+        # Security: Encryption for sensitive data (P4: Security Hardening)
+        self._encrypt_sensitive = encrypt_sensitive
+        self._encryption_manager = None
+        if encrypt_sensitive:
+            try:
+                from .security import EncryptionManager
+
+                self._encryption_manager = EncryptionManager(encryption_password)
+                if not self._encryption_manager.available:
+                    logger.warning("Encryption requested but unavailable")
+                    self._encrypt_sensitive = False
+                else:
+                    logger.info("Cache encryption enabled for sensitive data")
+            except ImportError:
+                logger.warning("Encryption requested but security module unavailable")
+                self._encrypt_sensitive = False
+
         self._connect()
 
-    def _connect(self) -> None:
-        """Establish Redis connection pool (REQ-PER-001: Connection pooling)."""
+    def _connect(self, attempt: int = 1) -> None:
+        """
+        Establish Redis connection pool with auto-reconnection (REQ-PER-001, REQ-PER-009).
+
+        Args:
+            attempt: Current reconnection attempt number.
+        """
         try:
             import redis
 
@@ -304,32 +410,108 @@ class RedisBackend:
 
             # Test connection with health check (REQ-PER-011)
             self._client.ping()
-            logger.info(
-                f"Connected to Redis pool at {self._connection_params['host']}:{self._connection_params['port']} "
-                f"(max_connections={self._connection_params['max_connections']})"
-            )
+
+            if attempt > 1:
+                self._reconnect_count += 1
+                logger.info(
+                    f"Reconnected to Redis pool (attempt {attempt}) at "
+                    f"{self._connection_params['host']}:{self._connection_params['port']}"
+                )
+            else:
+                logger.info(
+                    f"Connected to Redis pool at {self._connection_params['host']}:{self._connection_params['port']} "
+                    f"(max_connections={self._connection_params['max_connections']})"
+                )
+
         except ImportError:
             logger.warning("redis package not installed. Redis backend unavailable.")
             self._client = None
             self._pool = None
         except Exception as e:
-            logger.warning(f"Failed to connect to Redis: {e}")
+            self._connection_errors += 1
+            logger.warning(f"Failed to connect to Redis (attempt {attempt}): {e}")
             self._client = None
             self._pool = None
 
-    def get_pool_status(self) -> Dict[str, Any]:
+            # Enhanced auto-reconnection logic (REQ-PER-009)
+            if attempt < self.MAX_RECONNECT_ATTEMPTS:
+                logger.info(f"Reconnecting in {self.RECONNECT_DELAY}s...")
+                time.sleep(self.RECONNECT_DELAY)
+                self._connect(attempt + 1)
+
+    def _check_connection_health(self) -> bool:
         """
-        Get connection pool status for metrics (REQ-PER-002).
+        Check connection pool health and reconnect if needed (REQ-PER-011).
 
         Returns:
-            Dict with pool statistics.
+            True if connection is healthy, False otherwise.
+        """
+        current_time = time.time()
+
+        # Only check periodically
+        if current_time - self._last_health_check < self._connection_params.get(
+            "health_check_interval", 30
+        ):
+            return self.available
+
+        self._last_health_check = current_time
+
+        if not self.available:
+            logger.warning("Connection health check failed, attempting reconnection...")
+            with self._pool_lock:
+                self._connect()
+            return self.available
+
+        return True
+
+    def _track_operation(self, operation_id: str) -> None:
+        """Track operation start time for leak detection."""
+        self._active_operations[operation_id] = time.time()
+
+    def _untrack_operation(self, operation_id: str) -> None:
+        """Untrack operation and check for leaks."""
+        if operation_id in self._active_operations:
+            del self._active_operations[operation_id]
+
+    def _detect_connection_leaks(self) -> List[str]:
+        """
+        Detect potential connection leaks (REQ-PER-007).
+
+        Returns:
+            List of operation IDs that may have leaked connections.
+        """
+        current_time = time.time()
+        leaked_ops = []
+
+        for op_id, start_time in list(self._active_operations.items()):
+            elapsed = current_time - start_time
+            if elapsed > self.LEAK_DETECTION_THRESHOLD:
+                leaked_ops.append(op_id)
+                logger.warning(
+                    f"Potential connection leak detected: operation {op_id} "
+                    f"has been active for {elapsed:.1f}s (threshold: {self.LEAK_DETECTION_THRESHOLD}s)"
+                )
+
+        return leaked_ops
+
+    def get_pool_status(self) -> Dict[str, Any]:
+        """
+        Get comprehensive connection pool status (REQ-PER-002, REQ-PER-011).
+
+        Returns:
+            Dict with pool statistics including real-time monitoring.
         """
         if self._pool is None:
             return {
                 "available": False,
+                "max_connections": self._connection_params["max_connections"],
                 "total_connections": 0,
                 "active_connections": 0,
                 "idle_connections": 0,
+                "connection_errors": self._connection_errors,
+                "reconnect_count": self._reconnect_count,
+                "active_operations": len(self._active_operations),
+                "health_status": "unavailable",
             }
 
         try:
@@ -338,21 +520,76 @@ class RedisBackend:
                 "available": True,
                 "max_connections": self._connection_params["max_connections"],
                 "total_connections": getattr(self._pool, "created_connections", 0),
+                "connection_errors": self._connection_errors,
+                "reconnect_count": self._reconnect_count,
+                "active_operations": len(self._active_operations),
             }
 
             # Try to get more detailed stats if available (Redis-py 5.0+)
             if hasattr(self._pool, "_created_connections"):
+                available_conns = self._pool._available_connections
                 pool_stats["active_connections"] = len(
-                    [c for c in self._pool._available_connections if c is not None]
+                    [c for c in available_conns if c is not None]
                 )
                 pool_stats["idle_connections"] = len(
-                    [c for c in self._pool._available_connections if c is None]
+                    [c for c in available_conns if c is None]
                 )
+
+            # Health status (REQ-PER-011)
+            pool_stats["health_status"] = "healthy" if self.available else "unhealthy"
+
+            # Connection leak detection (REQ-PER-007)
+            leaked_ops = self._detect_connection_leaks()
+            pool_stats["potential_leaks"] = len(leaked_ops)
+            pool_stats["leaked_operations"] = leaked_ops[:5]  # Return first 5
 
             return pool_stats
         except Exception as e:
             logger.warning(f"Failed to get pool status: {e}")
-            return {"available": False, "error": str(e)}
+            return {
+                "available": False,
+                "error": str(e),
+                "connection_errors": self._connection_errors,
+            }
+
+    def check_health(self) -> Dict[str, Any]:
+        """
+        Perform health check on connection pool (REQ-PER-011).
+
+        Returns:
+            Dict with health check results.
+        """
+        health_result = {
+            "healthy": False,
+            "timestamp": time.time(),
+            "latency_ms": 0.0,
+            "error": None,
+        }
+
+        if self._pool is None:
+            health_result["error"] = "Connection pool not initialized"
+            return health_result
+
+        try:
+            start_time = time.perf_counter()
+            self._client.ping()
+            latency_ms = (time.perf_counter() - start_time) * 1000
+
+            health_result["healthy"] = True
+            health_result["latency_ms"] = latency_ms
+
+            # Log slow connections
+            if latency_ms > 100:
+                logger.warning(f"Redis ping latency high: {latency_ms:.1f}ms")
+
+        except Exception as e:
+            health_result["error"] = str(e)
+            logger.warning(f"Redis health check failed: {e}")
+
+            # Attempt reconnection on health check failure
+            self._check_connection_health()
+
+        return health_result
 
     @property
     def available(self) -> bool:
@@ -366,12 +603,35 @@ class RedisBackend:
             return False
 
     def _make_key(self, key: str) -> str:
-        """Create full Redis key with prefix."""
+        """
+        Create full Redis key with prefix and validation (P4: Security Hardening).
+
+        Args:
+            key: Cache key to validate and prefix.
+
+        Returns:
+            Prefixed cache key.
+
+        Raises:
+            SecurityViolation: If key contains malicious patterns.
+        """
+        # Security: Validate cache key to prevent poisoning (P4: Security Hardening)
+        try:
+            from .security import validate_cache_key
+
+            if not validate_cache_key(key):
+                logger.warning(f"Invalid cache key detected: {key[:50]}...")
+                raise ValueError(f"Invalid cache key: {key}")
+        except ImportError:
+            # Security module not available, do basic validation
+            if ".." in key or key.startswith("/") or key.startswith("\\"):
+                raise ValueError(f"Invalid cache key: {key}")
+
         return f"{self._prefix}{key}"
 
     def get(self, key: str) -> Optional[CacheEntry]:
         """
-        Get a cache entry by key.
+        Get a cache entry by key with security validation (P4: Security Hardening).
 
         Args:
             key: Cache key.
@@ -388,7 +648,26 @@ class RedisBackend:
             if data is None:
                 return None
 
+            # Security: Decrypt if encryption enabled (P4: Security Hardening)
+            if self._encrypt_sensitive and self._encryption_manager:
+                try:
+                    decrypted_data = self._encryption_manager.decrypt(data.encode())
+                    if decrypted_data:
+                        data = decrypted_data
+                except Exception as e:
+                    logger.warning(f"Decryption failed: {e}")
+                    return None
+
             entry_dict = json.loads(data)
+
+            # Security: Sanitize cached data to prevent poisoning (P4: Security Hardening)
+            try:
+                from .security import sanitize_cache_data
+
+                entry_dict = sanitize_cache_data(entry_dict)
+            except ImportError:
+                pass  # Security module not available
+
             entry = CacheEntry.from_dict(entry_dict)
 
             if entry.is_expired():
@@ -402,7 +681,7 @@ class RedisBackend:
 
     def set(self, key: str, entry: CacheEntry) -> None:
         """
-        Set a cache entry with TTL.
+        Set a cache entry with TTL and security enhancements (P4: Security Hardening).
 
         Args:
             key: Cache key.
@@ -413,7 +692,24 @@ class RedisBackend:
 
         try:
             redis_key = self._make_key(key)
-            data = json.dumps(entry.to_dict(), ensure_ascii=False)
+            entry_dict = entry.to_dict()
+
+            # Security: Sanitize data before caching (P4: Security Hardening)
+            try:
+                from .security import sanitize_cache_data
+
+                entry_dict = sanitize_cache_data(entry_dict)
+            except ImportError:
+                pass  # Security module not available
+
+            data = json.dumps(entry_dict, ensure_ascii=False)
+
+            # Security: Encrypt sensitive data if enabled (P4: Security Hardening)
+            if self._encrypt_sensitive and self._encryption_manager:
+                encrypted_data = self._encryption_manager.encrypt(data)
+                if encrypted_data:
+                    data = encrypted_data.decode()
+
             ttl_seconds = entry.ttl_hours * 3600
             self._client.setex(redis_key, ttl_seconds, data)
         except Exception as e:

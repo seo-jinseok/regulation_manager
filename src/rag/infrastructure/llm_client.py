@@ -2,8 +2,14 @@
 OpenAI LLM Client for Regulation RAG System.
 
 Provides LLM integration for answer generation and embeddings.
+
+Priority 4 Security Enhancements:
+- API key format validation
+- Health check on initialization
+- Secure key rotation support
 """
 
+import logging
 import os
 from typing import List, Optional
 
@@ -16,6 +22,8 @@ except ImportError:
 
 from ..domain.repositories import ILLMClient
 
+logger = logging.getLogger(__name__)
+
 
 class OpenAIClient(ILLMClient):
     """
@@ -24,6 +32,11 @@ class OpenAIClient(ILLMClient):
     Supports:
     - Chat completion (GPT-4o-mini, GPT-4o)
     - Embeddings (text-embedding-3-small)
+
+    Security Features (P4):
+    - API key validation on initialization
+    - Health check before first use
+    - Secure key rotation
     """
 
     def __init__(
@@ -31,14 +44,23 @@ class OpenAIClient(ILLMClient):
         api_key: Optional[str] = None,
         model: str = "gpt-4o-mini",
         embedding_model: str = "text-embedding-3-small",
+        validate_api_key: bool = True,
+        skip_health_check: bool = False,
     ):
         """
-        Initialize OpenAI client.
+        Initialize OpenAI client with security validation.
 
         Args:
             api_key: OpenAI API key. If None, uses OPENAI_API_KEY env var.
             model: Chat model to use.
             embedding_model: Embedding model to use.
+            validate_api_key: Whether to validate API key format (P4: Security).
+            skip_health_check: Skip API health check on initialization.
+
+        Raises:
+            ImportError: If openai package not available.
+            APIKeyFormatError: If API key format is invalid.
+            MissingAPIKeyError: If API key not provided.
         """
         if not OPENAI_AVAILABLE:
             raise ImportError("openai is required. Install with: uv add openai")
@@ -49,9 +71,116 @@ class OpenAIClient(ILLMClient):
 
             raise MissingAPIKeyError("OPENAI_API_KEY")
 
-        self._client = OpenAI(api_key=self.api_key)
         self.model = model
         self.embedding_model = embedding_model
+
+        # Security: Validate API key format (P4: Security Hardening)
+        if validate_api_key:
+            self._validate_api_key()
+
+        # Initialize OpenAI client
+        self._client = OpenAI(api_key=self.api_key)
+
+        # Security: Health check on initialization (P4: Security Hardening)
+        if not skip_health_check:
+            self._health_check()
+
+    def _validate_api_key(self) -> None:
+        """
+        Validate API key format (P4: Security Hardening).
+
+        Raises:
+            APIKeyFormatError: If API key format is invalid.
+        """
+        try:
+            from .security import APIKeyFormatError, APIKeyProvider, APIKeyValidator
+
+            result = APIKeyValidator.validate_format(
+                self.api_key, expected_provider=APIKeyProvider.OPENAI
+            )
+
+            if not result.is_valid:
+                raise APIKeyFormatError(
+                    "openai", result.error_message or "Invalid API key format"
+                )
+
+            logger.info(f"API key validated: {result.provider.value}")
+
+        except ImportError:
+            # Security module not available, log warning
+            logger.warning("Security module unavailable, skipping API key validation")
+
+    def _health_check(self) -> None:
+        """
+        Perform health check on API key (P4: Security Hardening).
+
+        Makes a minimal API call to verify the key is valid.
+
+        Raises:
+            Exception: If health check fails.
+        """
+        try:
+            # Make a minimal API call (list models is cheap)
+            self._client.models.list()
+            logger.debug("OpenAI API health check passed")
+        except Exception as e:
+            logger.warning(f"OpenAI API health check failed: {e}")
+            # Don't raise on health check failure, as the key might work for actual operations
+            # This prevents false negatives during temporary network issues
+
+    def rotate_api_key(self, new_api_key: str) -> None:
+        """
+        Securely rotate API key (P4: Security Hardening).
+
+        Args:
+            new_api_key: New API key to use.
+
+        Raises:
+            APIKeyFormatError: If new API key format is invalid.
+        """
+        # Validate new key format
+        try:
+            from .security import APIKeyFormatError, APIKeyProvider, APIKeyValidator
+
+            result = APIKeyValidator.validate_format(
+                new_api_key, expected_provider=APIKeyProvider.OPENAI
+            )
+
+            if not result.is_valid:
+                raise APIKeyFormatError(
+                    "openai", result.error_message or "Invalid new API key format"
+                )
+
+        except ImportError:
+            logger.warning("Security module unavailable, skipping new key validation")
+
+        # Update API key
+        self.api_key = new_api_key
+        self._client = OpenAI(api_key=self.api_key)
+        logger.info("API key rotated successfully")
+
+    def get_api_key_info(self) -> dict:
+        """
+        Get API key information (safe for logging) (P4: Security Hardening).
+
+        Returns:
+            Dict with key information (no actual key material).
+        """
+        try:
+            from .security import APIKeyProvider, APIKeyValidator
+
+            provider = APIKeyValidator.detect_provider(self.api_key)
+            return {
+                "provider": provider.value,
+                "key_length": len(self.api_key),
+                "key_prefix": self.api_key[:3] + "***" + self.api_key[-3:],
+            }
+        except ImportError:
+            return {
+                "provider": "unknown",
+                "key_length": len(self.api_key),
+                "key_prefix": "***",
+            }
 
     def generate(
         self,

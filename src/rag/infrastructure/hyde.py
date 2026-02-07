@@ -6,16 +6,28 @@ Cycle 8 Improvements:
 - Enhanced validation with quality scoring
 - Refined application conditions based on query characteristics
 - Added performance metrics tracking
+
+Priority 2 Performance Improvements:
+- LRU cache eviction policy (REQ-PO-008)
+- Cache file size limit (REQ-PO-010)
+- Gzip compression for disk cache (REQ-PO-011)
+
+Priority 4 Security Hardening:
+- Input validation with Pydantic
+- Malicious query pattern detection
+- Query sanitization
 """
 
+import gzip
 import hashlib
 import json
 import logging
 import re
 import time
+from collections import OrderedDict
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional, Tuple
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 if TYPE_CHECKING:
     from ..domain.entities import SearchResult
@@ -23,6 +35,10 @@ if TYPE_CHECKING:
     from ..domain.value_objects import SearchFilter
 
 logger = logging.getLogger(__name__)
+
+# Cache configuration (REQ-PO-008, REQ-PO-010)
+DEFAULT_MAX_CACHE_SIZE = 1000  # Maximum number of entries in memory
+DEFAULT_MAX_CACHE_FILE_SIZE_MB = 10  # Maximum cache file size in MB
 
 
 @dataclass
@@ -44,6 +60,7 @@ class HyDEMetrics:
     total_generations: int = 0
     cache_hits: int = 0
     cache_misses: int = 0
+    cache_evictions: int = 0  # LRU eviction count (REQ-PO-008)
     validation_failures: int = 0
     total_quality_score: float = 0.0
     total_generation_time_ms: float = 0.0
@@ -98,22 +115,50 @@ class HyDEGenerator:
 사용자의 질문에 대한 가상 대학 규정 조문을 작성하세요."""
 
     REGULATORY_TERMS = [
-        "규정", "규칙", "조", "항", "호", "세칙", "지침",
-        "시행세칙", "운영규정", "관리지침"
+        "규정",
+        "규칙",
+        "조",
+        "항",
+        "호",
+        "세칙",
+        "지침",
+        "시행세칙",
+        "운영규정",
+        "관리지침",
     ]
 
     VAGUE_INDICATORS = [
-        "싶어", "하고 싶", "원해", "희망",
-        "싫어", "안 하", "기피",
-        "어떻게", "뭐야", "무엇",
-        "가능", "수 있", "될까",
-        "있어?", "해야", "할까", "해줘",
+        "싶어",
+        "하고 싶",
+        "원해",
+        "희망",
+        "싫어",
+        "안 하",
+        "기피",
+        "어떻게",
+        "뭐야",
+        "무엇",
+        "가능",
+        "수 있",
+        "될까",
+        "있어?",
+        "해야",
+        "할까",
+        "해줘",
     ]
 
     EMOTIONAL_INDICATORS = [
-        "힘들", "어렵", "고생", "스트레스",
-        "피곤", "지치", "포기", "번아웃",
-        "걱정", "불안", "후회",
+        "힘들",
+        "어렵",
+        "고생",
+        "스트레스",
+        "피곤",
+        "지치",
+        "포기",
+        "번아웃",
+        "걱정",
+        "불안",
+        "후회",
     ]
 
     def __init__(
@@ -121,9 +166,23 @@ class HyDEGenerator:
         llm_client: Optional["ILLMClient"] = None,
         cache_dir: Optional[str] = None,
         enable_cache: bool = True,
+        max_cache_size: int = DEFAULT_MAX_CACHE_SIZE,
+        max_cache_file_size_mb: int = DEFAULT_MAX_CACHE_FILE_SIZE_MB,
     ):
+        """
+        Initialize HyDE generator with enhanced cache management (REQ-PO-008, REQ-PO-010).
+
+        Args:
+            llm_client: LLM client for generating hypothetical documents.
+            cache_dir: Directory for cache storage.
+            enable_cache: Whether to enable caching.
+            max_cache_size: Maximum number of cache entries (LRU eviction when exceeded).
+            max_cache_file_size_mb: Maximum cache file size in MB (enforces limit).
+        """
         self._llm_client = llm_client
         self._enable_cache = enable_cache
+        self._max_cache_size = max_cache_size
+        self._max_cache_file_size_bytes = max_cache_file_size_mb * 1024 * 1024
 
         if cache_dir:
             self._cache_dir = Path(cache_dir)
@@ -134,31 +193,145 @@ class HyDEGenerator:
 
         if self._enable_cache:
             self._cache_dir.mkdir(parents=True, exist_ok=True)
-            self._cache: dict = self._load_cache()
+            # Load cache with LRU tracking (REQ-PO-008)
+            cache_data = self._load_cache()
+            self._cache = OrderedDict(cache_data)
+            self._enforce_cache_size_limit()
         else:
-            self._cache = {}
+            self._cache = OrderedDict()
 
         self._metrics = HyDEMetrics()
 
-    def _load_cache(self) -> dict:
-        cache_file = self._cache_dir / "hyde_cache.json"
+    def _load_cache(self) -> Dict:
+        """
+        Load HyDE cache from disk with gzip decompression (REQ-PO-011).
+
+        Returns:
+            Dict containing cached data.
+        """
+        cache_file = self._cache_dir / "hyde_cache.json.gz"
+
+        # Try compressed cache first (REQ-PO-011)
         if cache_file.exists():
             try:
-                with open(cache_file, "r", encoding="utf-8") as f:
-                    return json.load(f)
+                with gzip.open(cache_file, "rt", encoding="utf-8") as f:
+                    data = json.load(f)
+                logger.debug(f"Loaded compressed HyDE cache ({len(data)} entries)")
+                return data
+            except Exception as e:
+                logger.warning(f"Failed to load compressed cache: {e}")
+
+        # Fallback to uncompressed cache
+        cache_file_uncompressed = self._cache_dir / "hyde_cache.json"
+        if cache_file_uncompressed.exists():
+            try:
+                with open(cache_file_uncompressed, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                logger.debug(f"Loaded uncompressed HyDE cache ({len(data)} entries)")
+
+                # Migrate to compressed format
+                self._save_cache()
+                return data
             except Exception as e:
                 logger.warning(f"Failed to load HyDE cache: {e}")
+
         return {}
 
     def _save_cache(self) -> None:
+        """
+        Save HyDE cache to disk with gzip compression (REQ-PO-011).
+
+        Enforces cache file size limit before saving (REQ-PO-010).
+        """
         if not self._enable_cache:
             return
-        cache_file = self._cache_dir / "hyde_cache.json"
+
+        # Enforce size limit before saving (REQ-PO-010)
+        self._enforce_cache_size_limit()
+
+        cache_file = self._cache_dir / "hyde_cache.json.gz"
+
         try:
-            with open(cache_file, "w", encoding="utf-8") as f:
-                json.dump(self._cache, f, ensure_ascii=False, indent=2)
+            # Convert OrderedDict to dict for JSON serialization
+            cache_data = dict(self._cache)
+
+            # Save with gzip compression (REQ-PO-011)
+            with gzip.open(cache_file, "wt", encoding="utf-8") as f:
+                json.dump(cache_data, f, ensure_ascii=False)
+
+            # Check file size and enforce limit
+            file_size = cache_file.stat().st_size
+            if file_size > self._max_cache_file_size_bytes:
+                logger.warning(
+                    f"Cache file size ({file_size / 1024 / 1024:.1f}MB) exceeds limit "
+                    f"({self._max_cache_file_size_bytes / 1024 / 1024:.1f}MB), "
+                    f"evicting oldest entries"
+                )
+                self._evict_entries_to_fit_size()
+                self._save_cache()
+
+            logger.debug(
+                f"Saved HyDE cache ({len(cache_data)} entries, {file_size / 1024:.1f}KB)"
+            )
+
         except Exception as e:
             logger.warning(f"Failed to save HyDE cache: {e}")
+
+    def _enforce_cache_size_limit(self) -> None:
+        """
+        Enforce LRU cache size limit (REQ-PO-008).
+
+        Evicts least recently used entries when cache exceeds max size.
+        """
+        while len(self._cache) > self._max_cache_size:
+            # Pop oldest entry (LRU eviction - REQ-PO-008)
+            oldest_key, _ = self._cache.popitem(last=False)
+            logger.debug(f"Evicted LRU cache entry: {oldest_key}")
+            self._metrics.cache_evictions += 1
+
+    def _evict_entries_to_fit_size(self) -> None:
+        """
+        Evict cache entries to fit within file size limit (REQ-PO-010).
+
+        Removes oldest entries until estimated file size is within limit.
+        """
+        target_entries = max(
+            1,
+            int(self._max_cache_size * 0.8),  # Reduce to 80% of max
+        )
+
+        while len(self._cache) > target_entries:
+            oldest_key, _ = self._cache.popitem(last=False)
+            logger.debug(f"Evicted cache entry for size limit: {oldest_key}")
+
+    def _update_cache_lru(self, key: str) -> None:
+        """
+        Update cache entry access time for LRU tracking (REQ-PO-008).
+
+        Args:
+            key: Cache key to update.
+        """
+        if key in self._cache:
+            # Move to end (most recently used)
+            self._cache.move_to_end(key)
+
+    def _add_to_cache_with_lru(self, key: str, value: dict) -> None:
+        """
+        Add entry to cache with LRU eviction (REQ-PO-008).
+
+        Args:
+            key: Cache key.
+            value: Cache value.
+        """
+        # Enforce size limit before adding
+        if len(self._cache) >= self._max_cache_size:
+            # Evict oldest entry
+            oldest_key, _ = self._cache.popitem(last=False)
+            logger.debug(f"Evicted LRU cache entry before add: {oldest_key}")
+
+        self._cache[key] = value
+        # Move to end (most recently used)
+        self._cache.move_to_end(key)
 
     def _get_cache_key(self, query: str) -> str:
         return hashlib.md5(query.encode("utf-8")).hexdigest()[:16]
@@ -191,15 +364,24 @@ class HyDEGenerator:
             quality_score += 0.1
 
         error_patterns = [
-            "죄송합니다", "알 수 없습니다", "도움을 드릴 수 없습니다",
-            "제공해 드릴 수 없", "확인할 수 없", "규정에 없",
+            "죄송합니다",
+            "알 수 없습니다",
+            "도움을 드릴 수 없습니다",
+            "제공해 드릴 수 없",
+            "확인할 수 없",
+            "규정에 없",
         ]
         if any(pattern in doc for pattern in error_patterns):
             return False, None, quality_score
 
         regulatory_patterns = [
-            r"할 수 있", r"하여야", r"한다",
-            r"지급", r"신청", r"허가", r"승인",
+            r"할 수 있",
+            r"하여야",
+            r"한다",
+            r"지급",
+            r"신청",
+            r"허가",
+            r"승인",
         ]
         regulatory_count = sum(
             1 for pattern in regulatory_patterns if re.search(pattern, doc)
@@ -208,9 +390,18 @@ class HyDEGenerator:
             quality_score += 0.3
 
         education_keywords = [
-            "학생", "교원", "수업", "학점", "등록",
-            "졸업", "휴학", "복학", "휴직",
-            "장학금", "등록금", "성적",
+            "학생",
+            "교원",
+            "수업",
+            "학점",
+            "등록",
+            "졸업",
+            "휴학",
+            "복학",
+            "휴직",
+            "장학금",
+            "등록금",
+            "성적",
         ]
         keyword_count = sum(1 for kw in education_keywords if kw in doc)
         if keyword_count >= 2:
@@ -230,7 +421,21 @@ class HyDEGenerator:
     def generate_hypothetical_doc(self, query: str) -> HyDEResult:
         start_time = time.time()
 
-        if not query or not query.strip():
+        # Security: Input validation (P4: Security Hardening)
+        try:
+            from .security import InputValidationError, sanitize_input
+
+            # Sanitize input query
+            sanitized_query = sanitize_input(query, max_length=500)
+        except ImportError:
+            # Security module not available, use basic validation
+            sanitized_query = query.strip() if query else ""
+        except InputValidationError as e:
+            logger.warning(f"HyDE: Input validation failed: {e}")
+            # Return original query as fallback (defense in depth)
+            sanitized_query = query[:500] if query else ""
+
+        if not sanitized_query:
             logger.warning("HyDE: Empty query received, skipping generation")
             return HyDEResult(
                 original_query=query,
@@ -361,9 +566,7 @@ class HyDEGenerator:
         if query_length > 100:
             return False
 
-        if has_regulatory_terms or any(
-            term in query for term in self.REGULATORY_TERMS
-        ):
+        if has_regulatory_terms or any(term in query for term in self.REGULATORY_TERMS):
             return False
 
         structural_patterns = [

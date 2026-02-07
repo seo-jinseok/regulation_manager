@@ -14,9 +14,12 @@ import concurrent.futures
 import logging
 from typing import TYPE_CHECKING, List, Optional, Tuple
 
+from ..config import get_config
+
 if TYPE_CHECKING:
     from ..domain.entities import SearchResult
     from ..domain.repositories import ILLMClient
+
 
 logger = logging.getLogger(__name__)
 
@@ -122,12 +125,13 @@ class SelfRAGEvaluator:
                 return False
             return True  # Default to retrieval
         except Exception:
-            return (
-                True  # Default to retrieval on error  # Default to retrieval on error
-            )
+            return True  # Default to retrieval on error
 
     def evaluate_relevance(
-        self, query: str, results: List["SearchResult"], max_context_chars: int = 4000
+        self,
+        query: str,
+        results: List["SearchResult"],
+        max_context_chars: Optional[int] = None,
     ) -> tuple:
         """
         Evaluate relevance of search results.
@@ -140,17 +144,8 @@ class SelfRAGEvaluator:
         Returns:
             Tuple of (is_relevant: bool, relevant_results: List[SearchResult])
         """
-        """
-        Evaluate relevance of search results.
-
-        Args:
-            query: User's question
-            results: Search results to evaluate
-            max_context_chars: Maximum context length to send to LLM
-
-        Returns:
-            Tuple of (is_relevant: bool, relevant_results: List[SearchResult])
-        """
+        if max_context_chars is None:
+            max_context_chars = get_config().max_context_chars
         if not self._llm_client or not results:
             return (bool(results), results)
 

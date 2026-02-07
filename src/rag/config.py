@@ -159,6 +159,9 @@ class RAGConfig:
     use_reranker: bool = True
     use_hybrid: bool = True
     default_top_k: int = 5
+    # Maximum context length for LLM (characters)
+    # Increased to 4000 for long procedure regulations
+    max_context_chars: int = 4000
     synonyms_path: Optional[str] = field(
         default_factory=lambda: os.getenv(
             "RAG_SYNONYMS_PATH", "data/config/synonyms.json"
