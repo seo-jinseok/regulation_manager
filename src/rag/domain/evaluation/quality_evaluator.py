@@ -12,14 +12,23 @@ import os
 from typing import List, Optional
 
 # Import RAGAS with graceful degradation
+RAGAS_AVAILABLE = False
+RAGAS_IMPORT_ERROR = None
+
 try:
     from ragas import SingleTurnSample
-    from ragas.embeddings import RagasEmbeddings
+
+    # RAGAS 0.4.x uses LangchainEmbeddingsWrapper instead of RagasEmbeddings
+    from ragas.embeddings import LangchainEmbeddingsWrapper
+
+    # Use metrics from ragas.metrics (new location in 0.4.x)
+    # Note: Direct import from ragas.metrics is deprecated in favor of ragas.metrics.collections
+    # but we keep it for compatibility with 0.4.x
     from ragas.metrics import (
-        answer_relevancy,
-        context_precision,
-        context_recall,
-        faithfulness,
+        AnswerRelevancy,
+        ContextPrecision,
+        ContextRecall,
+        Faithfulness,
     )
     from ragas.run_config import RunConfig
 
@@ -36,7 +45,7 @@ try:
 except ImportError:
     LANGCHAIN_AVAILABLE = False
 
-from .models import (
+from .models import (  # noqa: E402
     EvaluationFramework,
     EvaluationResult,
     EvaluationThresholds,
@@ -65,6 +74,7 @@ class RAGQualityEvaluator:
         judge_base_url: Optional[str] = None,
         thresholds: Optional[EvaluationThresholds] = None,
         use_ragas: bool = True,
+        stage: int = 1,
     ):
         """
         Initialize the quality evaluator.
@@ -76,12 +86,14 @@ class RAGQualityEvaluator:
             judge_base_url: Base URL for judge LLM API
             thresholds: Custom thresholds for evaluation
             use_ragas: Whether to use RAGAS library (falls back to mock if False)
+            stage: Evaluation stage (1=initial, 2=intermediate, 3=target)
         """
         self.framework = framework
         self.judge_model = judge_model
         self.judge_api_key = judge_api_key or os.getenv("OPENAI_API_KEY")
         self.judge_base_url = judge_base_url
-        self.thresholds = thresholds or EvaluationThresholds()
+        self.thresholds = thresholds or EvaluationThresholds.for_stage(stage)
+        self.stage = stage
         self.use_ragas = use_ragas and RAGAS_AVAILABLE
 
         # Initialize RAGAS metrics if available
@@ -112,8 +124,11 @@ class RAGQualityEvaluator:
             return
 
         try:
+            # Import RAGAS LLM wrapper for LangChain
+            from ragas.llms import LangchainLLMWrapper
+
             # Create LangChain LLM for RAGAS judge
-            self._judge_llm = ChatOpenAI(
+            langchain_llm = ChatOpenAI(
                 model=self.judge_model,
                 api_key=self.judge_api_key,
                 base_url=self.judge_base_url,
@@ -121,25 +136,38 @@ class RAGQualityEvaluator:
                 request_timeout=60,  # 60 second timeout
             )
 
+            # Wrap with RAGAS LLM wrapper
+            self._judge_llm = LangchainLLMWrapper(langchain_llm)
+
             # Create embeddings for answer relevancy
-            self._judge_embeddings = OpenAIEmbeddings(
+            langchain_embeddings = OpenAIEmbeddings(
                 api_key=self.judge_api_key,
                 base_url=self.judge_base_url,
             )
 
-            # Configure RAGAS run settings
-            self._run_config = RunConfig(
-                timeout=60,  # 60 second timeout per metric
-                max_retries=2,  # Retry failed requests twice
-                max_wait=120,  # Max wait time for batch operations
-            )
+            # Wrap with RAGAS embeddings wrapper
+            self._judge_embeddings = LangchainEmbeddingsWrapper(langchain_embeddings)
 
-            # Initialize RAGAS metrics with judge LLM
+            # Configure RAGAS run settings (0.4.x API)
+            # Note: RunConfig may not be fully compatible with all RAGAS versions
+            try:
+                self._run_config = RunConfig(
+                    timeout=60,  # 60 second timeout per metric
+                    max_retries=2,  # Retry failed requests twice
+                    max_wait=120,  # Max wait time for batch operations
+                )
+            except Exception:
+                # If RunConfig fails, set to None and use defaults
+                self._run_config = None
+
+            # Initialize RAGAS metrics with judge LLM (0.4.x API)
             self._ragas_metrics = {
-                "faithfulness": faithfulness,
-                "answer_relevancy": answer_relevancy,
-                "context_precision": context_precision,
-                "context_recall": context_recall,
+                "faithfulness": Faithfulness(llm=self._judge_llm),
+                "answer_relevancy": AnswerRelevancy(
+                    llm=self._judge_llm, embeddings=self._judge_embeddings
+                ),
+                "context_precision": ContextPrecision(llm=self._judge_llm),
+                "context_recall": ContextRecall(llm=self._judge_llm),
             }
 
             logger.info(f"RAGAS initialized with judge model: {self.judge_model}")
@@ -169,7 +197,17 @@ class RAGQualityEvaluator:
         Returns:
             EvaluationResult with all metric scores and pass/fail status
         """
-        logger.info(f"Evaluating query: {query[:50]}...")
+        # Log current threshold stage
+        stage_name = self.thresholds.get_current_stage_name()
+        logger.info(
+            f"Evaluating query: {query[:50]}... (Stage: {self.stage} - {stage_name})"
+        )
+        logger.info(
+            f"Thresholds - Faithfulness: {self.thresholds.faithfulness}, "
+            f"Answer Relevancy: {self.thresholds.answer_relevancy}, "
+            f"Contextual Precision: {self.thresholds.contextual_precision}, "
+            f"Contextual Recall: {self.thresholds.contextual_recall}"
+        )
 
         # Evaluate each metric
         faithfulness_score = await self._evaluate_faithfulness(query, answer, contexts)
@@ -285,7 +323,7 @@ class RAGQualityEvaluator:
         Returns:
             MetricScore with faithfulness score (0.0-1.0)
         """
-        if self.use_ragas and self._judge_llm:
+        if self.use_ragas and self._ragas_metrics:
             try:
                 # Create RAGAS sample
                 sample = SingleTurnSample(
@@ -294,14 +332,16 @@ class RAGQualityEvaluator:
                     retrieved_contexts=contexts,
                 )
 
-                # Configure faithfulness metric with judge LLM
-                faithfulness_metric = faithfulness
-                faithfulness_metric.llm = self._judge_llm
+                # Use pre-configured faithfulness metric
+                faithfulness_metric = self._ragas_metrics["faithfulness"]
 
-                # Score using RAGAS
-                result = await faithfulness_metric.single_turn_ascore(
-                    sample, self._run_config
-                )
+                # Score using RAGAS (only pass run_config if not None)
+                if self._run_config is not None:
+                    result = await faithfulness_metric.single_turn_ascore(
+                        sample, self._run_config
+                    )
+                else:
+                    result = await faithfulness_metric.single_turn_ascore(sample)
                 score = float(result) if result is not None else 0.5
 
                 # Generate reason based on score
@@ -342,7 +382,7 @@ class RAGQualityEvaluator:
         Returns:
             MetricScore with answer relevancy score (0.0-1.0)
         """
-        if self.use_ragas and self._judge_llm:
+        if self.use_ragas and self._ragas_metrics:
             try:
                 # Create RAGAS sample
                 sample = SingleTurnSample(
@@ -351,18 +391,16 @@ class RAGQualityEvaluator:
                     retrieved_contexts=contexts,
                 )
 
-                # Configure answer relevancy metric with judge LLM
-                relevancy_metric = answer_relevancy
-                relevancy_metric.llm = self._judge_llm
-                if hasattr(self, "_judge_embeddings"):
-                    relevancy_metric.embeddings = RagasEmbeddings(
-                        langchain_embeddings=self._judge_embeddings
-                    )
+                # Use pre-configured answer relevancy metric
+                relevancy_metric = self._ragas_metrics["answer_relevancy"]
 
-                # Score using RAGAS
-                result = await relevancy_metric.single_turn_ascore(
-                    sample, self._run_config
-                )
+                # Score using RAGAS (only pass run_config if not None)
+                if self._run_config is not None:
+                    result = await relevancy_metric.single_turn_ascore(
+                        sample, self._run_config
+                    )
+                else:
+                    result = await relevancy_metric.single_turn_ascore(sample)
                 score = float(result) if result is not None else 0.5
 
                 # Generate reason based on score
@@ -405,7 +443,7 @@ class RAGQualityEvaluator:
         Returns:
             MetricScore with contextual precision score (0.0-1.0)
         """
-        if self.use_ragas and self._judge_llm:
+        if self.use_ragas and self._ragas_metrics:
             try:
                 # Create RAGAS sample
                 sample = SingleTurnSample(
@@ -415,14 +453,16 @@ class RAGQualityEvaluator:
                     reference="dummy",  # Contextual precision requires reference
                 )
 
-                # Configure context precision metric with judge LLM
-                precision_metric = context_precision
-                precision_metric.llm = self._judge_llm
+                # Use pre-configured context precision metric
+                precision_metric = self._ragas_metrics["context_precision"]
 
-                # Score using RAGAS
-                result = await precision_metric.single_turn_ascore(
-                    sample, self._run_config
-                )
+                # Score using RAGAS (only pass run_config if not None)
+                if self._run_config is not None:
+                    result = await precision_metric.single_turn_ascore(
+                        sample, self._run_config
+                    )
+                else:
+                    result = await precision_metric.single_turn_ascore(sample)
                 score = float(result) if result is not None else 0.5
 
                 # Generate reason based on score
@@ -467,7 +507,7 @@ class RAGQualityEvaluator:
         Returns:
             MetricScore with contextual recall score (0.0-1.0)
         """
-        if self.use_ragas and self._judge_llm and ground_truth:
+        if self.use_ragas and self._ragas_metrics and ground_truth:
             try:
                 # Create RAGAS sample
                 sample = SingleTurnSample(
@@ -477,14 +517,16 @@ class RAGQualityEvaluator:
                     reference=ground_truth,
                 )
 
-                # Configure context recall metric with judge LLM
-                recall_metric = context_recall
-                recall_metric.llm = self._judge_llm
+                # Use pre-configured context recall metric
+                recall_metric = self._ragas_metrics["context_recall"]
 
-                # Score using RAGAS
-                result = await recall_metric.single_turn_ascore(
-                    sample, self._run_config
-                )
+                # Score using RAGAS (only pass run_config if not None)
+                if self._run_config is not None:
+                    result = await recall_metric.single_turn_ascore(
+                        sample, self._run_config
+                    )
+                else:
+                    result = await recall_metric.single_turn_ascore(sample)
                 score = float(result) if result is not None else 0.5
 
                 # Generate reason based on score
