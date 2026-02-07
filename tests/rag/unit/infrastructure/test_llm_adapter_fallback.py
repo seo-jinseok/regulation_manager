@@ -105,7 +105,12 @@ class TestLLMFallbackChain:
 
         # Create adapter with fallback chain
         fallback_chain = [
-            {"provider": "lmstudio", "model": None, "base_url": "http://localhost:1234", "priority": 2},
+            {
+                "provider": "lmstudio",
+                "model": None,
+                "base_url": "http://localhost:1234",
+                "priority": 2,
+            },
         ]
 
         adapter = LLMClientAdapter(
@@ -126,6 +131,7 @@ class TestLLMFallbackChain:
     @patch("src.llm_client.LLMClient")
     def test_all_providers_fail(self, mock_llm_client_class):
         """Test exception when all providers in chain fail."""
+
         # All clients fail
         def create_client(provider, model, api_key, base_url):
             client = MagicMock()
@@ -135,7 +141,12 @@ class TestLLMFallbackChain:
         mock_llm_client_class.side_effect = create_client
 
         fallback_chain = [
-            {"provider": "lmstudio", "model": None, "base_url": "http://localhost:1234", "priority": 2},
+            {
+                "provider": "lmstudio",
+                "model": None,
+                "base_url": "http://localhost:1234",
+                "priority": 2,
+            },
             {"provider": "openrouter", "model": "gemini", "priority": 3},
         ]
 
@@ -188,7 +199,12 @@ class TestLLMFallbackChain:
         mock_llm_client_class.side_effect = create_client
 
         fallback_chain = [
-            {"provider": "lmstudio", "model": None, "base_url": "http://localhost:1234", "priority": 2},
+            {
+                "provider": "lmstudio",
+                "model": None,
+                "base_url": "http://localhost:1234",
+                "priority": 2,
+            },
         ]
 
         adapter = LLMClientAdapter(
@@ -211,7 +227,6 @@ class TestRetryWithBackoff:
     @patch("time.sleep")  # Mock sleep to speed up tests
     def test_retry_on_failure(self, mock_sleep, mock_llm_client_class):
         """Test that failed requests are retried within fallback providers."""
-        primary_call_count = [0]
 
         # Primary fails immediately
         def create_primary_client():
@@ -221,6 +236,7 @@ class TestRetryWithBackoff:
 
         # Fallback succeeds after 2 retries
         fallback_call_count = [0]
+
         def create_fallback_client():
             client = MagicMock()
 
@@ -241,7 +257,12 @@ class TestRetryWithBackoff:
         mock_llm_client_class.side_effect = create_client
 
         fallback_chain = [
-            {"provider": "lmstudio", "model": None, "base_url": "http://localhost:1234", "priority": 2},
+            {
+                "provider": "lmstudio",
+                "model": None,
+                "base_url": "http://localhost:1234",
+                "priority": 2,
+            },
         ]
 
         adapter = LLMClientAdapter(
@@ -259,6 +280,7 @@ class TestRetryWithBackoff:
     @patch("time.sleep")
     def test_exponential_backoff_timing(self, mock_sleep, mock_llm_client_class):
         """Test that backoff delays increase exponentially for fallback providers."""
+
         # Primary fails immediately, no retries
         def create_primary_client():
             client = MagicMock()
@@ -279,7 +301,12 @@ class TestRetryWithBackoff:
         mock_llm_client_class.side_effect = create_client
 
         fallback_chain = [
-            {"provider": "lmstudio", "model": None, "base_url": "http://localhost:1234", "priority": 2},
+            {
+                "provider": "lmstudio",
+                "model": None,
+                "base_url": "http://localhost:1234",
+                "priority": 2,
+            },
         ]
 
         adapter = LLMClientAdapter(
@@ -302,6 +329,7 @@ class TestRetryWithBackoff:
     @patch("time.sleep")
     def test_max_backoff_limit(self, mock_sleep, mock_llm_client_class):
         """Test that backoff is capped at max_backoff_seconds."""
+
         def create_client(provider, model, api_key, base_url):
             client = MagicMock()
             client.complete.side_effect = Exception("Always fails")
@@ -342,7 +370,12 @@ class TestFailureCaching:
         mock_llm_client_class.side_effect = create_client
 
         fallback_chain = [
-            {"provider": "lmstudio", "model": None, "base_url": "http://localhost:1234", "priority": 2},
+            {
+                "provider": "lmstudio",
+                "model": None,
+                "base_url": "http://localhost:1234",
+                "priority": 2,
+            },
             {"provider": "openrouter", "model": "gemini", "priority": 3},
         ]
 
@@ -369,6 +402,7 @@ class TestFailureCaching:
     @patch("src.llm_client.LLMClient")
     def test_clear_failure_cache(self, mock_llm_client_class):
         """Test clearing the failure cache."""
+
         def create_client(provider, model, api_key, base_url):
             client = MagicMock()
             client.complete.side_effect = Exception(f"{provider} failed")
@@ -411,7 +445,12 @@ class TestGracefulDegradation:
         mock_llm_client_class.side_effect = create_client
 
         fallback_chain = [
-            {"provider": "lmstudio", "model": None, "base_url": "http://localhost:1234", "priority": 2},
+            {
+                "provider": "lmstudio",
+                "model": None,
+                "base_url": "http://localhost:1234",
+                "priority": 2,
+            },
         ]
 
         adapter = LLMClientAdapter(
@@ -443,7 +482,12 @@ class TestGracefulDegradation:
         mock_llm_client_class.side_effect = create_client
 
         fallback_chain = [
-            {"provider": "lmstudio", "model": None, "base_url": "http://localhost:1234", "priority": 2},
+            {
+                "provider": "lmstudio",
+                "model": None,
+                "base_url": "http://localhost:1234",
+                "priority": 2,
+            },
         ]
 
         adapter = LLMClientAdapter(
@@ -463,8 +507,13 @@ class TestGracefulDegradation:
         assert stats["primary_failure"] == 1
         assert stats["fallback_success"] == 1
 
-    def test_stats_reset(self):
+    @patch("src.llm_client.LLMClient")
+    def test_stats_reset(self, mock_llm_client_class):
         """Test resetting statistics."""
+        # Mock the LLMClient to avoid ImportError when llama_index is not installed
+        mock_client = MagicMock()
+        mock_llm_client_class.return_value = mock_client
+
         adapter = LLMClientAdapter(provider="ollama", fallback_enabled=False)
 
         # Stats should be initialized
@@ -497,7 +546,12 @@ class TestStreamingFallback:
         mock_llm_client_class.side_effect = create_client
 
         fallback_chain = [
-            {"provider": "lmstudio", "model": None, "base_url": "http://localhost:1234", "priority": 2},
+            {
+                "provider": "lmstudio",
+                "model": None,
+                "base_url": "http://localhost:1234",
+                "priority": 2,
+            },
         ]
 
         adapter = LLMClientAdapter(
