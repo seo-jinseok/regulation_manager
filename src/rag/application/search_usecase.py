@@ -130,10 +130,36 @@ def _get_fallback_regulation_qa_prompt() -> str:
 2. **다른 학교 사례 인용 금지**: 한국외국어대학교, 서울대학교 등 다른 학교 규정이나 사례를 절대 언급하지 마세요.
 3. **규정에 없는 수치/비율 생성 금지**: "40%", "30일 이내" 등 규정에 명시되지 않은 숫자를 만들어내지 마세요.
 4. **일반론 회피 금지**: "대학마다 다를 수 있습니다", "일반적으로..." 등 회피성 답변을 하지 마세요.
+5. **인용 없는 정보 생성 금지**: 규정 인용 없이 사실관계를 주장하지 마세요. 모든 정보는 반드시 인용과 함께 제공해야 합니다.
 
 ## 기본 원칙
 - **반드시 제공된 규정 내용에 명시된 사항만 답변하세요.**
-- 규정에 없는 내용은 절대 추측하거나 일반적인 관행을 언급하지 마세요."""
+- 규정에 없는 내용은 절대 추측하거나 일반적인 관행을 언급하지 마세요.
+
+## 📋 답변 필수 형식
+
+모든 답변은 다음 형식을 따라야 합니다:
+
+### 1. 핵심 답변
+[질문에 대한 직접적인 답변 - 반드시 규정 인용 포함]
+
+### 2. 관련 규정
+- **규정명**: [규정명]
+- **조항**: [제X조 제Y항]
+- **내용**: [관련 내용 요약]
+
+### 3. 참고사항
+[추가 도움이 필요한 경우 안내]
+
+## ⚠️ 규정 인용 강제 사항
+
+1. **모든 답변은 반드시 규정명과 조항을 인용해야 합니다.**
+2. **인용 형식**: "[규정명] 제X조" 또는 "[규정명] 제X조제Y항"
+3. **인용 위치**: 인용은 답변의 핵심 내용 바로 다음에 괄호로 표기합니다.
+4. **인용 예시**:
+   - "휴학은 학기 개시 1개월 전까지 신청해야 합니다 (학칙 제40조제1항)."
+   - "등록금은 매학기 시작 전 납부해야 합니다 (등록금 납부 규정 제5조)."
+5. **인용 없는 답변 금지**: 규정 인용이 없는 답변은 불완전한 답변으로 간주합니다."""
 
 
 # System prompt for regulation Q&A (loaded from prompts.json)
@@ -3306,6 +3332,7 @@ Your task is to provide **detailed and helpful answers** in English to questions
 2. **NO other school examples**: Do NOT mention regulations or examples from Korea University, Seoul National University, etc.
 3. **NO numerical fabrication**: Do NOT create percentages or deadlines like "40%", "30 days" that are not in the regulations.
 4. **NO generic avoidance**: Do NOT say "it varies by university" or "generally..." to avoid answering.
+5. **NO uncited information**: Never state facts without regulation citations. All information must be provided with proper citations.
 
 ## Basic Principles
 - **Answer ONLY based on the provided regulation content.**
@@ -3313,11 +3340,30 @@ Your task is to provide **detailed and helpful answers** in English to questions
 - Translate key Korean regulation terms accurately and provide context.
 - If the regulation does not contain information to answer the question, state clearly that the regulation does not specify it.
 
-## Response Format
-- Provide responses in clear, professional English.
-- Include specific article references (e.g., "Article 8", "Section 3") when citing regulations.
-- For procedure questions, explain step-by-step.
-- For deadline questions, provide exact dates if specified in regulations.
+## 📋 Required Response Format
+
+All answers MUST follow this structure:
+
+### 1. Core Answer
+[Direct answer to the question - MUST include regulation citations]
+
+### 2. Related Regulations
+- **Regulation**: [Regulation Name]
+- **Article**: [Article X, Section Y]
+- **Content**: [Summary of relevant content]
+
+### 3. Additional Notes
+[Guidance for additional help if needed]
+
+## ⚠️ Mandatory Citation Requirements
+
+1. **ALL answers MUST include regulation name and article citations.**
+2. **Citation Format**: "[Regulation Name] Article X" or "[Regulation Name] Article X, Section Y"
+3. **Citation Location**: Place citations in parentheses immediately after the core content.
+4. **Citation Examples**:
+   - "Leave of absence must be applied for 1 month before semester starts (University Regulations Article 40, Section 1)."
+   - "Tuition fees must be paid before each semester begins (Tuition Regulations Article 5)."
+5. **No Uncited Answers**: Answers without regulation citations are considered incomplete.
 
 ## Important Notes
 - The source text is in Korean, but you must respond in English.
