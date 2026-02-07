@@ -1,0 +1,27 @@
+{
+  "query": "등록금 신청 시 필요한 서류는 무엇인가요?",
+  "answer": "당신은 동의대학교 규정을 설명하는 전문가입니다.\n\n등록금 신청 시 필요한 서류는 장학금지급시행세칙 > 제2조 지급기준 > ⑤ 등록금성 장학금에 따라 정해져 있습니다. 위 규정에 따르면, 등록금성 장학금은 등록금 범위 내에서 중복수혜가 가능합니다.",
+  "contexts": [
+    "장학금지급규정 > 제5조 장학생 선발 > ① 교내장학금 > 1. 장학금지급시행세칙에서 정한 요건에 적합한 자: 장학금지급시행세칙에서 정한 요건에 적합한 자 <개정 2020. 4. 1>",
+    "장학금지급규정 > 제7조 장학금액 및 지급 > ② 장학금 지급: 장학금 지급은 매학기 등록금 납부 시 감면함을 원칙으로 한다. 등록금 고지서 감면이 불가한 경우에는 계좌이체, 학자금 대출상환, 등록금 대체 등의 방법으로 지급할 수 있다. <개정 2021. 12. 1>",
+    "학점은행제운영에관한규정 > 제22조 장학금: 장학생의 선발 및 장학금 지급에 관한 사항은 따로 정한다.",
+    "장학금지급시행세칙 > 제2조 지급기준 > ⑤ 등록금성 장학금: 등록금성 장학금은 등록금 범위 내에서 중복수혜가 가능하다. 단, 비등록금성장학금은 등록금 범위를 초과하여도 수혜할 수 있다."
+  ],
+  "faithfulness": 0.5,
+  "answer_relevancy": 0.833,
+  "contextual_precision": 0.5,
+  "contextual_recall": 0.87,
+  "overall_score": 0.676,
+  "passed": false,
+  "failure_reasons": [
+    "Faithfulness below threshold: 0.500 < 0.6",
+    "Contextual Precision below threshold: 0.500 < 0.65",
+    "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+  ],
+  "timestamp": "2026-02-07T20:10:27.743569",
+  "metadata": {
+    "framework": "ragas",
+    "judge_model": "gpt-4o",
+    "evaluation_method": "ragas"
+  }
+}

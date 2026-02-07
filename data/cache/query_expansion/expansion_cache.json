@@ -1,0 +1,454 @@
+{
+  "4b82d1a8c286576b": {
+    "keywords": [
+      "휴학",
+      "휴직",
+      "해당학과",
+      "학년",
+      "필요한เอก서"
+    ],
+    "expanded_query": "휴학 절차 알려주세요 휴직 해당학과 학년",
+    "intent": "휴학 절차 문의",
+    "confidence": 0.95
+  },
+  "ccf98f8b41dfb5c7": {
+    "keywords": [
+      "장학금 자격",
+      "성적 기준",
+      "지급기준",
+      "장학금 지급 규정"
+    ],
+    "expanded_query": "장학금 자격이 뭐예요? 장학금 자격 성적 기준 지급기준",
+    "intent": "장학금 자격 inquiries",
+    "confidence": 0.95
+  },
+  "b8ceb9583997aec1": {
+    "keywords": [
+      "수강신청",
+      "가입",
+      "학점 수집",
+      "학기 수강",
+      "학사원정책"
+    ],
+    "expanded_query": "수강 신청 방법 알려주실까요? 수강신청 가입 학점 수집",
+    "intent": "수강신청 방법 Inquiry",
+    "confidence": 0.9
+  },
+  "b1f1bf5c6a638a41": {
+    "keywords": [
+      "등록금 자격",
+      "요건",
+      "자격",
+      "등록금"
+    ],
+    "expanded_query": "등록금 자격 요건이 어떻게 되나요? 등록금 자격 요건",
+    "intent": "등록금 자격 요건 inquiries",
+    "confidence": 0.9
+  },
+  "8fc584d66da2362a": {
+    "keywords": [
+      "휴학",
+      "절차",
+      "학교",
+      "휴직",
+      "장학금",
+      "graduate school",
+      "study leave"
+    ],
+    "expanded_query": "휴학 절차 상세히 알려주세요 학교 휴직 장학금",
+    "intent": "휴학 절차 inquiries",
+    "confidence": 0.92
+  },
+  "8be3e192a650fdee": {
+    "keywords": [
+      "휴직",
+      "제정",
+      "공제",
+      "고용노동부",
+      "근무시간"
+    ],
+    "expanded_query": "휴직 적용 기준 상세히 제정 공제 고용노동부",
+    "intent": "휴직 적용 기준 detail",
+    "confidence": 0.95
+  },
+  "a9dfd3635e37dff2": {
+    "keywords": [
+      " 급여서식",
+      "고용인사규정",
+      "영업고용인사규정",
+      "급여양식",
+      "근로기준법"
+    ],
+    "expanded_query": "급여 관련 서식 양식 알려주세요  급여서식 고용인사규정 영업고용인사규정",
+    "intent": "급여 관련 서식 양식 inquiries",
+    "confidence": 0.9
+  },
+  "3d593d3220ad3dc3": {
+    "keywords": [
+      "graduate school",
+      "admission requirements",
+      "graduation criteria",
+      "tuition fee",
+      "scholarship"
+    ],
+    "expanded_query": "<JSON> graduate school admission requirements graduation criteria",
+    "intent": "graduate requirements inquiry",
+    "confidence": 0.8
+  },
+  "e9a7bdcf557d14fe": {
+    "keywords": [
+      "연수처리",
+      "연수处理",
+      "연수기한"
+    ],
+    "expanded_query": "연수 처리 기한이 언제까지인가요? 연수처리 연수处理 연수기한",
+    "intent": "연수 처리기한询問",
+    "confidence": 0.9
+  },
+  "ee7799840bd5f382": {
+    "keywords": [
+      "성적등록",
+      "성적申请",
+      "고등학생",
+      "고등학교",
+      "성적승인"
+    ],
+    "expanded_query": "성적 신청 방법 알려주실까요? 성적등록 성적申请 고등학생",
+    "intent": "성적 등록 문의",
+    "confidence": 0.9
+  },
+  "202c59143fce291a": {
+    "keywords": [
+      "교원인사규정",
+      "승진",
+      "업적평가",
+      "임용"
+    ],
+    "expanded_query": "교원인사 적용 기준 상세히 교원인사규정 승진 업적평가",
+    "intent": "교원인사규정 내용 Inquiry",
+    "confidence": 0.95
+  },
+  "354f2b1f252a7bce": {
+    "keywords": [
+      "서식양식",
+      "복무",
+      "근무",
+      "영업",
+      "휴무",
+      "인사규정",
+      "직책"
+    ],
+    "expanded_query": "복무 관련 서식 양식 알려주세요 서식양식 근무 영업",
+    "intent": "복무 관련 서식 양식",
+    "confidence": 0.8
+  },
+  "83d2e8c38cb6f170": {
+    "keywords": [
+      "휴가 승인",
+      "공무원",
+      "직급",
+      "승인권",
+      "휴가",
+      "승인",
+      "승인자"
+    ],
+    "expanded_query": "휴가 승인 권한자가 누구인가요? 휴가 승인 공무원 직급",
+    "intent": "휴가 승인권한자 문의",
+    "confidence": 0.9
+  },
+  "c4061a359cc16704": {
+    "keywords": [
+      "장학금",
+      "부모",
+      "신청",
+      "의무"
+    ],
+    "expanded_query": "장학금 신청은 부모가 해야 하나요? 부모 신청 의무",
+    "intent": "장학금 신청이 부모의 의무인지를 Inquiry",
+    "confidence": 0.9
+  },
+  "1afe2f0cca051c10": {
+    "keywords": [
+      "장학금",
+      "부모",
+      "등록금",
+      "학비",
+      "국가장학금",
+      "교내장학금"
+    ],
+    "expanded_query": "장학금 신청은 부모가 해야 하나요 관심 장학 장학생 등록금 수업료 학비지원 등록금감면 국가장학금 교내장학금 *college university 부모님 부모에 regards 신고 신고 시기 * 학교에 가는 게 하나요\n* 학교에 갈 때\n* 학교에 다니는 게 부모 학비",
+    "intent": "장학금 신청 Inquiry",
+    "confidence": 0.9
+  },
+  "4fad5ca78be6895d": {
+    "keywords": [
+      "휴학",
+      "부모",
+      "인사",
+      "승인"
+    ],
+    "expanded_query": "휴학 부모님도 알아야 하나요? 부모 인사 승인",
+    "intent": "휴学부모인사",
+    "confidence": 0.8
+  },
+  "72cee77dac61e274": {
+    "keywords": [
+      "언론",
+      "영어",
+      "press",
+      "journalism",
+      "media"
+    ],
+    "expanded_query": "언론 영어 press journalism media",
+    "intent": "언론 English 관련 정보 inquiries",
+    "confidence": 0.9
+  },
+  "8962a19e454c6ca4": {
+    "keywords": [
+      "휴학",
+      "일반휴학",
+      "군휴학",
+      "질병휴학",
+      "신청절차",
+      "신청기한"
+    ],
+    "expanded_query": "휴학... 휴학 일반휴학 군휴학",
+    "intent": "휴학 관련 정보 문의",
+    "confidence": 0.95
+  },
+  "5dc979576a7df652": {
+    "keywords": [
+      "연구년",
+      "신청절차",
+      "연구년 규정",
+      "휴직",
+      "연구지원"
+    ],
+    "expanded_query": "연구년 어떻게 해요? 신청절차 연구년 규정 휴직",
+    "intent": "연구년 신청 및 규정 문의",
+    "confidence": 0.85
+  },
+  "e770407c3041e6ce": {
+    "keywords": [
+      "연구년",
+      "휴직",
+      "안식년",
+      "연구지원",
+      "교원인사규정"
+    ],
+    "expanded_query": "연구년 관련 휴직 안식년 연구지원",
+    "intent": "연구년 관련 문의",
+    "confidence": 0.85
+  },
+  "37260b36b25f45b9": {
+    "keywords": [
+      "복무",
+      "처리 절차",
+      "인사규정",
+      "근무규정",
+      "복무규정"
+    ],
+    "expanded_query": "복무 처리 절차 처리 절차 인사규정 근무규정",
+    "intent": "복무 처리 절차 문의",
+    "confidence": 0.85
+  },
+  "b9f804c4565ab087": {
+    "keywords": [
+      "복무",
+      "복무지",
+      "군 복무",
+      "복무 규정",
+      "복무 장소"
+    ],
+    "expanded_query": "복무 어디서 해요? 복무지 군 복무 복무 규정",
+    "intent": "복무 장소 문의",
+    "confidence": 0.85
+  },
+  "f2b03fbfc030600e": {
+    "keywords": [
+      "등록금",
+      "납부방법",
+      "납부일정",
+      "가상계좌",
+      "신용카드",
+      "분할납부",
+      "등록금 고지서"
+    ],
+    "expanded_query": "등록금 어떻게 하나요? 납부방법 납부일정 가상계좌",
+    "intent": "등록금 납부 방법 문의",
+    "confidence": 0.95
+  },
+  "5c0fb12e837ddf00": {
+    "keywords": [
+      "등록금",
+      "납부 방법",
+      "등록금 고지서",
+      "가상계좌",
+      "신용카드",
+      "분할납부"
+    ],
+    "expanded_query": "등록금 어떻게 해요? 납부 방법 등록금 고지서 가상계좌",
+    "intent": "등록금 납부 방법 문의",
+    "confidence": 0.95
+  },
+  "594cd6dcea732c03": {
+    "keywords": [
+      "비자",
+      "비자 발급",
+      "사증",
+      "입국 허가",
+      "비자 신청 절차"
+    ],
+    "expanded_query": "How do I 비자? 비자 비자 발급 사증",
+    "intent": "비자 발급 절차 문의",
+    "confidence": 0.85
+  },
+  "1dca27f6aee41f2a": {
+    "keywords": [
+      "비자",
+      "비자 발급",
+      "비자 신청",
+      "입국 허가",
+      "비자 요건",
+      "비자 발급 절차"
+    ],
+    "expanded_query": "비자 어떻게 해요? 비자 발급 비자 신청 입국 허가",
+    "intent": "비자 발급 절차 문의",
+    "confidence": 0.85
+  },
+  "d08ee31868d5484b": {
+    "keywords": [
+      "수강신청",
+      "신청기간",
+      "학기별 일정",
+      "수강신청 마감일",
+      "신청 절차"
+    ],
+    "expanded_query": "수강 신청 언제까지야? 수강신청 신청기간 학기별 일정",
+    "intent": "수강 신청 기간 문의",
+    "confidence": 0.95
+  },
+  "a85681fe6007f6a3": {
+    "keywords": [
+      "졸업요건",
+      "이수학점",
+      "학점",
+      "졸업학점",
+      "성적기준"
+    ],
+    "expanded_query": "졸업하려면 학점 몇 점 필요해? 졸업요건 이수학점 졸업학점",
+    "intent": "졸업 요건 문의",
+    "confidence": 0.9
+  },
+  "11d118851381b8d2": {
+    "keywords": [
+      "장학금",
+      "신청절차",
+      "지급기준",
+      "장학금지급규정",
+      "선발기준"
+    ],
+    "expanded_query": "장학금 신청하는 법 신청절차 지급기준 장학금지급규정",
+    "intent": "장학금 신청 방법 문의",
+    "confidence": 0.9
+  },
+  "974d688047767337": {
+    "keywords": [
+      "휴학",
+      "신청절차",
+      "휴학신청",
+      "휴학사유",
+      "학적변동"
+    ],
+    "expanded_query": "휴학하고 싶은데 어떻게 해? 휴학 신청절차 휴학신청",
+    "intent": "휴학 절차 문의",
+    "confidence": 0.95
+  },
+  "35396a393a8ff46a": {
+    "keywords": [
+      "졸업요건",
+      "이수학점",
+      "졸업인증",
+      "졸업논문",
+      "학점",
+      "졸업시험"
+    ],
+    "expanded_query": "졸업 졸업요건 이수학점 졸업인증",
+    "intent": "졸업 요건 문의",
+    "confidence": 0.95
+  },
+  "2124965d6533f936": {
+    "keywords": [
+      "등록",
+      "정규등록",
+      "등록금",
+      "학사행정",
+      "등록제도"
+    ],
+    "expanded_query": "등록 정규등록 등록금 학사행정",
+    "intent": "등록 절차 문의",
+    "confidence": 0.85
+  },
+  "10436334046374c4": {
+    "keywords": [
+      "시험 일정",
+      "학기 말",
+      "기말고사",
+      "시험 기간",
+      "학사일정"
+    ],
+    "expanded_query": "학기 말 시험 일정 알려줘 시험 일정 학기 말 기말고사",
+    "intent": "시험 일정 문의",
+    "confidence": 0.95
+  },
+  "a9478e2adfd67282": {
+    "keywords": [
+      "대출 연장",
+      "도서관 규정",
+      "자료 대출",
+      "연장 절차",
+      "반납 예정일"
+    ],
+    "expanded_query": "학교 도서관 대출 연장 방법 대출 연장 도서관 규정 자료 대출",
+    "intent": "도서관 대출 연장 방법 문의",
+    "confidence": 0.95
+  },
+  "1b9a918abf305521": {
+    "keywords": [
+      "성적 이의 신청",
+      "성적 정정",
+      "신청 절차",
+      "성적 처리",
+      "교과목 담당 교수"
+    ],
+    "expanded_query": "성적 이의 신청하는법 알려줘 성적 이의 신청 성적 정정 신청 절차",
+    "intent": "성적 이의 신청 절차 문의",
+    "confidence": 0.95
+  },
+  "f1de41074deeef76": {
+    "keywords": [
+      "졸업 논문",
+      "제출 마감일",
+      "논문 제출 일정",
+      "학위청구논문",
+      "논문 심사 일정"
+    ],
+    "expanded_query": "졸업 논문 제출 마감이 언제인가요?? 졸업 논문 제출 마감일 논문 제출 일정",
+    "intent": "졸업 논문 제출 마감일 문의",
+    "confidence": 0.95
+  },
+  "3f9ebdcd53a4a1fb": {
+    "keywords": [
+      "기숙사 신청",
+      "입사 신청",
+      "국제 학생",
+      "생활관",
+      "기숙사비",
+      "신청 절차",
+      "학생 숙소"
+    ],
+    "expanded_query": "기숙사 신청하는 방법 Can international students apply 관련 생활관 학생숙소 기숙사비 효민생활관 기숙사입사 입사신청 숙소 학생 기숙사 신청하다 요청하다 절차 방식 할 수 있다 가능하다 국제 해외 학생 학습자 지원하다 기숙사 신청 입사 신청 국제 학생",
+    "intent": "기숙사 신청 방법 문의",
+    "confidence": 0.95
+  }
+}

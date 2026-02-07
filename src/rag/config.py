@@ -42,17 +42,24 @@ class FallbackConfig:
         default_factory=lambda: [
             {
                 "provider": os.getenv("LLM_PROVIDER", "openrouter"),
-                "model": os.getenv("LLM_MODEL", "z-ai/glm-4.7-flash"),
+                "model": os.getenv("LLM_MODEL", "openai/gpt-4o-mini"),
                 "base_url": os.getenv("LLM_BASE_URL", "https://openrouter.ai/api/v1"),
                 "api_key_env_var": "OPENROUTER_API_KEY",
                 "priority": 1,
             },
             {
                 "provider": "lmstudio",
-                "model": os.getenv("LLM_MODEL"),
-                "base_url": os.getenv("LLM_BASE_URL", "http://localhost:1234"),
+                "model": "local-model",  # 로컬 기본 모델
+                "base_url": "http://localhost:1234",  # 로컬 기본 URL
                 "api_key_env_var": None,
                 "priority": 2,
+            },
+            {
+                "provider": "ollama",
+                "model": "llama3.2:latest",  # Ollama 기본 모델
+                "base_url": "http://localhost:11434",
+                "api_key_env_var": None,
+                "priority": 3,
             },
         ]
     )

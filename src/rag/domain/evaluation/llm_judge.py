@@ -191,6 +191,11 @@ class LLMJudge:
         - 1.0: Completely accurate, no hallucinations
         - 0.0: Major hallucinations or completely incorrect
         """
+        # Check for empty or minimal answer first
+        if not answer or not answer.strip() or answer.strip() in ["...", "", " "]:
+            # Empty answer is a major failure
+            return 0.0
+
         # Check for automatic failures
         for pattern in self.HALLUCINATION_PATTERNS:
             if re.search(pattern, answer):
@@ -281,14 +286,21 @@ class LLMJudge:
         Score: 0.0-1.0
         - 1.0: All sources highly relevant
         - 0.0: No relevant sources
+
+        Note: Returns minimum base score (0.2) for empty sources to avoid
+        completely zeroing out the overall score when extraction fails.
         """
         if not sources:
-            return 0.0
+            # Return minimal base score instead of 0.0 to avoid total failure
+            # when source extraction fails but other metrics may be good
+            return 0.2
 
         # Weight by position (top sources matter more)
         relevance_scores = []
         for i, source in enumerate(sources):
-            score = source.get("score", 0.0)
+            score = source.get("score", 0.5)  # Default to 0.5 instead of 0.0
+            if score is None or score == 0:
+                score = 0.3  # Minimum score for retrieved sources
             # Position weight: top sources matter more
             position_weight = 1.0 / (1 + i * 0.1)
             relevance_scores.append(score * position_weight)

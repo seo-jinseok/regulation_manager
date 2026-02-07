@@ -148,7 +148,7 @@ class CitationEnhancer:
             confidences = [1.0] * len(chunks)
 
         enhanced = []
-        for chunk, conf in zip(chunks, confidences, strict=False):
+        for chunk, conf in zip(chunks, confidences):
             citation = self.enhance_citation(chunk, confidence=conf)
             if citation is not None:
                 enhanced.append(citation)

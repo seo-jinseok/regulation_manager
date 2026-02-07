@@ -328,8 +328,9 @@ class ParallelPersonaEvaluator:
         answer_text = result.content if result.success else ""
         sources = []
 
+        # Try to extract sources from result.data
+        sources_extracted = False
         if result.data:
-            # Try to extract sources from result
             if "tool_results" in result.data:
                 for tool_result in result.data.get("tool_results", []):
                     if tool_result.get("tool_name") == "search_regulations":
@@ -338,6 +339,10 @@ class ParallelPersonaEvaluator:
                             search_results = result_data.get("results", [])
                             for r in search_results[:5]:
                                 if isinstance(r, dict):
+                                    # Fix: Handle score field properly (avoid 0.0 falsy issue)
+                                    score = r.get("score", r.get("similarity", 0.5))
+                                    if score is None or score == 0:
+                                        score = r.get("similarity", 0.5)
                                     sources.append(
                                         {
                                             "title": r.get("title", "")
@@ -347,11 +352,38 @@ class ParallelPersonaEvaluator:
                                                 or r.get("content", "")
                                             )[:200],
                                             "rule_code": r.get("rule_code", ""),
-                                            "score": r.get("score", 0.0)
-                                            or r.get("similarity", 0.0),
+                                            "score": float(score),
                                         }
                                     )
+                            sources_extracted = True
                             break
+
+        # Fallback: If no sources extracted, perform direct search
+        if not sources_extracted and self.query_handler._search_usecase:
+            try:
+                from src.rag.infrastructure.query_analyzer import Audience
+
+                search_results = self.query_handler._search_usecase.search(
+                    query_text=query.query,
+                    top_k=5,
+                    audience_override=Audience.ALL,
+                )
+                for r in search_results:
+                    score = getattr(r, "score", 0.5)
+                    sources.append(
+                        {
+                            "title": r.chunk.title,
+                            "text": r.chunk.text[:200],
+                            "rule_code": r.chunk.rule_code,
+                            "score": float(score),
+                        }
+                    )
+            except Exception as e:
+                import logging
+
+                logging.getLogger(__name__).warning(
+                    f"Failed to extract sources for query '{query.query}': {e}"
+                )
 
         # Use LLM judge to evaluate
         judge_result = self.judge.evaluate(

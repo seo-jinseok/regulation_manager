@@ -1,0 +1,29 @@
+{
+  "query": "논문 절차 상세히 알려주세요",
+  "answer": "",
+  "contexts": [
+    "졸업논문또는졸업실적심사규정 > 제7조 논문규격 및 제출시기 > ③ 논문: 논문은 매년 11월말(후기 졸업 예정자는 6월초)까지 지도교수를 거쳐 소속 학과장(전공주임교수)에게 제출한다. <개정 2011. 2. 10, 2012. 2. 10>",
+    "졸업논문또는졸업실적심사규정 > 제8조 논문심사 > ② 학과장(전공주임교수): 학과장(전공주임교수)은 논문 발표 1주일 전에 학장의 허가를 얻어 발표 일시와 장소를 공고하고, 논문 심사위원에게 졸업논문을 제출하여야 한다. <개정 2011. 2. 10>",
+    "졸업논문또는졸업실적심사규정 > 제4조 졸업논문계획서: 졸업논문에 관한 논문계획서는 소정 서식에 의하여 졸업 학년도 4월말 또는 9월말까지 제출하여야 한다.",
+    "대학원학위논문심사에관한세칙 > 제11조 심사방법 > ① 석사학위 청구논문 > 6. 논문: 논문의 평가는 “가” 또는 “부”로 하되 판정은 심사위원의 3분의 2 이상의 찬성으로 한다.",
+    "대학원학위논문심사에관한세칙 > 제9조 논문심사위원 자격 > ① 논문심사위원 > 1. 석사학위논문: 석사학위논문의 심사위원 : 관련전공 3인으로 구성하되, 본 대학교의 전임교원 또는 대학원장이 인정하는 자로 한다. 단, 논문의 특성상 외부심사위원이 필요한 경우 1명만 가능하며 대학원장의 승인을 얻어야 한다. <개정 2012. 7. 1., 2013. 5. 1., 2018. 4. 1.>"
+  ],
+  "faithfulness": 0.0,
+  "answer_relevancy": 0.5,
+  "contextual_precision": 0.5,
+  "contextual_recall": 0.87,
+  "overall_score": 0.468,
+  "passed": false,
+  "failure_reasons": [
+    "Faithfulness below threshold: 0.000 < 0.6",
+    "Answer Relevancy below threshold: 0.500 < 0.7",
+    "Contextual Precision below threshold: 0.500 < 0.65",
+    "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+  ],
+  "timestamp": "2026-02-07T18:59:26.604534",
+  "metadata": {
+    "framework": "ragas",
+    "judge_model": "gpt-4o",
+    "evaluation_method": "ragas"
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "query": "연구년 예외 사항이 있는지 확인 필요",
+  "answer": "",
+  "contexts": [
+    "교원업적평가규정 > 제8조 평가단위기간의 예외 > 2. 연구년, 해외파견 등으로 한 학기: 연구년, 해외파견 등으로 한 학기의 업적만 있는 경우 다만, 이 경우에도 연구업적의 평가단위기간은 학년도 전체로 한다.",
+    "교원연구년제규정 > 부칙 > 2. 경과조치: 이 규정 시행과 동시에 ｢교원안식년연구에관한규정｣은 폐지하며, 이 규정 시행 당시 안식년 연구 교원은 이 규정의 연구년 교원으로 적용한다.",
+    "교원연구년제규정 > 제3조의2 배정제외 > 7. 제1호 내지 제3호 및 제6호: 제1호 내지 제3호 및 제6호의 배정제외에 있어 한의과대학 소속 임상교원은 예외로 한다. <신설 2025. 3. 1.>",
+    "교원연구년제규정 > 제9조 선정기준 및 절차: 소속 대학장은 소속 교원으로부터 연구년제 허가 신청이 있을 경우, 당해 교원의 연구년제 계획이 본인이나 학교에 유익한 공헌을 할 수 있는가를 확인한 후 총장에게 추천하고, 총장은 추천사항을 심사하여 연구년제 연구자를 선정한다.",
+    "내부감사규정 > 제3장 감사계획 수립 및 감사의 실시 > 제19조 감사증거 > ③ 제2항: 제2항의 확인서에는 발견된 예외사항이 명확하게 기록되어야 하며, 감사인과 피감사부서의 확인자가 각각 서명하여야 한다."
+  ],
+  "faithfulness": 0.0,
+  "answer_relevancy": 0.5,
+  "contextual_precision": 0.5,
+  "contextual_recall": 0.87,
+  "overall_score": 0.468,
+  "passed": false,
+  "failure_reasons": [
+    "Faithfulness below threshold: 0.000 < 0.6",
+    "Answer Relevancy below threshold: 0.500 < 0.7",
+    "Contextual Precision below threshold: 0.500 < 0.65",
+    "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+  ],
+  "timestamp": "2026-02-07T19:04:40.578552",
+  "metadata": {
+    "framework": "ragas",
+    "judge_model": "gpt-4o",
+    "evaluation_method": "ragas"
+  }
+}

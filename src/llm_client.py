@@ -120,8 +120,19 @@ class LLMClient:
             raise ValueError(f"Unsupported provider: {self.provider}")
 
     def complete(self, prompt: str) -> str:
-        response = self.llm.complete(prompt)
-        return response.text
+        try:
+            response = self.llm.complete(prompt)
+            return response.text
+        except Exception as e:
+            import logging
+
+            logger = logging.getLogger(__name__)
+            logger.error(f"LLM complete failed: {type(e).__name__}: {e}")
+            logger.error(
+                f"Provider: {self.provider}, Model: {self.model}, Base URL: {self.base_url}"
+            )
+            # Re-raise to allow fallback
+            raise
 
     def stream_complete(self, prompt: str):
         """

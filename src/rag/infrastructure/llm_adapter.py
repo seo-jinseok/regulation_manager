@@ -293,6 +293,12 @@ class LLMClientAdapter(ILLMClient):
 
         try:
             response = client.complete(full_prompt)
+            # 빈 응답 검증 - 빈 응답은 실패로 처리하여 재시도 유도
+            if not response or not response.strip():
+                logger.warning(
+                    f"LLM returned empty response for provider '{provider_name}'"
+                )
+                raise ValueError("Empty response from LLM")
             return response
         except Exception as e:
             logger.warning(

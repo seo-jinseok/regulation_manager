@@ -1,0 +1,29 @@
+{
+  "query": "Tell me about 비자 in English",
+  "answer": "",
+  "contexts": [
+    "FUN학생경험지원센터규정 > 제2조 업무 > 7. 학생경력관리포털(DAP: Dongeui All: 학생경력관리포털(DAP: Dongeui All-in-onecareer assistance Platform)등 학생 경험 지원 관련 시스템 관리 및 운영",
+    "사무분장규정 > 제5장 학생지원처 > 제20조 FUN학생경험지원센터 > 6. 학생경력관리포털(DAP: Dongeui All: 학생경력관리포털(DAP: Dongeui All-in-onecareer assistance Platform)등 학생 경험 지원 관련 시스템 관리 및 운영",
+    "중앙도서관소장자료의변상에관한세칙 > 산정가격 > 2. 외국 도서 변상액 > 가. 도서: 도서의 변상가격은 변상 당해년의 출판목록(예 : Books in Print 등)에 수록되어 있는 것은 그 표시된 금액에 대한 2배를 공정환율(변상당일)로 환산하여 산정한다.(산정가격은 원가에다 수수료(20%)를 더한 가격이다.)",
+    "국제교류및외국인유학생위원회규정 > 제4조 임기: 위원의 임기는 2년으로 하되 연임할 수 있다.",
+    "교원연구년제규정 > 부칙 > 2. 연구년제 수행계획서1부: 연구년제 수행계획서1부."
+  ],
+  "faithfulness": 0.0,
+  "answer_relevancy": 0.5,
+  "contextual_precision": 0.5,
+  "contextual_recall": 0.87,
+  "overall_score": 0.468,
+  "passed": false,
+  "failure_reasons": [
+    "Faithfulness below threshold: 0.000 < 0.6",
+    "Answer Relevancy below threshold: 0.500 < 0.7",
+    "Contextual Precision below threshold: 0.500 < 0.65",
+    "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+  ],
+  "timestamp": "2026-02-07T18:28:23.576175",
+  "metadata": {
+    "framework": "ragas",
+    "judge_model": "gpt-4o",
+    "evaluation_method": "mock"
+  }
+}

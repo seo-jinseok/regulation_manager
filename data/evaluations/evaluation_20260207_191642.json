@@ -1,0 +1,27 @@
+{
+  "query": "자녀 장학금 관련해서 알고 싶어요",
+  "answer": "",
+  "contexts": [
+    "장학금지급규정 > 제2조 적용범위: 장학생 선발과 장학금 지급에 관하여 법령 및 각종 장학단체 등이 정한 별도의 규정이 없는 한 이 규정에 따른다.",
+    "장학금지급규정 > 제10조 이중수혜금지 > ① 장학생으로 선발된 자: 장학생으로 선발된 자는 등록금을 초과하여 장학금을 수혜할 수 없다. <개정 2015. 1. 1>",
+    "대학원장학금지급에관한세칙 > 제4조 장학생의 종류 및 자격 > ㄱ > 7. 외부기탁 장학생 : 외부장학금: 외부기탁 장학생 : 외부장학금은 기탁자의 선발 기준에 따라 선정된다."
+  ],
+  "faithfulness": 0.0,
+  "answer_relevancy": 0.5,
+  "contextual_precision": 0.5,
+  "contextual_recall": 0.87,
+  "overall_score": 0.468,
+  "passed": false,
+  "failure_reasons": [
+    "Faithfulness below threshold: 0.000 < 0.6",
+    "Answer Relevancy below threshold: 0.500 < 0.7",
+    "Contextual Precision below threshold: 0.500 < 0.65",
+    "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+  ],
+  "timestamp": "2026-02-07T19:16:42.376803",
+  "metadata": {
+    "framework": "ragas",
+    "judge_model": "gpt-4o",
+    "evaluation_method": "ragas"
+  }
+}

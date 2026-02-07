@@ -1,0 +1,29 @@
+{
+  "query": "사무용품 승인 권한자가 누구인가요?",
+  "answer": "",
+  "contexts": [
+    "홈페이지운영규정 > 제6조 전자게시판 이용 > ① 공지사항: 공지사항의 게시내용은 게시판 등록 권한을 부여받은 부서에서 게시물을 등록하고, 전산정보원 정보인프라팀의 승인을 받아야 한다. <개정 2008. 2. 1, 2010. 4. 1, 2015. 2. 1, 2017. 9. 1, 2019. 9. 1, 2021. 10. 1>",
+    "동물실험윤리위원회운영규정 > 제4조 권한과 의무 > ① 위원회 > 1. 동물실험: 동물실험의 윤리적ㆍ과학적 타당성에 대한 심의 및 승인",
+    "위임전결규정 > 제1조 목적: 이 규정은 동의대학교 사무분장규정에 대하여 본 대학교의 공문서에 대한 총장의 결재 권한 일부를 위임하여 사무처리의 능률화를 기하고 직위별 권한과 책임의 한계를 규정함을 목적으로 한다.",
+    "신발․용품종합연구소규정 > 제1장 총칙 > 제4조 사업 > 3. 신발·용품 관계기관과 취업연계: 신발·용품 관계기관과 취업연계",
+    "사무분장규정 > 제4절 전산정보원 > 제64조 정보화개발팀 > 2. 정보: 정보의 사용권한 및 정보보호에 관한 사항"
+  ],
+  "faithfulness": 0.0,
+  "answer_relevancy": 0.5,
+  "contextual_precision": 0.5,
+  "contextual_recall": 0.87,
+  "overall_score": 0.468,
+  "passed": false,
+  "failure_reasons": [
+    "Faithfulness below threshold: 0.000 < 0.6",
+    "Answer Relevancy below threshold: 0.500 < 0.7",
+    "Contextual Precision below threshold: 0.500 < 0.65",
+    "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+  ],
+  "timestamp": "2026-02-07T19:11:09.438363",
+  "metadata": {
+    "framework": "ragas",
+    "judge_model": "gpt-4o",
+    "evaluation_method": "ragas"
+  }
+}

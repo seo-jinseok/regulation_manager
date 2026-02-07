@@ -1,0 +1,2732 @@
+{
+  "summary": {
+    "stage": 1,
+    "stage_name": "Initial (Week 1)",
+    "total_scenarios": 30,
+    "passed": 4,
+    "failed": 26,
+    "pass_rate": 0.13333333333333333,
+    "thresholds": {
+      "faithfulness": 0.6,
+      "answer_relevancy": 0.7,
+      "contextual_precision": 0.65,
+      "contextual_recall": 0.65,
+      "overall": 0.6
+    },
+    "average_scores": {
+      "faithfulness": 0.5033333333333334,
+      "answer_relevancy": 0.7100000000000001,
+      "contextual_precision": 0.5400000000000001,
+      "contextual_recall": 0.32,
+      "overall": 0.5256666666666666
+    },
+    "persona_stats": {
+      "freshman": {
+        "total": 5,
+        "passed": 2,
+        "failed": 3,
+        "pass_rate": 0.4,
+        "avg_score": 0.735
+      },
+      "graduate": {
+        "total": 5,
+        "passed": 0,
+        "failed": 5,
+        "pass_rate": 0.0,
+        "avg_score": 0.576
+      },
+      "professor": {
+        "total": 5,
+        "passed": 0,
+        "failed": 5,
+        "pass_rate": 0.0,
+        "avg_score": 0.479
+      },
+      "staff": {
+        "total": 5,
+        "passed": 0,
+        "failed": 5,
+        "pass_rate": 0.0,
+        "avg_score": 0.41
+      },
+      "parent": {
+        "total": 5,
+        "passed": 1,
+        "failed": 4,
+        "pass_rate": 0.2,
+        "avg_score": 0.291
+      },
+      "international": {
+        "total": 5,
+        "passed": 1,
+        "failed": 4,
+        "pass_rate": 0.2,
+        "avg_score": 0.663
+      }
+    },
+    "category_stats": {
+      "simple": {
+        "total": 15,
+        "passed": 2,
+        "failed": 13,
+        "pass_rate": 0.13333333333333333,
+        "avg_score": 0.603
+      },
+      "complex": {
+        "total": 10,
+        "passed": 2,
+        "failed": 8,
+        "pass_rate": 0.2,
+        "avg_score": 0.487
+      },
+      "edge": {
+        "total": 5,
+        "passed": 0,
+        "failed": 5,
+        "pass_rate": 0.0,
+        "avg_score": 0.372
+      }
+    },
+    "failures": [
+      {
+        "scenario_id": "freshman_001",
+        "persona": "freshman",
+        "query": "휴학 어떻게 해요?",
+        "reasons": [
+          "Contextual Recall below threshold: 0.600 < 0.65"
+        ],
+        "scores": {
+          "faithfulness": 0.8,
+          "answer_relevancy": 1.0,
+          "contextual_precision": 1.0,
+          "contextual_recall": 0.6
+        }
+      },
+      {
+        "scenario_id": "freshman_002",
+        "persona": "freshman",
+        "query": "장학금 신청 방법 알려주실까요?",
+        "reasons": [
+          "Faithfulness below threshold: 0.000 < 0.6",
+          "Contextual Precision below threshold: 0.400 < 0.65",
+          "Contextual Recall below threshold: 0.000 < 0.65",
+          "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+        ],
+        "scores": {
+          "faithfulness": 0.0,
+          "answer_relevancy": 1.0,
+          "contextual_precision": 0.4,
+          "contextual_recall": 0.0
+        }
+      },
+      {
+        "scenario_id": "freshman_005",
+        "persona": "freshman",
+        "query": "복학 신청도 따로 해야 하나요?",
+        "reasons": [
+          "Contextual Recall below threshold: 0.600 < 0.65"
+        ],
+        "scores": {
+          "faithfulness": 0.7,
+          "answer_relevancy": 1.0,
+          "contextual_precision": 0.9,
+          "contextual_recall": 0.6
+        }
+      },
+      {
+        "scenario_id": "graduate_001",
+        "persona": "graduate",
+        "query": "연구년 자격 요건이 어떻게 되나요?",
+        "reasons": [
+          "Faithfulness below threshold: 0.400 < 0.6",
+          "Contextual Recall below threshold: 0.400 < 0.65",
+          "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+        ],
+        "scores": {
+          "faithfulness": 0.4,
+          "answer_relevancy": 1.0,
+          "contextual_precision": 0.9,
+          "contextual_recall": 0.4
+        }
+      },
+      {
+        "scenario_id": "graduate_002",
+        "persona": "graduate",
+        "query": "연구비 지급 규정 확인 부탁드립니다",
+        "reasons": [
+          "Contextual Recall below threshold: 0.400 < 0.65"
+        ],
+        "scores": {
+          "faithfulness": 0.9,
+          "answer_relevancy": 1.0,
+          "contextual_precision": 1.0,
+          "contextual_recall": 0.4
+        }
+      },
+      {
+        "scenario_id": "graduate_003",
+        "persona": "graduate",
+        "query": "논문 제출 기한 연장 가능한가요?",
+        "reasons": [
+          "Faithfulness below threshold: 0.400 < 0.6",
+          "Contextual Precision below threshold: 0.400 < 0.65",
+          "Contextual Recall below threshold: 0.000 < 0.65",
+          "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+        ],
+        "scores": {
+          "faithfulness": 0.4,
+          "answer_relevancy": 0.8,
+          "contextual_precision": 0.4,
+          "contextual_recall": 0.0
+        }
+      },
+      {
+        "scenario_id": "graduate_004",
+        "persona": "graduate",
+        "query": "조교 근무 시간과 장학금 혜택 관련하여",
+        "reasons": [
+          "Faithfulness below threshold: 0.000 < 0.6",
+          "Answer Relevancy below threshold: 0.400 < 0.7",
+          "Contextual Precision below threshold: 0.000 < 0.65",
+          "Contextual Recall below threshold: 0.000 < 0.65",
+          "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+        ],
+        "scores": {
+          "faithfulness": 0.0,
+          "answer_relevancy": 0.4,
+          "contextual_precision": 0.0,
+          "contextual_recall": 0.0
+        }
+      },
+      {
+        "scenario_id": "graduate_005",
+        "persona": "graduate",
+        "query": "등록금 면제 기준이 대학원마다 달라요?",
+        "reasons": [
+          "Contextual Precision below threshold: 0.600 < 0.65"
+        ],
+        "scores": {
+          "faithfulness": 0.9,
+          "answer_relevancy": 1.0,
+          "contextual_precision": 0.6,
+          "contextual_recall": 0.9
+        }
+      },
+      {
+        "scenario_id": "professor_001",
+        "persona": "professor",
+        "query": "교원인사규정 제8조 확인 필요",
+        "reasons": [
+          "Contextual Recall below threshold: 0.000 < 0.65"
+        ],
+        "scores": {
+          "faithfulness": 0.8,
+          "answer_relevancy": 0.9,
+          "contextual_precision": 1.0,
+          "contextual_recall": 0.0
+        }
+      },
+      {
+        "scenario_id": "professor_002",
+        "persona": "professor",
+        "query": "연구년 적용 기준 상세히",
+        "reasons": [
+          "Contextual Recall below threshold: 0.600 < 0.65"
+        ],
+        "scores": {
+          "faithfulness": 0.8,
+          "answer_relevancy": 0.9,
+          "contextual_precision": 0.7,
+          "contextual_recall": 0.6
+        }
+      },
+      {
+        "scenario_id": "professor_003",
+        "persona": "professor",
+        "query": "승진 심의 기준과 편장조 구체적 근거",
+        "reasons": [
+          "Faithfulness below threshold: 0.000 < 0.6",
+          "Answer Relevancy below threshold: 0.400 < 0.7",
+          "Contextual Precision below threshold: 0.000 < 0.65",
+          "Contextual Recall below threshold: 0.000 < 0.65",
+          "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+        ],
+        "scores": {
+          "faithfulness": 0.0,
+          "answer_relevancy": 0.4,
+          "contextual_precision": 0.0,
+          "contextual_recall": 0.0
+        }
+      },
+      {
+        "scenario_id": "professor_004",
+        "persona": "professor",
+        "query": "휴직 시 급여 지급 규정 해석 부탁드립니다",
+        "reasons": [
+          "Contextual Recall below threshold: 0.600 < 0.65"
+        ],
+        "scores": {
+          "faithfulness": 0.8,
+          "answer_relevancy": 0.9,
+          "contextual_precision": 1.0,
+          "contextual_recall": 0.6
+        }
+      },
+      {
+        "scenario_id": "professor_005",
+        "persona": "professor",
+        "query": "Sabbatical leave 규정과 국내 연구년 차이점",
+        "reasons": [
+          "Faithfulness below threshold: 0.000 < 0.6",
+          "Answer Relevancy below threshold: 0.000 < 0.7",
+          "Contextual Precision below threshold: 0.000 < 0.65",
+          "Contextual Recall below threshold: 0.000 < 0.65",
+          "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+        ],
+        "scores": {
+          "faithfulness": 0.0,
+          "answer_relevancy": 0.0,
+          "contextual_precision": 0.0,
+          "contextual_recall": 0.0
+        }
+      },
+      {
+        "scenario_id": "staff_001",
+        "persona": "staff",
+        "query": "복무 규정 확인 부탁드립니다",
+        "reasons": [
+          "Contextual Recall below threshold: 0.000 < 0.65"
+        ],
+        "scores": {
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.9,
+          "contextual_precision": 1.0,
+          "contextual_recall": 0.0
+        }
+      },
+      {
+        "scenario_id": "staff_002",
+        "persona": "staff",
+        "query": "휴가 신청 서식 양식 알려주세요",
+        "reasons": [
+          "Contextual Recall below threshold: 0.400 < 0.65"
+        ],
+        "scores": {
+          "faithfulness": 0.9,
+          "answer_relevancy": 0.9,
+          "contextual_precision": 0.9,
+          "contextual_recall": 0.4
+        }
+      },
+      {
+        "scenario_id": "staff_003",
+        "persona": "staff",
+        "query": "급여 지급일과 처리 기한이 언제까지인가요?",
+        "reasons": [
+          "Faithfulness below threshold: 0.500 < 0.6",
+          "Answer Relevancy below threshold: 0.400 < 0.7",
+          "Contextual Precision below threshold: 0.000 < 0.65",
+          "Contextual Recall below threshold: 0.000 < 0.65",
+          "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+        ],
+        "scores": {
+          "faithfulness": 0.5,
+          "answer_relevancy": 0.4,
+          "contextual_precision": 0.0,
+          "contextual_recall": 0.0
+        }
+      },
+      {
+        "scenario_id": "staff_004",
+        "persona": "staff",
+        "query": "사무용품 사용 규정과 승인 권한자 확인",
+        "reasons": [
+          "Faithfulness below threshold: 0.000 < 0.6",
+          "Answer Relevancy below threshold: 0.400 < 0.7",
+          "Contextual Precision below threshold: 0.000 < 0.65",
+          "Contextual Recall below threshold: 0.000 < 0.65",
+          "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+        ],
+        "scores": {
+          "faithfulness": 0.0,
+          "answer_relevancy": 0.4,
+          "contextual_precision": 0.0,
+          "contextual_recall": 0.0
+        }
+      },
+      {
+        "scenario_id": "staff_005",
+        "persona": "staff",
+        "query": "연수 참가 절차와 경비 처리 방법",
+        "reasons": [
+          "Faithfulness below threshold: 0.000 < 0.6",
+          "Answer Relevancy below threshold: 0.400 < 0.7",
+          "Contextual Precision below threshold: 0.000 < 0.65",
+          "Contextual Recall below threshold: 0.000 < 0.65",
+          "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+        ],
+        "scores": {
+          "faithfulness": 0.0,
+          "answer_relevancy": 0.4,
+          "contextual_precision": 0.0,
+          "contextual_recall": 0.0
+        }
+      },
+      {
+        "scenario_id": "parent_001",
+        "persona": "parent",
+        "query": "기숙사 신청은 언제부터 하면 돼?",
+        "reasons": [
+          "Faithfulness below threshold: 0.000 < 0.6",
+          "Contextual Precision below threshold: 0.000 < 0.65",
+          "Contextual Recall below threshold: 0.000 < 0.65",
+          "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+        ],
+        "scores": {
+          "faithfulness": 0.0,
+          "answer_relevancy": 0.8,
+          "contextual_precision": 0.0,
+          "contextual_recall": 0.0
+        }
+      },
+      {
+        "scenario_id": "parent_002",
+        "persona": "parent",
+        "query": "등록금 납부 기간과 방법 알려주세요",
+        "reasons": [
+          "Faithfulness below threshold: 0.000 < 0.6",
+          "Answer Relevancy below threshold: 0.000 < 0.7",
+          "Contextual Precision below threshold: 0.000 < 0.65",
+          "Contextual Recall below threshold: 0.000 < 0.65",
+          "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+        ],
+        "scores": {
+          "faithfulness": 0.0,
+          "answer_relevancy": 0.0,
+          "contextual_precision": 0.0,
+          "contextual_recall": 0.0
+        }
+      },
+      {
+        "scenario_id": "parent_003",
+        "persona": "parent",
+        "query": "자녀 성적 확인 어떻게 하면 돼요?",
+        "reasons": [
+          "Faithfulness below threshold: 0.000 < 0.6",
+          "Answer Relevancy below threshold: 0.000 < 0.7",
+          "Contextual Precision below threshold: 0.000 < 0.65",
+          "Contextual Recall below threshold: 0.000 < 0.65",
+          "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+        ],
+        "scores": {
+          "faithfulness": 0.0,
+          "answer_relevancy": 0.0,
+          "contextual_precision": 0.0,
+          "contextual_recall": 0.0
+        }
+      },
+      {
+        "scenario_id": "parent_005",
+        "persona": "parent",
+        "query": "학교 연락처 알려주세요",
+        "reasons": [
+          "Faithfulness below threshold: 0.400 < 0.6",
+          "Contextual Precision below threshold: 0.200 < 0.65",
+          "Contextual Recall below threshold: 0.000 < 0.65",
+          "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+        ],
+        "scores": {
+          "faithfulness": 0.4,
+          "answer_relevancy": 0.7,
+          "contextual_precision": 0.2,
+          "contextual_recall": 0.0
+        }
+      },
+      {
+        "scenario_id": "international_001",
+        "persona": "international",
+        "query": "enrollment procedure for international students",
+        "reasons": [
+          "Answer Relevancy below threshold: 0.600 < 0.7"
+        ],
+        "scores": {
+          "faithfulness": 0.7,
+          "answer_relevancy": 0.6,
+          "contextual_precision": 0.8,
+          "contextual_recall": 0.7
+        }
+      },
+      {
+        "scenario_id": "international_002",
+        "persona": "international",
+        "query": "visa requirements and support",
+        "reasons": [
+          "Contextual Recall below threshold: 0.600 < 0.65"
+        ],
+        "scores": {
+          "faithfulness": 0.9,
+          "answer_relevancy": 0.8,
+          "contextual_precision": 0.9,
+          "contextual_recall": 0.6
+        }
+      },
+      {
+        "scenario_id": "international_003",
+        "persona": "international",
+        "query": "courses in English available?",
+        "reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7"
+        ],
+        "scores": {
+          "faithfulness": 0.8,
+          "answer_relevancy": 0.5,
+          "contextual_precision": 0.8,
+          "contextual_recall": 0.8
+        }
+      },
+      {
+        "scenario_id": "international_005",
+        "persona": "international",
+        "query": "housing options and application",
+        "reasons": [
+          "Faithfulness below threshold: 0.000 < 0.6",
+          "Contextual Precision below threshold: 0.000 < 0.65",
+          "Contextual Recall below threshold: 0.000 < 0.65",
+          "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+        ],
+        "scores": {
+          "faithfulness": 0.0,
+          "answer_relevancy": 0.8,
+          "contextual_precision": 0.0,
+          "contextual_recall": 0.0
+        }
+      }
+    ],
+    "test_duration_seconds": 395.632726,
+    "timestamp": "2026-02-07T17:21:23.015110"
+  },
+  "results": [
+    {
+      "scenario_id": "freshman_001",
+      "persona": "freshman",
+      "scenario_index": 1,
+      "query": "휴학 어떻게 해요?",
+      "category": "simple",
+      "ground_truth": "휴학 신청은 학사팀에 서류 제출",
+      "answer": "동의대학교 휴학 신청은 교내 시스템을 통해 진행합니다.\n\n### 1. 휴학 신청 절차\n1. **휴학 사유 확인**: 질병, 병역 수행, 창업, 육아 등 부득이한 사유가 있는 경우, 총장의 허가를 받아야 합니다.\n2. **휴학원서 작성**: 휴학을 원하시는 경우, 휴학원서를 작성합니다.\n3. **제출 및 허가**: 작성한 휴학원서를 해당 부서에 제출하여 허가를 받습니다.\n\n### 2. 휴학 기간\n- **학사과정**: 통산하여 3년 이내\n- **예과과정**: 1년 이내\n- **1회 휴학 기간**: 2개 학기를 초과할 수 없으며, 부득이한 사유가 있는 경우 1회에 한하여 연장 가능합니다.\n\n### 3. 추가 사항\n- **납입금 면제**: 재학 중 하계 및 동계 방학일부터 휴학하고자 하는 경우, 해당 학기가 개시되기 전까지 휴학원서를 제출하여 허가를 받은 자는 그 학기 납입금을 납입하지 않아도 됩니다.\n\n### 4. 근거 출처\n• 출처: 「동의대학교학칙」 제19조\n\n구체적인 신청 기간은 매학기 학사일정으로 별도 공지됩니다. 추가적인 문의는 학사지원팀에 하시면 됩니다.\n\n---\n⚠️ **주의**: 일부 인용(「동의대학교학칙」 제19조\n\n)은 데이터베이스에서 확인되지 않았습니다. 담당 부서에 확인하시기 바랍니다.",
+      "sources": [
+        {
+          "regulation_name": "",
+          "rule_code": "2-1-1",
+          "path": "",
+          "text": "동의대학교학칙 > 제4장 휴ㆍ복학, 전과, 자퇴 및 제적 <제목개정 2023. 2. 1> > 제19조 휴학 > ② 휴학: 휴학은 통산하여 학사과정은 3년, 예과과정은 1년으로 한다. 휴학기간은 1회에 2개 학기를 초과하지 못하며, 부득이한 사유가 있는 경우에는 1회에 한하여 연장할 수 있다. <개정 2011. 11. 16., 2023. 2. 1., 2024. 1. 1.>",
+          "relevance_pct": 100
+        },
+        {
+          "regulation_name": "",
+          "rule_code": "2-1-1",
+          "path": "",
+          "text": "동의대학교학칙 > 제4장 휴ㆍ복학, 전과, 자퇴 및 제적 <제목개정 2023. 2. 1> > 제19조 휴학 > ③ 병역 수행·창업·육아휴학 및 질병: 병역 수행·창업·육아휴학 및 질병의 사유로 인한 휴학기간은 예외로 한다. <개정 2010. 7. 1., 2016. 2. 1., 2017. 2. 1., 2019. 2. 1.>",
+          "relevance_pct": 73
+        },
+        {
+          "regulation_name": "",
+          "rule_code": "2-1-1",
+          "path": "",
+          "text": "동의대학교학칙 > 제4장 휴ㆍ복학, 전과, 자퇴 및 제적 <제목개정 2023. 2. 1> > 제19조 휴학 > ⑥ 휴학에 관한 세부사항: 휴학에 관한 세부사항은 따로 정한다.",
+          "relevance_pct": 50
+        },
+        {
+          "regulation_name": "",
+          "rule_code": "2-1-1",
+          "path": "",
+          "text": "동의대학교학칙 > 제4장 휴ㆍ복학, 전과, 자퇴 및 제적 <제목개정 2023. 2. 1> > 제19조 휴학 > ① 질병 기타 부득이한 사유로 휴학하고자 하: 질병 기타 부득이한 사유로 휴학하고자 하는 자는 총장의 허가를 받아야 한다.",
+          "relevance_pct": 14
+        },
+        {
+          "regulation_name": "",
+          "rule_code": "2-1-1",
+          "path": "",
+          "text": "동의대학교학칙 > 제4장 휴ㆍ복학, 전과, 자퇴 및 제적 <제목개정 2023. 2. 1> > 제19조 휴학 > ⑤ 재학하고 있: 재학하고 있는 학기의 하계 및 동계 방학일부터 휴학하고자 하는 학기가 개시되기 전까지 휴학원서를 제출하여 허가를 받은 자는 그 학기 납입금을 납입하지 않아도 된다.",
+          "relevance_pct": 0
+        }
+      ],
+      "contexts_count": 5,
+      "evaluation": {
+        "faithfulness": {
+          "score": 0.8,
+          "threshold": 0.6,
+          "passed": true,
+          "reasoning": "The answer is mostly consistent with the retrieved contexts. It accurately describes the process of applying for a leave of absence, including the need for the president's approval for certain reasons, the duration limits for leave, and the exemption from tuition fees if the leave is applied for before the semester starts. However, the claim that the application is done through the '교내 시스템' (internal system) is not directly supported by the contexts provided. Additionally, the mention of specific procedures like '휴학원서 작성' (writing a leave application) and '제출 및 허가' (submission and approval) are logical but not explicitly detailed in the contexts. Therefore, while the major claims are supported, some procedural details are not directly corroborated by the contexts."
+        },
+        "answer_relevancy": {
+          "score": 1.0,
+          "threshold": 0.7,
+          "passed": true,
+          "reasoning": "The answer directly and comprehensively addresses the query about how to take a leave of absence (휴학) at Dong-Eui University. It provides detailed steps on the application process, conditions, duration, and additional considerations, which are all relevant and useful to the user's query. There is no unnecessary information included, and the answer is well-structured and complete."
+        },
+        "contextual_precision": {
+          "score": 1.0,
+          "threshold": 0.65,
+          "passed": true,
+          "reasoning": "All retrieved contexts are highly relevant to the query about 휴학 (leave of absence) procedures at 동의대학교. The contexts provide detailed information on the rules and conditions for taking a leave, which directly addresses the query. The ranking is perfect as it prioritizes the most pertinent information, such as the duration and conditions for leave, ensuring the answer is comprehensive and accurate."
+        },
+        "contextual_recall": {
+          "score": 0.6,
+          "threshold": 0.65,
+          "passed": false,
+          "reasoning": "The retrieved contexts provide detailed information about the conditions and procedures for taking a leave of absence, such as the duration and reasons for leave. However, they do not explicitly mention the need to submit documents to the academic team, which is a key part of the expected answer. The generated answer partially aligns with the contexts by mentioning the use of the internal system, but it lacks the specific detail about document submission to the academic team."
+        }
+      },
+      "overall_score": 0.85,
+      "overall_threshold": 0.6,
+      "passed": false,
+      "failure_reasons": [
+        "Contextual Recall below threshold: 0.600 < 0.65"
+      ],
+      "metadata": {
+        "judge_model": "gpt-4o",
+        "evaluation_method": "custom_llm_judge"
+      }
+    },
+    {
+      "scenario_id": "freshman_002",
+      "persona": "freshman",
+      "scenario_index": 2,
+      "query": "장학금 신청 방법 알려주실까요?",
+      "category": "simple",
+      "ground_truth": "장학금 신청은 포털에서 가능",
+      "answer": "많이 궁금하셨겠어요. 장학금 신청 방법에 대해 안내해 드리겠습니다.\n\n### 1. 핵심 답변\n- 동의대학교의 장학금 신청 방법은 학기별로 공지되는 절차에 따라 진행됩니다.\n\n### 2. 상세 내용\n1. **신청 시기**: 장학금 신청은 매 학기 학사일정에 따라 공지됩니다. 구체적인 신청 기간은 학사일정에 따라 다를 수 있습니다.\n2. **신청 방법**: 장학금 신청은 학생정보시스템을 통해 진행됩니다. 해당 시스템에 로그인하여 장학금 신청 메뉴를 찾아 신청서를 작성하시면 됩니다.\n3. **필요 서류**: 장학금 신청 시 필요한 서류는 장학금 종류에 따라 다를 수 있으므로, 각 장학금의 세부 안내를 확인하시기 바랍니다.\n4. **담당 부서**: 장학금 관련 문의는 학사지원팀에 하시면 됩니다.\n\n### 3. 근거 출처\n• 출처: 「동의대학교학칙」 제9장 등록 및 수강신청\n\n### 4. 추가 안내\n- 참고: 장학금 신청에 대한 구체적인 내용은 매 학기 학사일정으로 별도 공지되므로, 학사지원팀에 문의하시거나 학교 홈페이지를 통해 확인하시기 바랍니다.",
+      "sources": [
+        {
+          "regulation_name": "",
+          "rule_code": "2-1-1",
+          "path": "",
+          "text": "동의대학교학칙 > 제10장 공개강좌, 학점은행제 및 시간제 등록생 > 제45조 시간제등록생 > ⑤ 시간제 등록생으로 선발된 자: 시간제 등록생으로 선발된 자는 소정의 기간 내에 수강신청을 하여야 하며, 신청 학점에 따라 산정된 등록금을 납부하여야 한다.",
+          "relevance_pct": 100
+        },
+        {
+          "regulation_name": "",
+          "rule_code": "2-1-1",
+          "path": "",
+          "text": "동의대학교학칙 > 제9장 등록 및 수강신청 > 제42조 등록 > ① 등록: 등록은 매 학기 소정의 절차에 따라 소정의 등록기일 내에 소정의 등록금을 납부하는 현금 등록을 의미한다. <개정 2021. 2. 1.>",
+          "relevance_pct": 40
+        },
+        {
+          "regulation_name": "",
+          "rule_code": "2-1-1",
+          "path": "",
+          "text": "동의대학교학칙 > 제9장 등록 및 수강신청 > 제42조의2 장애학생학점등록 > ① 총장이 인정하: 총장이 인정하는 장애학생에 대하여는 학점등록을 허가하고, 신청학점에 해당하는 등록금을 납부하도록 할 수 있다.",
+          "relevance_pct": 15
+        },
+        {
+          "regulation_name": "",
+          "rule_code": "3-2-77",
+          "path": "",
+          "text": "첨단산업인재양성부트캠프반도체사업단학사운영규정 > 제2장 교육과정 및 전공이수 > 제4조 이수대상 및 학점인정 > ② 전력반도체융합전공 마이크로디그리를 이수하고자 하: 전력반도체융합전공 마이크로디그리를 이수하고자 하는 학생은 매 학기 수강신청 및 수강정정 기간 내 신청하여야 한다. 신청 이전에 이수한 과목(이하 “선수과목”이라 한다)은 이수 학점으로 인정한다.",
+          "relevance_pct": 3
+        },
+        {
+          "regulation_name": "",
+          "rule_code": "2-1-1",
+          "path": "",
+          "text": "동의대학교학칙 > 제9장 등록 및 수강신청 > 제43조 수강신청 > ② 학생: 학생은 매 학기 강의시간표에 의하여 수강신청을 하여야 하며, 이에 관한 세부사항은 따로 정한다.",
+          "relevance_pct": 0
+        }
+      ],
+      "contexts_count": 5,
+      "evaluation": {
+        "faithfulness": {
+          "score": 0.0,
+          "threshold": 0.6,
+          "passed": false,
+          "reasoning": "The generated answer discusses the process of applying for scholarships at Dong-Eui University, including details about application timing, method, required documents, and the responsible department. However, none of the retrieved contexts provide any information about scholarships or their application process. The contexts are focused on registration and course enrollment procedures, not scholarships. Therefore, the entire answer is unsupported by the provided contexts, resulting in a score of 0.0."
+        },
+        "answer_relevancy": {
+          "score": 1.0,
+          "threshold": 0.7,
+          "passed": true,
+          "reasoning": "The answer directly and completely addresses the user's query about the scholarship application process. It provides detailed information on the application timing, method, required documents, and the responsible department. Additionally, it offers guidance on where to find more specific information, making it a comprehensive and relevant response."
+        },
+        "contextual_precision": {
+          "score": 0.4,
+          "threshold": 0.65,
+          "passed": false,
+          "reasoning": "The retrieved contexts are mostly irrelevant to the query about scholarship application methods. The contexts primarily focus on registration and course enrollment procedures, which do not directly address the scholarship application process. None of the top-ranked contexts provide specific information about scholarships, leading to a low score due to the lack of relevance and poor ranking."
+        },
+        "contextual_recall": {
+          "score": 0.0,
+          "threshold": 0.65,
+          "passed": false,
+          "reasoning": "The retrieved contexts do not contain any information related to the scholarship application process. They focus on registration and course enrollment procedures, which are unrelated to the query about scholarship applications. Therefore, critical information is completely missing from the contexts."
+        }
+      },
+      "overall_score": 0.33,
+      "overall_threshold": 0.6,
+      "passed": false,
+      "failure_reasons": [
+        "Faithfulness below threshold: 0.000 < 0.6",
+        "Contextual Precision below threshold: 0.400 < 0.65",
+        "Contextual Recall below threshold: 0.000 < 0.65",
+        "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+      ],
+      "metadata": {
+        "judge_model": "gpt-4o",
+        "evaluation_method": "custom_llm_judge"
+      }
+    },
+    {
+      "scenario_id": "freshman_003",
+      "persona": "freshman",
+      "scenario_index": 3,
+      "query": "성적이 나쁘면 휴학해야 하나요?",
+      "category": "complex",
+      "ground_truth": "성적 경고는 15학점 이상 수강且 평점 1.7 미만",
+      "answer": "많이 힘드셨겠어요. 성적이 나빠서 고민이 많으시겠네요. \n\n성적이 나쁘다고 해서 반드시 휴학해야 하는 것은 아닙니다. 동의대학교에서는 학업 성적이 매 학기 평점평균 1.50 미만인 경우 학사경고를 받게 되며, 이 경우에는 학업에 대한 지원이나 상담을 받을 수 있는 기회가 주어집니다. \n\n### 1. 성적이 나쁠 때의 대안\n1. **학사경고**: 평점평균이 1.50 미만일 경우 학사경고를 받습니다. 이 경우, 학업 성적을 향상시키기 위한 지원을 받을 수 있습니다.\n2. **유급**: 특정 학과에서는 학업 성적이 열등한 학생에게 학력을 보충할 수 있는 기회를 제공하는 유급 제도가 있습니다.\n3. **상담 및 지원**: 학습지원센터나 학생상담센터를 통해 학업에 대한 상담을 받는 것도 좋은 방법입니다.\n\n### 2. 휴학 신청 절차\n휴학을 원하신다면 다음과 같은 절차를 따르시면 됩니다:\n1. **휴학원서 작성**: 휴학을 원하시는 학기의 하계 및 동계 방학일부터 휴학원서를 작성합니다.\n2. **제출**: 휴학원서를 해당 기한 내에 제출하여 허가를 받습니다.\n\n구체적인 신청 기간은 매학기 학사일정으로 별도 공지되므로, 학사지원팀에 문의하시기 바랍니다.\n\n혼자 고민하지 마시고, 학생상담센터(학생회관)에서 전문 상담을 받아보시는 것도 좋습니다. 도움이 필요하시면 언제든지 지원을 요청하세요.",
+      "sources": [
+        {
+          "regulation_name": "",
+          "rule_code": "2-1-1",
+          "path": "",
+          "text": "동의대학교학칙 > 제4장 휴ㆍ복학, 전과, 자퇴 및 제적 <제목개정 2023. 2. 1> > 제19조 휴학 > ⑤ 재학하고 있: 재학하고 있는 학기의 하계 및 동계 방학일부터 휴학하고자 하는 학기가 개시되기 전까지 휴학원서를 제출하여 허가를 받은 자는 그 학기 납입금을 납입하지 않아도 된다.",
+          "relevance_pct": 100
+        },
+        {
+          "regulation_name": "",
+          "rule_code": "2-1-1",
+          "path": "",
+          "text": "동의대학교학칙 > 제8장 복수전공ㆍ연계·융합전공ㆍ부전공・마이크로디그리 및 대학간 교류학점 인정 > 제41조 학점인정범위 > ⑥ 군입대휴학 중 원격강: 군입대휴학 중 원격강의 등을 수강하여 취득한 학점은 재학 중 6학점 이내에서 인정할 수 있다. <신설 2009. 2. 1., 개정 2011. 3. 1., 2025. 3. 1.>",
+          "relevance_pct": 87
+        },
+        {
+          "regulation_name": "",
+          "rule_code": "2-1-1",
+          "path": "",
+          "text": "동의대학교학칙 > 제4장 휴ㆍ복학, 전과, 자퇴 및 제적 <제목개정 2023. 2. 1> > 제23조 제적 > 1. 휴학기간이 경과한 후 기간 내에 복학하지 아니: 휴학기간이 경과한 후 기간 내에 복학하지 아니한 자",
+          "relevance_pct": 41
+        },
+        {
+          "regulation_name": "",
+          "rule_code": "2-1-1",
+          "path": "",
+          "text": "동의대학교학칙 > 제7장 시험, 성적, 학사경고 및 유급 > 제38조 학사경고 > ① 학업 성적이 매 학기 평점평균 1.50 미만인 자에게: 학업 성적이 매 학기 평점평균 1.50 미만인 자에게는 학사경고를 한다. 이에 관한 세부사항은 따로 정한다. <개정 2010.7.1>",
+          "relevance_pct": 4
+        },
+        {
+          "regulation_name": "유급",
+          "rule_code": "2-1-1",
+          "path": "유급",
+          "text": "동의대학교학칙 > 제7장 시험, 성적, 학사경고 및 유급 > 제39조 유급: 한의과대학은 학업 성적이 열등한 자에게 학력을 보충할 수 있는 기회를 부여하고자 다음과 같이 유급을 실시한다.",
+          "relevance_pct": 0
+        }
+      ],
+      "contexts_count": 5,
+      "evaluation": {
+        "faithfulness": {
+          "score": 0.8,
+          "threshold": 0.6,
+          "passed": true,
+          "reasoning": "The answer is mostly supported by the retrieved contexts. It correctly states that a student with a GPA below 1.50 receives an academic warning, as mentioned in Context 4. The mention of '유급' (repeating a year) is supported by Context 5, which discusses providing opportunities for students with poor academic performance. However, the details about '상담 및 지원' and specific procedures for applying for a leave of absence, while reasonable, are not directly supported by the provided contexts. These are minor details and do not significantly detract from the overall faithfulness of the answer."
+        },
+        "answer_relevancy": {
+          "score": 1.0,
+          "threshold": 0.7,
+          "passed": true,
+          "reasoning": "The answer directly and completely addresses the query about whether a student should take a leave of absence due to poor grades. It explains that poor grades do not necessarily require a leave of absence and provides detailed alternatives and procedures related to academic warnings, support options, and the process for applying for a leave of absence. The information is relevant and avoids unnecessary details, making it a comprehensive response to the query."
+        },
+        "contextual_precision": {
+          "score": 0.8,
+          "threshold": 0.65,
+          "passed": true,
+          "reasoning": "The retrieved contexts are mostly relevant to the query about academic performance and leave of absence. Rank 4 provides direct information about academic warnings related to poor grades, which is crucial for the query. Rank 1 and Rank 3 provide procedural information about taking a leave of absence, which is also relevant. However, Rank 2 is less relevant as it discusses credit recognition during military leave, and Rank 5, while related to academic performance, is specific to a particular college. Overall, the ranking is mostly effective, but there is some noise with Rank 2."
+        },
+        "contextual_recall": {
+          "score": 0.7,
+          "threshold": 0.65,
+          "passed": true,
+          "reasoning": "The retrieved contexts provide some relevant information about academic warnings and the conditions under which they are issued, specifically mentioning that a GPA below 1.50 results in an academic warning. However, the expected answer specifies a GPA threshold of 1.7 and a credit requirement of 15 credits, which are not mentioned in the retrieved contexts. Additionally, the contexts do not directly address the necessity of taking a leave of absence due to poor grades, which is the main focus of the query. Therefore, there is significant information missing from the contexts to fully address the query and expected answer."
+        }
+      },
+      "overall_score": 0.83,
+      "overall_threshold": 0.6,
+      "passed": true,
+      "failure_reasons": [],
+      "metadata": {
+        "judge_model": "gpt-4o",
+        "evaluation_method": "custom_llm_judge"
+      }
+    },
+    {
+      "scenario_id": "freshman_004",
+      "persona": "freshman",
+      "scenario_index": 4,
+      "query": "처음이라 수강 신청 절차를 잘 몰라요",
+      "category": "simple",
+      "ground_truth": "수강 신청은 포털에서 학기별로 진행",
+      "answer": "많이 힘드셨겠어요. 처음 수강 신청을 하시는 것이라면 여러 가지가 궁금하실 것 같습니다. 수강 신청 절차에 대해 안내해 드리겠습니다.\n\n### 1. 핵심 답변\n동의대학교의 수강 신청은 매 학기 강의시간표에 따라 진행됩니다.\n\n### 2. 상세 내용\n1. **강의시간표 확인**: 매 학기 강의시간표를 확인하여 수강하고자 하는 과목을 선택합니다.\n2. **수강신청 진행**: 학생정보시스템 또는 포털을 통해 수강신청을 진행합니다.\n3. **신청 학점 확인**: 직전학기 15학점 이상 취득한 경우, 최대 23학점(졸업학점이 140학점 이상인 학과는 24학점)까지 수강신청이 가능합니다. 단, 한의학과는 제외됩니다.\n4. **등록금 납부**: 수강신청 후, 소정의 등록금을 납부해야 합니다.\n\n### 3. 근거 출처\n• 출처: 「동의대학교학칙」 제9장 등록 및 수강신청\n\n### 4. 추가 안내\n구체적인 수강 신청 기간 및 절차는 매학기 학사일정으로 별도 공지됩니다. 학사지원팀에 문의하시면 더 자세한 안내를 받으실 수 있습니다. 혼자 고민하지 마시고, 필요한 경우 도움을 요청하시기 바랍니다.",
+      "sources": [
+        {
+          "regulation_name": "",
+          "rule_code": "2-1-1",
+          "path": "",
+          "text": "동의대학교학칙 > 제6장 교육과정, 교과구분, 이수단위 및 학점 > 제33조 이수학점 > ② 직전학기 15학점 이상: 직전학기 15학점 이상의 수강신청과 성적 평점평균 4.30 이상 취득의 요건을 동시 충족하는 자와 학・석사연계과정 신청자는 제1항의 규정에도 불구하고 23학점(졸업학점이 140학점 이상인 학과는 24학점)까지 이수할 수 있다. 단, 한의학과는 제외한다. <개정 2006.2. 13., 2010. 3. 1., 2011. 3. 1., 2012. 2. 10., 2014. 3. 1., 2023. 2. 1.>",
+          "relevance_pct": 100
+        },
+        {
+          "regulation_name": "",
+          "rule_code": "2-1-1",
+          "path": "",
+          "text": "동의대학교학칙 > 제5장 수료 및 졸업 > 제28조 조기졸업 > ② 조기졸업: 조기졸업은 제3학년 1학기 수강신청 전에 소정의 절차를 거쳐 조기졸업을 신청하여야 한다. <개정 2011. 3. 1>",
+          "relevance_pct": 58
+        },
+        {
+          "regulation_name": "",
+          "rule_code": "2-1-1",
+          "path": "",
+          "text": "동의대학교학칙 > 제10장 공개강좌, 학점은행제 및 시간제 등록생 > 제45조 시간제등록생 > ⑤ 시간제 등록생으로 선발된 자: 시간제 등록생으로 선발된 자는 소정의 기간 내에 수강신청을 하여야 하며, 신청 학점에 따라 산정된 등록금을 납부하여야 한다.",
+          "relevance_pct": 22
+        },
+        {
+          "regulation_name": "",
+          "rule_code": "2-1-1",
+          "path": "",
+          "text": "동의대학교학칙 > 제9장 등록 및 수강신청 > 제43조 수강신청 > ② 학생: 학생은 매 학기 강의시간표에 의하여 수강신청을 하여야 하며, 이에 관한 세부사항은 따로 정한다.",
+          "relevance_pct": 12
+        },
+        {
+          "regulation_name": "",
+          "rule_code": "2-1-1",
+          "path": "",
+          "text": "동의대학교학칙 > 제9장 등록 및 수강신청 > 제42조 등록 > ① 등록: 등록은 매 학기 소정의 절차에 따라 소정의 등록기일 내에 소정의 등록금을 납부하는 현금 등록을 의미한다. <개정 2021. 2. 1.>",
+          "relevance_pct": 0
+        }
+      ],
+      "contexts_count": 5,
+      "evaluation": {
+        "faithfulness": {
+          "score": 0.8,
+          "threshold": 0.6,
+          "passed": true,
+          "reasoning": "The answer is mostly supported by the retrieved contexts. The claim about the need to follow the lecture timetable for course registration is supported by Context 4. The mention of registering through a student information system or portal is a reasonable assumption but not explicitly supported by the contexts. The details about credit limits based on previous semester performance are supported by Context 1. The requirement to pay tuition after course registration is supported by Context 5. However, the specific mention of the student information system and the detailed process of checking the timetable and selecting courses are not directly supported by the contexts, making them minor hallucinations."
+        },
+        "answer_relevancy": {
+          "score": 1.0,
+          "threshold": 0.7,
+          "passed": true,
+          "reasoning": "The answer directly and completely addresses the user's query about the course registration process. It provides a clear step-by-step guide on how to proceed with course registration at Dong-Eui University, including checking the timetable, using the student information system, and understanding credit limits. The answer also includes relevant additional information about registration fees and where to find more details, making it comprehensive and useful without unnecessary information."
+        },
+        "contextual_precision": {
+          "score": 0.9,
+          "threshold": 0.65,
+          "passed": true,
+          "reasoning": "The top retrieved contexts are highly relevant to the query about 수강 신청 절차 (course registration process). The first context provides specific information about credit requirements for course registration, which is directly related to the query. The fourth context also directly addresses the course registration process. While the second and third contexts are less directly relevant, they still pertain to registration and academic procedures. Overall, the ranking is effective in addressing the query, with most relevant contexts ranked higher."
+        },
+        "contextual_recall": {
+          "score": 0.8,
+          "threshold": 0.65,
+          "passed": true,
+          "reasoning": "The retrieved contexts contain most of the necessary information to answer the query. Context 4 provides the key information that students must register for courses each semester according to the class schedule, which aligns with the expected answer. However, the specific mention of the portal as the place where course registration is conducted, as stated in the expected answer, is not explicitly found in the retrieved contexts. This results in a minor gap, leading to a score of 0.8."
+        }
+      },
+      "overall_score": 0.87,
+      "overall_threshold": 0.6,
+      "passed": true,
+      "failure_reasons": [],
+      "metadata": {
+        "judge_model": "gpt-4o",
+        "evaluation_method": "custom_llm_judge"
+      }
+    },
+    {
+      "scenario_id": "freshman_005",
+      "persona": "freshman",
+      "scenario_index": 5,
+      "query": "복학 신청도 따로 해야 하나요?",
+      "category": "edge",
+      "ground_truth": "복학 신청은 휴학 종료 1달 전",
+      "answer": "복학 신청은 반드시 해야 합니다. 복학을 원하시는 경우, 다음 절차를 따라 주시기 바랍니다.\n\n### 1. 복학 신청 절차\n1. **신청서 작성**: 복학 신청서를 작성합니다.\n2. **학기 초 소정 기간 내 제출**: 복학 신청은 학기 초 소정 기간 내에 제출해야 합니다. 구체적인 기간은 매학기 학사일정으로 별도 공지됩니다.\n3. **학생정보시스템 이용**: 복학 신청은 학생정보시스템을 통해 진행합니다.\n\n### 2. 주의사항\n- **휴학 기간 만료**: 휴학자는 그 기간이 만료되거나 휴학의 사유가 종료된 후 복학을 해야 합니다.\n- **복학 불가 사유**: 만약 정해진 기간 내에 복학하지 않으면 제적될 수 있습니다.\n\n### 3. 근거 출처\n• 출처: 「동의대학교학칙」 제20조 복학\n\n복학 신청에 대한 더 자세한 사항은 학사지원팀에 문의하시기 바랍니다.\n\n---\n⚠️ **주의**: 일부 인용(「동의대학교학칙」 제20조 )은 데이터베이스에서 확인되지 않았습니다. 담당 부서에 확인하시기 바랍니다.",
+      "sources": [
+        {
+          "regulation_name": "",
+          "rule_code": "2-1-1",
+          "path": "",
+          "text": "동의대학교학칙 > 제4장 휴ㆍ복학, 전과, 자퇴 및 제적 <제목개정 2023. 2. 1> > 제20조 복학 > ③ 복학에 관한 세부사항: 복학에 관한 세부사항은 따로 정한다.",
+          "relevance_pct": 100
+        },
+        {
+          "regulation_name": "자퇴",
+          "rule_code": "2-1-1",
+          "path": "자퇴",
+          "text": "동의대학교학칙 > 제4장 휴ㆍ복학, 전과, 자퇴 및 제적 <제목개정 2023. 2. 1> > 제22조 자퇴: 자퇴하고자 하는 자는 학생정보시스템을 통한 자퇴 신청을 거쳐 총장의 허가를 받아야 한다. <개정2005.12.1., 2023. 2. 1>",
+          "relevance_pct": 70
+        },
+        {
+          "regulation_name": "",
+          "rule_code": "2-1-1",
+          "path": "",
+          "text": "동의대학교학칙 > 제4장 휴ㆍ복학, 전과, 자퇴 및 제적 <제목개정 2023. 2. 1> > 제20조 복학 > ① 휴학자: 휴학자는 그 기간이 만료되거나 휴학의 사유가 종료되면 학기초 소정 기간 내에 복학을 하여야 한다.",
+          "relevance_pct": 12
+        },
+        {
+          "regulation_name": "",
+          "rule_code": "2-1-1",
+          "path": "",
+          "text": "동의대학교학칙 > 제4장 휴ㆍ복학, 전과, 자퇴 및 제적 <제목개정 2023. 2. 1> > 제23조 제적 > 1. 휴학기간이 경과한 후 기간 내에 복학하지 아니: 휴학기간이 경과한 후 기간 내에 복학하지 아니한 자",
+          "relevance_pct": 6
+        },
+        {
+          "regulation_name": "",
+          "rule_code": "2-1-1",
+          "path": "",
+          "text": "동의대학교학칙 > 제4장 휴ㆍ복학, 전과, 자퇴 및 제적 <제목개정 2023. 2. 1> > 제20조 복학 > ② 등록을 마치고 휴학한 자가 당해 학기 수업일수: 등록을 마치고 휴학한 자가 당해 학기 수업일수의 4분의 1 이전에 휴학 사유가 종료된 경우 당해 학기 복학을 허가할 수 있다.",
+          "relevance_pct": 0
+        }
+      ],
+      "contexts_count": 5,
+      "evaluation": {
+        "faithfulness": {
+          "score": 0.7,
+          "threshold": 0.6,
+          "passed": true,
+          "reasoning": "The answer correctly states that 복학 신청 is necessary and must be done within a specified period, which is supported by Context 3. However, the details about the specific steps such as '신청서 작성' and using the '학생정보시스템' are not explicitly supported by the retrieved contexts. Additionally, the mention of potential 제적 for not applying in time is supported by Context 4, but the specific procedural details are not found in the contexts provided. Therefore, while the major claims are supported, there are some minor hallucinations regarding the procedural specifics."
+        },
+        "answer_relevancy": {
+          "score": 1.0,
+          "threshold": 0.7,
+          "passed": true,
+          "reasoning": "The answer directly and completely addresses the user's query about whether a separate application for returning to school is necessary. It provides detailed steps on how to apply for reinstatement, important deadlines, and additional considerations. The information is relevant and avoids unnecessary details, making it a precise and comprehensive response to the query."
+        },
+        "contextual_precision": {
+          "score": 0.9,
+          "threshold": 0.65,
+          "passed": true,
+          "reasoning": "The top retrieved contexts are highly relevant to the query about 복학 신청 (re-enrollment application). The first context directly addresses 복학 and mentions that details are specified separately, which aligns with the answer's emphasis on following specific procedures. The third context also supports the answer by stating that students must re-enroll within a specified period after their leave ends. The presence of the second context about 자퇴 (withdrawal) is slightly less relevant, but it does not significantly detract from the overall relevance of the top-ranked contexts. Overall, the ranking effectively supports the query and answer."
+        },
+        "contextual_recall": {
+          "score": 0.6,
+          "threshold": 0.65,
+          "passed": false,
+          "reasoning": "The retrieved contexts provide some relevant information about the process and requirements for re-enrollment (복학), such as the need to apply within a specific period and the consequences of not doing so. However, the key information from the expected answer, specifically the timing of the application being one month before the end of the leave, is not present in the retrieved contexts. This results in a significant gap in the information needed to fully answer the query."
+        }
+      },
+      "overall_score": 0.795,
+      "overall_threshold": 0.6,
+      "passed": false,
+      "failure_reasons": [
+        "Contextual Recall below threshold: 0.600 < 0.65"
+      ],
+      "metadata": {
+        "judge_model": "gpt-4o",
+        "evaluation_method": "custom_llm_judge"
+      }
+    },
+    {
+      "scenario_id": "graduate_001",
+      "persona": "graduate",
+      "scenario_index": 1,
+      "query": "연구년 자격 요건이 어떻게 되나요?",
+      "category": "simple",
+      "ground_truth": "연구년은 재직 6년 이상 교원에게 허용",
+      "answer": "많이 궁금하셨겠어요. 연구년 자격 요건에 대한 정보는 다음과 같습니다.\n\n### 연구년 자격 요건\n1. **교원 자격**: 연구년을 신청하기 위해서는 본 대학교 교원으로서 사립학교법 및 학교법인동의학원 정관에 의한 결격사유가 없어야 합니다.\n2. **연구실적 기준**: 연구년 신청자는 연구실적에 대한 기준을 충족해야 하며, 이는 교원인사위원회의 인정을 받아야 합니다. 다만, 외국어회화를 강의하는 비정년제 교원과 산학협력을 전담하는 비정년제 교원은 연구실적 기준이 적용되지 않습니다.\n\n이와 관련된 구체적인 절차나 추가적인 정보는 **교원인사팀**에 문의하시면 더 자세한 안내를 받으실 수 있습니다.\n\n• 출처: 「교원인사규정」 제2장 신규임용, 제8조\n\n추가로 궁금한 점이 있으시면 언제든지 문의해 주세요!",
+      "sources": [
+        {
+          "regulation_name": "",
+          "rule_code": "3-1-5",
+          "path": "",
+          "text": "교원인사규정 > 제2장 신규임용 > 제8조 교원의 자격 > ① 본 대학교 교원: 본 대학교 교원은 사립학교법, 학교법인동의학원 정관(이하 “정관”이라 한다)에 의한 결격사유가 없는 자로서 다음의 자격기준에 해당하거나 교원인사위원회의 인정을 받은 자로 한다. 다만, 외국어회화를 강의하는 비정년제 교원과 산학협력을 전담하는 비정년제 교원의 경우에는 연구실적(산학협력실적)에 관한 기준은 적용하지 아니한다. <개정 2005. 9. 1., 2011. 7. 1., 2012. 2. 29., 2016. 9. 1.>\n[TABLE:1]",
+          "relevance_pct": 100
+        },
+        {
+          "regulation_name": "",
+          "rule_code": "3-1-5",
+          "path": "",
+          "text": "교원인사규정 > 제12조 임용계약 > ① 교원을 임용할 때에 > 3. 근무조건 : 주당 교수시간, 연구지원, 근무지: 근무조건 : 주당 교수시간, 연구지원, 근무지, 주된 업무내용, 학사업무 수행 등에 관한 사항으로 그 구체적인 기준은 총장이 따로 정한다.",
+          "relevance_pct": 98
+        },
+        {
+          "regulation_name": "",
+          "rule_code": "3-1-5",
+          "path": "",
+          "text": "교원인사규정 > 부칙 > 3. 경과조치 > ③ [별표 1] 연구실적인정기준 및 인정률: [별표 1] 연구실적인정기준 및 인정률은 시행일 현재 재직중인 교원의 경우 2001. 3. 1.이후 발표되는 연구실적물부터 적용하며, 2001. 2. 28.까지 발표되는 연구실적물은 종전의 교원임용규정의 <별표 1> 교원연구실적평가표에 따라 인정한다.",
+          "relevance_pct": 26
+        },
+        {
+          "regulation_name": "",
+          "rule_code": "3-2-65",
+          "path": "",
+          "text": "비교과마일리지특별학점운영규정 > 제5조 이수방법 및 인정학점 > ② FUN학생경험지원센터: FUN학생경험지원센터는 특별학점 종류별 학점인정 기본자격 이수 조건을 포함한 세부인정 기준 및 마일리지 산정 방법을 별도로 정하며, 학기 말에 특별학점 이수 대상자 명단을 학사지원팀으로 제출해야 한다. <개정 2020. 12. 1, 2021. 9. 1, 2022. 3. 1., 2025. 4. 1.>",
+          "relevance_pct": 1
+        },
+        {
+          "regulation_name": "",
+          "rule_code": "1-0-1",
+          "path": "",
+          "text": "학교법인동의학원정관 > 제1관 임 명 > 제43조의5 의원면직의제한 > ② 교원: 교원의 임용권자는 교원이 의원면직을 신청한 경우 해당 교원이 제1항에 따른 의원면직의 제한대상에 해당하는지 여부를 감사ㆍ조사 및 수사기관의 장에게 확인하여야 한다. (개정 2016.10.20.)",
+          "relevance_pct": 0
+        }
+      ],
+      "contexts_count": 5,
+      "evaluation": {
+        "faithfulness": {
+          "score": 0.4,
+          "threshold": 0.6,
+          "passed": false,
+          "reasoning": "The answer contains significant hallucinations. While it correctly references the need for a teacher to not have disqualifications under the private school law and the school's articles of incorporation, it incorrectly specifies details about research performance criteria and the exemption for non-tenure track teachers teaching foreign languages or focusing on industry-academia cooperation. These details are not supported by the retrieved contexts. Additionally, the mention of contacting the '교원인사팀' for more information is not supported by the contexts provided."
+        },
+        "answer_relevancy": {
+          "score": 1.0,
+          "threshold": 0.7,
+          "passed": true,
+          "reasoning": "The answer directly and completely addresses the query by providing detailed information about the eligibility requirements for a research year. It includes specific criteria such as faculty qualification and research performance standards, and it also suggests contacting the faculty personnel team for further details. The answer is relevant, complete, and avoids unnecessary information."
+        },
+        "contextual_precision": {
+          "score": 0.9,
+          "threshold": 0.65,
+          "passed": true,
+          "reasoning": "The top-ranked context (Rank 1) is highly relevant as it directly addresses the qualifications for 교원 (faculty) and mentions the exceptions for non-tenure track faculty, which aligns with the query about 연구년 자격 요건. Rank 2 and Rank 3 provide additional context about faculty regulations and research performance criteria, which are somewhat relevant but not directly answering the query. Ranks 4 and 5 are irrelevant to the query. Overall, the most relevant context is ranked first, but there is some noise in the lower ranks."
+        },
+        "contextual_recall": {
+          "score": 0.4,
+          "threshold": 0.65,
+          "passed": false,
+          "reasoning": "The retrieved contexts do not contain the key information from the expected answer, which is that 연구년 is allowed for 교원 with more than 6 years of service. The contexts focus on qualifications and criteria related to 교원 without addressing the specific requirement of 6 years of service. Therefore, there is a major gap in context coverage regarding the critical information needed to answer the query accurately."
+        }
+      },
+      "overall_score": 0.65,
+      "overall_threshold": 0.6,
+      "passed": false,
+      "failure_reasons": [
+        "Faithfulness below threshold: 0.400 < 0.6",
+        "Contextual Recall below threshold: 0.400 < 0.65",
+        "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+      ],
+      "metadata": {
+        "judge_model": "gpt-4o",
+        "evaluation_method": "custom_llm_judge"
+      }
+    },
+    {
+      "scenario_id": "graduate_002",
+      "persona": "graduate",
+      "scenario_index": 2,
+      "query": "연구비 지급 규정 확인 부탁드립니다",
+      "category": "simple",
+      "ground_truth": "연구비는 연구년 교원에게 연구비 지급",
+      "answer": "동의대학교의 연구비 지급 규정에 대한 내용을 아래와 같이 정리해 드립니다.\n\n### 1. 핵심 답변\n- 연구비 지급은 연구책임자의 신청에 따라 이루어집니다.\n\n### 2. 상세 내용\n1. **연구계획 변경**: \n   - 일반연구과제의 연구비를 지급받은 교원이 연구계획을 변경하고자 할 경우, **연구계획변경신청서**를 산학협력단장에게 제출하여 승인을 받아야 합니다. \n   - • 출처: 「교내연구비운영규정」 제7조\n\n2. **연구결과 보고**: \n   - 일반연구과제는 연구기간 내에 **연구결과보고서** 및 연구결과물을 제출해야 하며, 총장의 승인을 받은 경우 6개월 이내로 연장할 수 있습니다.\n   - • 출처: 「교내연구비운영규정」 제8조\n\n3. **연구비 지원 및 관리**: \n   - 각 단과대학은 선정결과를 연구계획서와 선정평가표를 산학협력단장에게 제출하고, 산학협력단장은 이를 검토 후 총장의 승인을 받아야 합니다.\n   - • 출처: 「교내연구비운영규정」 제5조\n\n4. **특별연구과제 지급**: \n   - 특별연구과제의 연구비는 연구책임자의 지급신청에 의하여 지급됩니다.\n   - • 출처: 「교내연구비운영규정」 제9조\n\n### 3. 추가 안내\n- 연구비와 관련된 구체적인 절차나 문의는 **산학협력단**에 직접 문의하시기 바랍니다.\n\n---\n⚠️ **주의**: 일부 인용(「교내연구비운영규정」 제7조\n\n, 「교내연구비운영규정」 제8조\n\n, 「교내연구비운영규정」 제5조\n\n, 「교내연구비운영규정」 제9조\n\n)은 데이터베이스에서 확인되지 않았습니다. 담당 부서에 확인하시기 바랍니다.",
+      "sources": [
+        {
+          "regulation_name": "",
+          "rule_code": "3-1-25",
+          "path": "",
+          "text": "교내연구비운영규정 > 제7조 연구계획의 변경 > ① 일반연구과제: 일반연구과제의 연구비를 지급받은 교원이 연구계획을 변경하고자 할 때에는 연구계획변경신청서를 산학협력단장에게 제출하여 승인을 받아야 한다. <신설 2005. 4. 15., 개정 2024. 6. 1.>",
+          "relevance_pct": 100
+        },
+        {
+          "regulation_name": "",
+          "rule_code": "3-1-25",
+          "path": "",
+          "text": "교내연구비운영규정 > 제8조 연구결과의 보고 및 발표 > ① 일반연구과제: 일반연구과제는 연구기간 내에 연구결과보고서 및 연구결과물을 제출하여야 한다. 다만, 총장의 승인을 받은 경우 6개월 이내로 연장할 수 있다. <개정 2014. 3. 1., 2024. 6. 1.>",
+          "relevance_pct": 51
+        },
+        {
+          "regulation_name": "",
+          "rule_code": "3-1-25",
+          "path": "",
+          "text": "교내연구비운영규정 > 제5조 연구비 지원 및 관리 > ③ 각 단과대학: 각 단과대학은 선정결과를 연구계획서와 선정평가표를 산학협력단장에게 제출하고 산학협력단장은 검토 후 총장의 승인을 받는다. <신설 2024. 6. 1.>",
+          "relevance_pct": 49
+        },
+        {
+          "regulation_name": "",
+          "rule_code": "3-1-25",
+          "path": "",
+          "text": "교내연구비운영규정 > 제9조 연구비 지원 > ③ 특별연구과제: 특별연구과제의 연구비는 연구책임자의 지급신청에 의하여 지급한다. <신설 2024. 6. 1.>",
+          "relevance_pct": 32
+        },
+        {
+          "regulation_name": "",
+          "rule_code": "3-1-121",
+          "path": "",
+          "text": "연구윤리규정 > 제15조 국제교류에서 정보의 보호 > ① 연구자 > 2. 산업기술: 산업기술의 유출방지 및 보호에 관한 법률 제9조의 규정에 따라 지정된 국가핵심기술 관련 과제 또는 국가연구개발혁신법 제21조제2항에 따른 보안과제인 경우에는 연구책임자는 연구진행과정에서 해외기관에 제공되는 연구자료 및 산출물 등 대해 검토와 승인의 과정을 거쳐야 한다.",
+          "relevance_pct": 0
+        }
+      ],
+      "contexts_count": 5,
+      "evaluation": {
+        "faithfulness": {
+          "score": 0.9,
+          "threshold": 0.6,
+          "passed": true,
+          "reasoning": "The generated answer is mostly consistent with the retrieved contexts. The key points about research plan changes, research result reporting, and special research project funding are supported by the contexts. However, the statement '연구비 지급은 연구책임자의 신청에 따라 이루어집니다' is a generalization that is only explicitly supported for special research projects (Context 4) and not for all research funding, which could be considered a minor hallucination. Overall, the answer is largely faithful to the provided contexts."
+        },
+        "answer_relevancy": {
+          "score": 1.0,
+          "threshold": 0.7,
+          "passed": true,
+          "reasoning": "The answer directly and comprehensively addresses the user's query about the regulations for research fund disbursement at Dong-Eui University. It provides detailed information on the application process, changes to research plans, reporting requirements, and specific procedures for different types of research projects. The answer is well-structured and avoids unnecessary information, making it highly relevant and complete."
+        },
+        "contextual_precision": {
+          "score": 1.0,
+          "threshold": 0.65,
+          "passed": true,
+          "reasoning": "All retrieved contexts are highly relevant to the query about research fund payment regulations. The contexts are well-ranked, with the most pertinent information appearing first. Each context directly addresses aspects of the research fund payment process, such as changes in research plans, reporting requirements, and the application process for special research projects. There is no irrelevant information in the top ranks, ensuring an effective answer to the query."
+        },
+        "contextual_recall": {
+          "score": 0.4,
+          "threshold": 0.65,
+          "passed": false,
+          "reasoning": "The retrieved contexts provide detailed information about the procedures and regulations for research fund management, but they do not contain the specific information about research funds being provided to faculty on research leave, which is the key aspect of the expected answer. The contexts focus on general procedures and specific cases like special research projects, but miss the critical information about research leave faculty, leading to major gaps in context coverage."
+        }
+      },
+      "overall_score": 0.845,
+      "overall_threshold": 0.6,
+      "passed": false,
+      "failure_reasons": [
+        "Contextual Recall below threshold: 0.400 < 0.65"
+      ],
+      "metadata": {
+        "judge_model": "gpt-4o",
+        "evaluation_method": "custom_llm_judge"
+      }
+    },
+    {
+      "scenario_id": "graduate_003",
+      "persona": "graduate",
+      "scenario_index": 3,
+      "query": "논문 제출 기한 연장 가능한가요?",
+      "category": "complex",
+      "ground_truth": "논문 제출 연장은 1년 한도로 가능",
+      "answer": "많이 힘드셨겠어요. 논문 제출 기한 연장에 대한 질문에 대해 안내드리겠습니다.\n\n### 1. 핵심 답변\n동의대학교의 논문 제출 기한 연장에 대한 구체적인 규정은 확인되지 않습니다.\n\n### 2. 상세 내용\n1. **논문 제출 기한**: 논문 제출 기한에 대한 연장 규정은 제공된 자료에서 확인되지 않습니다.\n2. **연장 요청 방법**: 일반적으로 기한 연장을 원하실 경우, 해당 학과(전공)주임교수님과 상담하시는 것이 좋습니다.\n3. **필요 서류**: 연장 요청 시, 사유서를 작성하여 제출하실 수 있습니다.\n\n### 3. 근거 출처\n• 출처: 「대학원학위논문심사에관한세칙」 제6조\n\n### 4. 추가 안내\n구체적인 연장 가능 여부 및 절차에 대해서는 학과 사무실이나 대학원행정실에 문의하시면 보다 정확한 정보를 얻으실 수 있습니다. 혼자 고민하지 마시고, 필요한 경우 상담을 받으시는 것도 좋습니다.\n\n---\n⚠️ **주의**: 일부 인용(「대학원학위논문심사에관한세칙」 제6조\n\n)은 데이터베이스에서 확인되지 않았습니다. 담당 부서에 확인하시기 바랍니다.",
+      "sources": [
+        {
+          "regulation_name": "",
+          "rule_code": "3-2-104",
+          "path": "",
+          "text": "대학원학위논문심사에관한세칙 > 제6조 심사용 논문제출 편수 > ② 심사용 학위청구논문: 심사용 학위청구논문은 가제본 된 것으로 한다.",
+          "relevance_pct": 100
+        },
+        {
+          "regulation_name": "",
+          "rule_code": "3-2-104",
+          "path": "",
+          "text": "대학원학위논문심사에관한세칙 > 제6조 심사용 논문제출 편수 > ① 학위청구논문: 학위청구논문의 제출자는 심사를 위하여 석사학위과정 및 박사학위과정에서는 심사위원 인원수 대로 학위청구논문을 심사전에 학과(전공)주임교수에게 제출하고 학과(전공)주임교수는 심사위원장에게 배부한다.<개정 2011. 3. 1., 2013. 5. 1.>",
+          "relevance_pct": 97
+        },
+        {
+          "regulation_name": "",
+          "rule_code": "3-2-104",
+          "path": "",
+          "text": "대학원학위논문심사에관한세칙 > 제2조 학위청구논문 제출자격 > 1. 석사학위과정 : 외국어시험 및 종합시험에 합격: 석사학위과정 : 외국어시험 및 종합시험에 합격하고 논문제출학기에 수료 예정인 자 또는 수료자",
+          "relevance_pct": 40
+        },
+        {
+          "regulation_name": "",
+          "rule_code": "3-2-104",
+          "path": "",
+          "text": "대학원학위논문심사에관한세칙 > 제2조 학위청구논문 제출자격 > 2. 박사학위과정 : 외국어시험 및 종합시험에 합격: 박사학위과정 : 외국어시험 및 종합시험에 합격하고 논문제출학기에 수료 예정인 자 또는 수료자",
+          "relevance_pct": 27
+        },
+        {
+          "regulation_name": "",
+          "rule_code": "3-1-5",
+          "path": "",
+          "text": "교원인사규정 > 제3장 승진임용 > 제19조 승진임용 연구실적물 > ① 제18조: 제18조의 승진업적평가점수를 충족시킨 승진심사대상자는 승진심사를 위하여 승진소요기간내에 발표한 다음 각호의 연구실적물을 제출하여야 한다. 이 때에 논문은 심사대상자가 주저자(공동연구논문의 경우 제1저자 또는 교신저자)인 논문이 1/3 이상이어야 한다. <개정 2005. 3. 1., 2007. 3. 1., 2008. 3. 1., 2008. 12. 1., 2012. 2. 29.>",
+          "relevance_pct": 0
+        }
+      ],
+      "contexts_count": 5,
+      "evaluation": {
+        "faithfulness": {
+          "score": 0.4,
+          "threshold": 0.6,
+          "passed": false,
+          "reasoning": "The answer contains significant hallucinations. The retrieved contexts do not provide any information about the possibility of extending the thesis submission deadline, nor do they mention procedures for requesting an extension or the need for a statement of reasons. The answer's suggestion to consult with the department head and the mention of submitting a statement are not supported by the provided contexts. The contexts only discuss the submission process and qualifications for thesis submission, not extensions."
+        },
+        "answer_relevancy": {
+          "score": 0.8,
+          "threshold": 0.7,
+          "passed": true,
+          "reasoning": "The answer addresses the query by acknowledging the lack of specific information about the extension of the thesis submission deadline at Dong-Eui University. It provides general advice on how to proceed, such as consulting with the department head and preparing a statement of reasons. However, it lacks specific details about the university's policy, which could have made the answer more complete. The answer avoids unnecessary information and stays relevant to the query."
+        },
+        "contextual_precision": {
+          "score": 0.4,
+          "threshold": 0.65,
+          "passed": false,
+          "reasoning": "The retrieved contexts are mostly irrelevant to the query about extending the deadline for thesis submission. The top-ranked contexts focus on the submission process and requirements for thesis evaluation, not on deadline extensions. There is no direct information about the possibility or procedure for extending submission deadlines, which is the core of the query. Therefore, the ranking does not effectively help answer the query."
+        },
+        "contextual_recall": {
+          "score": 0.0,
+          "threshold": 0.65,
+          "passed": false,
+          "reasoning": "The retrieved contexts do not contain any information regarding the extension of the thesis submission deadline, which is the critical information needed to answer the query. The expected answer specifies that an extension is possible for up to one year, but none of the contexts provide this information or any related details. Therefore, the critical information is completely missing from the contexts."
+        }
+      },
+      "overall_score": 0.42,
+      "overall_threshold": 0.6,
+      "passed": false,
+      "failure_reasons": [
+        "Faithfulness below threshold: 0.400 < 0.6",
+        "Contextual Precision below threshold: 0.400 < 0.65",
+        "Contextual Recall below threshold: 0.000 < 0.65",
+        "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+      ],
+      "metadata": {
+        "judge_model": "gpt-4o",
+        "evaluation_method": "custom_llm_judge"
+      }
+    },
+    {
+      "scenario_id": "graduate_004",
+      "persona": "graduate",
+      "scenario_index": 4,
+      "query": "조교 근무 시간과 장학금 혜택 관련하여",
+      "category": "complex",
+      "ground_truth": "조교는 주 10시간 근무, 장학금 지급",
+      "answer": "관련 규정을 찾을 수 없습니다. 다른 검색어로 시도해주세요.",
+      "sources": [],
+      "contexts_count": 0,
+      "evaluation": {
+        "faithfulness": {
+          "score": 0.0,
+          "threshold": 0.6,
+          "passed": false,
+          "reasoning": "The generated answer states that the relevant regulations cannot be found and suggests trying different search terms. However, there are no retrieved contexts provided to verify this claim. Therefore, the answer is entirely unsupported and considered a hallucination."
+        },
+        "answer_relevancy": {
+          "score": 0.4,
+          "threshold": 0.7,
+          "passed": false,
+          "reasoning": "The answer does not directly address the user's query about 조교 근무 시간과 장학금 혜택 (TA working hours and scholarship benefits). It states that the relevant regulations cannot be found and suggests trying different search terms, which is not helpful or informative regarding the specific query. The response is mostly irrelevant as it does not provide any information about the topic in question."
+        },
+        "contextual_precision": {
+          "score": 0.0,
+          "threshold": 0.65,
+          "passed": false,
+          "reasoning": "No retrieved contexts were provided to evaluate their relevance or ranking. Therefore, it is impossible to assess the precision or effectiveness of the retrieval system based on the given information."
+        },
+        "contextual_recall": {
+          "score": 0.0,
+          "threshold": 0.65,
+          "passed": false,
+          "reasoning": "The retrieved contexts are completely missing, as no information is provided. Therefore, it is impossible to determine if they contain the necessary information to answer the query about 조교 근무 시간과 장학금 혜택. The generated answer indicates a failure to find relevant information, which aligns with the absence of contexts."
+        }
+      },
+      "overall_score": 0.1,
+      "overall_threshold": 0.6,
+      "passed": false,
+      "failure_reasons": [
+        "Faithfulness below threshold: 0.000 < 0.6",
+        "Answer Relevancy below threshold: 0.400 < 0.7",
+        "Contextual Precision below threshold: 0.000 < 0.65",
+        "Contextual Recall below threshold: 0.000 < 0.65",
+        "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+      ],
+      "metadata": {
+        "judge_model": "gpt-4o",
+        "evaluation_method": "custom_llm_judge"
+      }
+    },
+    {
+      "scenario_id": "graduate_005",
+      "persona": "graduate",
+      "scenario_index": 5,
+      "query": "등록금 면제 기준이 대학원마다 달라요?",
+      "category": "edge",
+      "ground_truth": "등록금 면제는 대학원별 기준 적용",
+      "answer": "많이 궁금하셨겠어요. 등록금 면제 기준은 대학원마다 다를 수 있습니다. 동의대학교의 경우, 등록금 면제에 대한 구체적인 기준은 대학원장학금지급에관한세칙에 명시되어 있습니다.\n\n### 등록금 면제 기준\n1. **장학생의 종류 및 자격**: \n   - 석사학위과정 일반전형 합격자 중 학부 성적이 평균 4.0/4.5 이상인 자는 등록금의 전액 또는 일부를 면제받을 수 있습니다.\n   - 편입학생은 예외로 적용됩니다.\n\n2. **지도교수 추천 장학생**:\n   - 석사 입학예정자 중 본 대학교 학부 성적이 우수한 자로서 지도교수의 추천을 받은 경우, 입학 후 4학기 동안 등록금을 전액 또는 일부 지급받을 수 있습니다.\n\n### 참고\n- **출처**: 「대학원장학금지급에관한세칙」 제4조\n\n구체적인 등록금 면제 기준이나 신청 절차에 대한 추가 정보는 대학원행정실에 문의하시거나, 관련 세칙을 확인하시기 바랍니다.\n\n---\n⚠️ **주의**: 일부 인용(「대학원장학금지급에관한세칙」 제4조\n\n)은 데이터베이스에서 확인되지 않았습니다. 담당 부서에 확인하시기 바랍니다.",
+      "sources": [
+        {
+          "regulation_name": "",
+          "rule_code": "2-1-1",
+          "path": "",
+          "text": "동의대학교학칙 > 제9장 등록 및 수강신청 > 제43조 수강신청 > ① 매 학기 강의시간표: 매 학기 강의시간표는 개강 전에 각 대학에서 정하여 총장의 승인을 받아 공고한다.",
+          "relevance_pct": 100
+        },
+        {
+          "regulation_name": "",
+          "rule_code": "2-1-1",
+          "path": "",
+          "text": "동의대학교학칙 > 제11장 교원의 임무 > 제46조 임무 > ② 본 대학교 전임교원: 본 대학교 전임교원은 매 학년도 30주를 기준으로 매주 9시간 이상 강의를 담당함을 원칙으로 한다. <단서조항 삭제 2023. 2. 1.>",
+          "relevance_pct": 71
+        },
+        {
+          "regulation_name": "",
+          "rule_code": "2-1-1",
+          "path": "",
+          "text": "동의대학교학칙 > 제10장 공개강좌, 학점은행제 및 시간제 등록생 > 제44조 공개강좌 > ② 공개강좌: 공개강좌의 제목, 기간, 장소, 수강 자격 및 정원 등에 관한 사항은 개강시마다 총장이 정하여 공고하며, 수강생에 대하여는 강의에 소요되는 수강료를 징수할 수 있다.",
+          "relevance_pct": 28
+        },
+        {
+          "regulation_name": "",
+          "rule_code": "2-1-1",
+          "path": "",
+          "text": "동의대학교학칙 > 제10장 공개강좌, 학점은행제 및 시간제 등록생 > 제45조 시간제등록생 > ⑤ 시간제 등록생으로 선발된 자: 시간제 등록생으로 선발된 자는 소정의 기간 내에 수강신청을 하여야 하며, 신청 학점에 따라 산정된 등록금을 납부하여야 한다.",
+          "relevance_pct": 26
+        },
+        {
+          "regulation_name": "",
+          "rule_code": "3-2-107",
+          "path": "",
+          "text": "대학원장학금지급에관한세칙 > 제4조 장학생의 종류 및 자격 > ㄱ: ㄱ. <삭제 2011. 1. 1.> ㄴ. 석사학위과정 일반전형 합격자중 학부성적이 평균 4.0/4.5 이상인 자. 단, 졸업예정자인 경우 지원서 제출시점의 학점을 기준으로 한다. <개정 2011. 1. 1., 2012. 10. 1.> ㄷ. 위 ㄴ 의 입학성적이 우수한 신입생에게는 등록금의 전액 또는 일부를 면제할 수 있으며, 편입학생은 예외로 한다. <개정 2010. 10. 1., 2011. 1. 1., 2012. 10. 1., 2024. 3. 1.> ㄱ. 석사 입학예정자 중 본 대학교 학부성적이 우수한 자로서 지도교수의 추천을 받은 자. <개정 2012. 10. 1., 2015. 8. 1., 2023. 1. 1.> ㄴ. 지도교수 추천 장학생은 입학 후 4학기 동안 등록금을 전액 또는 일부를 지급할 수 있다. <개정 2019. 2. 1.> ㄷ. 학부성적의 심의 기준은 졸업예정자의 경우 추천서 제출시점의 학점을 기준으",
+          "relevance_pct": 0
+        }
+      ],
+      "contexts_count": 5,
+      "evaluation": {
+        "faithfulness": {
+          "score": 0.9,
+          "threshold": 0.6,
+          "passed": true,
+          "reasoning": "The answer is mostly supported by the retrieved contexts. It correctly references the criteria for tuition exemption as outlined in the '대학원장학금지급에관한세칙', specifically mentioning the requirement for a master's program applicant with a GPA of 4.0/4.5 or higher and the role of a professor's recommendation. However, the answer includes a general statement about tuition exemption criteria varying by graduate school, which is not directly supported by the contexts provided. This is a minor detail and does not significantly detract from the overall accuracy of the answer."
+        },
+        "answer_relevancy": {
+          "score": 1.0,
+          "threshold": 0.7,
+          "passed": true,
+          "reasoning": "The answer directly and completely addresses the user's query about whether tuition exemption criteria differ by graduate school. It provides specific examples of criteria from Dong-Eui University, mentions the relevant regulations, and advises on where to find more information. The answer is precise and avoids unnecessary information."
+        },
+        "contextual_precision": {
+          "score": 0.6,
+          "threshold": 0.65,
+          "passed": false,
+          "reasoning": "The most relevant context for the query is Rank 5, which directly addresses the criteria for tuition exemption at the graduate level. However, it is ranked last among the retrieved contexts. The top four contexts are irrelevant to the query about tuition exemption criteria, focusing instead on course registration, faculty duties, and open lectures. This poor ranking diminishes the effectiveness of the retrieval in answering the query."
+        },
+        "contextual_recall": {
+          "score": 0.9,
+          "threshold": 0.65,
+          "passed": true,
+          "reasoning": "The retrieved contexts contain most of the necessary information to answer the query. Context 5 provides details about the criteria for tuition exemption, which aligns with the expected answer that tuition exemption criteria are applied differently by each graduate school. However, there is a minor gap as the contexts do not explicitly state that these criteria vary between different graduate schools, which is implied in the expected answer. The generated answer effectively uses the relevant information from the contexts."
+        }
+      },
+      "overall_score": 0.865,
+      "overall_threshold": 0.6,
+      "passed": false,
+      "failure_reasons": [
+        "Contextual Precision below threshold: 0.600 < 0.65"
+      ],
+      "metadata": {
+        "judge_model": "gpt-4o",
+        "evaluation_method": "custom_llm_judge"
+      }
+    },
+    {
+      "scenario_id": "professor_001",
+      "persona": "professor",
+      "scenario_index": 1,
+      "query": "교원인사규정 제8조 확인 필요",
+      "category": "simple",
+      "ground_truth": "제8조는 의원면직 규정",
+      "answer": "교원인사규정 제8조에 대한 확인 요청에 대해 답변드립니다.\n\n### 1. 핵심 답변\n- 교원인사규정 제8조는 교원의 자격에 관한 내용을 다루고 있습니다.\n\n### 2. 상세 내용\n1. **산업체 경력 기준 임용**: \n   - 산업체 경력 기준으로 임용 시, 산학협력실적이 없는 경우에는 산업체 경력 2년을 산학협력실적 100%로 대체할 수 있습니다.\n   - **조교수**: 12년 이상의 산업체 경력 필요\n   - **부교수**: 27년 이상의 산업체 경력 필요\n   - **교수**: 34년 이상의 산업체 경력 필요\n\n### 3. 근거 출처\n- • 출처: 「교원인사규정」 제2장 신규임용 > 제8조 교원의 자격\n\n이와 관련하여 추가적인 질문이나 필요한 사항이 있으시면, 인사팀에 문의하시기 바랍니다.\n\n---\n⚠️ **주의**: 일부 인용(교원인사규정 제8조)은 데이터베이스에서 확인되지 않았습니다. 담당 부서에 확인하시기 바랍니다.",
+      "sources": [
+        {
+          "regulation_name": "교원인사규정",
+          "rule_code": "3-1-5",
+          "path": "교원인사규정 > 제2장 신규임용 > 제8조 교원의 자격",
+          "text": "교원인사규정 > 제2장 신규임용 > 제8조 교원의 자격 > ⑦ 산업체 경력 기준 임용 시 산학협력실적이 없: 산업체 경력 기준 임용 시 산학협력실적이 없는 경우, 산업체경력 2년을 산학협력실적 100%로 대체가 가능하다. 즉, 조교수는 12년 이상, 부교수는 27년 이상, 교수는 34년 이상의 산업체경력으로 신규임용이 가능하다. <신설 2018. 3. 1.>",
+          "relevance_pct": 100
+        },
+        {
+          "regulation_name": "JA교원인사규정",
+          "rule_code": "3-1-5",
+          "path": "JA교원인사규정 > 제8조 업적평가 및 보상",
+          "text": "JA교원인사규정 > 제8조 업적평가 및 보상 > ② 업적평가 및 평가 결과에 따른 보상과 관련된 사항: 업적평가 및 평가 결과에 따른 보상과 관련된 사항은 교원업적평가규정을 따른다.",
+          "relevance_pct": 100
+        }
+      ],
+      "contexts_count": 2,
+      "evaluation": {
+        "faithfulness": {
+          "score": 0.8,
+          "threshold": 0.6,
+          "passed": true,
+          "reasoning": "The answer is mostly consistent with the retrieved contexts. The main claim that 교원인사규정 제8조 deals with 교원의 자격 is supported by Context 1, which discusses the qualifications for 교원 based on 산업체 경력. However, the answer does not mention the specific details from Context 2, which relates to 업적평가 및 보상, and this part of the context is not addressed in the answer. The warning about the database confirmation is a minor detail and does not affect the factual consistency of the main claims."
+        },
+        "answer_relevancy": {
+          "score": 0.9,
+          "threshold": 0.7,
+          "passed": true,
+          "reasoning": "The answer directly addresses the query by providing information about Article 8 of the 교원인사규정, specifically regarding the qualifications of faculty members. It includes detailed information about the requirements for different faculty positions based on industrial experience, which is relevant to the query. However, there is a note indicating that some information could not be verified, which slightly affects the completeness of the answer."
+        },
+        "contextual_precision": {
+          "score": 1.0,
+          "threshold": 0.65,
+          "passed": true,
+          "reasoning": "The top-ranked context is highly relevant to the query as it directly addresses the content of 교원인사규정 제8조, specifically focusing on the industrial experience requirements for faculty appointments. The second context, while related to a different aspect of the regulations, is correctly ranked lower as it does not pertain to the specific query about 제8조. The ranking effectively prioritizes the most relevant information, providing a precise answer to the query."
+        },
+        "contextual_recall": {
+          "score": 0.0,
+          "threshold": 0.65,
+          "passed": false,
+          "reasoning": "The retrieved contexts do not contain any information about '의원면직 규정', which is the key information needed to answer the query. Instead, the contexts focus on '교원의 자격' and '업적평가 및 보상', which are unrelated to the expected answer. Therefore, the critical information is completely missing."
+        }
+      },
+      "overall_score": 0.705,
+      "overall_threshold": 0.6,
+      "passed": false,
+      "failure_reasons": [
+        "Contextual Recall below threshold: 0.000 < 0.65"
+      ],
+      "metadata": {
+        "judge_model": "gpt-4o",
+        "evaluation_method": "custom_llm_judge"
+      }
+    },
+    {
+      "scenario_id": "professor_002",
+      "persona": "professor",
+      "scenario_index": 2,
+      "query": "연구년 적용 기준 상세히",
+      "category": "complex",
+      "ground_truth": "연구년은 재직기간 6년 이상, 성과 평가 우수",
+      "answer": "많이 힘드셨겠어요. 연구년 적용 기준에 대해 궁금하신 것 같네요. 아래에 동의대학교의 연구년 적용 기준을 상세히 정리해 드리겠습니다.\n\n### 1. 연구년 신청 절차\n- **신청**: 소속 교원은 연구년제 허가 신청을 합니다.\n- **검토**: 소속 대학장은 해당 교원의 연구년제 계획이 본인이나 학교에 유익한 공헌을 할 수 있는지를 확인합니다.\n- **추천**: 대학장은 검토 후 총장에게 추천합니다.\n- **선정**: 총장은 추천사항을 심사하여 연구년제 연구자를 선정합니다.\n\n### 2. 연구년 적용 기준\n- 연구년제는 교원이 연구를 통해 본인 및 학교에 기여할 수 있는지를 기준으로 합니다.\n- 연구년제의 허가 여부는 소속 대학장의 검토와 총장의 심사를 통해 결정됩니다.\n\n### 3. 관련 규정\n- • 출처: 「교원연구년제규정」 제9조\n\n### 4. 추가 안내\n- 구체적인 신청 기간이나 절차는 학사일정에 따라 별도로 공지될 수 있으니, 학사지원팀에 문의하시면 더 자세한 정보를 얻으실 수 있습니다.\n\n이와 관련하여 더 궁금한 점이 있으시면 언제든지 문의해 주세요!\n\n---\n⚠️ **주의**: 일부 인용(「교원연구년제규정」 제9조\n\n)은 데이터베이스에서 확인되지 않았습니다. 담당 부서에 확인하시기 바랍니다.",
+      "sources": [
+        {
+          "regulation_name": "경과조치",
+          "rule_code": "3-1-24",
+          "path": "경과조치",
+          "text": "교원연구년제규정 > 부칙 > 2. 경과조치: 이 규정 시행과 동시에 ｢교원안식년연구에관한규정｣은 폐지하며, 이 규정 시행 당시 안식년 연구 교원은 이 규정의 연구년 교원으로 적용한다.",
+          "relevance_pct": 100
+        },
+        {
+          "regulation_name": "",
+          "rule_code": "3-1-5",
+          "path": "",
+          "text": "교원인사규정 > 부칙 > 3. 경과조치 > ③ [별표 1] 연구실적인정기준 및 인정률: [별표 1] 연구실적인정기준 및 인정률은 시행일 현재 재직중인 교원의 경우 2001. 3. 1.이후 발표되는 연구실적물부터 적용하며, 2001. 2. 28.까지 발표되는 연구실적물은 종전의 교원임용규정의 <별표 1> 교원연구실적평가표에 따라 인정한다.",
+          "relevance_pct": 99
+        },
+        {
+          "regulation_name": "",
+          "rule_code": "3-1-5",
+          "path": "",
+          "text": "교원인사규정 > 부칙 > 17. 경과조치 > ④ 승진심사용 연구실적물: 승진심사용 연구실적물은 승진소요기간내(현직명임용일부터 재임용탈락일 까지의 기간으로, 재임용탈락후 재임용전까지의 기간은 제외한다)의 게재(출판)실적으로 박사학위논문은 200%, 저서 및 논문은 편당 연구(저)자수가 1인 100%, 2인 70%, 3인 50%, 4인 이상 30%의 인정률을 적용하고, 2006.9.1이후 승진소요기간내의 연구실적물은 교원인사규정 [별표1]의 연구실적 인정기준 및 인정률을 적용하고 공동 연구업적의 경우 편당 연구(저)자수가 1인 100%, 2인 70%, 3인 50%, 4인 이상 30%, 5인 이상의 저서는 1/연구자수×100%의 인정률을 적용한다. 또한 승진심사용 연구실적물은 교내ㆍ외 심사(교내1인, 교외2인)를 거쳐 평균 “우”이상의 평가를 받는 경우에 인정하며, 국내전문학술지 이상 등급의 학술지에 게재된 논문 및 박사학위논문은 심사를 생략한다.",
+          "relevance_pct": 96
+        },
+        {
+          "regulation_name": "선정기준 및 절차",
+          "rule_code": "3-1-24",
+          "path": "선정기준 및 절차",
+          "text": "교원연구년제규정 > 제9조 선정기준 및 절차: 소속 대학장은 소속 교원으로부터 연구년제 허가 신청이 있을 경우, 당해 교원의 연구년제 계획이 본인이나 학교에 유익한 공헌을 할 수 있는가를 확인한 후 총장에게 추천하고, 총장은 추천사항을 심사하여 연구년제 연구자를 선정한다.",
+          "relevance_pct": 1
+        },
+        {
+          "regulation_name": "경과조치",
+          "rule_code": "3-1-5",
+          "path": "경과조치",
+          "text": "교원인사규정 > 부칙 > 14. 경과조치: ① 제19조 제1항의 승진임용 연구실적에 관한 규정은 2006. 3. 1. 승진임용 심사대상 교원부터 적용한다.",
+          "relevance_pct": 0
+        }
+      ],
+      "contexts_count": 5,
+      "evaluation": {
+        "faithfulness": {
+          "score": 0.8,
+          "threshold": 0.6,
+          "passed": true,
+          "reasoning": "The generated answer is mostly consistent with the retrieved contexts, particularly Context 4, which outlines the procedure for applying for a research year, including application, review, recommendation, and selection. However, the answer includes additional details such as the potential for separate announcements based on academic schedules and a suggestion to contact the academic support team for more information, which are not directly supported by the contexts. These are minor details and do not significantly detract from the overall faithfulness of the answer."
+        },
+        "answer_relevancy": {
+          "score": 0.9,
+          "threshold": 0.7,
+          "passed": true,
+          "reasoning": "The answer directly addresses the query by providing detailed information about the application criteria for a sabbatical year, which is relevant to the user's request. It includes the application process, criteria, and related regulations. However, there is a minor gap as it mentions a specific university (Dong-Eui University) without confirming if this is the user's intended context, and it also notes that some information could not be verified. Despite these minor issues, the answer is largely complete and relevant."
+        },
+        "contextual_precision": {
+          "score": 0.7,
+          "threshold": 0.65,
+          "passed": true,
+          "reasoning": "The retrieved contexts contain some relevant information, particularly Rank 4, which directly addresses the research year application criteria and procedures. However, the top-ranked contexts (Rank 1, 2, and 3) are not directly relevant to the query about research year application criteria, as they focus on transitional provisions and research performance criteria. The relevant context is not ranked high enough, indicating a suboptimal ranking that includes noise from less relevant contexts."
+        },
+        "contextual_recall": {
+          "score": 0.6,
+          "threshold": 0.65,
+          "passed": false,
+          "reasoning": "The retrieved contexts provide some relevant information about the procedures and criteria for applying for a research year, such as the role of the university dean and president in the selection process. However, they do not explicitly mention the specific criteria of '재직기간 6년 이상, 성과 평가 우수' as stated in the expected answer. This represents a significant gap in the information needed to fully answer the query."
+        }
+      },
+      "overall_score": 0.765,
+      "overall_threshold": 0.6,
+      "passed": false,
+      "failure_reasons": [
+        "Contextual Recall below threshold: 0.600 < 0.65"
+      ],
+      "metadata": {
+        "judge_model": "gpt-4o",
+        "evaluation_method": "custom_llm_judge"
+      }
+    },
+    {
+      "scenario_id": "professor_003",
+      "persona": "professor",
+      "scenario_index": 3,
+      "query": "승진 심의 기준과 편장조 구체적 근거",
+      "category": "complex",
+      "ground_truth": "승진은 연구실적, 교육성과, 봉사활동 종합 평가",
+      "answer": "관련 규정을 찾을 수 없습니다. 다른 검색어로 시도해주세요.",
+      "sources": [],
+      "contexts_count": 0,
+      "evaluation": {
+        "faithfulness": {
+          "score": 0.0,
+          "threshold": 0.6,
+          "passed": false,
+          "reasoning": "The generated answer states that the relevant regulations cannot be found, which is a claim about the absence of information. However, without any retrieved contexts provided, there is no basis to evaluate the faithfulness of this claim. Therefore, the answer is considered entirely unsupported and potentially hallucinated."
+        },
+        "answer_relevancy": {
+          "score": 0.4,
+          "threshold": 0.7,
+          "passed": false,
+          "reasoning": "The answer does not directly address the query about the criteria and specific grounds for promotion review. It simply states that the relevant regulations could not be found and suggests trying different search terms, which is not helpful or informative regarding the query."
+        },
+        "contextual_precision": {
+          "score": 0.0,
+          "threshold": 0.65,
+          "passed": false,
+          "reasoning": "No contexts were retrieved to evaluate their relevance or ranking. The absence of any retrieved contexts means the system failed to provide any information that could potentially answer the query."
+        },
+        "contextual_recall": {
+          "score": 0.0,
+          "threshold": 0.65,
+          "passed": false,
+          "reasoning": "The retrieved contexts are not provided, making it impossible to evaluate whether they contain the necessary information to answer the query. Without any context, the generated answer cannot be assessed for relevance or accuracy against the expected answer."
+        }
+      },
+      "overall_score": 0.1,
+      "overall_threshold": 0.6,
+      "passed": false,
+      "failure_reasons": [
+        "Faithfulness below threshold: 0.000 < 0.6",
+        "Answer Relevancy below threshold: 0.400 < 0.7",
+        "Contextual Precision below threshold: 0.000 < 0.65",
+        "Contextual Recall below threshold: 0.000 < 0.65",
+        "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+      ],
+      "metadata": {
+        "judge_model": "gpt-4o",
+        "evaluation_method": "custom_llm_judge"
+      }
+    },
+    {
+      "scenario_id": "professor_004",
+      "persona": "professor",
+      "scenario_index": 4,
+      "query": "휴직 시 급여 지급 규정 해석 부탁드립니다",
+      "category": "complex",
+      "ground_truth": "휴직 중 급여는 무급, 공적 연금 납부",
+      "answer": "많이 힘드셨겠어요. 휴직 시 급여 지급에 대한 규정을 정리해 드리겠습니다.\n\n### 1. 핵심 답변\n휴직 시 급여 지급은 휴직 사유에 따라 다르게 적용됩니다.\n\n### 2. 상세 내용\n1. **공무상 질병 또는 부상으로 휴직한 경우**: \n   - 이 경우에는 휴직 기간 동안 봉급의 **전액**이 지급됩니다.\n   - **근거**: 「학교법인동의학원정관」 제47조 제44조제1항제1호\n\n2. **기타 사유로 휴직한 경우**:\n   - 휴직 기간 중 봉급의 **5할**이 지급됩니다.\n   - **근거**: 「학교법인동의학원정관」 제47조 제44조제1항제5호\n\n3. **임신 중 여교원의 경우**:\n   - 출산 전후 90일의 산․전후휴가가 주어지며, 이 기간 동안의 급여는 별도로 규정됩니다.\n   - 자녀 양육을 위한 휴직 시에는 육아휴직수당이 지급됩니다.\n   - **근거**: 「학교법인동의학원정관」 제47조 제44조제1항제2호 내지 제4호 및 제6호 내지 제12호\n\n### 3. 근거 출처\n- • 출처: 「학교법인동의학원정관」 제47조\n\n### 4. 추가 안내\n휴직 사유에 따라 급여 지급이 달라지므로, 구체적인 상황에 따라 추가적인 문의가 필요할 수 있습니다. 관련 사항은 인사팀에 문의하시면 더 자세한 안내를 받으실 수 있습니다.\n\n---\n⚠️ **주의**: 일부 인용(「학교법인동의학원정관」 제47조 )은 데이터베이스에서 확인되지 않았습니다. 담당 부서에 확인하시기 바랍니다.",
+      "sources": [
+        {
+          "regulation_name": "",
+          "rule_code": "1-0-1",
+          "path": "",
+          "text": "학교법인동의학원정관 > 제2관 신분보장 > 제47조 휴직교원의 처우 > ③ 제44조제1항제2호 내지 제4호와 제6호 내지 제12호: 제44조제1항제2호 내지 제4호와 제6호 내지 제12호의 규정에 의하여 휴직된 교원에 대하여는 봉급을 지급하지 아니한다. 다만, 제44조제1항제7호에 의거 임신중의 여교원에 대하여는 그 출산의 전후를 통하여 90일의 산․전후휴가를 주어야 하며, 자녀를 양육하기 위하여 휴직한 교원에 대해서는 육아휴직수당을 지급한다. 산․전후휴가에 따른 급여, 육아휴직수당 및 육아휴직기간은 별도의 규정으로 정한다.",
+          "relevance_pct": 100
+        },
+        {
+          "regulation_name": "",
+          "rule_code": "1-0-1",
+          "path": "",
+          "text": "학교법인동의학원정관 > 제2관 신분보장 > 제47조 휴직교원의 처우 > ② 제44조제1항제5호: 제44조제1항제5호의 규정에 의하여 휴직된 교원에 대하여는 그 휴직기간 중 봉급의 5할을 지급한다.",
+          "relevance_pct": 42
+        },
+        {
+          "regulation_name": "",
+          "rule_code": "1-0-1",
+          "path": "",
+          "text": "학교법인동의학원정관 > 제2관 신분보장 > 제47조 휴직교원의 처우 > ① 제44조제1항제1호: 제44조제1항제1호의 규정에 의하여 휴직된 교원에 대하여는 다음 각 호의 구분에 따라 봉급의 일부를 지급한다. 다만, 공무상 질병 또는 부상으로 휴직한 경우에는 그 기간 중 봉급의 전액을 지급한다. (개정 2018.06.28.)",
+          "relevance_pct": 36
+        },
+        {
+          "regulation_name": "",
+          "rule_code": "3-1-5",
+          "path": "",
+          "text": "교원인사규정 > 제12조 임용계약 > ① 교원을 임용할 때에 > 2. 급여 : 교원및직원의보수규정에 의한 보수 및: 급여 : 교원및직원의보수규정에 의한 보수 및 교원및직원의수당규정에 의한 수당",
+          "relevance_pct": 3
+        },
+        {
+          "regulation_name": "",
+          "rule_code": "1-0-1",
+          "path": "",
+          "text": "학교법인동의학원정관 > 제43조 임용 > ③ 대학교육기관 > 2. 급여 : 대학교육기관: 급여 : 대학교육기관의 보수 및 수당에 관한 규정에 의한 보수 및 수당",
+          "relevance_pct": 0
+        }
+      ],
+      "contexts_count": 5,
+      "evaluation": {
+        "faithfulness": {
+          "score": 0.8,
+          "threshold": 0.6,
+          "passed": true,
+          "reasoning": "The answer is mostly consistent with the retrieved contexts. The claims about full salary payment for leave due to work-related illness or injury, half salary for other reasons, and specific provisions for maternity and childcare leave are supported by the contexts. However, the answer does not specify that the half salary applies only to leave under 제44조제1항제5호, which is a minor detail. Additionally, the mention of '기타 사유로 휴직한 경우' is slightly misleading as it implies a broader application than what is specified in the context. Overall, the major claims are supported, but some minor details are not explicitly covered in the contexts."
+        },
+        "answer_relevancy": {
+          "score": 0.9,
+          "threshold": 0.7,
+          "passed": true,
+          "reasoning": "The answer directly addresses the user's query by explaining the regulations regarding salary payment during leave. It provides detailed information on different scenarios, such as leave due to work-related illness, other reasons, and maternity leave, along with references to specific regulations. However, there is a note indicating that some references could not be verified, which slightly affects the completeness of the information. Overall, the answer is relevant and informative, with minor gaps due to the unverified references."
+        },
+        "contextual_precision": {
+          "score": 1.0,
+          "threshold": 0.65,
+          "passed": true,
+          "reasoning": "All top-ranked contexts are highly relevant to the query about 휴직 시 급여 지급 규정. The retrieved contexts directly address the different scenarios of leave and the corresponding salary provisions, as outlined in the provided answer. The ranking is perfect as the most relevant contexts are listed first, effectively supporting the answer given."
+        },
+        "contextual_recall": {
+          "score": 0.6,
+          "threshold": 0.65,
+          "passed": false,
+          "reasoning": "The retrieved contexts provide detailed information about the conditions under which salary is paid during leave, including specific cases like illness or maternity leave. However, the expected answer states that salary is unpaid during leave, which is not directly supported by the retrieved contexts. The contexts suggest partial or full payment in certain situations, which contradicts the expected answer. Therefore, significant information is missing to fully align with the expected answer."
+        }
+      },
+      "overall_score": 0.825,
+      "overall_threshold": 0.6,
+      "passed": false,
+      "failure_reasons": [
+        "Contextual Recall below threshold: 0.600 < 0.65"
+      ],
+      "metadata": {
+        "judge_model": "gpt-4o",
+        "evaluation_method": "custom_llm_judge"
+      }
+    },
+    {
+      "scenario_id": "professor_005",
+      "persona": "professor",
+      "scenario_index": 5,
+      "query": "Sabbatical leave 규정과 국내 연구년 차이점",
+      "category": "edge",
+      "ground_truth": "Sabbatical은 해외 연구, 연구년은 국내 연구",
+      "answer": "관련 규정을 찾을 수 없습니다. 다른 검색어로 시도해주세요.",
+      "sources": [],
+      "contexts_count": 0,
+      "evaluation": {
+        "faithfulness": {
+          "score": 0.0,
+          "threshold": 0.6,
+          "passed": false,
+          "reasoning": "The generated answer states that the relevant regulations could not be found, which is a claim about the availability of information. However, without any retrieved contexts provided, there is no basis to evaluate the factual consistency of this claim. Therefore, the answer is considered entirely unsupported and hallucinated."
+        },
+        "answer_relevancy": {
+          "score": 0.0,
+          "threshold": 0.7,
+          "passed": false,
+          "reasoning": "The answer does not address the query at all. The user asked for the differences between sabbatical leave regulations and domestic research year, but the answer states that the relevant regulations cannot be found and suggests trying different search terms. This does not provide any information related to the query."
+        },
+        "contextual_precision": {
+          "score": 0.0,
+          "threshold": 0.65,
+          "passed": false,
+          "reasoning": "No retrieved contexts were provided to evaluate their relevance or ranking. Therefore, it is impossible to assess the precision or effectiveness of the retrieval system based on the given information."
+        },
+        "contextual_recall": {
+          "score": 0.0,
+          "threshold": 0.65,
+          "passed": false,
+          "reasoning": "The retrieved contexts are completely missing, as indicated by the absence of any content. Therefore, they do not provide any information to address the query or the expected answer. The generated answer reflects this lack of information by stating that the relevant regulations could not be found."
+        }
+      },
+      "overall_score": 0.0,
+      "overall_threshold": 0.6,
+      "passed": false,
+      "failure_reasons": [
+        "Faithfulness below threshold: 0.000 < 0.6",
+        "Answer Relevancy below threshold: 0.000 < 0.7",
+        "Contextual Precision below threshold: 0.000 < 0.65",
+        "Contextual Recall below threshold: 0.000 < 0.65",
+        "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+      ],
+      "metadata": {
+        "judge_model": "gpt-4o",
+        "evaluation_method": "custom_llm_judge"
+      }
+    },
+    {
+      "scenario_id": "staff_001",
+      "persona": "staff",
+      "scenario_index": 1,
+      "query": "복무 규정 확인 부탁드립니다",
+      "category": "simple",
+      "ground_truth": "직원 복무는 주 40시간",
+      "answer": "동의대학교의 교직원 복무 규정에 대한 내용을 아래와 같이 정리해 드립니다.\n\n### 1. 핵심 답변\n- 동의대학교의 교직원 복무 규정은 교직원의 복무에 관한 사항을 규정하고 있습니다.\n\n### 2. 상세 내용\n1. **목적**: 이 규정은 동의대학교 교직원의 복무에 관한 사항을 규정하는 것을 목적으로 합니다.\n   - **출처**: 「교직원복무규정」 제1장 총칙 제1조\n2. **적용 범위**: 본 대학교의 교직원 복무에 관하여는 법령, 정관 및 다른 규정에 특별한 규정이 있는 경우를 제외하고는 이 규정이 정하는 바에 따릅니다.\n   - **출처**: 「교직원복무규정」 제1장 총칙 제2조\n3. **시간외 근무 및 공휴일 근무**: 총장은 사무처리상 긴급을 요한다고 인정할 때에는 근무시간 외의 근무를 명하거나 공휴일의 근무를 명할 수 있습니다.\n   - **출처**: 「교직원복무규정」 제2장 근무 제17조\n\n### 3. 추가 안내\n- 교직원 복무에 대한 보다 구체적인 사항이나 문의는 인사팀에 문의하시기 바랍니다.",
+      "sources": [
+        {
+          "regulation_name": "시간외 근무 및 공휴일 근무",
+          "rule_code": "3-1-26",
+          "path": "시간외 근무 및 공휴일 근무",
+          "text": "교직원복무규정 > 제2장 근 무 > 제17조 시간외 근무 및 공휴일 근무: 총장은 사무처리상 긴급을 요한다고 인정할 때에는 제15조의 규정에 불구하고 근무시간 외의 근무를 명하거나 공휴일의 근무를 명할 수 있다.",
+          "relevance_pct": 100
+        },
+        {
+          "regulation_name": "복무",
+          "rule_code": "1-0-1",
+          "path": "복무",
+          "text": "학교법인동의학원정관 > 제6장 교직원 > 제4절 사무직원 > 제85조 복무: 일반직원의 복무에 관하여는 사립학교 교원에게 적용하는 규정을 준용한다.(단, 중·고등학교의 일반직원의 복무에 관하여는 부산광역시교육감 소속 지방공무원 복무 조례에 준한다.) (개정 2015.02.05.,2017.12.21.)",
+          "relevance_pct": 39
+        },
+        {
+          "regulation_name": "목적",
+          "rule_code": "3-1-26",
+          "path": "목적",
+          "text": "교직원복무규정 > 제1장 총칙 > 제1조 목적: 이 규정은 동의대학교(이하 “본 대학교”라 한다) 교직원의 복무에 관한 사항을 규정함을 목적으로 한다.",
+          "relevance_pct": 36
+        },
+        {
+          "regulation_name": "적용범위",
+          "rule_code": "3-1-26",
+          "path": "적용범위",
+          "text": "교직원복무규정 > 제1장 총칙 > 제2조 적용범위: 본 대학교의 교직원의 복무에 관하여는 법령, 정관 및 다른 규정에 특별한 규정이 있는 경우를 제외하고는 이 규정이 정하는 바에 의한다.",
+          "relevance_pct": 12
+        },
+        {
+          "regulation_name": "",
+          "rule_code": "3-1-26",
+          "path": "",
+          "text": "교직원복무규정 > 부칙 > 1. 이 규정: 이 규정은 1998년 3월 1일부터 시행한다.",
+          "relevance_pct": 0
+        }
+      ],
+      "contexts_count": 5,
+      "evaluation": {
+        "faithfulness": {
+          "score": 1.0,
+          "threshold": 0.6,
+          "passed": true,
+          "reasoning": "The generated answer is fully supported by the retrieved contexts. Each claim made in the answer corresponds directly to the information provided in the contexts. The purpose and scope of the regulations, as well as the details about overtime and holiday work, are all accurately reflected in the answer with appropriate references to the specific articles in the regulations. There are no hallucinations present."
+        },
+        "answer_relevancy": {
+          "score": 0.9,
+          "threshold": 0.7,
+          "passed": true,
+          "reasoning": "The answer directly addresses the query by providing detailed information about the regulations for staff at Dong-Eui University, which is relevant to the request for 복무 규정 (service regulations). It includes a summary, detailed sections, and additional guidance, making it comprehensive. However, it assumes the query is specifically about Dong-Eui University without explicit confirmation, which is a minor gap."
+        },
+        "contextual_precision": {
+          "score": 1.0,
+          "threshold": 0.65,
+          "passed": true,
+          "reasoning": "All retrieved contexts are highly relevant to the query about the 복무 규정 (service regulations) of 동의대학교. The top-ranked contexts directly address the key points mentioned in the answer, such as the purpose, scope, and specific regulations regarding working hours and holidays. The ranking effectively supports the answer by presenting the most pertinent information first, ensuring a comprehensive understanding of the regulations."
+        },
+        "contextual_recall": {
+          "score": 0.0,
+          "threshold": 0.65,
+          "passed": false,
+          "reasoning": "The retrieved contexts do not contain any information about the specific detail of '주 40시간' (40 hours per week) which is the key information in the expected answer. The contexts focus on general regulations and specific clauses about overtime and applicability, but they do not address the standard working hours directly. Therefore, the critical information needed to answer the query is completely missing."
+        }
+      },
+      "overall_score": 0.775,
+      "overall_threshold": 0.6,
+      "passed": false,
+      "failure_reasons": [
+        "Contextual Recall below threshold: 0.000 < 0.65"
+      ],
+      "metadata": {
+        "judge_model": "gpt-4o",
+        "evaluation_method": "custom_llm_judge"
+      }
+    },
+    {
+      "scenario_id": "staff_002",
+      "persona": "staff",
+      "scenario_index": 2,
+      "query": "휴가 신청 서식 양식 알려주세요",
+      "category": "simple",
+      "ground_truth": "연차 휴가는 연간 15일",
+      "answer": "휴가 신청 서식은 교직원복무규정에 따라 별지 제1호 서식 및 별지 제2호 서식으로 제공됩니다. \n\n### 휴가 신청 절차\n1. **신청서 작성**: 별지 제1호 서식 또는 별지 제2호 서식을 작성합니다.\n2. **총장 허가**: 작성한 신청서를 총장에게 제출하여 허가를 받습니다.\n\n### 참고 사항\n- 대학의 계획에 의한 연가는 별도의 절차 없이 실시될 수 있습니다.\n\n• 출처: 「교직원복무규정」 제29조\n\n정확한 서식은 학교의 공식 웹사이트나 인사 관련 부서에서 확인하시기 바랍니다. 필요하신 경우, 인사팀에 문의하시면 추가적인 안내를 받으실 수 있습니다.\n\n---\n⚠️ **주의**: 일부 인용(「교직원복무규정」 제29조\n\n)은 데이터베이스에서 확인되지 않았습니다. 담당 부서에 확인하시기 바랍니다.",
+      "sources": [
+        {
+          "regulation_name": "휴가의 절차",
+          "rule_code": "3-1-26",
+          "path": "휴가의 절차",
+          "text": "교직원복무규정 > 제4장 휴일 및 휴가 > 제29조 휴가의 절차: 교직원이 휴가를 가고자 할 때에는 별지 제1호 서식 및 별지 제2호 서식의 휴가신청서에 의하여 총장의 허가를 받아야 한다. 다만, 대학의 계획에 의한 연가를 실시하는 경우에는 그러하지 아니한다. <개정 2017. 11. 1.>",
+          "relevance_pct": 100
+        },
+        {
+          "regulation_name": "",
+          "rule_code": "3-1-26",
+          "path": "",
+          "text": "교직원복무규정 > 제4장 휴일 및 휴가 > 제26조 병가 > ③ 병가를 신청하: 병가를 신청하는 경우 병가 사유를 증빙할 수 있는 서류(입퇴원 확인서 등)를 제출하여야 하며, 병가 사유 서류를 제출할 수 없는 경우 잔여 연가를 사용하여야 한다. <개정 2025. 4. 1.>",
+          "relevance_pct": 70
+        },
+        {
+          "regulation_name": "휴가의 종류",
+          "rule_code": "3-1-26",
+          "path": "휴가의 종류",
+          "text": "교직원복무규정 > 제4장 휴일 및 휴가 > 제23조 휴가의 종류: 교직원의 휴가는 연가ㆍ병가ㆍ공가 및 특별휴가로 구분한다.",
+          "relevance_pct": 5
+        },
+        {
+          "regulation_name": "",
+          "rule_code": "3-1-26",
+          "path": "",
+          "text": "교직원복무규정 > 제4장 휴일 및 휴가 > 제24조의2 연가의 사용촉진 > ② 제1호: 제1호의 규정에 의한 촉구에도 불구하고 교직원이 휴가 촉구를 받은 때부터 10일 이내에 미사용 휴가의 사용시기를 정하여 총장에게 통보하지 아니한 경우에는 연가 산정기간이 끝나기 2월전까지 사용자가 미사용 휴가의 사용시기를 정하여 교직원에게 서면으로 통보한다.",
+          "relevance_pct": 2
+        },
+        {
+          "regulation_name": "연가의 사용촉진",
+          "rule_code": "3-1-26",
+          "path": "연가의 사용촉진",
+          "text": "교직원복무규정 > 제4장 휴일 및 휴가 > 제24조의2 연가의 사용촉진: 연가의 사용을 촉진하기 위하여 다음 각 호의 조치를 하였음에도 불구하고 교직원이 연가를 사용하지 아니할 경우에는 수당으로 정산 지급하지 않는다. <신설 2007. 7. 1.>",
+          "relevance_pct": 0
+        }
+      ],
+      "contexts_count": 5,
+      "evaluation": {
+        "faithfulness": {
+          "score": 0.9,
+          "threshold": 0.6,
+          "passed": true,
+          "reasoning": "The answer is mostly supported by the retrieved contexts. The main claims about the use of 별지 제1호 서식 및 별지 제2호 서식 for 휴가 신청 and the requirement for 총장 허가 are directly supported by Context 1. The mention of 대학의 계획에 의한 연가 not requiring separate procedures is also supported by the same context. However, the suggestion to check the school's official website or contact the HR department for the exact forms is not directly supported by the retrieved contexts, though it is a reasonable assumption. This is a minor detail and does not significantly impact the overall faithfulness of the answer."
+        },
+        "answer_relevancy": {
+          "score": 0.9,
+          "threshold": 0.7,
+          "passed": true,
+          "reasoning": "The answer provides relevant information about the 휴가 신청 서식, including the types of forms used and the general procedure for application. It also advises on where to find the exact forms and suggests contacting the HR department for further assistance. However, it includes a caution about the citation not being verified, which might slightly detract from the completeness of the information. Overall, the answer is well-aligned with the query but has a minor gap due to the unverified citation."
+        },
+        "contextual_precision": {
+          "score": 0.9,
+          "threshold": 0.65,
+          "passed": true,
+          "reasoning": "The top-ranked context (Rank 1) is highly relevant as it directly addresses the query about the procedure for applying for leave, including the specific forms mentioned in the answer. This context supports the provided answer effectively. The second context (Rank 2) is less relevant as it pertains to sick leave, which is not directly related to the query about general leave application forms. However, it does not significantly detract from the relevance of the top context. The remaining contexts (Ranks 3-5) provide additional information about types of leave and procedures, which are somewhat relevant but not directly necessary for answering the specific query. Overall, the ranking is effective, with the most relevant context placed first, justifying a high score."
+        },
+        "contextual_recall": {
+          "score": 0.4,
+          "threshold": 0.65,
+          "passed": false,
+          "reasoning": "The retrieved contexts focus on the procedural aspects of applying for leave, specifically the forms and approval process, but do not contain any information about the number of annual leave days, which is the key information in the expected answer. This represents a major gap in context coverage as the critical information about the number of leave days is completely missing."
+        }
+      },
+      "overall_score": 0.8,
+      "overall_threshold": 0.6,
+      "passed": false,
+      "failure_reasons": [
+        "Contextual Recall below threshold: 0.400 < 0.65"
+      ],
+      "metadata": {
+        "judge_model": "gpt-4o",
+        "evaluation_method": "custom_llm_judge"
+      }
+    },
+    {
+      "scenario_id": "staff_003",
+      "persona": "staff",
+      "scenario_index": 3,
+      "query": "급여 지급일과 처리 기한이 언제까지인가요?",
+      "category": "simple",
+      "ground_truth": "급여는 매월 25일 지급",
+      "answer": "관련 규정을 찾을 수 없습니다. 다른 검색어로 시도해주세요.",
+      "sources": [],
+      "contexts_count": 0,
+      "evaluation": {
+        "faithfulness": {
+          "score": 0.5,
+          "threshold": 0.6,
+          "passed": false,
+          "reasoning": "The generated answer states that the relevant regulations cannot be found, which is a claim that cannot be verified without any retrieved contexts. Since there are no contexts provided, it is impossible to determine if the answer is factually consistent or not. The answer is mostly unsupported due to the lack of context, leading to significant hallucinations."
+        },
+        "answer_relevancy": {
+          "score": 0.4,
+          "threshold": 0.7,
+          "passed": false,
+          "reasoning": "The answer does not directly address the user's query about the specific dates for salary payment and processing deadlines. It only states that the relevant regulations could not be found and suggests trying different search terms, which is not helpful in providing the requested information."
+        },
+        "contextual_precision": {
+          "score": 0.0,
+          "threshold": 0.65,
+          "passed": false,
+          "reasoning": "No contexts were provided to evaluate their relevance or ranking. Therefore, it is impossible to determine if the retrieved contexts are relevant to the query or if they are ranked effectively. The absence of contexts results in a score of 0.0."
+        },
+        "contextual_recall": {
+          "score": 0.0,
+          "threshold": 0.65,
+          "passed": false,
+          "reasoning": "The retrieved contexts are completely missing, as no contexts were provided. Therefore, it is impossible to determine if the necessary information to answer the query is present. The generated answer reflects this lack of information by stating that the relevant regulations could not be found."
+        }
+      },
+      "overall_score": 0.275,
+      "overall_threshold": 0.6,
+      "passed": false,
+      "failure_reasons": [
+        "Faithfulness below threshold: 0.500 < 0.6",
+        "Answer Relevancy below threshold: 0.400 < 0.7",
+        "Contextual Precision below threshold: 0.000 < 0.65",
+        "Contextual Recall below threshold: 0.000 < 0.65",
+        "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+      ],
+      "metadata": {
+        "judge_model": "gpt-4o",
+        "evaluation_method": "custom_llm_judge"
+      }
+    },
+    {
+      "scenario_id": "staff_004",
+      "persona": "staff",
+      "scenario_index": 4,
+      "query": "사무용품 사용 규정과 승인 권한자 확인",
+      "category": "complex",
+      "ground_truth": "비품 구매는 100만원까지 팀장 승인",
+      "answer": "관련 규정을 찾을 수 없습니다. 다른 검색어로 시도해주세요.",
+      "sources": [],
+      "contexts_count": 0,
+      "evaluation": {
+        "faithfulness": {
+          "score": 0.0,
+          "threshold": 0.6,
+          "passed": false,
+          "reasoning": "The generated answer states that the relevant regulations cannot be found, which is a claim about the absence of information. However, without any retrieved contexts provided, there is no basis to verify this claim. Therefore, the answer is entirely unsupported and considered a hallucination."
+        },
+        "answer_relevancy": {
+          "score": 0.4,
+          "threshold": 0.7,
+          "passed": false,
+          "reasoning": "The answer does not directly address the user's query about office supplies usage regulations and approval authorities. It simply states that the relevant regulations cannot be found and suggests trying different search terms, which is not helpful or informative regarding the specific query."
+        },
+        "contextual_precision": {
+          "score": 0.0,
+          "threshold": 0.65,
+          "passed": false,
+          "reasoning": "No retrieved contexts were provided to evaluate their relevance or ranking. Therefore, it is impossible to assess the precision or effectiveness of the retrieval system based on the given information."
+        },
+        "contextual_recall": {
+          "score": 0.0,
+          "threshold": 0.65,
+          "passed": false,
+          "reasoning": "The retrieved contexts are completely missing, providing no information to answer the query. The generated answer indicates that no relevant information was found, which aligns with the absence of contexts. Therefore, the score reflects the complete lack of necessary information."
+        }
+      },
+      "overall_score": 0.1,
+      "overall_threshold": 0.6,
+      "passed": false,
+      "failure_reasons": [
+        "Faithfulness below threshold: 0.000 < 0.6",
+        "Answer Relevancy below threshold: 0.400 < 0.7",
+        "Contextual Precision below threshold: 0.000 < 0.65",
+        "Contextual Recall below threshold: 0.000 < 0.65",
+        "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+      ],
+      "metadata": {
+        "judge_model": "gpt-4o",
+        "evaluation_method": "custom_llm_judge"
+      }
+    },
+    {
+      "scenario_id": "staff_005",
+      "persona": "staff",
+      "scenario_index": 5,
+      "query": "연수 참가 절차와 경비 처리 방법",
+      "category": "complex",
+      "ground_truth": "연수는 사전 승인, 실비 정산",
+      "answer": "관련 규정을 찾을 수 없습니다. 다른 검색어로 시도해주세요.",
+      "sources": [],
+      "contexts_count": 0,
+      "evaluation": {
+        "faithfulness": {
+          "score": 0.0,
+          "threshold": 0.6,
+          "passed": false,
+          "reasoning": "The generated answer states that related regulations cannot be found and suggests trying different search terms. However, without any retrieved contexts provided, there is no basis to evaluate the factual consistency of this claim. The answer is entirely unsupported by any context, making it a complete hallucination."
+        },
+        "answer_relevancy": {
+          "score": 0.4,
+          "threshold": 0.7,
+          "passed": false,
+          "reasoning": "The answer does not directly address the query about the procedures and cost handling for participating in a training session. It states that relevant regulations cannot be found and suggests trying different search terms, which is not helpful or informative regarding the query. The response is mostly irrelevant to the user's request."
+        },
+        "contextual_precision": {
+          "score": 0.0,
+          "threshold": 0.65,
+          "passed": false,
+          "reasoning": "No retrieved contexts were provided to evaluate their relevance or ranking. Without any contexts, it is impossible to determine if they are relevant to the query or if they are ranked effectively. Therefore, the score is 0.0 as there is no basis for evaluation."
+        },
+        "contextual_recall": {
+          "score": 0.0,
+          "threshold": 0.65,
+          "passed": false,
+          "reasoning": "The retrieved contexts are not provided, making it impossible to assess whether they contain the necessary information to answer the query. Without any context, the generated answer cannot be evaluated for recall, resulting in a score of 0.0."
+        }
+      },
+      "overall_score": 0.1,
+      "overall_threshold": 0.6,
+      "passed": false,
+      "failure_reasons": [
+        "Faithfulness below threshold: 0.000 < 0.6",
+        "Answer Relevancy below threshold: 0.400 < 0.7",
+        "Contextual Precision below threshold: 0.000 < 0.65",
+        "Contextual Recall below threshold: 0.000 < 0.65",
+        "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+      ],
+      "metadata": {
+        "judge_model": "gpt-4o",
+        "evaluation_method": "custom_llm_judge"
+      }
+    },
+    {
+      "scenario_id": "parent_001",
+      "persona": "parent",
+      "scenario_index": 1,
+      "query": "기숙사 신청은 언제부터 하면 돼?",
+      "category": "simple",
+      "ground_truth": "기숙사 신청은 학기 시작 전",
+      "answer": "많이 궁금하셨겠어요. 기숙사 신청에 대한 정보는 제공된 규정에서 확인되지 않습니다. \n\n기숙사 신청 기간 및 절차에 대한 정확한 정보는 학사지원팀에 문의하시거나, 학교의 공식 웹사이트에서 확인하시기 바랍니다. \n\n**행동 방법:**\n1. **학사지원팀에 문의**: 기숙사 신청 관련 정보를 요청하세요.\n2. **학교 웹사이트 방문**: 기숙사 관련 공지사항을 확인하세요.\n\n이렇게 하시면 기숙사 신청에 대한 정확한 정보를 얻으실 수 있습니다.",
+      "sources": [
+        {
+          "regulation_name": "입학관리위원회규정",
+          "rule_code": "4-0-2",
+          "path": "입학관리위원회규정",
+          "text": "입학관리위원회규정 > 제4조 임기: 위원회의 임기는 보직 재임기간으로 한다.<개정 2011. 9. 1.>",
+          "relevance_pct": 100
+        },
+        {
+          "regulation_name": "학점은행제유사전공심의위원회운영규정",
+          "rule_code": "4-0-63",
+          "path": "학점은행제유사전공심의위원회운영규정 > 제9조 회의록",
+          "text": "학점은행제유사전공심의위원회운영규정 > 제9조 회의록 > ① 심의위원회: 심의위원회는 회의록을 작성·비치하여야 한다.",
+          "relevance_pct": 73
+        },
+        {
+          "regulation_name": "첨단산업인재양성부트캠프반도체사업단규정",
+          "rule_code": "3-1-129",
+          "path": "첨단산업인재양성부트캠프반도체사업단규정 > 제1장 총칙",
+          "text": "첨단산업인재양성부트캠프반도체사업단규정 > 제1장 총칙 > 제1조 명칭: 이 사업단은 첨단산업인재양성부트캠프반도체사업단(이하 “사업단”이라 한다)이라 한다.",
+          "relevance_pct": 48
+        },
+        {
+          "regulation_name": "학생소통위원회규정",
+          "rule_code": "4-0-64",
+          "path": "학생소통위원회규정 > 제4조 회의",
+          "text": "학생소통위원회규정 > 제4조 회의 > ④ 위원회: 위원회는 회의록을 작성·비치하여야 한다.",
+          "relevance_pct": 23
+        },
+        {
+          "regulation_name": "대학홍보위원회규정",
+          "rule_code": "4-0-30",
+          "path": "대학홍보위원회규정 > 제2조 구성",
+          "text": "대학홍보위원회규정 > 제2조 구성 > ③ 위원: 위원의 임기는 2년으로 한다. <개정 2009. 3. 1>",
+          "relevance_pct": 0
+        }
+      ],
+      "contexts_count": 5,
+      "evaluation": {
+        "faithfulness": {
+          "score": 0.0,
+          "threshold": 0.6,
+          "passed": false,
+          "reasoning": "The generated answer does not reference any information from the retrieved contexts, which are unrelated to the query about dormitory application periods. The answer suggests contacting the academic support team or checking the school's website, but these suggestions are not supported by the provided contexts. Therefore, the answer is entirely hallucinated with respect to the retrieved contexts."
+        },
+        "answer_relevancy": {
+          "score": 0.8,
+          "threshold": 0.7,
+          "passed": true,
+          "reasoning": "The answer provides a general direction on how to find the information about dormitory application periods, suggesting contacting the academic support team or checking the school's official website. However, it does not directly provide the specific dates or details about the application period, which would have made the answer more complete. The response is relevant and useful but lacks specific information that directly answers the query."
+        },
+        "contextual_precision": {
+          "score": 0.0,
+          "threshold": 0.65,
+          "passed": false,
+          "reasoning": "All retrieved contexts are irrelevant to the query about dormitory application periods. None of the contexts provide information related to dormitory applications, and they are all related to different committees and regulations that do not address the user's question. The ranking does not help in answering the query effectively."
+        },
+        "contextual_recall": {
+          "score": 0.0,
+          "threshold": 0.65,
+          "passed": false,
+          "reasoning": "The retrieved contexts do not contain any information related to dormitory application periods or procedures. The contexts are entirely unrelated to the query about dormitory applications, focusing instead on various committee regulations and operations. Therefore, critical information is completely missing from the contexts."
+        }
+      },
+      "overall_score": 0.2,
+      "overall_threshold": 0.6,
+      "passed": false,
+      "failure_reasons": [
+        "Faithfulness below threshold: 0.000 < 0.6",
+        "Contextual Precision below threshold: 0.000 < 0.65",
+        "Contextual Recall below threshold: 0.000 < 0.65",
+        "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+      ],
+      "metadata": {
+        "judge_model": "gpt-4o",
+        "evaluation_method": "custom_llm_judge"
+      }
+    },
+    {
+      "scenario_id": "parent_002",
+      "persona": "parent",
+      "scenario_index": 2,
+      "query": "등록금 납부 기간과 방법 알려주세요",
+      "category": "simple",
+      "ground_truth": "등록금은 학기 개시 전 지정 은행에 납부",
+      "answer": "관련 규정을 찾을 수 없습니다. 다른 검색어로 시도해주세요.",
+      "sources": [],
+      "contexts_count": 0,
+      "evaluation": {
+        "faithfulness": {
+          "score": 0.0,
+          "threshold": 0.6,
+          "passed": false,
+          "reasoning": "The generated answer states that related regulations cannot be found and suggests trying a different search term. However, without any retrieved contexts provided, there is no basis to evaluate the factual consistency of this claim. The answer is entirely unsupported by any context, making it a complete hallucination."
+        },
+        "answer_relevancy": {
+          "score": 0.0,
+          "threshold": 0.7,
+          "passed": false,
+          "reasoning": "The answer is completely irrelevant to the query. The user asked for information about tuition payment periods and methods, but the answer states that related regulations cannot be found and suggests trying different search terms. It does not provide any relevant information or guidance on the user's query."
+        },
+        "contextual_precision": {
+          "score": 0.0,
+          "threshold": 0.65,
+          "passed": false,
+          "reasoning": "The retrieved contexts are not provided, making it impossible to assess their relevance or ranking. Without any context, the system cannot be evaluated for precision or effectiveness in answering the query about tuition payment periods and methods."
+        },
+        "contextual_recall": {
+          "score": 0.0,
+          "threshold": 0.65,
+          "passed": false,
+          "reasoning": "The retrieved contexts are completely missing, as no contexts were provided. Therefore, it is impossible to determine if they contain the necessary information to answer the query. The generated answer also indicates that no relevant information was found, which aligns with the absence of contexts."
+        }
+      },
+      "overall_score": 0.0,
+      "overall_threshold": 0.6,
+      "passed": false,
+      "failure_reasons": [
+        "Faithfulness below threshold: 0.000 < 0.6",
+        "Answer Relevancy below threshold: 0.000 < 0.7",
+        "Contextual Precision below threshold: 0.000 < 0.65",
+        "Contextual Recall below threshold: 0.000 < 0.65",
+        "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+      ],
+      "metadata": {
+        "judge_model": "gpt-4o",
+        "evaluation_method": "custom_llm_judge"
+      }
+    },
+    {
+      "scenario_id": "parent_003",
+      "persona": "parent",
+      "scenario_index": 3,
+      "query": "자녀 성적 확인 어떻게 하면 돼요?",
+      "category": "edge",
+      "ground_truth": "성적은 포털에서 본인 확인 가능",
+      "answer": "이 질문은 규정 검색이 필요하지 않습니다. 구체적인 규정 관련 질문을 해주세요.",
+      "sources": [],
+      "contexts_count": 0,
+      "evaluation": {
+        "faithfulness": {
+          "score": 0.0,
+          "threshold": 0.6,
+          "passed": false,
+          "reasoning": "The generated answer does not address the query about how to check a child's grades and instead provides a generic response about regulation searches. Without any retrieved contexts to support the answer, it is entirely hallucinated."
+        },
+        "answer_relevancy": {
+          "score": 0.0,
+          "threshold": 0.7,
+          "passed": false,
+          "reasoning": "The answer is completely irrelevant to the query. The user is asking how to check their child's grades, but the response suggests that no regulation search is needed and asks for a specific regulation-related question, which does not address the user's query at all."
+        },
+        "contextual_precision": {
+          "score": 0.0,
+          "threshold": 0.65,
+          "passed": false,
+          "reasoning": "No retrieved contexts were provided to evaluate their relevance or ranking. Without any contexts, it is impossible to determine if they would have been relevant to the query or if they were ranked effectively."
+        },
+        "contextual_recall": {
+          "score": 0.0,
+          "threshold": 0.65,
+          "passed": false,
+          "reasoning": "The retrieved contexts are not provided, and the generated answer does not address the query about checking a child's grades. The expected answer indicates that grades can be checked on a portal, but this information is not reflected in the generated answer or any retrieved contexts. Therefore, critical information is completely missing."
+        }
+      },
+      "overall_score": 0.0,
+      "overall_threshold": 0.6,
+      "passed": false,
+      "failure_reasons": [
+        "Faithfulness below threshold: 0.000 < 0.6",
+        "Answer Relevancy below threshold: 0.000 < 0.7",
+        "Contextual Precision below threshold: 0.000 < 0.65",
+        "Contextual Recall below threshold: 0.000 < 0.65",
+        "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+      ],
+      "metadata": {
+        "judge_model": "gpt-4o",
+        "evaluation_method": "custom_llm_judge"
+      }
+    },
+    {
+      "scenario_id": "parent_004",
+      "persona": "parent",
+      "scenario_index": 4,
+      "query": "장학금 받는 조건이 뭐예요?",
+      "category": "complex",
+      "ground_truth": "장학금은 성적, 소득 수준에 따라 다름",
+      "answer": "장학금을 받기 위한 조건은 다음과 같습니다.\n\n### 1. **장학금 지급 요건**\n- **장학금 지급시행세칙에서 정한 요건에 적합한 자**: 장학금을 받기 위해서는 해당 시행세칙에서 정한 요건을 충족해야 합니다. \n\n### 2. **성적 기준**\n- **직전학기 평균평점**: 장학금 대상자의 성적 기준은 직전학기 평균평점으로 하며, 교환학생 파견 등으로 직전 학기 성적이 산출되지 않았을 경우에는 성적이 산출된 최근 학기를 직전 학기로 적용합니다. 신・편입생 등 첫 학기 성적이 없는 경우에는 성적요건을 충족한 것으로 간주됩니다.\n\n### 3. **자격 제한**\n- **징계 여부**: 「학생상벌에관한규정」에 따라 유기정학 이상의 징계를 받은 경우, 징계 중인 해당 학기와 그 다음 학기에 장학생으로 추천하거나 장학금을 지급받을 수 없습니다. 단, 징계를 받기 전에 지급한 경우는 제외됩니다.\n\n이와 같은 조건을 충족해야 장학금을 받을 수 있습니다. 추가적인 세부사항이나 궁금한 점이 있으시면 학사지원팀에 문의하시기 바랍니다.\n\n• 출처: 「장학금지급규정」 제5조, 「장학금지급시행세칙」 제2조, 「장학금지급규정」 제9조\n\n---\n⚠️ **주의**: 일부 인용(「장학금지급규정」 제5조, 「장학금지급시행세칙」 제2조, 「장학금지급규정」 제9조)은 데이터베이스에서 확인되지 않았습니다. 담당 부서에 확인하시기 바랍니다.",
+      "sources": [
+        {
+          "regulation_name": "",
+          "rule_code": "3-3-4",
+          "path": "",
+          "text": "장학금지급규정 > 제5조 장학생 선발 > ① 교내장학금 > 1. 장학금지급시행세칙에서 정한 요건에 적합한 자: 장학금지급시행세칙에서 정한 요건에 적합한 자 <개정 2020. 4. 1>",
+          "relevance_pct": 100
+        },
+        {
+          "regulation_name": "",
+          "rule_code": "3-3-5",
+          "path": "",
+          "text": "장학금지급시행세칙 > 제2조 지급기준 > ④ 장학금 대상자: 장학금 대상자의 성적기준은 직전학기 평균평점으로 한다. 단, 교환학생 파견 등으로 직전 학기 성적이 산출되지 않았을 경우(패스학점 등) 성적이 산출된 최근 학기를 직전 학기로 적용한다. 신・편입생 등 첫 학기 성적이 없는 경우에는 성적요건을 충족한 것으로 본다.",
+          "relevance_pct": 84
+        },
+        {
+          "regulation_name": "",
+          "rule_code": "3-3-4",
+          "path": "",
+          "text": "장학금지급규정 > 제9조 자격 제한 > ① 「학생상벌에관한규정」에 따라 유기정학 이상: 「학생상벌에관한규정」에 따라 유기정학 이상의 징계를 받은 자를 징계중인 해당 학기와 그 다음 학기에 장학생으로 추천하거나 장학금을 지급할 수 없다. 단, 징계를 받기 전에 지급한 경우는 제외하고, 교외장학금의 경우 관련 법령 및 각종 장학단체 등이 정한 별도의 규정 등에서 허용하는 경우 예외로 할 수 있다. <개정 2021. 12. 1>",
+          "relevance_pct": 39
+        },
+        {
+          "regulation_name": "",
+          "rule_code": "3-2-107",
+          "path": "",
+          "text": "대학원장학금지급에관한세칙 > 제4조 장학생의 종류 및 자격 > ㄱ > 7. 외부기탁 장학생 : 외부장학금: 외부기탁 장학생 : 외부장학금은 기탁자의 선발 기준에 따라 선정된다.",
+          "relevance_pct": 21
+        },
+        {
+          "regulation_name": "",
+          "rule_code": "3-2-107",
+          "path": "",
+          "text": "대학원장학금지급에관한세칙 > 제4조 장학생의 종류 및 자격 > ㄱ > 10. 특수대학원에서 지급하: 특수대학원에서 지급하는 장학금 지급 기준은 별도로 정할 수 있다. <신설 2010. 3. 1.>",
+          "relevance_pct": 0
+        }
+      ],
+      "contexts_count": 5,
+      "evaluation": {
+        "faithfulness": {
+          "score": 0.9,
+          "threshold": 0.6,
+          "passed": true,
+          "reasoning": "The generated answer is mostly consistent with the retrieved contexts. It accurately reflects the conditions for receiving a scholarship, including the requirement to meet the criteria set in the scholarship implementation rules, the academic performance based on the previous semester's GPA, and the disqualification due to disciplinary actions. However, the specific references to the articles (e.g., '장학금지급규정 제5조') are not directly confirmed in the provided contexts, which is a minor detail not fully supported by the retrieved information."
+        },
+        "answer_relevancy": {
+          "score": 0.9,
+          "threshold": 0.7,
+          "passed": true,
+          "reasoning": "The answer directly addresses the query by outlining the conditions required to receive a scholarship, including academic performance and disciplinary status. It provides a structured and detailed response, which is relevant and useful. However, it mentions specific regulations that are not verified, which could be a minor gap in the information provided."
+        },
+        "contextual_precision": {
+          "score": 1.0,
+          "threshold": 0.65,
+          "passed": true,
+          "reasoning": "All top three retrieved contexts are highly relevant to the query about scholarship conditions. They directly address the requirements for receiving a scholarship, including eligibility criteria, academic performance standards, and disciplinary restrictions. The ranking is perfect as these contexts are precisely what is needed to answer the query effectively. The remaining contexts, although not directly relevant, do not interfere with the understanding of the main conditions and are ranked lower, which does not affect the overall relevance of the top-ranked contexts."
+        },
+        "contextual_recall": {
+          "score": 0.8,
+          "threshold": 0.65,
+          "passed": true,
+          "reasoning": "The retrieved contexts provide detailed information about the conditions for receiving a scholarship, including academic performance and disciplinary status, which are relevant to the query. However, the expected answer mentions '성적, 소득 수준에 따라 다름' (academic performance and income level), and the retrieved contexts do not explicitly mention income level as a criterion. Therefore, while most necessary information is present, there is a minor gap regarding the income level criterion."
+        }
+      },
+      "overall_score": 0.9,
+      "overall_threshold": 0.6,
+      "passed": true,
+      "failure_reasons": [],
+      "metadata": {
+        "judge_model": "gpt-4o",
+        "evaluation_method": "custom_llm_judge"
+      }
+    },
+    {
+      "scenario_id": "parent_005",
+      "persona": "parent",
+      "scenario_index": 5,
+      "query": "학교 연락처 알려주세요",
+      "category": "simple",
+      "ground_truth": "학교 연락처는 홈페이지 확인",
+      "answer": "정확한 연락처는 학교 홈페이지에서 확인하시기 바랍니다. \n\n학교의 공식 웹사이트에는 다양한 연락처 정보가 제공되어 있으니, 필요한 부서의 연락처를 쉽게 찾으실 수 있습니다. \n\n혹시 더 궁금한 사항이 있으시면, 학사지원팀에 문의하시면 도움을 받으실 수 있습니다.",
+      "sources": [
+        {
+          "regulation_name": "",
+          "rule_code": "3-2-23",
+          "path": "",
+          "text": "휴학규정 > 부칙 > 37. 이 변경 규정: 이 변경 규정은 2024년 11월 1일부터 시행한다. 【별지 제1호 서식】<개정 2014. 3. 1, 2015. 2. 1, 2017. 9. 1, 2019. 2. 1, 2020. 12. 1, 2021. 5. 1> 휴 학 원 서 대학 : 학과 : 학년 : 학번 : 성명 : 주소 : ( ☎ : ) ※ 주소 또는 연락처 등이 변경된 경우 우리 대학교 학생정보시스템에서 반드시 변경해야 합니다.\n[TABLE:1]",
+          "relevance_pct": 100
+        },
+        {
+          "regulation_name": "",
+          "rule_code": "1-0-1",
+          "path": "",
+          "text": "학교법인동의학원정관 > 제1관 임 명 > 제43조의4 전형결과의 공개 > ② 제1항: 제1항의 정보공개에 대하여는 「공공기관의정보공개에관한법률」제9조 내지 제17조를 준용한다. [본조신설 2006.11.06.]",
+          "relevance_pct": 55
+        },
+        {
+          "regulation_name": "대학평의원회의 설치",
+          "rule_code": "1-0-1",
+          "path": "대학평의원회의 설치",
+          "text": "학교법인동의학원정관 > 제10장 대학평의원회 (신설 2006.11.06.) > 제120조 대학평의원회의 설치: 대학교육기관에는 교육에 관한 중요사항을 심의하기 위하여 대학평의원회(이하 “평의원회”라 한다)를 설치한다.",
+          "relevance_pct": 54
+        },
+        {
+          "regulation_name": "",
+          "rule_code": "1-0-1",
+          "path": "",
+          "text": "학교법인동의학원정관 > 제1관 임 명 > 제43조 임용 > ③ 대학교육기관: 대학교육기관의 교원 임용은 인사위원회의 심의를 거쳐 당해 학교의 장의 제청으로 이사회의 의결을 거쳐 이사장이 행하되, 근무기간․급여․근무조건․업적 및 성과약정․재계약 조건 및 절차에 관하여는 다음 각 호의 범위안에서 계약조건을 정하여 행하며, 그 구체적인 사항은 인사위원회의 심의를 거쳐 대학교육기관의 장이 따로 정한다.(단, 강사 임용에 관한 사항, 교원의 재임용, 전보(轉補), 겸임, 파견, 휴직, 복직에 관한 임용권은 대학교육기관의 장에게 위임한다.) (개정 2006.11.06., 2016.10.20., 2019.06.27., 2022.04.21., 2024.04.11.)",
+          "relevance_pct": 54
+        },
+        {
+          "regulation_name": "",
+          "rule_code": "3-1-123",
+          "path": "",
+          "text": "교내전동이동장치등에관한안전관리규정 > 제21조 안전사고의 조사 > ② 현장 조사 시 다음 각호와 같 > 6. 신고자(소속, 성명, 연락처): 신고자(소속, 성명, 연락처)",
+          "relevance_pct": 0
+        }
+      ],
+      "contexts_count": 5,
+      "evaluation": {
+        "faithfulness": {
+          "score": 0.4,
+          "threshold": 0.6,
+          "passed": false,
+          "reasoning": "The generated answer suggests checking the school's official website for contact information and mentions the possibility of contacting the academic support team for further inquiries. However, none of the retrieved contexts provide any information about the school's website, contact details, or the existence of an academic support team. The answer is mostly unsupported by the provided contexts, leading to significant hallucinations."
+        },
+        "answer_relevancy": {
+          "score": 0.7,
+          "threshold": 0.7,
+          "passed": true,
+          "reasoning": "The answer partially addresses the query by suggesting the user check the school's official website for contact information. However, it does not provide any direct contact details or specific guidance on how to find the contact information on the website, which would have made the answer more complete and directly useful."
+        },
+        "contextual_precision": {
+          "score": 0.2,
+          "threshold": 0.65,
+          "passed": false,
+          "reasoning": "The retrieved contexts are mostly irrelevant to the query about school contact information. None of the contexts provide direct information about school contact details. The top-ranked context mentions contact information in the context of updating student information, but it is not directly relevant to the query. The rest of the contexts are unrelated to contact information, focusing instead on regulations and administrative procedures. The ranking does not help in answering the query effectively."
+        },
+        "contextual_recall": {
+          "score": 0.0,
+          "threshold": 0.65,
+          "passed": false,
+          "reasoning": "The retrieved contexts do not contain any information related to the school's contact details or the suggestion to check the school's website for contact information. The contexts are unrelated to the query about school contact information, focusing instead on regulations, appointments, and safety procedures. Therefore, critical information is completely missing."
+        }
+      },
+      "overall_score": 0.355,
+      "overall_threshold": 0.6,
+      "passed": false,
+      "failure_reasons": [
+        "Faithfulness below threshold: 0.400 < 0.6",
+        "Contextual Precision below threshold: 0.200 < 0.65",
+        "Contextual Recall below threshold: 0.000 < 0.65",
+        "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+      ],
+      "metadata": {
+        "judge_model": "gpt-4o",
+        "evaluation_method": "custom_llm_judge"
+      }
+    },
+    {
+      "scenario_id": "international_001",
+      "persona": "international",
+      "scenario_index": 1,
+      "query": "enrollment procedure for international students",
+      "category": "simple",
+      "ground_truth": "유학생 등록은 입학 후 비자 발급",
+      "answer": "동의대학교의 외국인 유학생 등록 절차는 다음과 같습니다.\n\n### 1. 핵심 답변\n- 외국인 유학생은 입학허가를 받은 후, 등록기간 내에 소정의 등록을 마쳐야 합니다.\n\n### 2. 상세 내용\n1. **입학허가 확인**: 외국인 유학생은 먼저 입학허가를 받아야 합니다.\n2. **등록기간 확인**: 등록기간은 매학기마다 공지되므로, 해당 기간을 확인해야 합니다.\n3. **등록 절차 진행**: 등록기간 내에 필요한 서류를 준비하여 등록을 완료해야 합니다.\n4. **필요 서류**: 일반적으로 입학허가서, 여권 사본, 등록금 납부 영수증 등이 필요할 수 있습니다. 구체적인 서류는 학교의 안내를 따라야 합니다.\n\n### 3. 근거 출처\n• 출처: 「외국인유학생입학및관리규정」 제9조\n\n### 4. 추가 안내\n- 구체적인 등록 기간 및 필요한 서류는 매학기 학사일정에 따라 별도로 공지됩니다. 학사지원팀에 문의하시면 더 자세한 정보를 얻으실 수 있습니다.\n\n---\n⚠️ **주의**: 일부 인용(「외국인유학생입학및관리규정」 제9조\n\n)은 데이터베이스에서 확인되지 않았습니다. 담당 부서에 확인하시기 바랍니다.",
+      "sources": [
+        {
+          "regulation_name": "등록절차",
+          "rule_code": "3-2-52",
+          "path": "등록절차",
+          "text": "외국인유학생입학및관리규정 > 제9조 등록절차: 입학허가를 받은 자는 등록기간에 소정의 등록을 마쳐야 한다.",
+          "relevance_pct": 100
+        },
+        {
+          "regulation_name": "등록",
+          "rule_code": "3-2-10",
+          "path": "등록",
+          "text": "국외타대학이수학점인정규정 > 제8조 등록: 타대학 교류학생으로 허가된 자는 본 대학교 등록 절차에 따라 매학기 소정의 등록을 하여야 한다.",
+          "relevance_pct": 57
+        },
+        {
+          "regulation_name": "",
+          "rule_code": "3-2-9",
+          "path": "",
+          "text": "국내대학간학점교류규정 > 제2장 본 대학교 학생의 타 대학 학점교류 > 제10조 교류학생의 의무 및 권리 > ① 교류학생: 교류학생은 본 대학교의 등록절차에 따라 등록을 하여야 한다. 다만, 계절수업의 수강료는 교류대학에 납부하여야 한다. <개정 2018. 2. 1>",
+          "relevance_pct": 24
+        },
+        {
+          "regulation_name": "복학생의 등록절차",
+          "rule_code": "3-2-24",
+          "path": "복학생의 등록절차",
+          "text": "복학규정 > 제6조 복학생의 등록절차: 복학을 신청한 자는 다음의 순서에 따라 등록 절차를 밟아야 한다.",
+          "relevance_pct": 3
+        },
+        {
+          "regulation_name": "",
+          "rule_code": "3-2-59",
+          "path": "",
+          "text": "국내외대학과의공동학위수여에관한규정 > 제1장 총칙 > 제6조 등록 및 납입금 > ① 공동 또: 공동 또는 복수학위학생은 양 대학교의 등록 절차에 따라 매학기 양 대학교에 소정의 등록을 하여야 한다.",
+          "relevance_pct": 0
+        }
+      ],
+      "contexts_count": 5,
+      "evaluation": {
+        "faithfulness": {
+          "score": 0.7,
+          "threshold": 0.6,
+          "passed": true,
+          "reasoning": "The main claim that international students must complete registration within the designated period after receiving admission is supported by Context 1. However, the detailed steps such as checking admission approval, confirming registration period, preparing necessary documents, and specific required documents are not explicitly supported by the retrieved contexts. These details are partially hallucinated as they are not directly mentioned in the provided contexts."
+        },
+        "answer_relevancy": {
+          "score": 0.6,
+          "threshold": 0.7,
+          "passed": false,
+          "reasoning": "The answer provides a general overview of the enrollment procedure for international students, but it is specific to Dong-Eui University and written in Korean, which may not be relevant to the user's query if they are looking for information in English or for a different institution. Additionally, the answer lacks specific details about the enrollment procedure that might be applicable universally or to other institutions, such as visa requirements or health insurance, which are often important for international students."
+        },
+        "contextual_precision": {
+          "score": 0.8,
+          "threshold": 0.65,
+          "passed": true,
+          "reasoning": "The top-ranked context (Rank 1) is highly relevant as it directly addresses the registration procedure for international students, which is the focus of the query. Rank 2 is somewhat relevant as it discusses registration procedures, but it is more about exchange students rather than international students specifically. Ranks 3 to 5 are less relevant as they pertain to domestic student exchanges, returning students, and joint degree programs, which are not directly related to the query. Overall, the most relevant context is ranked first, but there is some noise in the subsequent ranks."
+        },
+        "contextual_recall": {
+          "score": 0.7,
+          "threshold": 0.65,
+          "passed": true,
+          "reasoning": "The retrieved contexts provide some relevant information about the registration process for international students, specifically mentioning the need to complete registration within a specified period after receiving admission (Context 1). However, the key information from the expected answer regarding visa issuance after enrollment is missing. Additionally, other contexts are not directly related to international student enrollment procedures, leading to significant gaps in the information needed to fully answer the query."
+        }
+      },
+      "overall_score": 0.695,
+      "overall_threshold": 0.6,
+      "passed": false,
+      "failure_reasons": [
+        "Answer Relevancy below threshold: 0.600 < 0.7"
+      ],
+      "metadata": {
+        "judge_model": "gpt-4o",
+        "evaluation_method": "custom_llm_judge"
+      }
+    },
+    {
+      "scenario_id": "international_002",
+      "persona": "international",
+      "scenario_index": 2,
+      "query": "visa requirements and support",
+      "category": "simple",
+      "ground_truth": "유학생 비자는 입학 허가 후 발급",
+      "answer": "많이 힘드셨겠어요. 비자 요건과 지원에 대한 정보가 필요하시군요.\n\n### 1. 핵심 답변\n동의대학교의 외국인 유학생 비자 요건은 교육부와 법무부의 지침에 따라 정해집니다.\n\n### 2. 상세 내용\n1. **비자 요건**: 외국인 유학생의 비자 지원 자격은 교육부의 「외국인 유학생 및 어학연수생 표준업무처리요령」 및 법무부의 「외국인 유학생 사증발급 및 체류관리 지침」에 따라 결정됩니다. 구체적인 내용은 외국인 특별전형 모집요강에 명시되어 있습니다.\n   \n2. **지원 프로그램**: 동의대학교는 외국인 유학생을 위한 다양한 지원 프로그램을 운영하고 있습니다. 이에는 생활 지원 및 멘토링 프로그램이 포함되어 있습니다.\n\n3. **문의처**: 비자 관련 구체적인 사항이나 지원 프로그램에 대한 정보는 유학생지원센터에 문의하시면 자세한 안내를 받으실 수 있습니다.\n\n### 3. 근거 출처\n• 출처: 「외국인유학생입학및관리규정」 제4조  \n• 출처: 「유학생지원센터규정」 제3조\n\n### 4. 추가 안내\n참고: 비자 신청 및 관련 서류 준비는 각국의 대사관 또는 영사관의 지침을 따르셔야 하며, 필요한 경우 유학생지원센터에서 추가적인 도움을 받으실 수 있습니다.\n\n---\n⚠️ **주의**: 일부 인용(「외국인유학생입학및관리규정」 제4조  \n, 「유학생지원센터규정」 제3조\n\n)은 데이터베이스에서 확인되지 않았습니다. 담당 부서에 확인하시기 바랍니다.",
+      "sources": [
+        {
+          "regulation_name": "지원자격",
+          "rule_code": "3-2-9",
+          "path": "지원자격",
+          "text": "국내대학간학점교류규정 > 제2장 본 대학교 학생의 타 대학 학점교류 > 제6조 지원자격: 재학 중 타대학에 학점교류 학생으로 지원하고자 하는 자는 다음 각 호의 요건을 갖추어야 한다.",
+          "relevance_pct": 100
+        },
+        {
+          "regulation_name": "",
+          "rule_code": "3-2-101",
+          "path": "",
+          "text": "대학원입학전형에관한세칙 > 제2조 입학전형방법 및 지원자격 > ② 학칙 제6조에 규정된 요건을 구비한 자: 학칙 제6조에 규정된 요건을 구비한 자는 지원할 수 있다.",
+          "relevance_pct": 84
+        },
+        {
+          "regulation_name": "",
+          "rule_code": "3-2-52",
+          "path": "",
+          "text": "외국인유학생입학및관리규정 > 제4조 지원자격 > ① 외국인 유학생: 외국인 유학생의 지원자격은 교육부 ｢외국인 유학생 및 어학연수생 표준업무처리요령｣ 및 법무부 ｢외국인 유학생 사증발급 및 체류관리 지침｣에 의거하여 외국인특별전형 모집요강에 명시한다. <개정 2012. 9. 1., 2015. 8. 1., 2023. 10. 1.>",
+          "relevance_pct": 41
+        },
+        {
+          "regulation_name": "",
+          "rule_code": "3-1-128",
+          "path": "",
+          "text": "유학생지원센터규정 > 제3조 업무 > 6. 외국인 유학생 생활 지원 및 멘토링 프로그램: 외국인 유학생 생활 지원 및 멘토링 프로그램 운영",
+          "relevance_pct": 1
+        },
+        {
+          "regulation_name": "",
+          "rule_code": "3-1-128",
+          "path": "",
+          "text": "유학생지원센터규정 > 제3조 업무 > 10. 외국인 유학생 지원 프로그램 개발 및 운영: 외국인 유학생 지원 프로그램 개발 및 운영",
+          "relevance_pct": 0
+        }
+      ],
+      "contexts_count": 5,
+      "evaluation": {
+        "faithfulness": {
+          "score": 0.9,
+          "threshold": 0.6,
+          "passed": true,
+          "reasoning": "The answer is mostly supported by the retrieved contexts. The key claims about visa requirements being determined by the Ministry of Education and Ministry of Justice guidelines are supported by Context 3. The mention of support programs for international students is supported by Contexts 4 and 5. However, the specific mention of '동의대학교' and the detailed process of contacting the student support center for visa-related queries are not explicitly found in the contexts, but these are minor details that do not significantly detract from the overall faithfulness of the answer."
+        },
+        "answer_relevancy": {
+          "score": 0.8,
+          "threshold": 0.7,
+          "passed": true,
+          "reasoning": "The answer provides relevant information about visa requirements and support for international students at Dong-Eui University, which aligns with the user's query. It includes details on visa requirements, support programs, and contact information for further inquiries. However, it could be improved by providing more general information on visa requirements and support applicable to a broader audience, not just those related to Dong-Eui University."
+        },
+        "contextual_precision": {
+          "score": 0.9,
+          "threshold": 0.65,
+          "passed": true,
+          "reasoning": "The retrieved contexts are mostly relevant to the query about visa requirements and support. Rank 3 and Rank 4 directly address the visa requirements and support programs for foreign students, which are central to the query. Rank 5 also supports this by discussing the development and operation of support programs. However, Rank 1 and Rank 2 are less relevant as they pertain to credit exchange and general admission criteria, which are not directly related to visa requirements or support. Despite this, the most relevant contexts are ranked higher, justifying a high score."
+        },
+        "contextual_recall": {
+          "score": 0.6,
+          "threshold": 0.65,
+          "passed": false,
+          "reasoning": "The retrieved contexts provide some relevant information about visa requirements and support programs for foreign students, which partially aligns with the query. However, the key information from the expected answer, specifically '유학생 비자는 입학 허가 후 발급', is not directly present in the contexts. The contexts focus more on the qualifications and support programs rather than the specific process of visa issuance after admission, leading to significant information missing from the contexts."
+        }
+      },
+      "overall_score": 0.815,
+      "overall_threshold": 0.6,
+      "passed": false,
+      "failure_reasons": [
+        "Contextual Recall below threshold: 0.600 < 0.65"
+      ],
+      "metadata": {
+        "judge_model": "gpt-4o",
+        "evaluation_method": "custom_llm_judge"
+      }
+    },
+    {
+      "scenario_id": "international_003",
+      "persona": "international",
+      "scenario_index": 3,
+      "query": "courses in English available?",
+      "category": "complex",
+      "ground_truth": "영어 강의는 일부 학과에서 개설",
+      "answer": "동의대학교에서는 영어로 진행되는 강좌가 제공됩니다. 특히, 외국인 유학생의 경우 한국어 강좌 이수와 관계없이 영어회화 Ⅰ과 Ⅱ는 반드시 이수해야 합니다.\n\n### 1. 영어 강좌 관련 정보\n- **영어회화 강좌**: 신입학한 외국인 유학생은 한국어 강좌 이수와 관계없이 영어회화 Ⅰ과 Ⅱ를 이수해야 합니다.\n\n### 2. 수업 관련 지원\n- **학사지원팀**: 영어 전용 과목 및 기타 수업 관련 지원은 학사지원팀에서 관리합니다. 필요한 경우 학사지원팀에 문의하시면 더 많은 정보를 얻을 수 있습니다.\n\n### 3. 추가 안내\n- **수업 개설 정보**: 공개강좌의 제목, 기간, 장소, 수강 자격 및 정원 등은 개강 시마다 총장이 정하여 공고합니다. 따라서, 구체적인 영어 강좌에 대한 정보는 학기 시작 전에 확인하시기 바랍니다.\n\n• 출처: 「연계교육과정운영규정」 제5조, 「사무분장규정」 제14조\n\n더 궁금한 사항이 있으시면 학사지원팀에 문의하시기 바랍니다.\n\n---\n⚠️ **주의**: 일부 인용(「연계교육과정운영규정」 제5조, 「사무분장규정」 제14조\n\n)은 데이터베이스에서 확인되지 않았습니다. 담당 부서에 확인하시기 바랍니다.",
+      "sources": [
+        {
+          "regulation_name": "",
+          "rule_code": "2-1-1",
+          "path": "",
+          "text": "동의대학교학칙 > 제10장 공개강좌, 학점은행제 및 시간제 등록생 > 제44조 공개강좌 > ② 공개강좌: 공개강좌의 제목, 기간, 장소, 수강 자격 및 정원 등에 관한 사항은 개강시마다 총장이 정하여 공고하며, 수강생에 대하여는 강의에 소요되는 수강료를 징수할 수 있다.",
+          "relevance_pct": 100
+        },
+        {
+          "regulation_name": "",
+          "rule_code": "3-1-2",
+          "path": "",
+          "text": "사무분장규정 > 제3절 학사지원팀 > 제14조 학사지원팀 > 16. 수업 관련 지원(집중이수제, 팀티칭, 산학연계: 수업 관련 지원(집중이수제, 팀티칭, 산학연계·영어전용·플립러닝 과목 등의 신청 및 관리, 캡스톤디자인 지원 등)",
+          "relevance_pct": 95
+        },
+        {
+          "regulation_name": "정규과목의 이수",
+          "rule_code": "3-2-47",
+          "path": "정규과목의 이수",
+          "text": "연계교육과정운영규정 > 제5조 정규과목의 이수: 한국어 강좌 이수대상자로 선정된 외국인 유학생은 소정의 과정을 이수하지 아니하고는 정규교과목을 이수할 수 없다. 다만, 신입학한 외국인 유학생은 한국어 강좌 이수에 상관없이 영어회화 ⅠㆍⅡ는 반드시 이수하여야 한다.",
+          "relevance_pct": 80
+        },
+        {
+          "regulation_name": "",
+          "rule_code": "3-1-95",
+          "path": "",
+          "text": "디그니타스교양교육연구소규정 > 제1장 총칙 > 제4조 사업 > 3. 기초교양교육에 관한 정보: 기초교양교육에 관한 정보의 수집 및 제공",
+          "relevance_pct": 4
+        },
+        {
+          "regulation_name": "",
+          "rule_code": "3-2-3",
+          "path": "",
+          "text": "강의시간편성및수업규정 > 제3조 분반 및 폐강기준 > ② 분반기준 > 1. 공통교양, 계열교양, 균형교양 및 전공이론과목: 공통교양, 계열교양, 균형교양 및 전공이론과목은 70명 이상. 단, 외국어회화는 35명, 컴퓨터실습강좌는 45명 이상 <개정 2011. 2. 10., 2015. 2. 1., 2017. 2. 1., 2020. 2. 1., 2024. 11. 1.>",
+          "relevance_pct": 0
+        }
+      ],
+      "contexts_count": 5,
+      "evaluation": {
+        "faithfulness": {
+          "score": 0.8,
+          "threshold": 0.6,
+          "passed": true,
+          "reasoning": "The answer is mostly supported by the retrieved contexts. The claim about English courses being available, specifically English conversation courses for foreign students, is supported by Context 3. The mention of the academic support team managing English-only courses is supported by Context 2. However, the details about the announcement of course titles, periods, and qualifications by the president at the start of the semester are not directly supported by the retrieved contexts, making it a minor unsupported detail. Overall, the major claims are supported, with some minor details lacking direct support."
+        },
+        "answer_relevancy": {
+          "score": 0.5,
+          "threshold": 0.7,
+          "passed": false,
+          "reasoning": "The answer provides some relevant information about English courses, specifically mentioning English conversation courses for international students. However, it is mostly in Korean, which may not be accessible to someone asking in English. Additionally, the answer includes a lot of extraneous information about administrative details and regulations that do not directly address the query about available English courses. The core information about English courses is present but not clearly highlighted or complete."
+        },
+        "contextual_precision": {
+          "score": 0.8,
+          "threshold": 0.65,
+          "passed": true,
+          "reasoning": "The retrieved contexts are mostly relevant to the query about English courses. Rank 3 directly addresses the requirement for foreign students to take English conversation courses, which is highly relevant. Rank 2 mentions the academic support team managing English-only courses, which is also relevant. Rank 1 provides general information about course offerings, which is somewhat relevant. However, Ranks 4 and 5 are less relevant to the specific query about English courses. The ranking is mostly effective, but could be improved by placing Rank 3 higher."
+        },
+        "contextual_recall": {
+          "score": 0.8,
+          "threshold": 0.65,
+          "passed": true,
+          "reasoning": "The retrieved contexts contain relevant information about English courses, specifically mentioning that foreign students must take English Conversation I and II regardless of their Korean course enrollment. This aligns with the expected answer that English courses are available in some departments. However, the contexts do not explicitly state that English courses are available in some departments, which is a minor gap. The generated answer uses relevant information from the contexts, but the connection to the expected answer could be clearer."
+        }
+      },
+      "overall_score": 0.725,
+      "overall_threshold": 0.6,
+      "passed": false,
+      "failure_reasons": [
+        "Answer Relevancy below threshold: 0.500 < 0.7"
+      ],
+      "metadata": {
+        "judge_model": "gpt-4o",
+        "evaluation_method": "custom_llm_judge"
+      }
+    },
+    {
+      "scenario_id": "international_004",
+      "persona": "international",
+      "scenario_index": 4,
+      "query": "language programs for Korean",
+      "category": "simple",
+      "ground_truth": "한국어 과정은 어학당에서 제공",
+      "answer": "동의대학교에서는 외국인을 위한 다양한 한국어 프로그램을 운영하고 있습니다.\n\n### 1. 한국어 정규과정\n- **운영 내용**: 한국어 정규과정은 외국인 유학생을 대상으로 하며, 체계적인 한국어 교육을 제공합니다.\n- **신청 방법**: 자세한 신청 절차는 국제언어교육원에 문의하시기 바랍니다.\n\n### 2. 한국어 집중과정\n- **운영 내용**: 한국어 집중과정은 보다 심화된 한국어 교육을 제공하며, 짧은 기간 내에 한국어 능력을 향상시키고자 하는 학생들에게 적합합니다.\n- **신청 방법**: 이 과정에 대한 정보는 국제언어교육원에서 확인하실 수 있습니다.\n\n### 3. 한국어 강좌 고급 과정\n- **이수 대상**: 한국어 강좌 중급 과정을 이수하였거나, 초ㆍ중급 과정 전부 또는 중급 과정 이수가 면제된 2학년 이상의 외국인 유학생이 선택적으로 이수할 수 있습니다.\n- **학점 인정**: 이수할 경우, 해당 학점은 일반선택과정 학점으로 인정됩니다.\n\n### 4. 한국어 연수과정\n- **목적**: 외국인에게 실용적이고 효율적인 한국어 교육 기회를 제공하고, 안정적인 국내 유학을 지원하기 위한 프로그램입니다.\n\n각 프로그램에 대한 구체적인 정보와 신청 절차는 국제교류처 또는 국제언어교육원에 문의하시기 바랍니다. \n\n• 출처: 「사무분장규정」 제34조, 「연계교육과정운영규정」 제3조, 「한국어연수과정운영규정」 제1조\n\n---\n⚠️ **주의**: 일부 인용(「사무분장규정」 제34조, 「연계교육과정운영규정」 제3조, 「한국어연수과정운영규정」 제1조)은 데이터베이스에서 확인되지 않았습니다. 담당 부서에 확인하시기 바랍니다.",
+      "sources": [
+        {
+          "regulation_name": "",
+          "rule_code": "3-1-2",
+          "path": "",
+          "text": "사무분장규정 > 제8장 국제교류처 > 제34조 국제언어교육원 > 6. 한국어 정규과정 운영: 한국어 정규과정 운영",
+          "relevance_pct": 100
+        },
+        {
+          "regulation_name": "",
+          "rule_code": "3-1-2",
+          "path": "",
+          "text": "사무분장규정 > 제8장 국제교류처 > 제34조 국제언어교육원 > 7. 한국어 집중과정 운영: 한국어 집중과정 운영",
+          "relevance_pct": 77
+        },
+        {
+          "regulation_name": "",
+          "rule_code": "3-2-47",
+          "path": "",
+          "text": "연계교육과정운영규정 > 제3조 이수 대상자 > ④ 한국어 강좌 고급 과정: 한국어 강좌 고급 과정은 한국어 강좌 중급 과정을 이수하였거나 한국어 강좌 초ㆍ중급 과정 전부 또는 중급 과정 이수가 면제된 2학년 이상인 외국인 유학생이 선택적으로 이수할 수 있으며, 이수할 경우 그 학점은 일반선택과정 학점으로 인정한다.",
+          "relevance_pct": 75
+        },
+        {
+          "regulation_name": "목적",
+          "rule_code": "3-2-50",
+          "path": "목적",
+          "text": "한국어연수과정운영규정 > 제1장 총칙 > 제1조 목적: 이 규정은 외국인에게 실용적이고 효율적인 한국어의 교육기회 제공과 외국인유학생의 안정적인 국내 유학을 지원하고 한국어연수과정 운영에 관한 사항을 규정함을 목적으로 한다.",
+          "relevance_pct": 34
+        },
+        {
+          "regulation_name": "한국어 강좌",
+          "rule_code": "3-2-47",
+          "path": "한국어 강좌",
+          "text": "연계교육과정운영규정 > 제2조 한국어 강좌: 외국인 유학생의 한국어 능력 배양을 위하여 개설하는 한국어 강좌는 [별표 1] 및 [별표 2]와 같다.",
+          "relevance_pct": 0
+        }
+      ],
+      "contexts_count": 5,
+      "evaluation": {
+        "faithfulness": {
+          "score": 0.9,
+          "threshold": 0.6,
+          "passed": true,
+          "reasoning": "The generated answer is mostly consistent with the retrieved contexts. It accurately describes the Korean language programs such as the regular course, intensive course, advanced course, and training course, which are supported by the contexts. However, the specific details about the application process and the exact nature of the courses (e.g., '체계적인 한국어 교육' for the regular course and '심화된 한국어 교육' for the intensive course) are not explicitly mentioned in the contexts. These are minor details and do not significantly detract from the overall faithfulness of the answer."
+        },
+        "answer_relevancy": {
+          "score": 0.9,
+          "threshold": 0.7,
+          "passed": true,
+          "reasoning": "The answer provides detailed information about various Korean language programs offered at a specific university, which is relevant to the query about language programs for Korean. It includes descriptions of different courses, their purposes, and how to apply, which directly addresses the user's query. However, it could be improved by mentioning if these programs are available to international students or if there are any prerequisites, which are minor gaps in the information provided."
+        },
+        "contextual_precision": {
+          "score": 1.0,
+          "threshold": 0.65,
+          "passed": true,
+          "reasoning": "All retrieved contexts are highly relevant to the query about language programs for Korean. The contexts provide detailed information about various Korean language programs offered to foreign students, including regular courses, intensive courses, advanced courses, and training programs. The ranking is perfect as it lists the relevant contexts in order of their importance and relevance to the query, effectively helping to answer the query."
+        },
+        "contextual_recall": {
+          "score": 0.7,
+          "threshold": 0.65,
+          "passed": true,
+          "reasoning": "The retrieved contexts provide information about various Korean language programs, such as regular, intensive, and advanced courses, which are relevant to the query. However, the expected answer specifically mentions '어학당' (language institute), which is not directly referenced in the retrieved contexts. The contexts focus on university-level programs and regulations, which may not fully align with the expected answer's focus on language institutes. Thus, there is significant information missing regarding the specific setting of '어학당'."
+        }
+      },
+      "overall_score": 0.88,
+      "overall_threshold": 0.6,
+      "passed": true,
+      "failure_reasons": [],
+      "metadata": {
+        "judge_model": "gpt-4o",
+        "evaluation_method": "custom_llm_judge"
+      }
+    },
+    {
+      "scenario_id": "international_005",
+      "persona": "international",
+      "scenario_index": 5,
+      "query": "housing options and application",
+      "category": "edge",
+      "ground_truth": "기숙사는 우선 배정 가능",
+      "answer": "많이 궁금하셨겠어요. 동의대학교의 주거 옵션 및 신청 절차에 대한 정보는 제공된 규정에서 확인되지 않습니다. \n\n현재 주거 옵션에 대한 구체적인 내용이나 신청 절차는 명시되어 있지 않으므로, 해당 정보는 학교의 관련 부서에 문의하시는 것이 가장 좋습니다. \n\n### 해결 방법:\n1. **담당 부서 문의**: 주거 옵션 및 신청에 대한 정보는 학생복지팀이나 학생생활관에 문의하시면 상세한 안내를 받으실 수 있습니다.\n2. **학교 홈페이지 확인**: 동의대학교의 공식 홈페이지에서 주거 관련 정보를 찾아보실 수 있습니다.\n\n혼자 고민하지 마시고, 필요한 정보를 직접 확인해 보시는 것이 좋습니다.",
+      "sources": [
+        {
+          "regulation_name": "경과조치",
+          "rule_code": "3-2-27",
+          "path": "경과조치",
+          "text": "부전공규정 > 부칙 > 26. 경과조치: 이 변경 규정 시행 이전에 부전공을 신청한 자는 이 변경 규정에 의하여 신청한 것으로 본다.",
+          "relevance_pct": 100
+        },
+        {
+          "regulation_name": "경과조치",
+          "rule_code": "3-2-26",
+          "path": "경과조치",
+          "text": "복수전공규정 > 부칙 > 29. 경과조치: 이 변경 규정 시행 이전에 복수전공을 신청한 자는 이 변경 규정에 의하여 신청한 것으로 본다.",
+          "relevance_pct": 98
+        },
+        {
+          "regulation_name": "",
+          "rule_code": "3-2-2",
+          "path": "",
+          "text": "수강신청규정 > 제6조 절차 > ② 수강신청 > 3. 일반선택과정(복수전공, 연계전공, 융합전공,: 일반선택과정(복수전공, 연계전공, 융합전공, 부전공, 마이크로디그리, 교직과정, 평생교육사과정, 비교과마일리특별학점, 자유선택(타 학과 전공선택과목 중 이론수업 교과목), 계절수업, 군사학 과목, 총장이 허가한 특별과목 등) <개정 2011. 2. 10., 2015. 2. 1., 2017. 2. 1., 2018. 2. 1., 2023. 2. 1.>",
+          "relevance_pct": 61
+        },
+        {
+          "regulation_name": "용어의 정의",
+          "rule_code": "6-0-33",
+          "path": "용어의 정의",
+          "text": "지식재산권관리및기술사업화촉진에관한규정 > 제1장 총칙 > 제2조 용어의 정의: 이 규정에서 사용하는 용어의 정의는 다음 각호와 같다.",
+          "relevance_pct": 0
+        },
+        {
+          "regulation_name": "용어의 정의",
+          "rule_code": "3-1-126",
+          "path": "용어의 정의",
+          "text": "공간관리규정 > 제1장 총칙 > 제3조 용어의 정의: 이 규정에서 사용하는 용어의 뜻은 다음 각호와 같다.",
+          "relevance_pct": 0
+        }
+      ],
+      "contexts_count": 5,
+      "evaluation": {
+        "faithfulness": {
+          "score": 0.0,
+          "threshold": 0.6,
+          "passed": false,
+          "reasoning": "The answer is entirely hallucinated as none of the retrieved contexts provide information about housing options or application procedures. The contexts are related to academic regulations and definitions, not housing. Therefore, the answer does not align with any of the provided contexts."
+        },
+        "answer_relevancy": {
+          "score": 0.8,
+          "threshold": 0.7,
+          "passed": true,
+          "reasoning": "The answer addresses the query by suggesting ways to find information about housing options and application procedures at Dong-Eui University. It advises contacting relevant departments and checking the university's official website, which are practical steps. However, it lacks specific details about the housing options or application process itself, which would have made the answer more complete."
+        },
+        "contextual_precision": {
+          "score": 0.0,
+          "threshold": 0.65,
+          "passed": false,
+          "reasoning": "All retrieved contexts are irrelevant to the query about housing options and application. The contexts retrieved pertain to academic regulations and definitions, which do not address the query. There is no relevant information about housing or application processes in any of the top-ranked contexts, indicating a failure in retrieval relevance and ranking."
+        },
+        "contextual_recall": {
+          "score": 0.0,
+          "threshold": 0.65,
+          "passed": false,
+          "reasoning": "The retrieved contexts do not contain any information related to housing options or application procedures. The expected answer mentions priority assignment for dormitories, which is not addressed in any of the provided contexts. The contexts focus on regulations related to academic programs and definitions, which are irrelevant to the query about housing options."
+        }
+      },
+      "overall_score": 0.2,
+      "overall_threshold": 0.6,
+      "passed": false,
+      "failure_reasons": [
+        "Faithfulness below threshold: 0.000 < 0.6",
+        "Contextual Precision below threshold: 0.000 < 0.65",
+        "Contextual Recall below threshold: 0.000 < 0.65",
+        "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+      ],
+      "metadata": {
+        "judge_model": "gpt-4o",
+        "evaluation_method": "custom_llm_judge"
+      }
+    }
+  ]
+}
