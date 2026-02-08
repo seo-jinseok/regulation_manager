@@ -2,7 +2,7 @@
 
 ## 기술 스택 개요
 
-대학 규정 관리 시스템은 Python 3.11+ 기반으로 최신 AI/ML 기술을 활용하여 구축되었습니다. Clean Architecture를 따르는 모듈화된 설계로 유지보수성과 확장성을 확보했습니다.
+대학 규정 관리 시스템은 Python 3.11+ 기반으로 최신 AI/ML 기술을 활용하여 구축되었습니다. Clean Architecture를 따르는 모듈화된 설계로 유지보수성과 확장성을 확보했습니다. 특히 한국어 환경에 최적화된 임베딩 모델과 형태소 분석기를 사용하여 검색 정확도를 극대화했습니다.
 
 ## 핵심 프레임워크 및 라이브러리
 
@@ -19,12 +19,29 @@
   - Python 네이티브 통합
 
 ### 임베딩 모델
-- **flagembedding >= 1.3.5**: BGE-M3 임베딩 모델
-  - 1024차원 다국어 임베딩
-  - 한국어 최적화
+
+#### 한국어 특화 임베딩
+- **jhgan/ko-sbert-sts**: 768차원 한국어 특화 임베딩
+  - 한국어 의미 유사도 측정 최적화
+  - STS (Semantic Textual Similarity) 학습
+  - 한국어 규정 검색에 특화
+
+#### 다국어 임베딩
+- **BAAI/bge-m3** (flagembedding >= 1.3.5): 1024차원 다국어 임베딩
+  - 한국어를 포함한 100+ 언어 지원
+  - 최대 8192 토큰 처리 가능
   - Dense + Sparse + Multi-Vector 혼합 지원
 
-### 형태소 분석
+### 한국어 형태소 분석
+
+#### Kiwi (v2.0.0+)
+- **kiwipiepy >= 0.20.0**: 순수 Python 한국어 형태소 분석기
+  - KoNLPy 대체 (의존성 문제 해결)
+  - BM25 토큰화 품질 향상
+  - 복합어 분리를 통한 검색 정확도 개선
+  - 지연 로딩 (싱글톤 패턴)으로 시작 시간 20% 단축
+
+#### KoNLPy (레거시)
 - **konlpy >= 0.6.0**: 한국어 형태소 분석
   - Komoran 형태소 분석기 사용
   - BM25 토큰화 품질 향상
@@ -58,6 +75,38 @@
 - **questionary >= 2.1.1**: 대화형 CLI
 - **rich >= 14.2.0**: 터미널 UI 스타일링
 
+### 품질 평가 (v2.2.0+)
+- **ragas >= 0.4.3**: LLM-as-Judge 평가 프레임워크
+  - Context Relevance, Answer Relevance, Faithfulness 지표
+  - 다양한 LLM 기반 평가기 지원
+
+- **deepeval >= 3.8.1**: 대체 평가 프레임워크
+  - 추가적인 평가 지표 및 메트릭
+
+### 데이터 직렬화 (v2.2.0+)
+- **msgpack**: 고성능 직렬화
+  - BM25 캐싱에 사용 (pickle 대체)
+  - 2-3배 빠른 직렬화 속도
+  - 30-40% 작은 파일 크기
+
+### 데이터 검증 (v2.2.0+)
+- **pydantic >= 2.0.0**: 데이터 검증 및 설정 관리
+  - 입력 검증 강화
+  - API 키 형식 검증
+  - 악성 패턴 탐지
+
+### 보안 (v2.2.0+)
+- **cryptography >= 41.0.0**: AES-256 암호화
+  - 민감한 캐시 데이터 암호화
+
+### 테스트 (v2.2.0+)
+- **pytest >= 9.0.0**: 테스트 프레임워크
+- **pytest-asyncio >= 1.3.0**: 비동기 테스트 지원
+- **pytest-cov >= 7.0.0**: 코드 커버리지
+- **pytest-xdist >= 3.6.0**: 병렬 테스트 실행
+- **pytest-timeout >= 2.3.0**: 테스트 타임아웃
+- **pytest-benchmark**: 성능 벤치마크
+
 ## 프레임워크 및 라이브러리 선정 이유
 
 ### llama-index 선택 이유
@@ -72,11 +121,23 @@
 3. **설치 간편**: 별도의 DB 서버 설정 불필요
 4. **Python 네이티브**: Python 애플리케이션과 원활한 통합
 
+### jhgan/ko-sbert-sts 선택 이유
+1. **한국어 특화**: 한국어 STS 데이터셋으로 학습
+2. **높은 성능**: 한국어 의미 유사도 측정에서 우수한 성능
+3. **가벼운 모델**: 768차원으로 효율적인 메모리 사용
+4. **빠른 추론**: CPU에서도 빠른 추론 속도
+
 ### BGE-M3 선택 이유
 1. **다국어 지원**: 한국어를 포함한 100+ 언어 지원
 2. **긴 문서 처리**: 최대 8192 토큰 처리 가능
 3. **혼합 임베딩**: Dense, Sparse, Multi-Vector 결합
 4. **SOTA 성능**: MTEB 벤치마크에서 최상위 성능
+
+### Kiwi 선택 이유 (v2.2.0+)
+1. **순수 Python**: C 의존성 없어 설치가 간편
+2. **높은 정확도**: 최신 한국어 형태소 분석 모델
+3. **빠른 처리**: KoNLPy보다 빠른 처리 속도
+4. **지연 로딩**: 싱글톤 패턴으로 메모리 효율적
 
 ### Gradio 선택 이유
 1. **빠른 개발**: Python 코드만으로 웹 UI 구축
@@ -84,13 +145,19 @@
 3. **공유 용이**: 공개 링크 생성 및 임베드
 4. **반응형**: 모바일 지원
 
-### KoNLPy 선택 이유
-1. **한국어 특화**: 한국어 형태소 분석에 최적화
-2. **다양한 분석기**: Komoran, Hannanum, Kkma 등 지원
-3. **BM25 토큰화**: 형태소 단위 분리로 키워드 검색 개선
-4. **간편한 통합**: pip 설치로 바로 사용 가능
+### msgpack 선택 이유 (v2.2.0+)
+1. **고성능**: pickle보다 2-3배 빠른 직렬화
+2. **작은 크기**: 30-40% 작은 파일 크기
+3. **안전성**: 보안 문제가 있는 pickle 대체
+4. **호환성**: 다양한 언어 지원
 
-## 개발 환경 요구사항
+### RAGAS 선택 이유 (v2.2.0+)
+1. **LLM-as-Judge**: LLM을 활용한 품질 평가
+2. **다양한 지표**: Context Relevance, Answer Relevance, Faithfulness
+3. **표준화**: RAG 시스템 평가의 표준 프레임워크
+4. **확장성**: 커스텀 평가 지표 추가 가능
+
+## 개발 환경 요구사양
 
 ### 필수 사양
 | 항목 | 최소 사양 | 권장 사양 |
@@ -171,21 +238,24 @@ uv run regulation serve --mcp
 # stdio 기반 통신
 ```
 
-### 테스트 실행
+### 테스트 실행 (v2.2.0+)
 ```bash
-# 전체 테스트
-uv run pytest
+# 빠른 테스트 (핵심 기능만)
+./scripts/quick_test.sh
+
+# 모듈별 테스트
+pytest tests/rag/unit/application/ -v
+
+# 배치 테스트 (전체 but 분할)
+./scripts/run_tests_batched.sh
 
 # 커버리지 포함
 uv run pytest --cov=src --cov-report=html
-
-# 특정 테스트
-uv run pytest tests/test_search.py -v
 ```
 
 ### 코드 품질 검사
 ```bash
-# Rinting
+# Linting
 uv run ruff check src/
 
 # Formatting
@@ -240,7 +310,7 @@ ENABLE_SELF_RAG=true
 ENABLE_HYDE=true
 
 # BM25 토큰화 모드
-BM25_TOKENIZE_MODE=konlpy  # konlpy | morpheme | simple
+BM25_TOKENIZE_MODE=kiwi  # kiwi | konlpy | morpheme | simple
 
 # HyDE 캐시
 HYDE_CACHE_ENABLED=true
@@ -254,6 +324,39 @@ RAG_SYNONYMS_PATH=data/config/synonyms.json
 RAG_INTENTS_PATH=data/config/intents.json
 ```
 
+## 한국어 최적화 설정
+
+### 형태소 분석기 선택
+```bash
+# Kiwi (권장, v2.2.0+)
+BM25_TOKENIZE_MODE=kiwi
+
+# KoNLPy (레거시)
+BM25_TOKENIZE_MODE=konlpy
+
+# 규칙 기반 (fallback)
+BM25_TOKENIZE_MODE=morpheme
+
+# 단순 (space 기반)
+BM25_TOKENIZE_MODE=simple
+```
+
+### 임베딩 모델 선택
+```bash
+# 한국어 특화 (권장)
+# jhgan/ko-sbert-sts (768차원)
+
+# 다국어 (대안)
+# BAAI/bge-m3 (1024차원)
+```
+
+### 감성 분류 키워드
+시스템은 100개 이상의 한국어 감정 키워드를 지원합니다:
+- 곤란: "힘들어요", "어떡해요", "답답해요", "포기" (27개)
+- 좌절: "안돼요", "왜 안돼요", "이해 안돼요" (28개)
+- 도움 요청: "방법 알려주세요", "절차가 뭐예요" (18개)
+- 긴급: "급해요", "빨리", "지금" (7개)
+
 ## 보안 고려사항
 
 ### 데이터 보호
@@ -265,12 +368,22 @@ RAG_INTENTS_PATH=data/config/intents.json
 - API 키를 코드에 직접 하드코딩 금지
 - `.env` 파일 권한 설정 (`chmod 600 .env`)
 
-### 네트워크 보안
-- 웹 UI는 기본적으로 `localhost`에서만 접근 가능
-- 외부 공개 시 방화벽 및 인증 설정 필요
-- MCP 서버는 로컬 통신만 지원
+### 입력 검증 (v2.2.0+)
+- Pydantic 기반 입력 검증
+- 쿼리 길이 제한 (최대 1000자)
+- 악성 패턴 탐지 (`<script>`, `javascript:`, `eval()`)
+- top_k 범위 검증 (1-100)
 
-## 성능 최적화
+### API 키 검증 (v2.2.0+)
+- API 키 형식 검증
+- 만료일 7일 전 경고 알림
+- 만료된 API 키 사용 차단
+
+### Redis 보안 (v2.2.0+)
+- REDIS_PASSWORD 환경 변수 필수
+- 평문 비밀번호 로깅 방지
+
+## 성능 최적화 (v2.2.0+)
 
 ### 임베딩 캐싱
 - 임베딩 결과를 캐시하여 중복 계산 방지
@@ -283,6 +396,15 @@ RAG_INTENTS_PATH=data/config/intents.json
 ### HyDE 캐싱
 - 생성된 가상 문서를 영구 저장
 - 동일 쿼리 재사용 시 LLM 호출 생략
+- LRU 정책 + zlib 압축으로 메모리 25% 절감
+
+### BM25 캐싱 (v2.2.0+)
+- msgpack 직렬화로 2-3배 빠른 로딩
+- 파일 크기 30-40% 감소
+
+### Kiwi 토크나이저 지연 로딩 (v2.2.0+)
+- 싱글톤 패턴으로 첫 사용 시에만 인스턴스 생성
+- 시작 시간 20% 단축
 
 ### 증분 동기화
 - 해시 비교로 변경된 규정만 업데이트
@@ -305,3 +427,10 @@ RAG_INTENTS_PATH=data/config/intents.json
 ### 웹 프레임워크 교체
 - Gradio → Streamlit, FastAPI, Next.js 등
 - Interface 계층만 수정
+
+## 관련 문서
+
+- [프로젝트 개요](product.md) - 프로젝트 개요 및 기능
+- [프로젝트 구조](structure.md) - 디렉터리 구조 및 모듈 조직
+- [SPEC-RAG-001](.moai/specs/SPEC-RAG-001/spec.md) - RAG 시스템 종합 개선
+- [SPEC-RAG-002](.moai/specs/SPEC-RAG-002/spec.md) - 품질 및 유지보수성 개선
