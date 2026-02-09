@@ -1,0 +1,100 @@
+{
+  "timestamp": "now",
+  "suggestions": [
+    {
+      "type": "synonym",
+      "priority": "medium",
+      "description": "동의어 추가 권장: '있어?'",
+      "suggested_value": {
+        "action": "add_synonym",
+        "term": "있어?",
+        "count": 2
+      }
+    },
+    {
+      "type": "code_weight",
+      "priority": "high",
+      "description": "인텐트 매칭됨에도 6개 쿼리에서 잘못된 결과 반환 → WEIGHT_PRESETS 또는 Reranker 가중치 조정 필요",
+      "suggested_value": {
+        "action": "adjust_weight_presets",
+        "file": "src/rag/infrastructure/query_analyzer.py",
+        "target": "WEIGHT_PRESETS",
+        "note": "Intent 쿼리의 BM25/Dense 비율 검토"
+      }
+    },
+    {
+      "type": "llm_expert",
+      "priority": "high",
+      "description": "LLM 제안 - 사용자가 연구 부정행위와 관련된 신고 절차를 찾고 있을 가능성이 높습니다. 동의어 확장과 명확한 인텐트 트리거 추가로 검색 정확도를 높일 수 있습니다.",
+      "suggested_value": {
+        "intent_trigger": "신고 절차",
+        "synonyms": [
+          "연구 부정행위 제보",
+          "연구 윤리 위반 신고",
+          "부정행위 고발"
+        ],
+        "reason": "사용자가 연구 부정행위와 관련된 신고 절차를 찾고 있을 가능성이 높습니다. 동의어 확장과 명확한 인텐트 트리거 추가로 검색 정확도를 높일 수 있습니다."
+      }
+    },
+    {
+      "type": "llm_expert",
+      "priority": "high",
+      "description": "LLM 제안 - 사용자가 강의 면제와 관련된 구체적인 절차나 조건을 알고 싶어하는 것으로 보입니다. 동의어를 추가하여 다양한 표현을 포괄하고, '강의 면제 조건'을 트리거로 추가해 더 정확한 인텐트 매칭이 가능하도록 합니다.",
+      "suggested_value": {
+        "intent_trigger": "강의 면제 조건",
+        "synonyms": [
+          "수강면제",
+          "면제 요건",
+          "강의 면제 절차",
+          "면제 받는 법"
+        ],
+        "reason": "사용자가 강의 면제와 관련된 구체적인 절차나 조건을 알고 싶어하는 것으로 보입니다. 동의어를 추가하여 다양한 표현을 포괄하고, '강의 면제 조건'을 트리거로 추가해 더 정확한 인텐트 매칭이 가능하도록 합니다."
+      }
+    },
+    {
+      "type": "llm_expert",
+      "priority": "high",
+      "description": "LLM 제안 - 사용자가 '취업 준비'와 관련된 내용을 표현했지만, 대학 규정 시스템에서는 '졸업 연기'라는 공식 용어가 더 적합할 수 있습니다. 또한 취업 준비와 관련된 다양한 활동을 포괄하는 동의어를 추가하면 검색 정확도를 높일 수 있습니다.",
+      "suggested_value": {
+        "intent_trigger": "졸업 연기",
+        "synonyms": [
+          "취업 준비",
+          "진로 준비",
+          "이력서 작성",
+          "면접 준비"
+        ],
+        "reason": "사용자가 '취업 준비'와 관련된 내용을 표현했지만, 대학 규정 시스템에서는 '졸업 연기'라는 공식 용어가 더 적합할 수 있습니다. 또한 취업 준비와 관련된 다양한 활동을 포괄하는 동의어를 추가하면 검색 정확도를 높일 수 있습니다."
+      }
+    },
+    {
+      "type": "llm_expert",
+      "priority": "high",
+      "description": "LLM 제안 - 사용자가 '어떻게 돼?'라는 비형식적 표현을 사용했기 때문에, 더 정확하고 공식적인 용어로 검색 의도를 명확히 할 필요가 있습니다. 동의어 확장을 통해 다양한 표현으로도 관련 결과를 제공할 수 있도록 합니다.",
+      "suggested_value": {
+        "intent_trigger": "징계 절차",
+        "synonyms": [
+          "징계 과정",
+          "제재 절차",
+          "징계 규정",
+          "징계 단계"
+        ],
+        "reason": "사용자가 '어떻게 돼?'라는 비형식적 표현을 사용했기 때문에, 더 정확하고 공식적인 용어로 검색 의도를 명확히 할 필요가 있습니다. 동의어 확장을 통해 다양한 표현으로도 관련 결과를 제공할 수 있도록 합니다."
+      }
+    },
+    {
+      "type": "llm_expert",
+      "priority": "high",
+      "description": "LLM 제안 - 사용자가 학생 창업 지원에 대한 정보를 찾고 있지만, 쿼리가 모호할 수 있습니다. 더 구체적인 인텐트 트리거와 동의어를 추가하여 검색 정확도를 높일 수 있습니다.",
+      "suggested_value": {
+        "intent_trigger": "창업 지원 프로그램",
+        "synonyms": [
+          "창업 지원",
+          "학생 창업",
+          "창업 도움",
+          "창업 혜택"
+        ],
+        "reason": "사용자가 학생 창업 지원에 대한 정보를 찾고 있지만, 쿼리가 모호할 수 있습니다. 더 구체적인 인텐트 트리거와 동의어를 추가하여 검색 정확도를 높일 수 있습니다."
+      }
+    }
+  ]
+}

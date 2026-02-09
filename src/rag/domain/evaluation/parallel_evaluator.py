@@ -3,6 +3,11 @@ Parallel Persona Evaluation System for RAG Quality Assessment.
 
 Implements parallel execution of 6 persona sub-agents as defined in
 rag-quality-local skill modules/personas.md.
+
+Phase 1 Integration: Uses enhanced components for better evaluation.
+- SearchUseCase: Integrated query expansion and retrieval
+- CitationEnhancer: Enhanced citation formatting and validation
+- EvaluationPrompts: Improved LLM judge prompts with hallucination detection
 """
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -14,7 +19,10 @@ from src.rag.domain.evaluation import EvaluationBatch, JudgeResult, LLMJudge
 from src.rag.domain.evaluation.personas import PERSONAS, PersonaManager
 from src.rag.infrastructure.chroma_store import ChromaVectorStore
 from src.rag.infrastructure.llm_adapter import LLMClientAdapter
-from src.rag.interface.query_handler import QueryHandler, QueryOptions
+from src.rag.application.search_usecase import SearchUseCase
+from src.rag.domain.citation.citation_enhancer import CitationEnhancer
+# Phase 2: Import PersonaAwareGenerator for persona-specific prompts
+from src.rag.domain.personas import PersonaAwareGenerator
 
 
 @dataclass
@@ -42,7 +50,13 @@ class PersonaEvaluationResult:
 
 
 class ParallelPersonaEvaluator:
-    """Evaluates RAG system using parallel persona sub-agents."""
+    """Evaluates RAG system using parallel persona sub-agents.
+
+    Phase 1 Integration:
+    - Uses SearchUseCase for enhanced search with query expansion
+    - Uses CitationEnhancer for accurate citation formatting
+    - Uses LLMJudge.evaluate_with_llm() with improved prompts
+    """
 
     # 6 personas defined in rag-quality-local skill
     PERSONA_AGENTS = [
@@ -69,6 +83,7 @@ class ParallelPersonaEvaluator:
         db_path: str = "data/chroma_db",
         llm_client: Optional[LLMClientAdapter] = None,
         judge: Optional[LLMJudge] = None,
+        enable_query_expansion: bool = True,
     ):
         """Initialize parallel persona evaluator.
 
@@ -76,24 +91,45 @@ class ParallelPersonaEvaluator:
             db_path: Path to ChromaDB
             llm_client: Optional LLM client for query execution
             judge: Optional LLM judge for evaluation
+            enable_query_expansion: Whether to use query expansion (default: True)
         """
         # Initialize RAG components
         self.store = ChromaVectorStore(persist_directory=db_path)
-        self.llm_client = llm_client or LLMClientAdapter(
-            provider="openai",
-            model="gpt-4o",
-        )
-        self.query_handler = QueryHandler(
+
+        # Read LLM configuration from environment if no client provided
+        if llm_client is None:
+            import os
+            provider = os.getenv("LLM_PROVIDER", "openai")
+            model = os.getenv("LLM_MODEL")
+            base_url = os.getenv("LLM_BASE_URL")
+
+            # Create client with environment configuration
+            self.llm_client = LLMClientAdapter(
+                provider=provider,
+                model=model,
+                base_url=base_url,
+            )
+        else:
+            self.llm_client = llm_client
+
+        # Phase 1: Use SearchUseCase instead of QueryHandler for integrated enhancements
+        self.search_usecase = SearchUseCase(
             store=self.store,
             llm_client=self.llm_client,
             use_reranker=True,
         )
+
+        # Phase 1: Initialize CitationEnhancer for enhanced citation formatting
+        self.citation_enhancer = CitationEnhancer()
 
         # Initialize judge
         self.judge = judge or LLMJudge(llm_client=self.llm_client)
 
         # Initialize persona manager
         self.persona_mgr = PersonaManager()
+
+        # Phase 2: Initialize PersonaAwareGenerator for persona-specific prompts
+        self.persona_generator = PersonaAwareGenerator()
 
         # Storage for results
         self.batch = EvaluationBatch(judge=self.judge)
@@ -306,94 +342,107 @@ class ParallelPersonaEvaluator:
     def _evaluate_single_query(self, query: PersonaQuery) -> JudgeResult:
         """Evaluate a single query through the RAG system.
 
+        Phase 2 Integration: Uses persona-aware prompts for better responses.
+
         Args:
             query: PersonaQuery to evaluate
 
         Returns:
             JudgeResult with 4-metric evaluation
         """
-        # Execute query through RAG system
-        options = QueryOptions(
+        # Phase 2: Generate persona-specific prompt
+        from src.rag.application.search_usecase import REGULATION_QA_PROMPT
+
+        persona_prompt = self.persona_generator.enhance_prompt(
+            base_prompt=REGULATION_QA_PROMPT,
+            persona=query.persona,
+            query=query.query
+        )
+
+        # Phase 1: Use SearchUseCase.ask() for integrated enhancements
+        # Phase 2: Pass persona-specific prompt via custom_prompt parameter
+        # This includes query expansion, reranking, and LLM answer generation
+        answer = self.search_usecase.ask(
+            question=query.query,
             top_k=5,
-            use_rerank=True,
-            force_mode="ask",
+            include_abolished=False,
+            custom_prompt=persona_prompt,
         )
 
-        result = self.query_handler.process_query(
-            query=query.query,
-            options=options,
-        )
+        # Extract answer text and sources
+        answer_text = answer.text
+        search_results = answer.sources
 
-        # Extract answer and sources
-        answer_text = result.content if result.success else ""
-        sources = []
+        # Phase 1: Use CitationEnhancer for enhanced citation extraction
+        sources = self._extract_enhanced_citations(search_results)
 
-        # Try to extract sources from result.data
-        sources_extracted = False
-        if result.data:
-            if "tool_results" in result.data:
-                for tool_result in result.data.get("tool_results", []):
-                    if tool_result.get("tool_name") == "search_regulations":
-                        result_data = tool_result.get("result")
-                        if result_data and isinstance(result_data, dict):
-                            search_results = result_data.get("results", [])
-                            for r in search_results[:5]:
-                                if isinstance(r, dict):
-                                    # Fix: Handle score field properly (avoid 0.0 falsy issue)
-                                    score = r.get("score", r.get("similarity", 0.5))
-                                    if score is None or score == 0:
-                                        score = r.get("similarity", 0.5)
-                                    sources.append(
-                                        {
-                                            "title": r.get("title", "")
-                                            or r.get("regulation_title", ""),
-                                            "text": (
-                                                r.get("text", "")
-                                                or r.get("content", "")
-                                            )[:200],
-                                            "rule_code": r.get("rule_code", ""),
-                                            "score": float(score),
-                                        }
-                                    )
-                            sources_extracted = True
-                            break
-
-        # Fallback: If no sources extracted, perform direct search
-        if not sources_extracted and self.query_handler._search_usecase:
-            try:
-                from src.rag.infrastructure.query_analyzer import Audience
-
-                search_results = self.query_handler._search_usecase.search(
-                    query_text=query.query,
-                    top_k=5,
-                    audience_override=Audience.ALL,
-                )
-                for r in search_results:
-                    score = getattr(r, "score", 0.5)
-                    sources.append(
-                        {
-                            "title": r.chunk.title,
-                            "text": r.chunk.text[:200],
-                            "rule_code": r.chunk.rule_code,
-                            "score": float(score),
-                        }
-                    )
-            except Exception as e:
-                import logging
-
-                logging.getLogger(__name__).warning(
-                    f"Failed to extract sources for query '{query.query}': {e}"
-                )
-
-        # Use LLM judge to evaluate
-        judge_result = self.judge.evaluate(
-            query=query.query,
-            answer=answer_text,
-            sources=sources,
-            expected_info=query.expected_info,
-        )
+        # Phase 1: Use evaluate_with_llm() for improved prompts with hallucination detection
+        try:
+            judge_result = self.judge.evaluate_with_llm(
+                query=query.query,
+                answer=answer_text,
+                sources=sources,
+                expected_info=query.expected_info,
+            )
+        except Exception as e:
+            # Fallback to rule-based evaluation if LLM evaluation fails
+            import logging
+            logging.getLogger(__name__).warning(
+                f"LLM-based evaluation failed, falling back to rule-based: {e}"
+            )
+            judge_result = self.judge.evaluate(
+                query=query.query,
+                answer=answer_text,
+                sources=sources,
+                expected_info=query.expected_info,
+            )
 
         return judge_result
+
+    def _extract_enhanced_citations(self, search_results: List) -> List[Dict[str, any]]:
+        """Extract enhanced citations from SearchResult objects.
+
+        Phase 1 Integration: Uses CitationEnhancer for accurate citation formatting.
+
+        Args:
+            search_results: List of SearchResult objects from SearchUseCase
+
+        Returns:
+            List of dict sources formatted for LLMJudge
+        """
+        sources = []
+
+        for search_result in search_results:
+            chunk = search_result.chunk
+            score = getattr(search_result, "score", 0.5)
+
+            # Use CitationEnhancer to validate and enhance citation
+            enhanced_citation = self.citation_enhancer.enhance_citation(
+                chunk=chunk,
+                confidence=float(score)
+            )
+
+            if enhanced_citation:
+                # Convert EnhancedCitation to dict format for LLMJudge compatibility
+                sources.append({
+                    "title": enhanced_citation.title or chunk.title,
+                    "text": enhanced_citation.text[:200] if enhanced_citation.text else chunk.text[:200],
+                    "rule_code": f"{enhanced_citation.regulation}_{enhanced_citation.article_number}",
+                    "score": float(enhanced_citation.confidence),
+                    # Additional metadata for debugging
+                    "regulation": enhanced_citation.regulation,
+                    "article_number": enhanced_citation.article_number,
+                })
+            else:
+                # Fallback: Use chunk data directly if citation enhancement fails
+                sources.append({
+                    "title": chunk.title,
+                    "text": chunk.text[:200],
+                    "rule_code": chunk.rule_code,
+                    "score": float(score),
+                })
+
+        return sources
 
     def save_results(self, filepath: Optional[str] = None) -> str:
         """Save evaluation results to JSON file.

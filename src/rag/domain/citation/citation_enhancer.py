@@ -75,7 +75,20 @@ class CitationEnhancer:
     - Citation formatting with regulation names
     - Validation against source chunks
     - Support for 별표, 서식 references
+    - Regulation title extraction for enhanced formatting
+    - Rule code validation for accuracy
     """
+
+    # Regulation suffixes for name extraction and validation
+    REGULATION_SUFFIXES = [
+        "규정",
+        "규칙",
+        "세칙",
+        "지침",
+        "요령",
+        "내규",
+        "학칙",
+    ]
 
     def __init__(self):
         """Initialize citation enhancer."""
@@ -245,3 +258,132 @@ class CitationEnhancer:
                 unique.append(citation)
 
         return unique
+
+    def extract_regulation_title(self, chunk: "Chunk") -> str:
+        """
+        Extract regulation title from chunk's parent_path.
+
+        Args:
+            chunk: Source chunk
+
+        Returns:
+            Regulation title (e.g., "교원인사규정")
+
+        Examples:
+            >>> chunk.parent_path = ["교원인사규정", "제2장", "제26조"]
+            >>> enhancer.extract_regulation_title(chunk)
+            "교원인사규정"
+        """
+        if not chunk.parent_path:
+            return ""
+
+        # Return first element of parent_path as regulation name
+        return chunk.parent_path[0] if chunk.parent_path else ""
+
+    def validate_rule_code(self, chunk: "Chunk") -> bool:
+        """
+        Validate that chunk has a valid rule_code.
+
+        A valid rule_code should:
+        - Not be empty
+        - Follow the pattern: regulation_article_number (e.g., "교원인사규정_제26조")
+
+        Args:
+            chunk: Source chunk
+
+        Returns:
+            True if rule_code is valid, False otherwise
+        """
+        if not chunk.rule_code or not chunk.rule_code.strip():
+            return False
+
+        # Check if rule_code contains regulation and article info
+        rule_code = chunk.rule_code.strip()
+
+        # Valid patterns:
+        # - "규정명_제X조"
+        # - "규정명_별표X"
+        # - "규정명_서식X"
+        has_underscore = "_" in rule_code
+        has_article = "제" in rule_code and "조" in rule_code
+        has_table = any(prefix in rule_code for prefix in ["별표", "서식"])
+
+        return has_underscore and (has_article or has_table)
+
+    def extract_citations(self, chunks: List["Chunk"]) -> List[EnhancedCitation]:
+        """
+        Extract enhanced citations from chunks with validation.
+
+        This method extends enhance_citations by:
+        1. Validating rule codes before creating citations
+        2. Extracting regulation titles from parent_path
+        3. Filtering out chunks with invalid citations
+
+        Args:
+            chunks: List of source chunks
+
+        Returns:
+            List of EnhancedCitation objects (only valid citations)
+
+        Examples:
+            >>> chunks = [chunk1, chunk2, chunk3]
+            >>> citations = enhancer.extract_citations(chunks)
+            >>> len(citations)
+            2  # Only chunks with valid rule_codes
+        """
+        valid_citations = []
+
+        for chunk in chunks:
+            # Validate rule code first
+            if not self.validate_rule_code(chunk):
+                logger.debug(
+                    f"Skipping chunk {chunk.id} due to invalid rule_code: {chunk.rule_code}"
+                )
+                continue
+
+            # Try to enhance citation
+            citation = self.enhance_citation(chunk, confidence=1.0)
+            if citation is not None:
+                # Ensure regulation title is properly extracted
+                if not citation.regulation:
+                    regulation = self.extract_regulation_title(chunk)
+                    if regulation:
+                        citation.regulation = regulation
+
+                valid_citations.append(citation)
+
+        return valid_citations
+
+    def format_citation_with_validation(
+        self, citation: EnhancedCitation, validate: bool = True
+    ) -> str:
+        """
+        Format citation with optional validation.
+
+        Args:
+            citation: Enhanced citation to format
+            validate: Whether to validate before formatting
+
+        Returns:
+            Formatted citation string
+
+        Examples:
+            >>> citation = EnhancedCitation(
+            ...     regulation="교원인사규정",
+            ...     article_number="제26조",
+            ...     chunk_id="c1",
+            ...     confidence=0.9
+            ... )
+            >>> enhancer.format_citation_with_validation(citation)
+            "「교원인사규정」 제26조"
+        """
+        if validate:
+            # Validate citation has required fields
+            if not citation.regulation or not citation.article_number:
+                logger.warning(
+                    f"Invalid citation: regulation={citation.regulation}, "
+                    f"article_number={citation.article_number}"
+                )
+                return ""
+
+        return citation.format()

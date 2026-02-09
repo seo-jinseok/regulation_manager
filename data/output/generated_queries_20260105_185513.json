@@ -1,0 +1,147 @@
+{
+  "version": "1.0.0",
+  "generated_at": "2026-01-05T18:55:13.898540",
+  "total_queries": 20,
+  "queries": [
+    {
+      "query": "장학금/등록금 어떻게 해야 해?",
+      "persona": "student",
+      "category": "장학금/등록금",
+      "generated_at": "2026-01-05T18:55:13.896682",
+      "method": "fallback_template"
+    },
+    {
+      "query": "나 수강신청/학점 하고 싶은데",
+      "persona": "student",
+      "category": "수강신청/학점",
+      "generated_at": "2026-01-05T18:55:13.896686",
+      "method": "fallback_template"
+    },
+    {
+      "query": "나 동아리/학생회 하고 싶은데",
+      "persona": "student",
+      "category": "동아리/학생회",
+      "generated_at": "2026-01-05T18:55:13.896688",
+      "method": "fallback_template"
+    },
+    {
+      "query": "기숙사/생활관 관련 규정 알려줘",
+      "persona": "student",
+      "category": "기숙사/생활관",
+      "generated_at": "2026-01-05T18:55:13.896689",
+      "method": "fallback_template"
+    },
+    {
+      "query": "수강신청/학점 때문에 너무 힘들어",
+      "persona": "student",
+      "category": "수강신청/학점",
+      "generated_at": "2026-01-05T18:55:13.896690",
+      "method": "fallback_template"
+    },
+    {
+      "query": "휴직/병가 절차 알려줘",
+      "persona": "faculty",
+      "category": "휴직/병가",
+      "generated_at": "2026-01-05T18:55:13.897369",
+      "method": "fallback_template"
+    },
+    {
+      "query": "겸직/겸임 하고 싶어",
+      "persona": "faculty",
+      "category": "겸직/겸임",
+      "generated_at": "2026-01-05T18:55:13.897373",
+      "method": "fallback_template"
+    },
+    {
+      "query": "강의/책임시수 하고 싶어",
+      "persona": "faculty",
+      "category": "강의/책임시수",
+      "generated_at": "2026-01-05T18:55:13.897375",
+      "method": "fallback_template"
+    },
+    {
+      "query": "연구년/안식년 하고 싶어",
+      "persona": "faculty",
+      "category": "연구년/안식년",
+      "generated_at": "2026-01-05T18:55:13.897376",
+      "method": "fallback_template"
+    },
+    {
+      "query": "승진/재임용 절차 알려줘",
+      "persona": "faculty",
+      "category": "승진/재임용",
+      "generated_at": "2026-01-05T18:55:13.897377",
+      "method": "fallback_template"
+    },
+    {
+      "query": "수당/급여 규정 알려줘",
+      "persona": "staff",
+      "category": "수당/급여",
+      "generated_at": "2026-01-05T18:55:13.897958",
+      "method": "fallback_template"
+    },
+    {
+      "query": "수당/급여 어떻게 신청해?",
+      "persona": "staff",
+      "category": "수당/급여",
+      "generated_at": "2026-01-05T18:55:13.897961",
+      "method": "fallback_template"
+    },
+    {
+      "query": "육아휴직/육아 쓰고 싶어",
+      "persona": "staff",
+      "category": "육아휴직/육아",
+      "generated_at": "2026-01-05T18:55:13.897962",
+      "method": "fallback_template"
+    },
+    {
+      "query": "수당/급여 쓰고 싶어",
+      "persona": "staff",
+      "category": "수당/급여",
+      "generated_at": "2026-01-05T18:55:13.897963",
+      "method": "fallback_template"
+    },
+    {
+      "query": "수당/급여 쓰고 싶어",
+      "persona": "staff",
+      "category": "수당/급여",
+      "generated_at": "2026-01-05T18:55:13.897963",
+      "method": "fallback_template"
+    },
+    {
+      "query": "주차/시설 어디에 문의해야 해?",
+      "persona": "common",
+      "category": "주차/시설",
+      "generated_at": "2026-01-05T18:55:13.898497",
+      "method": "fallback_template"
+    },
+    {
+      "query": "인권센터/고충처리 어떻게 해?",
+      "persona": "common",
+      "category": "인권센터/고충처리",
+      "generated_at": "2026-01-05T18:55:13.898499",
+      "method": "fallback_template"
+    },
+    {
+      "query": "주차/시설 어떻게 해?",
+      "persona": "common",
+      "category": "주차/시설",
+      "generated_at": "2026-01-05T18:55:13.898500",
+      "method": "fallback_template"
+    },
+    {
+      "query": "주차/시설 어디에 문의해야 해?",
+      "persona": "common",
+      "category": "주차/시설",
+      "generated_at": "2026-01-05T18:55:13.898502",
+      "method": "fallback_template"
+    },
+    {
+      "query": "인권센터/고충처리 어디에 문의해야 해?",
+      "persona": "common",
+      "category": "인권센터/고충처리",
+      "generated_at": "2026-01-05T18:55:13.898503",
+      "method": "fallback_template"
+    }
+  ]
+}

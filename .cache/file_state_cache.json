@@ -1,0 +1,37 @@
+{
+  "data/input/규정집9-343(20250909).hwp": {
+    "hwp_hash": "448cafd2172a53d3274871b85bc64ffc8e569271dcd193c1f0666254639605c4",
+    "raw_md_hash": "d6b5cf8e1af2ed8f13f9b2ae0054667e6d9c9a89c71d827a850896ee0d0616d2",
+    "pipeline_signature": "v5|rules:2e12c95724c375dfff3771af21e38aa0ecbb54b69e67174b3c07da1c826e0cce|llm:disabled",
+    "final_json_hash": "e86d9117c519fcd92803abc99c7cfd1d2a58e784fc1a2dc72118983b4c92fc5d",
+    "metadata_hash": "1fd0f532c17fa64ce5a28daa8c3e38726b35d3101aac1a5a433ffea5a008ab4c"
+  },
+  "tmp_integration_test/test.hwp": {
+    "hwp_hash": "bf0ecbdb9b814248d086c9b69cf26182d9d4138f2ad3d0637c4555fc8cbf68e5",
+    "raw_md_hash": "52c338a6f49b93cf5baee63fd936343e18ce5c7dc700fc40ecd88f641ad90c59",
+    "pipeline_signature": "v5|rules:2e12c95724c375dfff3771af21e38aa0ecbb54b69e67174b3c07da1c826e0cce|llm:disabled",
+    "final_json_hash": "00715d127e1a8d13f95ab5e17afc61caab07eca8130839f35a1d27b612a0ec0e",
+    "metadata_hash": "4ed2225ba0dbbd68487f9e4e6ae4d7463db3c31fbf2306d51154752f2aacf5a7"
+  },
+  "data/input/규정집9-343(20250909).hwp": {
+    "hwp_hash": "448cafd2172a53d3274871b85bc64ffc8e569271dcd193c1f0666254639605c4",
+    "raw_md_hash": "d6b5cf8e1af2ed8f13f9b2ae0054667e6d9c9a89c71d827a850896ee0d0616d2",
+    "pipeline_signature": "v5|rules:2e12c95724c375dfff3771af21e38aa0ecbb54b69e67174b3c07da1c826e0cce|llm:disabled",
+    "final_json_hash": "b0742188e4875318d126a59a117ad8c686158aa79fcd1ca030d5f9a8638f1651",
+    "metadata_hash": "000a584b6c4382b8cb6ed019755d353d3d9a421a12c5a09368376adb1440d0e8"
+  },
+  "data/input/규정집9-349(20251202).hwp": {
+    "hwp_hash": "7712ed5b123d85e98a9c62b74288932b03f98719f8407da2239f2d1a02bbb6f0",
+    "raw_md_hash": "f9c92716e2b808ad81139320af4974af390704869c1602bb019252e4e723cdd5",
+    "pipeline_signature": "v5|rules:2e12c95724c375dfff3771af21e38aa0ecbb54b69e67174b3c07da1c826e0cce|llm:disabled",
+    "final_json_hash": "d1c5b7cd25a7a24ba54735d9a4bfe48000b82faba34e0436581f9cc234209562",
+    "metadata_hash": "80974d7d22e9fca4548669c14a5d96c9719e181dfd39b6343ab009a0b6418072"
+  },
+  "data/input/규정집9-350(20251209).hwp": {
+    "hwp_hash": "422396bfdee4807c74391b076f3ecb49e34ac600afb2cc685187fe424492b210",
+    "raw_md_hash": "7532aa400666f0cbc2631b3ba47b7976496a4d86dad510a7fc72f197c9214961",
+    "pipeline_signature": "v5|rules:2e12c95724c375dfff3771af21e38aa0ecbb54b69e67174b3c07da1c826e0cce|llm:disabled",
+    "final_json_hash": "ad6b707c37425d9f80feea7ad4a54c98061b905532487dd91adeb870a7f6c14c",
+    "metadata_hash": "9daeea48eae2eae22a1f95841a03525349953fc29adf69bc725593b20b8185ad"
+  }
+}

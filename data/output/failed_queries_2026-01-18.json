@@ -1,0 +1,68 @@
+{
+  "test_session": "2026-01-18",
+  "total_failed": 4,
+  "success_rate": "66.7%",
+  "failures": [
+    {
+      "query": "장학금 받으려면 성적이 몇 점이어야 해?",
+      "persona": "신입생",
+      "difficulty": "중간",
+      "failure_type": "INCOMPLETE",
+      "intent_score": 0.6,
+      "quality_score": 3.3,
+      "root_cause": "장학금 종류별 성적 기준이 개별 세칙에 분산되어 검색 안 됨",
+      "improvement": {
+        "type": "intents.json",
+        "action": "장학금_성적_기준 인텐트 추가",
+        "keywords": ["장학금", "성적", "기준", "점수", "학점"]
+      }
+    },
+    {
+      "query": "졸업학점이 몇 학점이야?",
+      "persona": "재학생",
+      "difficulty": "쉬움",
+      "failure_type": "INCOMPLETE",
+      "intent_score": 0.7,
+      "quality_score": 3.7,
+      "root_cause": "검색 반복 횟수 초과 오류 발생",
+      "improvement": {
+        "type": "search_logic",
+        "action": "단순 쿼리 처리 로직 개선",
+        "keywords": ["졸업학점", "졸업", "학점", "이수학점"]
+      }
+    },
+    {
+      "query": "졸업하려면 영어 점수도 필요해?",
+      "persona": "재학생",
+      "difficulty": "어려움",
+      "failure_type": "INCOMPLETE",
+      "intent_score": 0.85,
+      "quality_score": 3.7,
+      "root_cause": "졸업 요건 전체 목록이 검색되지 않음",
+      "improvement": {
+        "type": "intents.json",
+        "action": "졸업_요건 통합 인텐트 추가",
+        "keywords": ["졸업", "요건", "영어", "자격", "조건"]
+      }
+    },
+    {
+      "query": "교수 승진 기준이 어떻게 됩니까?",
+      "persona": "신임교수",
+      "difficulty": "중간",
+      "failure_type": "INCOMPLETE",
+      "intent_score": 0.6,
+      "quality_score": 3.1,
+      "root_cause": "승진 누락(부정적 맥락)과 승진 요건(긍정적 맥락) 구분 미흡",
+      "improvement": {
+        "type": "intents.json",
+        "action": "승진_요건 인텐트 추가 (긍정적 맥락)",
+        "keywords": ["승진", "요건", "기준", "업적", "심사", "자격"]
+      }
+    }
+  ],
+  "summary": {
+    "intents_needed": ["장학금_성적_기준", "졸업_요건", "승진_요건"],
+    "search_logic_fix": true,
+    "priority": "high"
+  }
+}

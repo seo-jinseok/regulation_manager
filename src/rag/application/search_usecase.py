@@ -289,6 +289,9 @@ class SearchUseCase:
         self._enable_query_expansion = config.enable_query_expansion
         self._query_expander = None  # Lazy initialized
 
+        # Phase 1 Integration: Query Expansion Service
+        self._query_expansion_service = None  # Will be initialized if enabled
+
         # Multi-hop Question Answering components
         self._enable_multi_hop = getattr(config, "enable_multi_hop", True)
         self._multi_hop_handler = None  # Lazy initialized
@@ -1625,9 +1628,31 @@ class SearchUseCase:
                 enable_cache=True,
             )
 
+    def _ensure_query_expansion_service(self) -> None:
+        """Initialize QueryExpansionService if not already initialized (Phase 1)."""
+        if self._query_expansion_service is None and self._enable_query_expansion:
+            try:
+                from ..application.query_expansion import QueryExpansionService
+
+                # Initialize QueryExpansionService with synonym-based expansion
+                self._query_expansion_service = QueryExpansionService(
+                    store=self.store,
+                    synonym_service=None,  # Will use built-in academic synonyms
+                    llm_client=None,  # No LLM needed for synonym-based expansion
+                )
+                logger.debug("QueryExpansionService initialized for synonym-based expansion")
+            except ImportError as e:
+                logger.warning(f"Failed to import QueryExpansionService: {e}")
+                self._query_expansion_service = None
+            except Exception as e:
+                logger.warning(f"Failed to initialize QueryExpansionService: {e}")
+                self._query_expansion_service = None
+
     def _apply_dynamic_expansion(self, query_text: str) -> tuple[str, list[str]]:
         """
-        Apply dynamic query expansion using LLM.
+        Apply dynamic query expansion using LLM and QueryExpansionService.
+
+        Phase 1 Integration: Uses QueryExpansionService for synonym-based expansion.
 
         Args:
             query_text: Original query text.
@@ -1638,6 +1663,44 @@ class SearchUseCase:
         if not self._enable_query_expansion:
             return query_text, []
 
+        # Phase 1: Try QueryExpansionService first (synonym-based expansion)
+        self._ensure_query_expansion_service()
+        if self._query_expansion_service is not None:
+            try:
+                from ..application.query_expansion import ExpandedQuery
+
+                # Use synonym-based expansion (fast, no LLM required)
+                expanded_queries = self._query_expansion_service.expand_query(
+                    query_text,
+                    max_variants=3,
+                    method="synonym"  # Use synonym-based expansion
+                )
+
+                if expanded_queries and len(expanded_queries) > 1:
+                    # Extract keywords from expanded queries
+                    keywords = []
+                    for exp in expanded_queries[1:]:  # Skip original query
+                        # Extract key terms from expanded query
+                        exp_lower = exp.expanded_text.lower()
+                        query_lower = query_text.lower()
+
+                        # Find new words not in original query
+                        new_words = [
+                            word for word in exp_lower.split()
+                            if word not in query_lower and len(word) > 1
+                        ]
+                        keywords.extend(new_words[:3])  # Limit to 3 keywords per expansion
+
+                    if keywords:
+                        logger.debug(
+                            f"QueryExpansionService: {query_text[:30]}... -> keywords={keywords[:5]}"
+                        )
+                        return query_text, keywords[:7]  # Limit total keywords
+
+            except Exception as e:
+                logger.warning(f"QueryExpansionService failed: {e}")
+
+        # Fallback to existing LLM-based expansion
         self._ensure_query_expander()
         if self._query_expander is None:
             return query_text, []
@@ -2029,6 +2092,7 @@ class SearchUseCase:
         history_text: Optional[str] = None,
         search_query: Optional[str] = None,
         debug: bool = False,
+        custom_prompt: Optional[str] = None,
     ) -> Answer:
         """
         Ask a question and get an LLM-generated answer.
@@ -2042,6 +2106,7 @@ class SearchUseCase:
             history_text: Optional conversation context for the LLM.
             search_query: Optional override for retrieval query.
             debug: Whether to print debug info (prompt).
+            custom_prompt: Optional custom system prompt (e.g., for persona-specific responses).
 
         Returns:
             Answer with generated text and sources.
@@ -2115,8 +2180,13 @@ class SearchUseCase:
                 # Fall through to normal single-hop processing
 
         # Get relevant chunks
+        # Phase 1 Integration: Apply query expansion before search
+        expanded_query, expansion_keywords = self._apply_dynamic_expansion(retrieval_query)
+        if expansion_keywords:
+            logger.debug(f"Query expansion applied: {retrieval_query[:30]}... -> keywords={expansion_keywords[:5]}")
+
         results = self.search(
-            retrieval_query,
+            expanded_query,  # Use expanded query for search
             filter=filter,
             top_k=top_k * 3,
             include_abolished=include_abolished,
@@ -2147,7 +2217,7 @@ class SearchUseCase:
 
         if debug:
             logger.debug("=" * 40 + " PROMPT " + "=" * 40)
-            logger.debug(f"[System]\n{REGULATION_QA_PROMPT}\n")
+            logger.debug(f"[System]\n{custom_prompt or REGULATION_QA_PROMPT}\n")
             logger.debug(f"[User]\n{user_message}")
             logger.debug("=" * 80)
 
@@ -2157,6 +2227,7 @@ class SearchUseCase:
             context=context,
             history_text=history_text,
             debug=debug,
+            custom_prompt=custom_prompt,
         )
 
         # Self-RAG: Start async support verification
@@ -2168,8 +2239,13 @@ class SearchUseCase:
         # Compute confidence based on search scores
         confidence = self._compute_confidence(filtered_results)
 
+        # Phase 1 Integration: Enhance citations in answer
+        enhanced_answer_text = self._enhance_answer_citations(
+            answer_text, filtered_results
+        )
+
         return Answer(
-            text=answer_text,
+            text=enhanced_answer_text,
             sources=filtered_results,
             confidence=confidence,
         )
@@ -2334,8 +2410,14 @@ class SearchUseCase:
 
         # Get relevant chunks (same as ask)
         retrieval_query = search_query or question
+
+        # Phase 1 Integration: Apply query expansion before search
+        expanded_query, expansion_keywords = self._apply_dynamic_expansion(retrieval_query)
+        if expansion_keywords:
+            logger.debug(f"Query expansion applied: {retrieval_query[:30]}... -> keywords={expansion_keywords[:5]}")
+
         results = self.search(
-            retrieval_query,
+            expanded_query,  # Use expanded query for search
             filter=filter,
             top_k=top_k * 3,
             include_abolished=include_abolished,
@@ -2369,12 +2451,25 @@ class SearchUseCase:
         }
 
         # Stream LLM response token by token
+        answer_tokens = []
         for token in self.llm.stream_generate(
             system_prompt=REGULATION_QA_PROMPT,
             user_message=user_message,
             temperature=0.0,
         ):
+            answer_tokens.append(token)
             yield {"type": "token", "content": token}
+
+        # Phase 1 Integration: Apply citation enhancement after answer generation
+        answer_text = "".join(answer_tokens)
+        enhanced_answer = self._enhance_answer_citations(
+            answer_text=answer_text,
+            sources=filtered_results,
+        )
+
+        # If enhancement modified the answer, yield the enhanced version
+        if enhanced_answer != answer_text:
+            yield {"type": "enhancement", "content": enhanced_answer}
 
     def _build_user_message(
         self,
@@ -2825,6 +2920,59 @@ class SearchUseCase:
         combined = (abs_confidence * 0.7) + (spread_confidence * 0.3)
 
         return max(0.0, min(1.0, combined))
+
+    def _enhance_answer_citations(
+        self, answer_text: str, sources: List[SearchResult]
+    ) -> str:
+        """
+        Enhance citations in the answer text using CitationEnhancer (Phase 1).
+
+        Args:
+            answer_text: Original answer text
+            sources: Search results used for the answer
+
+        Returns:
+            Answer text with enhanced citations
+        """
+        try:
+            from ..domain.citation.citation_enhancer import CitationEnhancer
+
+            enhancer = CitationEnhancer()
+
+            # Extract chunks from sources
+            chunks = [source.chunk for source in sources]
+
+            # Enhance citations
+            enhanced_citations = enhancer.enhance_citations(chunks)
+
+            if not enhanced_citations:
+                # No valid citations found, return original answer
+                return answer_text
+
+            # Build citation string
+            citation_str = enhancer.format_citations(enhanced_citations)
+
+            # Check if answer already has citations
+            has_citations = any(
+                marker in answer_text
+                for marker in ["「", "제", "조", "규정"]
+            )
+
+            # If answer doesn't have proper citations, append them
+            if not has_citations and citation_str:
+                # Add citations at the end
+                enhanced_answer = f"{answer_text}\n\n**참고 규정:** {citation_str}"
+                logger.debug(f"Enhanced answer with citations: {citation_str}")
+                return enhanced_answer
+
+            return answer_text
+
+        except ImportError:
+            logger.warning("CitationEnhancer not available, skipping citation enhancement")
+            return answer_text
+        except Exception as e:
+            logger.warning(f"Citation enhancement failed: {e}")
+            return answer_text
 
     def _get_cache_key(
         self,

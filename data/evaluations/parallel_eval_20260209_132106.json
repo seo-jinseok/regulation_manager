@@ -1,0 +1,602 @@
+{
+  "timestamp": "2026-02-09T13:21:06.880860",
+  "personas": {
+    "student-undergraduate": {
+      "persona": "Undergraduate Student",
+      "queries_tested": 5,
+      "avg_score": 0.8035180281810386,
+      "pass_rate": 1.0,
+      "issues": {
+        "일부 정보 부정확": 2,
+        "문서 관련성 낮음": 2,
+        "규정 인용 부족": 1
+      },
+      "results": [
+        {
+          "query": "휴학 방법 알려줘",
+          "answer": "[Mock Answer for: 휴학 방법 알려줘]",
+          "accuracy": 0.7658071717874182,
+          "completeness": 0.8536430834954177,
+          "citations": 0.8894428216162632,
+          "context_relevance": 0.7035331257611112,
+          "overall_score": 0.8031065506650525,
+          "passed": true,
+          "issues": [
+            "일부 정보 부정확",
+            "문서 관련성 낮음"
+          ],
+          "strengths": [
+            "포괄적인 답변",
+            "적절한 규정 인용"
+          ]
+        },
+        {
+          "query": "성적 조회 어떻게 해요?",
+          "answer": "[Mock Answer for: 성적 조회 어떻게 해요?]",
+          "accuracy": 0.8689074525309572,
+          "completeness": 0.7540287516518568,
+          "citations": 0.5774909168114359,
+          "context_relevance": 0.8131715333864262,
+          "overall_score": 0.753399663595169,
+          "passed": true,
+          "issues": [
+            "규정 인용 부족"
+          ],
+          "strengths": [
+            "정확한 정보 제공",
+            "포괄적인 답변"
+          ]
+        },
+        {
+          "query": "장학금 신청 절차가 궁금해요",
+          "answer": "[Mock Answer for: 장학금 신청 절차가 궁금해요]",
+          "accuracy": 0.6952118839705396,
+          "completeness": 0.8393168945688196,
+          "citations": 0.7654166614858374,
+          "context_relevance": 0.7003823921371772,
+          "overall_score": 0.7500819580405934,
+          "passed": true,
+          "issues": [
+            "일부 정보 부정확",
+            "문서 관련성 낮음"
+          ],
+          "strengths": [
+            "포괄적인 답변",
+            "적절한 규정 인용"
+          ]
+        },
+        {
+          "query": "수강신청 기간이 언제인가요?",
+          "answer": "[Mock Answer for: 수강신청 기간이 언제인가요?]",
+          "accuracy": 0.8546465275103465,
+          "completeness": 0.8781342759596242,
+          "citations": 0.8021144442245614,
+          "context_relevance": 0.8697867131599939,
+          "overall_score": 0.8511704902136314,
+          "passed": true,
+          "issues": [],
+          "strengths": [
+            "정확한 정보 제공",
+            "포괄적인 답변",
+            "적절한 규정 인용"
+          ]
+        },
+        {
+          "query": "등록금 납부 방법 알려주세요",
+          "answer": "[Mock Answer for: 등록금 납부 방법 알려주세요]",
+          "accuracy": 0.8195604598431652,
+          "completeness": 0.8257486107680503,
+          "citations": 0.8814264557262613,
+          "context_relevance": 0.9125903872255077,
+          "overall_score": 0.8598314783907461,
+          "passed": true,
+          "issues": [],
+          "strengths": [
+            "정확한 정보 제공",
+            "포괄적인 답변",
+            "적절한 규정 인용"
+          ]
+        }
+      ]
+    },
+    "student-graduate": {
+      "persona": "Graduate Student",
+      "queries_tested": 5,
+      "avg_score": 0.7716240651114887,
+      "pass_rate": 0.8,
+      "issues": {
+        "정보 불충분": 5,
+        "규정 인용 부족": 1,
+        "일부 정보 부정확": 2,
+        "문서 관련성 낮음": 1
+      },
+      "results": [
+        {
+          "query": "연구년 신청 자격 요건이 어떻게 되나요?",
+          "answer": "[Mock Answer for: 연구년 신청 자격 요건이 어떻게 되나요?]",
+          "accuracy": 0.9476511933781852,
+          "completeness": 0.6216774938817481,
+          "citations": 0.6743478991402702,
+          "context_relevance": 0.9087792208095309,
+          "overall_score": 0.7881139518024336,
+          "passed": true,
+          "issues": [
+            "정보 불충분",
+            "규정 인용 부족"
+          ],
+          "strengths": [
+            "정확한 정보 제공"
+          ]
+        },
+        {
+          "query": "연구비 지원 관련 규정 확인 부탁드립니다",
+          "answer": "[Mock Answer for: 연구비 지원 관련 규정 확인 부탁드립니다]",
+          "accuracy": 0.6644291339903114,
+          "completeness": 0.6368447860499351,
+          "citations": 0.8264366311225041,
+          "context_relevance": 0.8675783640422297,
+          "overall_score": 0.748822228801245,
+          "passed": false,
+          "issues": [
+            "일부 정보 부정확",
+            "정보 불충분"
+          ],
+          "strengths": [
+            "적절한 규정 인용"
+          ]
+        },
+        {
+          "query": "논문 심사 절차 상세히 알려주세요",
+          "answer": "[Mock Answer for: 논문 심사 절차 상세히 알려주세요]",
+          "accuracy": 0.7295887232842393,
+          "completeness": 0.706876014253191,
+          "citations": 0.8108054347732789,
+          "context_relevance": 0.9331582477106252,
+          "overall_score": 0.7951071050053335,
+          "passed": true,
+          "issues": [
+            "일부 정보 부정확",
+            "정보 불충분"
+          ],
+          "strengths": [
+            "적절한 규정 인용"
+          ]
+        },
+        {
+          "query": "조교 신청 방법이 있나요?",
+          "answer": "[Mock Answer for: 조교 신청 방법이 있나요?]",
+          "accuracy": 0.8558260572850677,
+          "completeness": 0.604400994891208,
+          "citations": 0.7687843378675514,
+          "context_relevance": 0.7726990023879277,
+          "overall_score": 0.7504275981079387,
+          "passed": true,
+          "issues": [
+            "정보 불충분",
+            "문서 관련성 낮음"
+          ],
+          "strengths": [
+            "정확한 정보 제공",
+            "적절한 규정 인용"
+          ]
+        },
+        {
+          "query": "대학원 등록금 납부 기한이 언제까지인가요?",
+          "answer": "[Mock Answer for: 대학원 등록금 납부 기한이 언제까지인가요?]",
+          "accuracy": 0.9243011822102836,
+          "completeness": 0.6224463466503538,
+          "citations": 0.7276026237739429,
+          "context_relevance": 0.8282476147273912,
+          "overall_score": 0.7756494418404929,
+          "passed": true,
+          "issues": [
+            "정보 불충분"
+          ],
+          "strengths": [
+            "정확한 정보 제공",
+            "적절한 규정 인용"
+          ]
+        }
+      ]
+    },
+    "professor": {
+      "persona": "Professor",
+      "queries_tested": 5,
+      "avg_score": 0.8050872687255743,
+      "pass_rate": 0.6,
+      "issues": {
+        "일부 정보 부정확": 3,
+        "문서 관련성 낮음": 3,
+        "규정 인용 부족": 1
+      },
+      "results": [
+        {
+          "query": "연구년 관련 조항 확인 필요",
+          "answer": "[Mock Answer for: 연구년 관련 조항 확인 필요]",
+          "accuracy": 0.9296426850925711,
+          "completeness": 0.8312169399498901,
+          "citations": 0.8154082651843522,
+          "context_relevance": 0.9209824531441237,
+          "overall_score": 0.8743125858427343,
+          "passed": true,
+          "issues": [],
+          "strengths": [
+            "정확한 정보 제공",
+            "포괄적인 답변",
+            "적절한 규정 인용"
+          ]
+        },
+        {
+          "query": "승진 심사 기준 상세히",
+          "answer": "[Mock Answer for: 승진 심사 기준 상세히]",
+          "accuracy": 0.7978984794992823,
+          "completeness": 0.8094080461687767,
+          "citations": 0.8423792495796885,
+          "context_relevance": 0.7022486731327162,
+          "overall_score": 0.7879836120951159,
+          "passed": true,
+          "issues": [
+            "일부 정보 부정확",
+            "문서 관련성 낮음"
+          ],
+          "strengths": [
+            "포괄적인 답변",
+            "적절한 규정 인용"
+          ]
+        },
+        {
+          "query": "연구비 집행 관련 규정 해석 부탁드립니다",
+          "answer": "[Mock Answer for: 연구비 집행 관련 규정 해석 부탁드립니다]",
+          "accuracy": 0.7500563938601057,
+          "completeness": 0.8624080141686293,
+          "citations": 0.5686961366076254,
+          "context_relevance": 0.7760724037639504,
+          "overall_score": 0.7393082371000776,
+          "passed": false,
+          "issues": [
+            "일부 정보 부정확",
+            "규정 인용 부족",
+            "문서 관련성 낮음"
+          ],
+          "strengths": [
+            "포괄적인 답변"
+          ]
+        },
+        {
+          "query": "교원 인사 규정 예외 사항 확인 필요",
+          "answer": "[Mock Answer for: 교원 인사 규정 예외 사항 확인 필요]",
+          "accuracy": 0.8159608202014605,
+          "completeness": 0.8951459705111802,
+          "citations": 0.8846554997724123,
+          "context_relevance": 0.9495081598324737,
+          "overall_score": 0.8863176125793817,
+          "passed": true,
+          "issues": [],
+          "strengths": [
+            "정확한 정보 제공",
+            "포괄적인 답변",
+            "적절한 규정 인용"
+          ]
+        },
+        {
+          "query": "Sabbatical leave 관련 규정 안내",
+          "answer": "[Mock Answer for: Sabbatical leave 관련 규정 안내]",
+          "accuracy": 0.7193899105086305,
+          "completeness": 0.7627211492982539,
+          "citations": 0.7366496388480621,
+          "context_relevance": 0.7312964853873032,
+          "overall_score": 0.7375142960105625,
+          "passed": false,
+          "issues": [
+            "일부 정보 부정확",
+            "문서 관련성 낮음"
+          ],
+          "strengths": [
+            "포괄적인 답변",
+            "적절한 규정 인용"
+          ]
+        }
+      ]
+    },
+    "staff-admin": {
+      "persona": "Administrative Staff",
+      "queries_tested": 5,
+      "avg_score": 0.7848433798112129,
+      "pass_rate": 1.0,
+      "issues": {
+        "일부 정보 부정확": 4,
+        "정보 불충분": 4,
+        "문서 관련성 낮음": 2,
+        "규정 인용 부족": 2
+      },
+      "results": [
+        {
+          "query": "휴가 신청 업무 처리 절차 확인",
+          "answer": "[Mock Answer for: 휴가 신청 업무 처리 절차 확인]",
+          "accuracy": 0.7935697085187966,
+          "completeness": 0.6898597530332742,
+          "citations": 0.8234036612215668,
+          "context_relevance": 0.7171732422951917,
+          "overall_score": 0.7560015912672073,
+          "passed": true,
+          "issues": [
+            "일부 정보 부정확",
+            "정보 불충분",
+            "문서 관련성 낮음"
+          ],
+          "strengths": [
+            "적절한 규정 인용"
+          ]
+        },
+        {
+          "query": "급여 지급일이 언제인가요?",
+          "answer": "[Mock Answer for: 급여 지급일이 언제인가요?]",
+          "accuracy": 0.934192845482058,
+          "completeness": 0.7466426438227319,
+          "citations": 0.8316842017594417,
+          "context_relevance": 0.8576421591133325,
+          "overall_score": 0.8425404625443911,
+          "passed": true,
+          "issues": [
+            "정보 불충분"
+          ],
+          "strengths": [
+            "정확한 정보 제공",
+            "적절한 규정 인용"
+          ]
+        },
+        {
+          "query": "연수 참여 절차 안내",
+          "answer": "[Mock Answer for: 연수 참여 절차 안내]",
+          "accuracy": 0.7942973723839439,
+          "completeness": 0.6759953202444167,
+          "citations": 0.8901439327062827,
+          "context_relevance": 0.7690692036087374,
+          "overall_score": 0.7823764572358451,
+          "passed": true,
+          "issues": [
+            "일부 정보 부정확",
+            "정보 불충분",
+            "문서 관련성 낮음"
+          ],
+          "strengths": [
+            "적절한 규정 인용"
+          ]
+        },
+        {
+          "query": "사무용품 신청 서식 양식 알려주세요",
+          "answer": "[Mock Answer for: 사무용품 신청 서식 양식 알려주세요]",
+          "accuracy": 0.7282004908562012,
+          "completeness": 0.8032101970445927,
+          "citations": 0.6291266202004268,
+          "context_relevance": 0.9429729366647128,
+          "overall_score": 0.7758775611914834,
+          "passed": true,
+          "issues": [
+            "일부 정보 부정확",
+            "규정 인용 부족"
+          ],
+          "strengths": [
+            "포괄적인 답변"
+          ]
+        },
+        {
+          "query": "시설 사용 승인 권한자가 누구인가요?",
+          "answer": "[Mock Answer for: 시설 사용 승인 권한자가 누구인가요?]",
+          "accuracy": 0.7862221921124566,
+          "completeness": 0.6700939437390827,
+          "citations": 0.6745805158839991,
+          "context_relevance": 0.9387866555330107,
+          "overall_score": 0.7674208268171372,
+          "passed": true,
+          "issues": [
+            "일부 정보 부정확",
+            "정보 불충분",
+            "규정 인용 부족"
+          ],
+          "strengths": []
+        }
+      ]
+    },
+    "parent": {
+      "persona": "Parent",
+      "queries_tested": 5,
+      "avg_score": 0.7539483169252186,
+      "pass_rate": 0.6,
+      "issues": {
+        "정보 불충분": 5,
+        "규정 인용 부족": 1,
+        "문서 관련성 낮음": 2,
+        "일부 정보 부정확": 2
+      },
+      "results": [
+        {
+          "query": "자녀 등록금 관련해서 알고 싶어요",
+          "answer": "[Mock Answer for: 자녀 등록금 관련해서 알고 싶어요]",
+          "accuracy": 0.819160270483271,
+          "completeness": 0.6958056122143296,
+          "citations": 0.6010420180748843,
+          "context_relevance": 0.7175339129977357,
+          "overall_score": 0.7083854534425551,
+          "passed": false,
+          "issues": [
+            "정보 불충분",
+            "규정 인용 부족",
+            "문서 관련성 낮음"
+          ],
+          "strengths": [
+            "정확한 정보 제공"
+          ]
+        },
+        {
+          "query": "장학금 부모님도 알아야 하나요?",
+          "answer": "[Mock Answer for: 장학금 부모님도 알아야 하나요?]",
+          "accuracy": 0.7130418658578438,
+          "completeness": 0.7241736142555527,
+          "citations": 0.8188940658642754,
+          "context_relevance": 0.7921553916338272,
+          "overall_score": 0.7620662344028748,
+          "passed": true,
+          "issues": [
+            "일부 정보 부정확",
+            "정보 불충분",
+            "문서 관련성 낮음"
+          ],
+          "strengths": [
+            "적절한 규정 인용"
+          ]
+        },
+        {
+          "query": "기숙사 신청 방법 알려주세요",
+          "answer": "[Mock Answer for: 기숙사 신청 방법 알려주세요]",
+          "accuracy": 0.8099624605498825,
+          "completeness": 0.6819417337619894,
+          "citations": 0.7205418593437717,
+          "context_relevance": 0.8013058308287111,
+          "overall_score": 0.7534379711210886,
+          "passed": true,
+          "issues": [
+            "정보 불충분"
+          ],
+          "strengths": [
+            "정확한 정보 제공",
+            "적절한 규정 인용"
+          ]
+        },
+        {
+          "query": "성적 확인은 부모가 할 수 있나요?",
+          "answer": "[Mock Answer for: 성적 확인은 부모가 할 수 있나요?]",
+          "accuracy": 0.6876583220937525,
+          "completeness": 0.6286103898016746,
+          "citations": 0.7794879378021458,
+          "context_relevance": 0.8642105765125507,
+          "overall_score": 0.7399918065525308,
+          "passed": false,
+          "issues": [
+            "일부 정보 부정확",
+            "정보 불충분"
+          ],
+          "strengths": [
+            "적절한 규정 인용"
+          ]
+        },
+        {
+          "query": "휴학 비용이 어떻게 되나요?",
+          "answer": "[Mock Answer for: 휴학 비용이 어떻게 되나요?]",
+          "accuracy": 0.8474601254206614,
+          "completeness": 0.6486676189653525,
+          "citations": 0.836099760408,
+          "context_relevance": 0.8912129716341588,
+          "overall_score": 0.8058601191070432,
+          "passed": true,
+          "issues": [
+            "정보 불충분"
+          ],
+          "strengths": [
+            "정확한 정보 제공",
+            "적절한 규정 인용"
+          ]
+        }
+      ]
+    },
+    "student-international": {
+      "persona": "International Student",
+      "queries_tested": 5,
+      "avg_score": 0.7672300250589654,
+      "pass_rate": 0.6,
+      "issues": {
+        "정보 불충분": 4,
+        "규정 인용 부족": 5,
+        "문서 관련성 낮음": 1,
+        "일부 정보 부정확": 1
+      },
+      "results": [
+        {
+          "query": "How do I apply for leave of absence?",
+          "answer": "[Mock Answer for: How do I apply for leave of absence?]",
+          "accuracy": 0.825533004084284,
+          "completeness": 0.7196309827639631,
+          "citations": 0.6345406847384149,
+          "context_relevance": 0.9192405510589984,
+          "overall_score": 0.774736305661415,
+          "passed": true,
+          "issues": [
+            "정보 불충분",
+            "규정 인용 부족"
+          ],
+          "strengths": [
+            "정확한 정보 제공"
+          ]
+        },
+        {
+          "query": "Tuition payment procedure for international students",
+          "answer": "[Mock Answer for: Tuition payment procedure for international students]",
+          "accuracy": 0.919234325111568,
+          "completeness": 0.6044900800049999,
+          "citations": 0.5887859077348006,
+          "context_relevance": 0.7908835207134908,
+          "overall_score": 0.7258484583912148,
+          "passed": false,
+          "issues": [
+            "정보 불충분",
+            "규정 인용 부족",
+            "문서 관련성 낮음"
+          ],
+          "strengths": [
+            "정확한 정보 제공"
+          ]
+        },
+        {
+          "query": "Scholarship requirements",
+          "answer": "[Mock Answer for: Scholarship requirements]",
+          "accuracy": 0.7904245569377768,
+          "completeness": 0.7161179574114148,
+          "citations": 0.60097714070432,
+          "context_relevance": 0.8854646024317897,
+          "overall_score": 0.7482460643713253,
+          "passed": false,
+          "issues": [
+            "일부 정보 부정확",
+            "정보 불충분",
+            "규정 인용 부족"
+          ],
+          "strengths": []
+        },
+        {
+          "query": "Dormitory application related to visa status",
+          "answer": "[Mock Answer for: Dormitory application related to visa status]",
+          "accuracy": 0.903559220705441,
+          "completeness": 0.6906596745149225,
+          "citations": 0.619164726650337,
+          "context_relevance": 0.8898605141932536,
+          "overall_score": 0.7758110340159885,
+          "passed": true,
+          "issues": [
+            "정보 불충분",
+            "규정 인용 부족"
+          ],
+          "strengths": [
+            "정확한 정보 제공"
+          ]
+        },
+        {
+          "query": "English version of course registration available?",
+          "answer": "[Mock Answer for: English version of course registration available?]",
+          "accuracy": 0.8783250240346214,
+          "completeness": 0.8775402057758979,
+          "citations": 0.6680143018611046,
+          "context_relevance": 0.8221535197479115,
+          "overall_score": 0.8115082628548839,
+          "passed": true,
+          "issues": [
+            "규정 인용 부족"
+          ],
+          "strengths": [
+            "정확한 정보 제공",
+            "포괄적인 답변"
+          ]
+        }
+      ]
+    }
+  }
+}

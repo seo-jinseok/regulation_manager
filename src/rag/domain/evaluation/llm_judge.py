@@ -6,9 +6,12 @@ Implements the 4-metric evaluation system defined in rag-quality-local skill:
 2. Completeness - All key information present
 3. Citations - Accurate regulation references
 4. Context Relevance - Retrieved sources relevance
+
+Phase 1 Integration: Uses improved EvaluationPrompts for better assessment.
 """
 
 import json
+import logging
 import re
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -17,6 +20,16 @@ from typing import Any, Dict, List, Optional
 
 from src.rag.config import get_config
 from src.rag.infrastructure.llm_adapter import LLMClientAdapter
+
+logger = logging.getLogger(__name__)
+
+# Phase 1: Import improved evaluation prompts
+try:
+    from .prompts import EvaluationPrompts
+    EVALUATION_PROMPTS_AVAILABLE = True
+except ImportError:
+    EVALUATION_PROMPTS_AVAILABLE = False
+    EvaluationPrompts = None
 
 
 class QualityLevel(Enum):
@@ -107,6 +120,130 @@ class LLMJudge:
             )
 
         self.llm_client = llm_client
+
+        # Phase 1: Use improved prompts if available
+        self.use_improved_prompts = EVALUATION_PROMPTS_AVAILABLE
+
+    def evaluate_with_llm(
+        self,
+        query: str,
+        answer: str,
+        sources: List[Dict[str, Any]],
+        expected_info: Optional[List[str]] = None,
+    ) -> JudgeResult:
+        """
+        Evaluate a RAG response using LLM with improved prompts (Phase 1).
+
+        This method uses the improved EvaluationPrompts for more accurate assessment.
+
+        Args:
+            query: The user's query
+            answer: The RAG system's answer
+            sources: Retrieved source documents
+            expected_info: Optional list of expected information points
+
+        Returns:
+            JudgeResult with 4-metric scores and analysis
+        """
+        if not self.use_improved_prompts or not EvaluationPrompts:
+            # Fallback to rule-based evaluation
+            logger.warning("Improved prompts not available, using rule-based evaluation")
+            return self.evaluate(query, answer, sources, expected_info)
+
+        try:
+            # Format prompt with improved EvaluationPrompts
+            system_prompt, user_prompt = EvaluationPrompts.format_accuracy_prompt(
+                query=query,
+                answer=answer,
+                context=sources,
+                expected_info=expected_info
+            )
+
+            # Call LLM for evaluation
+            response = self.llm_client.generate(
+                system_prompt=system_prompt,
+                user_message=user_prompt,
+                temperature=0.0,  # Use low temperature for consistent evaluation
+            )
+
+            # Parse JSON response
+            import json
+            try:
+                # Extract JSON from response
+                json_match = re.search(r'```json\n(.*?)\n```', response, re.DOTALL)
+                if json_match:
+                    json_str = json_match.group(1)
+                else:
+                    # Try to find JSON without code blocks
+                    json_match = re.search(r'\{.*\}', response, re.DOTALL)
+                    if json_match:
+                        json_str = json_match.group(0)
+                    else:
+                        raise ValueError("No JSON found in LLM response")
+
+                eval_result = json.loads(json_str)
+
+                # Extract scores
+                accuracy = eval_result.get("accuracy", 0.5)
+                completeness = eval_result.get("completeness", 0.5)
+                citations = eval_result.get("citations", 0.5)
+                context_relevance = eval_result.get("context_relevance", 0.5)
+
+                # Calculate weighted overall score
+                weights = {
+                    "accuracy": 0.35,
+                    "completeness": 0.25,
+                    "citations": 0.20,
+                    "context_relevance": 0.20,
+                }
+                overall_score = (
+                    accuracy * weights["accuracy"]
+                    + completeness * weights["completeness"]
+                    + citations * weights["citations"]
+                    + context_relevance * weights["context_relevance"]
+                )
+
+                # Determine pass/fail
+                passed = self._determine_pass_fail(
+                    accuracy, completeness, citations, context_relevance, overall_score
+                )
+
+                # Build reasoning from LLM response
+                reasoning = {
+                    "accuracy": eval_result.get("accuracy_reasoning", ""),
+                    "completeness": eval_result.get("completeness_reasoning", ""),
+                    "citations": eval_result.get("citations_reasoning", ""),
+                    "context_relevance": eval_result.get("context_relevance_reasoning", ""),
+                }
+
+                # Extract issues and strengths
+                issues = eval_result.get("issues", [])
+                strengths = eval_result.get("strengths", [])
+
+                return JudgeResult(
+                    query=query,
+                    answer=answer,
+                    sources=sources,
+                    accuracy=round(accuracy, 3),
+                    completeness=round(completeness, 3),
+                    citations=round(citations, 3),
+                    context_relevance=round(context_relevance, 3),
+                    overall_score=round(overall_score, 3),
+                    passed=passed,
+                    reasoning=reasoning,
+                    issues=issues,
+                    strengths=strengths,
+                )
+
+            except (json.JSONDecodeError, ValueError) as e:
+                logger.warning(f"Failed to parse LLM evaluation response: {e}")
+                # Fallback to rule-based evaluation
+                return self.evaluate(query, answer, sources, expected_info)
+
+        except Exception as e:
+            logger.warning(f"LLM-based evaluation failed: {e}")
+            # Fallback to rule-based evaluation
+            return self.evaluate(query, answer, sources, expected_info)
 
     def evaluate(
         self,

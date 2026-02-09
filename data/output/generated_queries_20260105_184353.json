@@ -1,0 +1,147 @@
+{
+  "version": "1.0.0",
+  "generated_at": "2026-01-05T18:43:53.665249",
+  "total_queries": 20,
+  "queries": [
+    {
+      "query": "수강신청/학점 때문에 너무 힘들어",
+      "persona": "student",
+      "category": "수강신청/학점",
+      "generated_at": "2026-01-05T18:43:53.663296",
+      "method": "fallback_template"
+    },
+    {
+      "query": "나 학사경고/성적 하고 싶은데",
+      "persona": "student",
+      "category": "학사경고/성적",
+      "generated_at": "2026-01-05T18:43:53.663304",
+      "method": "fallback_template"
+    },
+    {
+      "query": "학사경고/성적 때문에 너무 힘들어",
+      "persona": "student",
+      "category": "학사경고/성적",
+      "generated_at": "2026-01-05T18:43:53.663306",
+      "method": "fallback_template"
+    },
+    {
+      "query": "기숙사/생활관 때문에 너무 힘들어",
+      "persona": "student",
+      "category": "기숙사/생활관",
+      "generated_at": "2026-01-05T18:43:53.663307",
+      "method": "fallback_template"
+    },
+    {
+      "query": "휴학/복학 어떻게 해야 해?",
+      "persona": "student",
+      "category": "휴학/복학",
+      "generated_at": "2026-01-05T18:43:53.663308",
+      "method": "fallback_template"
+    },
+    {
+      "query": "승진/재임용 절차 알려줘",
+      "persona": "faculty",
+      "category": "승진/재임용",
+      "generated_at": "2026-01-05T18:43:53.664026",
+      "method": "fallback_template"
+    },
+    {
+      "query": "강의/책임시수 절차 알려줘",
+      "persona": "faculty",
+      "category": "강의/책임시수",
+      "generated_at": "2026-01-05T18:43:53.664030",
+      "method": "fallback_template"
+    },
+    {
+      "query": "연구년/안식년 자격 요건이 뭐야?",
+      "persona": "faculty",
+      "category": "연구년/안식년",
+      "generated_at": "2026-01-05T18:43:53.664031",
+      "method": "fallback_template"
+    },
+    {
+      "query": "강의/책임시수 하고 싶어",
+      "persona": "faculty",
+      "category": "강의/책임시수",
+      "generated_at": "2026-01-05T18:43:53.664032",
+      "method": "fallback_template"
+    },
+    {
+      "query": "승진/재임용 절차 알려줘",
+      "persona": "faculty",
+      "category": "승진/재임용",
+      "generated_at": "2026-01-05T18:43:53.664033",
+      "method": "fallback_template"
+    },
+    {
+      "query": "휴가/연가 규정 알려줘",
+      "persona": "staff",
+      "category": "휴가/연가",
+      "generated_at": "2026-01-05T18:43:53.664664",
+      "method": "fallback_template"
+    },
+    {
+      "query": "승진/전보 규정 알려줘",
+      "persona": "staff",
+      "category": "승진/전보",
+      "generated_at": "2026-01-05T18:43:53.664666",
+      "method": "fallback_template"
+    },
+    {
+      "query": "육아휴직/육아 어떻게 신청해?",
+      "persona": "staff",
+      "category": "육아휴직/육아",
+      "generated_at": "2026-01-05T18:43:53.664667",
+      "method": "fallback_template"
+    },
+    {
+      "query": "수당/급여 어떻게 신청해?",
+      "persona": "staff",
+      "category": "수당/급여",
+      "generated_at": "2026-01-05T18:43:53.664668",
+      "method": "fallback_template"
+    },
+    {
+      "query": "인사/평가 어떻게 신청해?",
+      "persona": "staff",
+      "category": "인사/평가",
+      "generated_at": "2026-01-05T18:43:53.664669",
+      "method": "fallback_template"
+    },
+    {
+      "query": "갑질/괴롭힘 어디에 문의해야 해?",
+      "persona": "common",
+      "category": "갑질/괴롭힘",
+      "generated_at": "2026-01-05T18:43:53.665206",
+      "method": "fallback_template"
+    },
+    {
+      "query": "성희롱/성폭력 신고 신고하고 싶어",
+      "persona": "common",
+      "category": "성희롱/성폭력 신고",
+      "generated_at": "2026-01-05T18:43:53.665208",
+      "method": "fallback_template"
+    },
+    {
+      "query": "연구윤리 위반 신고하고 싶어",
+      "persona": "common",
+      "category": "연구윤리 위반",
+      "generated_at": "2026-01-05T18:43:53.665210",
+      "method": "fallback_template"
+    },
+    {
+      "query": "장애학생 지원 신고하고 싶어",
+      "persona": "common",
+      "category": "장애학생 지원",
+      "generated_at": "2026-01-05T18:43:53.665211",
+      "method": "fallback_template"
+    },
+    {
+      "query": "도서관/학술정보 신고하고 싶어",
+      "persona": "common",
+      "category": "도서관/학술정보",
+      "generated_at": "2026-01-05T18:43:53.665212",
+      "method": "fallback_template"
+    }
+  ]
+}

@@ -22,12 +22,15 @@ from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 
 from ..application.full_view_usecase import FullViewUseCase
+from ..application.query_expansion import QueryExpansionService
 from ..application.search_usecase import (
     REGULATION_ONLY_PATTERN,
     RULE_CODE_PATTERN,
     SearchUseCase,
 )
 from ..domain.entities import RegulationStatus
+from ..domain.citation.citation_enhancer import CitationEnhancer
+from ..domain.evaluation.prompts import EvaluationPrompts
 from ..infrastructure.json_loader import JSONDocumentLoader
 from ..infrastructure.query_analyzer import Audience, QueryAnalyzer
 from .chat_logic import (
@@ -221,6 +224,14 @@ class QueryHandler:
         )
         self.query_analyzer = QueryAnalyzer()
         self._last_query_rewrite = None
+
+        # Phase 1 enhancements: Query expansion and citation enhancement
+        self.query_expansion = QueryExpansionService(
+            store=store,
+            synonym_service=None,  # Will be initialized if needed
+            llm_client=llm_client
+        ) if store else None
+        self.citation_enhancer = CitationEnhancer()
 
         # FunctionGemma setup
         self._function_gemma_adapter = function_gemma_adapter

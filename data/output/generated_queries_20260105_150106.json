@@ -1,0 +1,28 @@
+{
+  "version": "1.0.0",
+  "generated_at": "2026-01-05T15:01:06.007886",
+  "total_queries": 3,
+  "queries": [
+    {
+      "query": "나 전과/편입 하고 싶은데",
+      "persona": "student",
+      "category": "전과/편입",
+      "generated_at": "2026-01-05T15:01:06.007846",
+      "method": "fallback_template"
+    },
+    {
+      "query": "장학금/등록금 때문에 너무 힘들어",
+      "persona": "student",
+      "category": "장학금/등록금",
+      "generated_at": "2026-01-05T15:01:06.007850",
+      "method": "fallback_template"
+    },
+    {
+      "query": "나 기숙사/생활관 하고 싶은데",
+      "persona": "student",
+      "category": "기숙사/생활관",
+      "generated_at": "2026-01-05T15:01:06.007852",
+      "method": "fallback_template"
+    }
+  ]
+}
