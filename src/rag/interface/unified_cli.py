@@ -63,13 +63,13 @@ def _add_convert_parser(subparsers):
 
     parser = subparsers.add_parser(
         "convert",
-        help="HWP 파일을 JSON으로 변환",
-        description="HWP 규정집을 구조화된 JSON으로 변환합니다.",
+        help="HWPX 파일을 JSON으로 변환",
+        description="HWPX 규정집을 구조화된 JSON으로 변환합니다.",
     )
     parser.add_argument(
         "input_path",
         type=str,
-        help="HWP 파일 또는 디렉토리 경로",
+        help="HWPX 파일 또는 디렉토리 경로",
     )
     parser.add_argument(
         "--output-dir",
@@ -128,6 +128,11 @@ def _add_convert_parser(subparsers):
         action="store_false",
         dest="enhance_rag",
         help="RAG 최적화 비활성화",
+    )
+    parser.add_argument(
+        "--hwpx",
+        action="store_true",
+        help="HWPX 직접 파싱 사용 (HTML/Markdown 변환 과정을 건너뛰어 정확도 향상)",
     )
     parser.set_defaults(enhance_rag=True)
 
@@ -735,11 +740,11 @@ def create_parser() -> argparse.ArgumentParser:
     """Create main argument parser with all subcommands."""
     parser = argparse.ArgumentParser(
         prog="regulation",
-        description="대학 규정 관리 시스템 - HWP 변환, RAG 검색, AI Q&A",
+        description="대학 규정 관리 시스템 - HWPX 변환, RAG 검색, AI Q&A",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 예시:
-  regulation convert "규정집.hwp"       HWP → JSON 변환
+  regulation convert "규정집.hwpx"      HWPX → JSON 변환
   regulation sync data/output/규정집.json  DB 동기화
   regulation search "교원 연구년"        규정 검색
   regulation ask "휴학 절차"             AI 질문
@@ -807,6 +812,7 @@ def cmd_convert(args) -> int:
             self.cache_dir = getattr(args, "cache_dir", ".cache")
             self.verbose = getattr(args, "verbose", False)
             self.enhance_rag = getattr(args, "enhance_rag", True)
+            self.hwpx = getattr(args, "hwpx", False)
 
     from ...main import run_pipeline
 

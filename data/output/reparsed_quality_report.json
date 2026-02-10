@@ -1,0 +1,99 @@
+{
+  "validation_date": "2026-02-11T04:04:19.521920",
+  "file_analyzed": "data/output/규정집9-343(20250909).json",
+  "source_file": "규정집9-343(20250909).hwpx",
+  "parser_version": "3.0.0",
+  "summary": {
+    "total_docs": 853,
+    "docs_with_content": 164,
+    "docs_empty": 689,
+    "content_coverage_percent": 19.226260257913246,
+    "total_content_nodes": 2939,
+    "content_nodes_with_text": 1272,
+    "total_articles": 2939
+  },
+  "quality_metrics": {
+    "parsing_success_rate": 100.0,
+    "completeness_rate": 48.63387978142077,
+    "article_detection_rate": 100.0
+  },
+  "completeness_analysis": {
+    "total_toc_entries": 366,
+    "matched_entries": 178,
+    "missing_entries": 64,
+    "extra_entries": 264
+  },
+  "samples": {
+    "docs_without_content": [
+      {
+        "id": "reg-0002",
+        "title": "대학혁신지원사업운영규정",
+        "articles_count": 0
+      },
+      {
+        "id": "reg-0003",
+        "title": "교육성과관리센터규정",
+        "articles_count": 0
+      },
+      {
+        "id": "reg-0004",
+        "title": "콜라보교육센터규정",
+        "articles_count": 0
+      },
+      {
+        "id": "reg-0005",
+        "title": "겸임교원임용등에관한시행세칙",
+        "articles_count": 0
+      },
+      {
+        "id": "reg-0006",
+        "title": "노사협의회운영규정",
+        "articles_count": 0
+      },
+      {
+        "id": "reg-0007",
+        "title": "대학성과관리센터규정",
+        "articles_count": 0
+      },
+      {
+        "id": "reg-0008",
+        "title": "임상술기센터규정",
+        "articles_count": 0
+      },
+      {
+        "id": "reg-0009",
+        "title": "연구윤리·진실성검증및처리에관한규정",
+        "articles_count": 0
+      },
+      {
+        "id": "reg-0010",
+        "title": "연구윤리센터규정",
+        "articles_count": 0
+      },
+      {
+        "id": "reg-0011",
+        "title": "연구윤리규정",
+        "articles_count": 0
+      }
+    ],
+    "docs_with_content": [
+      {
+        "id": "reg-0001",
+        "title": "편찬례 및 취급 요령",
+        "content_nodes": 23,
+        "first_article": "제1"
+      }
+    ]
+  },
+  "issues": [
+    {
+      "severity": "LOW",
+      "issue_id": "SOME_EMPTY_CONTENT",
+      "description": "689개 문서에 content가 없음 (80.8%)",
+      "impact": "일부 규정이 RAG 검색에서 누락될 수 있음",
+      "recommendation": "articles 배열이 비어있는 규정들의 원인 분석 필요"
+    }
+  ],
+  "status": "PARTIAL",
+  "overall_quality_score": 19.226260257913246
+}
