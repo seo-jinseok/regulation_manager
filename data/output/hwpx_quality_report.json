@@ -1,0 +1,106 @@
+{
+  "validation_date": "2026-02-11T03:00:00Z",
+  "validator": "team-quality",
+  "file_validated": "data/output/규정집_hwpx_parsed.json",
+  "source_file": "data/input/규정집9-343(20250909).hwpx",
+  "summary": {
+    "total_docs": 510,
+    "toc_entries": 510,
+    "docs_with_empty_content": 510,
+    "docs_with_empty_addenda": 510,
+    "docs_with_any_articles": 0
+  },
+  "required_fields_check": {
+    "id": {
+      "present": 510,
+      "missing": 0,
+      "status": "PASS"
+    },
+    "title": {
+      "present": 510,
+      "missing": 0,
+      "status": "PASS"
+    },
+    "metadata": {
+      "present": 510,
+      "missing": 0,
+      "status": "PASS"
+    },
+    "content": {
+      "present": 510,
+      "missing": 0,
+      "status": "PASS"
+    },
+    "addenda": {
+      "present": 510,
+      "missing": 0,
+      "status": "PASS"
+    }
+  },
+  "structural_issues": [
+    {
+      "severity": "CRITICAL",
+      "issue_id": "EMPTY_CONTENT_ARRAYS",
+      "description": "모든 문서의 content 배열이 비어있습니다 (510/510)",
+      "impact": "RAG 시스템에서 규정 내용을 검색할 수 없음",
+      "affected_components": [
+        "src/parsing/hwpx_parser_adapter.py"
+      ],
+      "root_cause": "_find_regulation_end() 함수가 TOC 영역을 실제 내용 영역으로 인식하여 조기 종료함"
+    },
+    {
+      "severity": "CRITICAL",
+      "issue_id": "EMPTY_ADDENDA_ARRAYS",
+      "description": "모든 문서의 addenda 배열이 비어있습니다 (510/510)",
+      "impact": "별표/서식 등 부속 자료가 누락됨",
+      "affected_components": [
+        "src/parsing/hwpx_parser_adapter.py"
+      ]
+    }
+  ],
+  "parser_analysis": {
+    "extracted_lines": 50272,
+    "text_length": 1614983,
+    "toc_found": 510,
+    "toc_location": "lines 98-600 (approximate)",
+    "actual_content_start": "line 1043+",
+    "article_pattern_matches": 381,
+    "problem": "TOC entries and actual regulation content are in separate sections of the document, but the parser treats TOC entries as content boundaries"
+  },
+  "sample_verification": {
+    "sample_docs_checked": 10,
+    "docs_with_articles": 0,
+    "example_issue": {
+      "doc": "학교법인동의학원정관 (1-0-1)",
+      "expected": "Should contain multiple articles starting with '제1조 (목적)'",
+      "actual": "content array is empty",
+      "root_cause": "_find_regulation_end returns line 103 (next TOC entry) instead of finding actual content at line 1043+"
+    }
+  },
+  "recommendations": [
+    {
+      "priority": 1,
+      "action": "Modify _find_regulation_end() to skip TOC section",
+      "description": "The function should recognize that TOC entries are not actual content boundaries. Need to find the first actual article (제X조) as content start, and the next TOC pattern or document boundary as end."
+    },
+    {
+      "priority": 2,
+      "action": "Implement two-pass parsing",
+      "description": "First pass: identify TOC section boundaries. Second pass: extract content for each regulation using article detection."
+    },
+    {
+      "priority": 3,
+      "action": "Add content validation in parse() method",
+      "description": "Raise warning if all regulations have empty content arrays"
+    }
+  ],
+  "status": "FAIL",
+  "overall_quality_score": 0.0,
+  "trust5_compliance": {
+    "tested": "FAIL - No article content extracted",
+    "readable": "PASS - Metadata structure is correct",
+    "unified": "PASS - Schema format consistent",
+    "secured": "N/A - Not applicable",
+    "trackable": "PASS - IDs and metadata present"
+  }
+}
