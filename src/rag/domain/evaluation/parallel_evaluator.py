@@ -15,14 +15,15 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Dict, List, Optional
 
-from src.rag.domain.evaluation import EvaluationBatch, JudgeResult, LLMJudge
-from src.rag.domain.evaluation.personas import PERSONAS, PersonaManager
-from src.rag.infrastructure.chroma_store import ChromaVectorStore
-from src.rag.infrastructure.llm_adapter import LLMClientAdapter
 from src.rag.application.search_usecase import SearchUseCase
 from src.rag.domain.citation.citation_enhancer import CitationEnhancer
+from src.rag.domain.evaluation import EvaluationBatch, JudgeResult, LLMJudge
+from src.rag.domain.evaluation.personas import PERSONAS, PersonaManager
+
 # Phase 2: Import PersonaAwareGenerator for persona-specific prompts
 from src.rag.domain.personas import PersonaAwareGenerator
+from src.rag.infrastructure.chroma_store import ChromaVectorStore
+from src.rag.infrastructure.llm_adapter import LLMClientAdapter
 
 
 @dataclass

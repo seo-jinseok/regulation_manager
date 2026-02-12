@@ -10,7 +10,7 @@ class TestMainFlow(unittest.TestCase):
     def setUp(self):
         self.test_dir = Path("tmp_integration_test")
         self.test_dir.mkdir(exist_ok=True)
-        self.input_file = self.test_dir / "test.hwp"
+        self.input_file = self.test_dir / "test.hwpx"
         self.input_file.write_text("dummy content")
         self.output_dir = self.test_dir / "output"
 

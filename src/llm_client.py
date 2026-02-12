@@ -2,11 +2,11 @@ import os
 from typing import Any, Optional
 
 try:
-    from llama_index.core.llms import LLM
-    from llama_index.llms.gemini import Gemini
-    from llama_index.llms.ollama import Ollama
-    from llama_index.llms.openai import OpenAI
-    from llama_index.llms.openrouter import OpenRouter
+    from llama_index.core.llms import LLM  # type: ignore[import]
+    from llama_index.llms.gemini import Gemini  # type: ignore[import]
+    from llama_index.llms.ollama import Ollama  # type: ignore[import]
+    from llama_index.llms.openai import OpenAI  # type: ignore[import]
+    from llama_index.llms.openrouter import OpenRouter  # type: ignore[import]
 
     LI_AVAILABLE = True
 except ImportError:
@@ -15,7 +15,7 @@ except ImportError:
     OpenAI = Gemini = OpenRouter = Ollama = None
 
 try:
-    from llama_index.llms.openai_like import OpenAILike
+    from llama_index.llms.openai_like import OpenAILike  # type: ignore[import]
 except ImportError:
     OpenAILike = None
 

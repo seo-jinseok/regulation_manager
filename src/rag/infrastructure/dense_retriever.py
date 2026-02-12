@@ -236,7 +236,7 @@ class DenseRetriever:
             )
 
             # Store embeddings
-            for (doc_id, content, metadata), embedding in zip(batch, embeddings):
+            for (doc_id, content, metadata), embedding in zip(batch, embeddings, strict=True):
                 self._doc_embeddings[doc_id] = embedding
                 self._doc_texts[doc_id] = content
                 self._doc_metadata[doc_id] = metadata

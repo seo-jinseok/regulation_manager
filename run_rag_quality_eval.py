@@ -163,11 +163,12 @@ async def run_parallel_evaluation(
                                         })
                                 break
 
-                # Evaluate with LLM judge
-                judge_result = judge.evaluate(
+                # Evaluate with LLM judge (using LLM-based evaluation for accurate scoring)
+                judge_result = judge.evaluate_with_llm(
                     query=query,
                     answer=answer_text,
                     sources=sources,
+                    expected_info=None,
                 )
 
                 batch.add_result(judge_result)

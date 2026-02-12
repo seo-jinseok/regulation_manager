@@ -28,9 +28,8 @@ from ..application.search_usecase import (
     RULE_CODE_PATTERN,
     SearchUseCase,
 )
-from ..domain.entities import RegulationStatus
 from ..domain.citation.citation_enhancer import CitationEnhancer
-from ..domain.evaluation.prompts import EvaluationPrompts
+from ..domain.entities import RegulationStatus
 from ..infrastructure.json_loader import JSONDocumentLoader
 from ..infrastructure.query_analyzer import Audience, QueryAnalyzer
 from .chat_logic import (

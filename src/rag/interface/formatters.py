@@ -24,8 +24,8 @@ if TYPE_CHECKING:
 # Constants
 # ============================================================================
 
-# Default threshold for filtering low relevance results (10%)
-DEFAULT_RELEVANCE_THRESHOLD = 0.10
+# Default threshold for filtering low relevance results (70% - SPEC-RAG-Q-001 Phase 2)
+DEFAULT_RELEVANCE_THRESHOLD = 0.70
 
 
 # ============================================================================
@@ -248,7 +248,7 @@ def strip_path_prefix(text: str, parent_path: List[str]) -> str:
             continue
         normalized_candidate = [normalize(part) for part in candidate]
         match_len = 0
-        for part, target in zip(normalized_parts, normalized_candidate):
+        for part, target in zip(normalized_parts, normalized_candidate, strict=True):
             if part == target:
                 match_len += 1
             else:

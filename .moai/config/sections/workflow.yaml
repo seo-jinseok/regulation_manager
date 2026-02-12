@@ -32,9 +32,6 @@ loop_prevention:
         - alternative_strategy_required
 workflow:
     auto_clear: true
-    execution_mode: auto
     plan_tokens: 30000
     run_tokens: 180000
     sync_tokens: 40000
-    team:
-        enabled: false

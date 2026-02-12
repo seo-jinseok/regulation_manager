@@ -81,7 +81,7 @@
     "CLAUDE_CODE_FILE_READ_MAX_OUTPUT_TOKENS": "64000",
     "ENABLE_TOOL_SEARCH": "1",
     "MOAI_CONFIG_SOURCE": "sections",
-    "PATH": "/Users/truestone/go/bin:/Users/truestone/.local/bin:/Users/truestone/.opencode/bin:/Users/truestone/.bun/bin:/Users/truestone/.antigravity/antigravity/bin:/Users/truestone/bin:/Users/truestone/.local/bin:/usr/local/bin:/Users/truestone/Dropbox/bin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/opt/pmk/env/global/bin:/Library/Apple/usr/bin:/Library/TeX/texbin:/opt/homebrew/bin:/Users/truestone/.local/bin:/Users/truestone/.lmstudio/bin:/Applications/Warp.app/Contents/Resources/bin"
+    "PATH": "/opt/homebrew/opt/openjdk@17/bin:/Users/truestone/.local/bin:/usr/local/bin:/Users/truestone/Dropbox/bin:/opt/homebrew/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/opt/pmk/env/global/bin:/Library/Apple/usr/bin:/Users/truestone/go/bin:/Users/truestone/.local/bin:/opt/homebrew/opt/openjdk@17/bin:/Users/truestone/Dropbox/bin:/Users/truestone/.lmstudio/bin:/Users/truestone/.lmstudio/bin"
   },
   "permissions": {
     "defaultMode": "default",
@@ -268,15 +268,6 @@
       "Bash(psql -c DROP:*)",
       "Bash(mysql -e DROP:*)"
     ]
-  },
-  "sandbox": {
-    "enabled": true,
-    "autoAllowBashIfSandboxed": true,
-    "excludedCommands": [
-      "docker",
-      "git"
-    ],
-    "allowUnsandboxedCommands": true
   },
   "attribution": {
     "commit": "\ud83d\uddff MoAI <email@mo.ai.kr>",

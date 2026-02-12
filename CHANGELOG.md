@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.0] - 2026-02-10
+
+### Breaking Changes
+
+- **HWPX-only requirement**: 시스템은 이제 `.hwpx` 파일만 지원합니다
+  - 기존 `.hwp` (바이너리) 파일은 더 이상 지원되지 않습니다
+  - `.hwp` 파일을 가진 경우 HWPX 형식으로 변환해야 합니다
+    - 한글(Hwp) 프로그램에서 파일 열기
+    - 파일 > 다른 이름으로 저장 > HWPX 파일 형식 선택
+    - 저장된 `.hwpx` 파일을 사용하세요
+  - 변환 거부 시 명확한 에러 메시지와 변환 방법 안내 제공
+
+**영향을 받는 파일**:
+- `src/main.py`: 파일 수집 로직이 `.hwpx`만 수락하도록 변경
+- `src/rag/interface/unified_cli.py`: CLI 도움말 및 예시 업데이트
+- `README.md`: 모든 HWP 참조를 HWPX로 변경
+- `docs/implementation_plan_phase3.md`: 문서 업데이트
+- `docs/RAG_IMPROVEMENTS.md`: 다이어그램 업데이트
+
+### Removed
+
+- **olefile 의존성 제거**: HWPX만 지원하므로 OLE 형식 처리용 라이브러리 불필요
+  - HWPX는 XML 기반 형식으로 olefile이 필요 없음
+  - `pyhwp`는 여전히 필요 (hwp5html CLI가 HWPX → HTML 변환에 사용)
+
 ## [2.2.0] - 2026-02-07
 
 ### Added - SPEC-RAG-002 Implementation Complete

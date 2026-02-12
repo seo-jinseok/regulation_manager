@@ -21,6 +21,7 @@ from .regulation_article_extractor import RegulationArticleExtractor
 from .core.text_normalizer import TextNormalizer
 from .detectors.regulation_title_detector import RegulationTitleDetector
 from .validators.completeness_checker import CompletenessChecker, TOCEntry
+from .structure_analyzer import StructureAnalyzer, StructureInfo, get_authority_display_name, get_structure_summary, RegulationAuthority
 
 logger = logging.getLogger(__name__)
 
@@ -92,6 +93,8 @@ class HWPXDirectParser:
         self.completeness_checker = CompletenessChecker(fuzzy_match_threshold=0.85)
         self._seen_titles = set()  # Track seen titles to prevent duplicates
         self._toc_entries: List[TOCEntry] = []  # Store TOC for validation
+        self.structure_analyzer = StructureAnalyzer()  # NEW: Authority-based structure analysis
+        self._current_structure_info: Optional[StructureInfo] = None  # NEW: Current document structure
 
     def parse_file(self, file_path: Path) -> Dict[str, Any]:
         """
@@ -119,6 +122,20 @@ class HWPXDirectParser:
         # Parse section0.xml (main content) for body text
         sections_to_parse = {k: v for k, v in sections_xml.items()
                             if 'section0.xml' in k}
+
+        # NEW: Detect document structure from first section
+        if sections_to_parse:
+            first_content = list(sections_to_parse.values())[0]
+            # Analyze structure from early content
+            self._current_structure_info = (
+                self.structure_analyzer.analyze_title(first_content[:500] if len(first_content) > 500 else first_content)
+            )
+            if self.status_callback:
+                structure_summary = get_structure_summary(
+                    self._current_structure_info.authority,
+                    self._current_structure_info
+                )
+                self.status_callback(f"[dim]문서 구조 분석: {structure_summary}[/dim]")
 
         for idx, (section_num, xml_content) in enumerate(sections_to_parse.items()):
             if self.status_callback:
@@ -175,16 +192,29 @@ class HWPXDirectParser:
         toc_for_validation = self._toc_entries if self._toc_entries else self.completeness_checker.create_toc_from_regulations(docs)
         completeness_report = self.completeness_checker.validate(toc_for_validation, docs)
 
+        # Prepare structure info for output
+        structure_info_dict = None
+        if self._current_structure_info:
+            structure_info_dict = {
+                "authority": self._current_structure_info.authority.value,
+                "structure_type": self._current_structure_info.structure_type,
+                "has_parts": self._current_structure_info.has_parts,
+                "has_chapters": self._current_structure_info.has_chapters,
+                "part_format": self._current_structure_info.part_format,
+                "chapter_format": self._current_structure_info.chapter_format,
+            }
+
         output = {
             "metadata": {
                 "source_file": file_path.name,
-                "parser_version": "3.0.0",  # Updated version with TOC-first parsing
+                "parser_version": "3.1.0",  # Updated with authority-based structure analysis
                 "parsed_at": start_time.isoformat(),
                 "parsing_time_seconds": (
                     datetime.now() - start_time
                 ).total_seconds(),
                 **self.stats.to_dict(),
                 "completeness": completeness_report.to_dict(),
+                "structure": structure_info_dict,  # NEW: Structure information
             },
             "toc": [self._toc_entry_to_dict(e) for e in toc_for_validation],
             "docs": docs,
@@ -536,6 +566,15 @@ class HWPXDirectParser:
         # First check with the title detector
         if not self.title_detector.is_title(text):
             return False
+
+        # NEW: Check against authority-based patterns
+        if self._current_structure_info:
+            # Check if text matches the current document's structure pattern
+            pattern = self.structure_analyzer.patterns.identify_pattern(
+                self._current_structure_info.authority.value
+            )
+            if pattern and pattern.matches_title(text):
+                return True
 
         # Additional filtering for HWPX context:
         # Short standalone keywords (2-3 chars ending with keyword) are filtered out

@@ -7,14 +7,12 @@ Supports English-Korean mixed queries for international students.
 
 import logging
 from dataclasses import dataclass
-from typing import List, Optional, Dict, Any
-from pathlib import Path
+from typing import Any, Dict, List, Optional
 
-from ..domain.repositories import IVectorStore, ILLMClient
-from ..domain.value_objects import Query
 from ..domain.entities import SearchResult
+from ..domain.repositories import ILLMClient, IVectorStore
+from ..domain.value_objects import Query
 from .synonym_generator_service import SynonymGeneratorService
-
 
 logger = logging.getLogger(__name__)
 
@@ -217,7 +215,7 @@ class QueryExpansionService:
 
         # Aggregate RRF scores
         aggregated = []
-        for chunk_id, data in all_results.items():
+        for _chunk_id, data in all_results.items():
             # Sum all RRF scores for this chunk
             total_score = sum(data["scores"])
             result = data["result"]
@@ -327,7 +325,7 @@ class QueryExpansionService:
     def _extract_key_terms(self, query: str) -> List[str]:
         """Extract key terms from query for expansion."""
         # Simple extraction: filter common stopwords and keep meaningful terms
-        stopwords = {"방법", "알려줘", "어떻게", "방법", "하는", "것", "등", "및", "또는"}
+        stopwords = {"방법", "알려줘", "어떻게", "하는", "것", "등", "및", "또는"}
 
         terms = []
         for term in self.ACADEMIC_SYNONYMS.keys():

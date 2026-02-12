@@ -456,7 +456,7 @@ if PYDANTIC_AVAILABLE:
                     v, max_length=info.data.get("max_query_length", 1000)
                 )
             except InputValidationError as e:
-                raise ValueError(str(e))
+                raise ValueError(str(e)) from e
 
             return sanitized.strip()
 
@@ -476,7 +476,7 @@ if PYDANTIC_AVAILABLE:
                     try:
                         sanitized[key] = sanitize_input(value, max_length=500)
                     except InputValidationError as e:
-                        raise ValueError(f"Invalid filter value for '{key}': {e}")
+                        raise ValueError(f"Invalid filter value for '{key}': {e}") from e
                 elif isinstance(value, (int, float, bool)):
                     sanitized[key] = value
                 elif isinstance(value, list):
@@ -489,7 +489,7 @@ if PYDANTIC_AVAILABLE:
                                     sanitize_input(item, max_length=500)
                                 )
                             except InputValidationError as e:
-                                raise ValueError(f"Invalid filter item in '{key}': {e}")
+                                raise ValueError(f"Invalid filter item in '{key}': {e}") from e
                         else:
                             sanitized_list.append(item)
                     sanitized[key] = sanitized_list
@@ -540,7 +540,7 @@ if PYDANTIC_AVAILABLE:
                     v, max_length=info.data.get("max_query_length", 500)
                 )
             except InputValidationError as e:
-                raise ValueError(str(e))
+                raise ValueError(str(e)) from e
 
             return sanitized.strip()
 

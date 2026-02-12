@@ -84,7 +84,7 @@ class StableIdAssigner:
         for base in base_keys:
             base_counts[base] = base_counts.get(base, 0) + 1
 
-        for node, base in zip(nodes, base_keys):
+        for node, base in zip(nodes, base_keys, strict=True):
             if base_counts.get(base, 0) <= 1:
                 refined_keys.append(base)
                 continue
@@ -96,7 +96,7 @@ class StableIdAssigner:
             refined_counts[key] = refined_counts.get(key, 0) + 1
 
         refined_seen: Dict[str, int] = {}
-        for node, key in zip(nodes, refined_keys):
+        for node, key in zip(nodes, refined_keys, strict=True):
             if refined_counts.get(key, 0) > 1:
                 refined_seen[key] = refined_seen.get(key, 0) + 1
                 key = f"{key}|i:{refined_seen[key]}"

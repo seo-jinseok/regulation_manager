@@ -5,7 +5,7 @@ This module contains improved prompts for evaluating RAG system responses
 with focus on factual consistency and hallucination detection.
 """
 
-from typing import List, Dict, Any
+from typing import Any, Dict, List
 
 
 class EvaluationPrompts:
@@ -207,7 +207,7 @@ JSON 형식:
         # Add expected info if provided
         expected_section = ""
         if expected_info:
-            expected_section = f"\n**기대되는 정보:**\n" + "\n".join(f"- {info}" for info in expected_info)
+            expected_section = "\n**기대되는 정보:**\n" + "\n".join(f"- {info}" for info in expected_info)
 
         user_prompt = cls.ACCURACY_USER_PROMPT_TEMPLATE.format(
             query=query,

@@ -215,7 +215,8 @@ class RegulationFormatter:
             current = merged[-1]
 
             # Drop explicit noise docs
-            if doc.get("title") and "규정집 관리 현황표" in doc.get("title"):
+            title = doc.get("title")
+            if title and "규정집 관리 현황표" in title:
                 continue
 
             # Merge doc with missing title into previous if same part
@@ -247,6 +248,16 @@ class RegulationFormatter:
                 continue
 
             rule_code = (doc.get("metadata") or {}).get("rule_code")
+            if not rule_code:
+                # Try to extract rule_code from title
+                # Title format: "규정명 3-1-1～1" or "규정명 3—1—1～"
+                title = doc.get("title", "")
+                title_match = re.search(r"(\d+[-–—]\d+[-–—]\d+)", title)
+                if title_match:
+                    rule_code = title_match.group(1).replace("—", "-").replace("–", "-")
+                    metadata = doc.setdefault("metadata", {})
+                    metadata["rule_code"] = rule_code
+
             if rule_code:
                 doc["doc_type"] = "regulation"
                 continue
@@ -347,11 +358,11 @@ class RegulationFormatter:
         display_no: str,
         title: Optional[str],
         text: Optional[str],
-        sort_no: Dict[str, int] = None,
-        children: List[Dict] = None,
+        sort_no: Optional[Dict[str, int]] = None,
+        children: Optional[List[Dict]] = None,
         confidence_score: float = 1.0,
-        references: List[Dict] = None,
-        metadata: Dict[str, Any] = None,
+        references: Optional[List[Dict]] = None,
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         if sort_no is None:
             sort_no = {"main": 0, "sub": 0}
@@ -424,7 +435,9 @@ class RegulationFormatter:
 
         # Check if the first explicit chapter is "제2장" or higher
         # If so, infer "제1장 총칙" for articles before it
-        match = re.search(r"제\s*(\d+)\s*장", first_chapter_val)
+        match = None
+        if first_chapter_val:
+            match = re.search(r"제\s*(\d+)\s*장", first_chapter_val)
         if match:
             chapter_num = int(match.group(1))
             if chapter_num >= 2:
@@ -713,7 +726,7 @@ class RegulationFormatter:
             Item node with nested subitems.
         """
         item_num = item.get("item_no", "")
-        item_content = item.get("content")
+        item_content = item.get("content") or ""
         item_sort = self._resolve_sort_no(item_num, "item")
         item_refs = self._extract_references(item_content)
         item_node = self._create_node(

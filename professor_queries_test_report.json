@@ -1,0 +1,210 @@
+{
+  "persona": "professor",
+  "test_date": "2026-02-10",
+  "queries": [
+    {
+      "query": "학사위원회의 심의 권한과 절차에 대해 설명하시오",
+      "category": "academic_governance",
+      "difficulty": "medium",
+      "expected_answer": {
+        "key_elements": [
+          "학사위원회 구성 및 권한",
+          "심의 절차 및 의결 정족수",
+          "상위 기구와의 관계"
+        ],
+        "citations_required": [
+          "학칙 제XX조",
+          "학사위원회 규정"
+        ]
+      },
+      "result": {
+        "status": "system_unavailable",
+        "error": "llama_index is not installed. LLM features are unavailable.",
+        "note": "The RAG system has dependency issues preventing query execution."
+      },
+      "evaluation": {
+        "legal_accuracy": 0,
+        "citation_completeness": 0,
+        "governance_compliance": 0,
+        "completeness": 0,
+        "satisfaction": "dissatisfied"
+      },
+      "issues": [
+        "System dependency error: llama_index not installed",
+        "Cannot generate response without functional LLM backend"
+      ]
+    },
+    {
+      "query": "교원 인사 평가 기준과 승진 요건은 무엇인가",
+      "category": "faculty_affairs",
+      "difficulty": "medium",
+      "expected_answer": {
+        "key_elements": [
+          "교원 업적 평가 항목 및 배점",
+          "승진 심사 기준 및 절차",
+          "연구 실적, 교육 성과, 봉사 활동 비중"
+        ],
+        "citations_required": [
+          "교원인사규정 제XX조",
+          "교원승진규정"
+        ]
+      },
+      "result": {
+        "status": "system_unavailable",
+        "error": "llama_index is not installed. LLM features are unavailable."
+      },
+      "evaluation": {
+        "legal_accuracy": 0,
+        "citation_completeness": 0,
+        "governance_compliance": 0,
+        "completeness": 0,
+        "satisfaction": "dissatisfied"
+      },
+      "issues": [
+        "System dependency error: llama_index not installed",
+        "Unable to access faculty affairs regulations"
+      ]
+    },
+    {
+      "query": "대학원 입학 전형 방법과 평가 비율은?",
+      "category": "graduate_admissions",
+      "difficulty": "medium",
+      "expected_answer": {
+        "key_elements": [
+          "일반 전형, 특별 전형 구분",
+          "서류 전형, 면접 전형 방법",
+          "각 전형별 평가 비율 및 배점"
+        ],
+        "citations_required": [
+          "대학원 학칙 제XX조",
+          "대학원 입시 전형 규정"
+        ]
+      },
+      "result": {
+        "status": "system_unavailable",
+        "error": "llama_index is not installed. LLM features are unavailable."
+      },
+      "evaluation": {
+        "legal_accuracy": 0,
+        "citation_completeness": 0,
+        "governance_compliance": 0,
+        "completeness": 0,
+        "satisfaction": "dissatisfied"
+      },
+      "issues": [
+        "System dependency error: llama_index not installed",
+        "Graduate admission policies not accessible"
+      ]
+    },
+    {
+      "query": "연구 윤리 규정과 연구 부정행위의 정의는?",
+      "category": "research_administration",
+      "difficulty": "medium",
+      "expected_answer": {
+        "key_elements": [
+          "연구 윤리 준수 의무",
+          "연구 부정행위 유형 (위조, 변조, 표절 등)",
+          "부정행위 처리 절차 및 징계 기준"
+        ],
+        "citations_required": [
+          "연구율리규정 제XX조",
+          "연구부정행위 처리 규정"
+        ]
+      },
+      "result": {
+        "status": "system_unavailable",
+        "error": "llama_index is not installed. LLM features are unavailable."
+      },
+      "evaluation": {
+        "legal_accuracy": 0,
+        "citation_completeness": 0,
+        "governance_compliance": 0,
+        "completeness": 0,
+        "satisfaction": "dissatisfied"
+      },
+      "issues": [
+        "System dependency error: llama_index not installed",
+        "Research ethics guidelines not accessible"
+      ]
+    },
+    {
+      "query": "교과 개설 및 변경 절차에 대해 알려줘",
+      "category": "academic_governance",
+      "difficulty": "medium",
+      "expected_answer": {
+        "key_elements": [
+          "교과 개설 신청 절차 및 시기",
+          "교과 개정 심의 위원회 및 승인 절차",
+          "학사위원회 의결 사항"
+        ],
+        "citations_required": [
+          "교과과정 운영 규정 제XX조",
+          "학칙 제XX조"
+        ]
+      },
+      "result": {
+        "status": "system_unavailable",
+        "error": "llama_index is not installed. LLM features are unavailable."
+      },
+      "evaluation": {
+        "legal_accuracy": 0,
+        "citation_completeness": 0,
+        "governance_compliance": 0,
+        "completeness": 0,
+        "satisfaction": "dissatisfied"
+      },
+      "issues": [
+        "System dependency error: llama_index not installed",
+        "Course management procedures not accessible"
+      ]
+    }
+  ],
+  "summary": {
+    "total_queries": 5,
+    "successful": 0,
+    "failed": 5,
+    "success_rate": 0.0,
+    "average_scores": {
+      "legal_accuracy": 0.0,
+      "citation_completeness": 0.0,
+      "governance_compliance": 0.0,
+      "completeness": 0.0
+    },
+    "satisfaction_distribution": {
+      "very_satisfied": 0,
+      "satisfied": 0,
+      "neutral": 0,
+      "dissatisfied": 5
+    }
+  },
+  "system_issues": [
+    {
+      "priority": "CRITICAL",
+      "issue": "Missing llama_index dependency",
+      "description": "The LLM component (llama_index) is not installed, preventing all query processing.",
+      "impact": "All RAG queries fail with 'llama_index is not installed' error",
+      "recommendation": "Install llama-index package: pip install llama-index or add to pyproject.toml dependencies"
+    },
+    {
+      "priority": "HIGH",
+      "issue": "No fallback for document search",
+      "description": "When LLM is unavailable, the system should still be able to perform document retrieval without answer generation.",
+      "impact": "Users cannot even see relevant regulations when LLM is down",
+      "recommendation": "Implement search-only mode that returns raw documents without LLM-generated summaries"
+    },
+    {
+      "priority": "MEDIUM",
+      "issue": "API balance depletion",
+      "description": "Previous evaluation showed 'API Error: 429 Insufficient balance' for professor persona",
+      "impact": "Cannot run full RAG quality evaluation",
+      "recommendation": "Recharge API balance and set up budget alerts"
+    }
+  ],
+  "recommendations": [
+    "Fix dependency installation by updating pyproject.toml with llama-index requirement",
+    "Implement graceful degradation: search without LLM should return document excerpts",
+    "Set up health check endpoint to verify RAG system components",
+    "Create mock/test mode for development without API dependencies",
+    "Add integration tests to verify system can answer professor queries"
+  ]
+}

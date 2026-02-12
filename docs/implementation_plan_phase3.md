@@ -4,7 +4,7 @@
 
 **대학 규정 관리 시스템 (Regulation Manager)**은 다음을 목표로 합니다:
 
-1. **HWP → JSON 변환**: 대학 규정집(HWP)을 계층 구조 보존하며 JSON으로 변환
+1. **HWPX → JSON 변환**: 대학 규정집(HWPX)을 계층 구조 보존하며 JSON으로 변환
 2. **Hybrid RAG 검색**: BM25 + Dense + Reranker 기반 고품질 검색
 3. **LLM 기반 Q&A**: 자연어 질문에 대한 정확한 답변 생성
 4. **다양한 인터페이스**: CLI, Web UI (Gradio), MCP Server

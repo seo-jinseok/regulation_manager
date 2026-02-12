@@ -37,6 +37,48 @@ class LLMFallbackError(Exception):
         super().__init__(message)
 
 
+# API 오류 타입 상수 (SPEC-RAG-Q-001 Phase 1)
+API_ERROR_INSUFFICIENT_BALANCE = "insufficient_balance"  # 402, 429
+API_ERROR_RATE_LIMIT = "rate_limit"  # 429
+API_ERROR_AUTHENTICATION = "authentication"  # 401, 403
+API_ERROR_NETWORK = "network"  # Connection errors
+API_ERROR_UNKNOWN = "unknown"
+
+
+def classify_api_error(error: Exception, error_message: str) -> str:
+    """API 오류를 분류하여 오류 타입을 반환합니다.
+
+    Args:
+        error: 발생한 예외 객체
+        error_message: 오류 메시지 문자열
+
+    Returns:
+        오류 타입 문자열 (API_ERROR_* 상수 중 하나)
+    """
+    error_msg_lower = error_message.lower()
+    error_type_name = type(error).__name__.lower()
+
+    # 잔액 부족 오류 (402 Payment Required, 429 Too Many Requests)
+    if "402" in error_msg_lower or "payment" in error_msg_lower:
+        return API_ERROR_INSUFFICIENT_BALANCE
+    if "429" in error_msg_lower or "insufficient balance" in error_msg_lower or "no resource package" in error_msg_lower:
+        return API_ERROR_INSUFFICIENT_BALANCE
+
+    # Rate limiting (429에서 잔액 부족이 아닌 경우)
+    if "rate limit" in error_msg_lower and "balance" not in error_msg_lower:
+        return API_ERROR_RATE_LIMIT
+
+    # 인증 오류
+    if "401" in error_msg_lower or "403" in error_msg_lower or "unauthorized" in error_msg_lower or "forbidden" in error_msg_lower:
+        return API_ERROR_AUTHENTICATION
+
+    # 네트워크 오류
+    if "connection" in error_type_name or "timeout" in error_msg_lower or "network" in error_msg_lower:
+        return API_ERROR_NETWORK
+
+    return API_ERROR_UNKNOWN
+
+
 class FailureCache:
     """Cache for recent provider failures to avoid repeated failed attempts."""
 
@@ -350,19 +392,33 @@ class LLMClientAdapter(ILLMClient):
         except Exception as e:
             self._stats["primary_failure"] += 1
             primary_error = e
+            error_msg = str(e)
+
+            # SPEC-RAG-Q-001 Phase 1: 오류 타입 분류
+            api_error_type = classify_api_error(e, error_msg)
+
             attempts.append(
                 {
                     "provider": self.provider,
                     "model": self.model,
                     "success": False,
-                    "error": str(e),
+                    "error": error_msg,
                     "error_type": type(e).__name__,
+                    "api_error_type": api_error_type,
                     "attempt": 1,
                 }
             )
-            logger.info(
-                f"Primary provider '{self.provider}' failed, trying fallback chain..."
-            )
+
+            # 잔액 부족 오류 시 특별 로깅
+            if api_error_type == API_ERROR_INSUFFICIENT_BALANCE:
+                logger.warning(
+                    f"Primary provider '{self.provider}' failed due to insufficient balance/rate limit. "
+                    f"Initiating fallback chain..."
+                )
+            else:
+                logger.info(
+                    f"Primary provider '{self.provider}' failed ({api_error_type}), trying fallback chain..."
+                )
 
         # Try fallback chain if enabled
         if not self._fallback_enabled:
@@ -439,10 +495,15 @@ class LLMClientAdapter(ILLMClient):
 
                 except Exception as e:
                     self._stats["retries"] += 1
+                    error_msg = str(e)
+
+                    # SPEC-RAG-Q-001 Phase 1: 폴백 제공자 오류 분류
+                    api_error_type = classify_api_error(e, error_msg)
+
                     if retry < self._max_retries - 1:
                         backoff = self._calculate_backoff(retry)
                         logger.warning(
-                            f"Provider '{provider}' failed (retry {retry + 1}/{self._max_retries}), "
+                            f"Provider '{provider}' failed ({api_error_type}, retry {retry + 1}/{self._max_retries}), "
                             f"retrying in {backoff:.1f}s: {e}"
                         )
                         time.sleep(backoff)
@@ -450,16 +511,26 @@ class LLMClientAdapter(ILLMClient):
                         # All retries exhausted, mark as failed
                         self._failure_cache.mark_failure(provider_key)
                         self._stats["fallback_failure"] += 1
-                        logger.error(
-                            f"Provider '{provider}' failed after {self._max_retries} retries"
-                        )
+
+                        # 잔액 부족 오류 시 특별 로깅
+                        if api_error_type == API_ERROR_INSUFFICIENT_BALANCE:
+                            logger.error(
+                                f"Provider '{provider}' failed due to insufficient balance after {self._max_retries} retries. "
+                                f"Consider recharging API balance or checking account status."
+                            )
+                        else:
+                            logger.error(
+                                f"Provider '{provider}' failed ({api_error_type}) after {self._max_retries} retries"
+                            )
+
                         attempts.append(
                             {
                                 "provider": provider,
                                 "model": model,
                                 "success": False,
-                                "error": str(e),
+                                "error": error_msg,
                                 "error_type": type(e).__name__,
+                                "api_error_type": api_error_type,
                                 "retries": retry,
                                 "attempt": idx + 2,
                             }
@@ -500,6 +571,18 @@ class LLMClientAdapter(ILLMClient):
                 f"LLM generation completed with fallback: "
                 f"{len(successful_attempts)} successful attempts, "
                 f"{len(attempts) - len(successful_attempts)} failed providers"
+            )
+
+        # SPEC-RAG-Q-001 Phase 1: 잔액 부족 오류가 발생한 경우 사용자 알림 메시지 추가
+        insufficient_balance_errors = [
+            a for a in attempts
+            if a.get("api_error_type") == API_ERROR_INSUFFICIENT_BALANCE
+        ]
+        if insufficient_balance_errors:
+            failed_providers = ", ".join(set(a.get("provider", "unknown") for a in insufficient_balance_errors))
+            logger.warning(
+                f"API INSUFFICIENT BALANCE DETECTED: The following providers reported balance/payment issues: {failed_providers}. "
+                f"Fallback to alternative providers was used. Please check your API account balance."
             )
 
         return response

@@ -125,12 +125,13 @@ def _get_fallback_regulation_qa_prompt() -> str:
     return """당신은 동의대학교 규정 전문가입니다.
 주어진 규정 내용을 바탕으로 사용자의 질문에 **상세하고 친절하게** 답변하세요.
 
-## ⚠️ 절대 금지 사항 (할루시네이션 방지)
+## ⚠️ 절대 금지 사항 (할루시네이션 방지 - SPEC-RAG-Q-001 Phase 3 강화)
 1. **전화번호/연락처 생성 금지**: 절대로 "02-XXXX-XXXX", "02-1234-5678" 등 전화번호를 만들어내지 마세요.
 2. **다른 학교 사례 인용 금지**: 한국외국어대학교, 서울대학교 등 다른 학교 규정이나 사례를 절대 언급하지 마세요.
 3. **규정에 없는 수치/비율 생성 금지**: "40%", "30일 이내" 등 규정에 명시되지 않은 숫자를 만들어내지 마세요.
 4. **일반론 회피 금지**: "대학마다 다를 수 있습니다", "일반적으로..." 등 회피성 답변을 하지 마세요.
 5. **인용 없는 정보 생성 금지**: 규정 인용 없이 사실관계를 주장하지 마세요. 모든 정보는 반드시 인용과 함께 제공해야 합니다.
+6. **불확실한 정보 처리**: 제공된 문맥에서 답변을 찾을 수 없는 경우, 반드시 "제공된 규정에서 해당 정보를 찾을 수 없습니다"라고 명시하세요. 추측으로 답변하지 마세요.
 
 ## 기본 원칙
 - **반드시 제공된 규정 내용에 명시된 사항만 답변하세요.**
@@ -151,15 +152,20 @@ def _get_fallback_regulation_qa_prompt() -> str:
 ### 3. 참고사항
 [추가 도움이 필요한 경우 안내]
 
-## ⚠️ 규정 인용 강제 사항
+## ⚠️ 규정 인용 강제 사항 (SPEC-RAG-Q-001 Phase 4 강화)
 
 1. **모든 답변은 반드시 규정명과 조항을 인용해야 합니다.**
-2. **인용 형식**: "[규정명] 제X조" 또는 "[규정명] 제X조제Y항"
+2. **인용 형식 (구체적 조항 번호 필수)**:
+   - 기본 형식: "[규정명] 제X조" 또는 "[규정명] 제X조제Y항"
+   - 예시: "교원인사규정 제15조제2항", "학칙 제40조제1항"
 3. **인용 위치**: 인용은 답변의 핵심 내용 바로 다음에 괄호로 표기합니다.
 4. **인용 예시**:
    - "휴학은 학기 개시 1개월 전까지 신청해야 합니다 (학칙 제40조제1항)."
    - "등록금은 매학기 시작 전 납부해야 합니다 (등록금 납부 규정 제5조)."
-5. **인용 없는 답변 금지**: 규정 인용이 없는 답변은 불완전한 답변으로 간주합니다."""
+5. **교차 인용**: 관련된 여러 규정이 있는 경우, 모두 인용하세요.
+   - 예: "(교원인사규정 제15조제2항, 교원연구년 운영규정 제8조)"
+6. **인용 없는 답변 금지**: 규정 인용이 없는 답변은 불완전한 답변으로 간주합니다.
+7. **불확실한 인용 금지**: 조항 번호가 불확실한 경우, 규정명만이라도 인용하세요."""
 
 
 # System prompt for regulation Q&A (loaded from prompts.json)
@@ -1667,7 +1673,6 @@ class SearchUseCase:
         self._ensure_query_expansion_service()
         if self._query_expansion_service is not None:
             try:
-                from ..application.query_expansion import ExpandedQuery
 
                 # Use synonym-based expansion (fast, no LLM required)
                 expanded_queries = self._query_expansion_service.expand_query(
@@ -3036,6 +3041,7 @@ class SearchUseCase:
                             token_count=0,
                             keywords=[],
                             is_searchable=True,
+                            doc_type=r.get("doc_type", "regulation"),
                         )
                         # Reconstruct SearchResult
                         deserialized.append(

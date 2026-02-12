@@ -21,9 +21,6 @@ dependencies = [
     "llama-index-llms-ollama",
     "beautifulsoup4",
     "markdownify>=1.2.2",
-    "olefile",
-    "pandas",
-    "pyhwp>=0.1b15",
     "python-dotenv>=1.2.1",
     "questionary>=2.1.1",
     "rich>=14.2.0",
@@ -33,108 +30,31 @@ dependencies = [
     "flagembedding>=1.3.5",
     "mcp[cli]>=1.9.0",
     "mlx-lm>=0.29.1",
-    "kiwipiepy>=0.20.0",  # Pure Python Korean morpheme analyzer (replaces KoNLPy)
-    "sentence-transformers>=2.2.0",  # For ko-sbert-sts Korean embeddings
-    # "symspellpy-ko>=0.2.1",  # Korean typo correction with SymSpell algorithm ( temporarily disabled due to compatibility issues)
-    "editdistance>=0.6.2",  # Levenshtein distance for regulation name correction
+    "kiwipiepy>=0.20.0",
+    "sentence-transformers>=2.2.0",
     "ragas>=0.4.3",
     "deepeval>=3.8.1",
-    "pytest-asyncio>=1.3.0",
-    "reportlab>=4.0.0",  # PDF report generation for quality dashboard
-    "plotly>=5.18.0",  # Interactive charts for quality dashboard
-    "pydantic>=2.0.0",  # Input validation and security (P4: Security Hardening)
-    "cryptography>=41.0.0",  # AES-256 encryption for sensitive cache data (P4: Security Hardening)
+    "pytest-asyncio>=0.21.0",
+    "reportlab>=4.0.0",
+    "plotly>=5.18.0",
+    "pydantic>=2.0.0",
+    "cryptography>=41.0.0",
+    "editdistance>=0.6.2",
+    "ragas>=0.1.0",
 ]
-
-[project.scripts]
-regulation = "src.rag.interface.unified_cli:main"
-
 [project.optional-dependencies]
 dev = [
     "pytest>=9.0.0",
     "pytest-cov>=7.0.0",
     "pytest-xdist>=3.6.0",
     "pytest-timeout>=2.3.0",
-    "pytest-asyncio>=0.21.0",
-    "psutil>=5.9.0",  # Memory monitoring in conftest.py
-    "ragas>=0.1.0",  # LLM-as-Judge evaluation framework
-    "deepeval>=0.21.0",  # Alternative evaluation framework
+    "psutil>=5.9.0",
+    "ragas>=0.1.0",
+    "deepeval>=0.21.0",
 ]
-
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
-[tool.hatch.build.targets.wheel]
-packages = ["src"]
-
-[tool.pytest]
-testpaths = ["tests"]
-# CRITICAL: --no-cov is DEFAULT to prevent memory explosion
-# Use scripts/run_with_coverage.sh to run coverage separately
-# Removed -n 2 (xdist) and --timeout due to plugin compatibility issues
-addopts = ["--no-cov", "-m", "not debug", "--maxfail=5", "--tb=short"]
-markers = [
-    "debug: debug and diagnostic tests",
-    "slow: tests that take a long time to run",
-    "integration: integration tests that require external services",
-    "memory_intensive: tests that use large amounts of memory",
-]
-filterwarnings = [
-    "ignore::DeprecationWarning:importlib._bootstrap:241",  # SWIG bindings
-    "ignore:builtin type:DeprecationWarning",  # SWIG swigvarlink
-    "ignore::pytest.PytestConfigWarning:config",  # Ignore config warnings for legacy options
-]
-
-[tool.coverage.run]
-# Coverage settings for separate execution (see scripts/run_with_coverage.sh)
-# Run coverage separately from pytest to avoid memory explosion
-source = ["src"]
-omit = [
-    "*/tests/*",
-    "*/test_*.py",
-    "*/__pycache__/*",
-    "*/site-packages/*",
-]
-branch = true
-parallel = false  # CRITICAL: Disable parallel coverage to prevent memory explosion
-
-[tool.coverage.report]
-exclude_lines = [
-    "pragma: no cover",
-    "def __repr__",
-    "raise AssertionError",
-    "raise NotImplementedError",
-    "if __name__ == .__main__.:",
-    "if TYPE_CHECKING:",
-    "class .*\\bProtocol\\b.*:",
-    "@(abc\\.)?abstractmethod",
-]
-
-[tool.ruff]
-line-length = 88
-target-version = "py311"
-
-[tool.ruff.lint]
-select = [
-    "E",   # pycodestyle errors
-    "F",   # pyflakes
-    "I",   # isort
-    "B",   # flake8-bugbear
-    "W",   # pycodestyle warnings
-]
-ignore = [
-    "E501",  # line too long (handled by formatter)
-]
-
-[tool.ruff.lint.isort]
-known-first-party = ["src"]
-
-[dependency-groups]
-dev = [
-    "pytest>=9.0.2",
-    "pytest-cov>=7.0.0",
-    "pytest-xdist>=3.6.0",
-    "pytest-timeout>=2.3.0",
-    "ruff>=0.8.0",
-]
+[project.scripts]
+# Main entry point
+regulation = "src.rag.interface.unified_cli:main"
+# Shortcut aliases for simpler commands
+run_regulation = "python -m src.main"
+run = "python -m src.main"
