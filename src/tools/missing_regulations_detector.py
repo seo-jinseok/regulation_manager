@@ -10,8 +10,7 @@ import json
 import os
 import re
 import sys
-from pathlib import Path
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 
 def load_json(json_path: str) -> dict:
@@ -285,18 +284,18 @@ def main():
     toc_count = len(data.get('toc', []))
     docs_count = len(data.get('docs', []))
 
-    print(f"\n=== Statistics ===")
+    print("\n=== Statistics ===")
     print(f"TOC items: {toc_count}")
     print(f"Parsed docs: {docs_count}")
 
     # Find missing regulations
     missing = find_missing_regulations(data)
 
-    print(f"\n=== Missing Regulations ===")
+    print("\n=== Missing Regulations ===")
     print(f"Total missing: {len(missing)}")
 
     if missing:
-        print(f"\nFirst 20 missing regulations:")
+        print("\nFirst 20 missing regulations:")
         for i, reg in enumerate(missing[:20]):
             title = reg.get('title', 'Unknown')
             code = reg.get('rule_code', 'N/A')
@@ -324,7 +323,7 @@ def main():
                     articles_count = len(extracted.get('articles', []))
                     print(f"    - {articles_count} articles found", flush=True)
 
-            print(f"\n=== Recovery Summary ===")
+            print("\n=== Recovery Summary ===")
             print(f"Attempted: {len(missing)}")
             print(f"Recovered: {len(recovered)}")
 

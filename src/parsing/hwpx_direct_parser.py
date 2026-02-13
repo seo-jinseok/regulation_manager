@@ -21,7 +21,7 @@ from .regulation_article_extractor import RegulationArticleExtractor
 from .core.text_normalizer import TextNormalizer
 from .detectors.regulation_title_detector import RegulationTitleDetector
 from .validators.completeness_checker import CompletenessChecker, TOCEntry
-from .structure_analyzer import StructureAnalyzer, StructureInfo, get_authority_display_name, get_structure_summary, RegulationAuthority
+from .structure_analyzer import StructureAnalyzer, StructureInfo, get_structure_summary
 
 logger = logging.getLogger(__name__)
 

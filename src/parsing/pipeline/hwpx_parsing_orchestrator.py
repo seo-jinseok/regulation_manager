@@ -16,7 +16,7 @@ from typing import Any, Callable, Dict, List, Optional, Set
 import xml.etree.ElementTree as ET
 
 from ..core.text_normalizer import TextNormalizer
-from ..detectors.regulation_title_detector import RegulationTitleDetector, TitleMatchResult
+from ..detectors.regulation_title_detector import RegulationTitleDetector
 from ..validators.completeness_checker import CompletenessChecker, TOCEntry, CompletenessReport
 from ..regulation_article_extractor import RegulationArticleExtractor
 
@@ -335,6 +335,7 @@ class HWPXParsingOrchestrator:
         current_regulation: Optional[Dict[str, Any]] = None
         current_articles: List[Dict[str, Any]] = []
         accumulated_text: List[str] = []
+        regulations: List[Dict[str, Any]] = []
 
         def flush_current_article():
             """Flush accumulated text as content to the last article."""

@@ -8,7 +8,7 @@ import logging
 import re
 import zipfile
 from pathlib import Path
-from typing import Callable, List, Optional, Tuple
+from typing import Callable, List, Optional
 import xml.etree.ElementTree as ET
 
 from llama_index.core.readers.base import BaseReader  # type: ignore[import]

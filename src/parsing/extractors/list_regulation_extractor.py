@@ -16,7 +16,6 @@ import re
 import logging
 from dataclasses import dataclass, field
 from typing import List, Dict, Any, Optional, Tuple
-from enum import Enum
 
 from src.parsing.format.format_type import ListPattern
 

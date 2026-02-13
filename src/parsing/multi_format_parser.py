@@ -13,7 +13,6 @@ TDD Approach: GREEN Phase → REFACTOR Phase
 Version: 1.0.0
 Reference: SPEC-HWXP-002, TASK-006
 """
-import json
 import logging
 import zipfile
 import re

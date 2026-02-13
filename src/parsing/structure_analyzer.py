@@ -6,7 +6,7 @@ detecting authority-based patterns and extracting hierarchical structure.
 """
 import logging
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
 from .structure_patterns import (
     RegulationAuthority,

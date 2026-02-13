@@ -6,7 +6,7 @@ Identifies regulation titles with multi-pattern matching and confidence scoring.
 import re
 import logging
 from dataclasses import dataclass
-from typing import Optional, Tuple, List
+from typing import Optional, List
 
 logger = logging.getLogger(__name__)
 
