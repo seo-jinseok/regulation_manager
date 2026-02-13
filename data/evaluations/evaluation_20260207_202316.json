@@ -1,0 +1,27 @@
+{
+  "query": "휴학 부모님도 알아야 하나요?",
+  "answer": "당신은 동의대학교 규정에 대한 전문가입니다.\n\n 휴학 부모님도 알아야 하는 이유는, 육아휴학자에 따라 1년 단위로 휴학을 실시하며, 최대 3년까지 허가한다는 thing 에서 유래합니다. 이ため, 부모님은 학기 중 휴학을 원하는 자의 휴学일수를 2/3 तक 선임할 수 있습니다.\n\n 또한, 임신확인서와 가족관계증명서는 required 이며, submission 을 통해 제출해야 합니다.",
+  "contexts": [
+    "휴학규정 > 제8조 휴학시기 > ① 휴학: 휴학은 재학하고 있는 학기의 하(동)계 방학일로 부터 휴학하고자 하는 학기가 개시되기 전에 휴학함을 원칙으로 하나 부득이한 사유로 학기 중 휴학을 원하는 자는 수업일수 3분의 2 선까지 휴학 할 수 있다. <개정 2005. 12. 1., 2009. 7. 1., 2018. 2. 1., 2019. 2. 1.>",
+    "휴학규정 > 제7조 구비서류 및 절차 > 6. 육아휴학: 육아휴학의 경우 임신확인서, 가족관계증명서를 제출하여야 한다. <신설 2019. 2. 1.>",
+    "휴학규정 > 제5조 휴학기간 > ⑥ 육아휴학자: 육아휴학자의 휴학은 1년 단위로 실시하며, 최대 3년까지 허가한다. <신설 2019. 2. 1., 개정 2020. 7. 1.>",
+    "휴학규정 > 부칙 > 4. 임신확인서, 가족관계증명서(육아휴학) 위와 같: 임신확인서, 가족관계증명서(육아휴학) 위와 같이 휴학하고자 하오니 허락하여 주시기 바랍니다. 년 월 일 본 인 성 명 : (인)\n[TABLE:1]"
+  ],
+  "faithfulness": 0.5,
+  "answer_relevancy": 0.75,
+  "contextual_precision": 0.5,
+  "contextual_recall": 0.87,
+  "overall_score": 0.655,
+  "passed": false,
+  "failure_reasons": [
+    "Faithfulness below threshold: 0.500 < 0.6",
+    "Contextual Precision below threshold: 0.500 < 0.65",
+    "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+  ],
+  "timestamp": "2026-02-07T20:23:16.712714",
+  "metadata": {
+    "framework": "ragas",
+    "judge_model": "gpt-4o",
+    "evaluation_method": "ragas"
+  }
+}

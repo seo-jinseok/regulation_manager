@@ -6,7 +6,7 @@
 [![Coverage: 83.66%](https://img.shields.io/badge/coverage-83.66%25-brightgreen.svg)](tests/)
 [![TRUST 5](https://img.shields.io/badge/TRUST-5%20Compliant-blue.svg)](AGENTS.md)
 
-> **대학 규정집(HWP)을 구조화된 JSON으로 변환하고, RAG(검색 증강 생성) 기반으로 자연어 질문에 정확한 답변을 제공하는 오픈소스 AI 검색 시스템**
+> **대학 규정집(HWPX)을 구조화된 JSON으로 변환하고, RAG(검색 증강 생성) 기반으로 자연어 질문에 정확한 답변을 제공하는 오픈소스 AI 검색 시스템**
 
 > **🎉 v2.0.0 릴리즈!** RAG 시스템 최적화로 검색 정확도 33.8%, 응답 속도 70.8% 향상. [릴리즈 노트](docs/RELEASE_NOTES.md) | [개선 보고서](docs/RAG_IMPROVEMENTS.md)
 
@@ -35,15 +35,15 @@
 
 ### 시스템 소개
 
-대학 규정집은 수백 개의 규정과 수천 개의 조항으로 구성된 방대한 문서입니다. 학생이 휴학 절차를 알고 싶거나, 교수가 연구년 자격을 확인하고 싶을 때, 기존 방식으로는 PDF나 HWP 파일을 열어 일일이 검색해야 했습니다.
+대학 규정집은 수백 개의 규정과 수천 개의 조항으로 구성된 방대한 문서입니다. 학생이 휴학 절차를 알고 싶거나, 교수가 연구년 자격을 확인하고 싶을 때, 기존 방식으로는 PDF나 HWPX 파일을 열어 일일이 검색해야 했습니다.
 
-**규정 관리 시스템**은 이러한 불편함을 해결합니다. HWP 형식의 규정집을 **구조화된 데이터**로 변환하고, **AI 기반 검색**을 통해 자연어 질문에 정확한 답변을 제공합니다.
+**규정 관리 시스템**은 이러한 불편함을 해결합니다. HWPX 형식의 규정집을 **구조화된 데이터**로 변환하고, **AI 기반 검색**을 통해 자연어 질문에 정확한 답변을 제공합니다.
 
 ### 주요 기능
 
 | 기능 | 설명 |
 |------|------|
-| **규정 변환** | HWP 파일을 계층 구조가 보존된 JSON으로 변환 |
+| **규정 변환** | HWPX 파일을 계층 구조가 보존된 JSON으로 변환 |
 | **지능형 검색** | 키워드와 의미를 모두 고려한 하이브리드 검색 |
 | **AI 답변 생성** | 관련 규정을 참조하여 질문에 대한 답변 작성 |
 | **다양한 인터페이스** | 명령줄(CLI), 웹 UI, AI 에이전트 연동(MCP) 지원 |
@@ -62,14 +62,14 @@
 시스템은 크게 **3단계**로 작동합니다:
 
 ```text
-[1. 변환]              [2. 저장]               [3. 검색/질문]
- HWP 규정집    →    구조화된 JSON    →    자연어로 검색
+[1. 변환]               [2. 저장]               [3. 검색/질문]
+ HWPX 규정집   →    구조화된 JSON    →    자연어로 검색
     📄                   📋                    🔍
 ```
 
 ```mermaid
 flowchart LR
-    A["📄 HWP 규정집"] --> B["🔄 JSON 변환"]
+    A["📄 HWPX 규정집"] --> B["🔄 JSON 변환"]
     B --> C["🗃️ 벡터 DB 저장"]
     C --> D["🔍 검색"]
     D --> E["🤖 AI 답변"]
@@ -77,7 +77,7 @@ flowchart LR
 
 **처리 흐름 요약**:
 
-1. **변환**: HWP 파일을 편/장/절/조/항/호/목 계층 구조로 파싱하여 JSON 생성
+1. **변환**: HWPX 파일을 편/장/절/조/항/호/목 계층 구조로 파싱하여 JSON 생성
 2. **저장**: 각 조항을 벡터 데이터베이스에 저장하여 의미 기반 검색 가능
 3. **검색**: 키워드 매칭 + 의미 유사도를 결합한 하이브리드 검색 수행
 4. **답변**: AI가 검색 결과를 참고하여 질문에 대한 답변 생성
@@ -139,7 +139,7 @@ flowchart LR
 
 - **Python 3.11+**
 - **[uv](https://docs.astral.sh/uv/)**: Python 패키지 매니저
-- **[hwp5html](https://pypi.org/project/pyhwp/)**: HWP 파일 변환용 CLI 도구
+- **[hwp5html](https://pypi.org/project/pyhwp/)**: HWPX 파일 변환용 CLI 도구
 
 ### 추가 의존성 (v2.2.0)
 
@@ -178,7 +178,7 @@ cp .env.example .env
 # .env 파일을 편집하여 필요한 설정을 입력하세요
 ```
 
-### 2단계: hwp5html 설치 (HWP 변환 시 필요)
+### 2단계: hwp5html 설치 (HWPX 변환 시 필요)
 
 ```bash
 # hwp5html CLI 도구 설치
@@ -191,8 +191,8 @@ uv run hwp5html --help
 ### 3단계: 기본 워크플로우
 
 ```bash
-# 1. HWP 파일을 JSON으로 변환
-uv run regulation convert "data/input/규정집.hwp"
+# 1. HWPX 파일을 JSON으로 변환
+uv run regulation convert "data/input/규정집.hwpx"
 
 # 2. 벡터 DB에 저장
 uv run regulation sync data/output/규정집.json
@@ -389,8 +389,8 @@ uv run regulation serve --mcp
 | 명령어 | 설명 |
 |--------|------|
 | `regulation` | **대화형 모드 시작 (기본)** |
-| `regulation convert "파일.hwp"` | HWP → JSON 변환 |
-| `regulation convert "파일.hwp" --use_llm` | LLM 전처리 활성화 |
+| `regulation convert "파일.hwpx"` | HWPX → JSON 변환 |
+| `regulation convert "파일.hwpx" --use_llm` | LLM 전처리 활성화 |
 | `regulation sync <json>` | JSON → 벡터 DB 동기화 |
 | `regulation sync <json> --full` | 전체 재동기화 |
 | `regulation search "<쿼리>"` | 규정 검색 및 AI 답변 |
@@ -415,9 +415,9 @@ uv run regulation serve --mcp
 
 ```mermaid
 flowchart LR
-    subgraph CONVERT ["1️⃣ HWP → JSON 변환"]
+    subgraph CONVERT ["1️⃣ HWPX → JSON 변환"]
         direction TB
-        HWP["📄 HWP 파일"] --> hwp5html["hwp5html"]
+        HWP["📄 HWPX 파일"] --> hwp5html["hwp5html"]
         hwp5html --> Parser["RegulationParser"]
         Parser --> Enhance["enhance_for_rag"]
         Enhance --> JSON["📋 JSON"]
@@ -445,7 +445,7 @@ flowchart LR
 
 | 구성 요소 | 사용 기술 | 역할 |
 |----------|----------|------|
-| 문서 변환 | hwp5html, Python | HWP → HTML → JSON |
+| 문서 변환 | hwp5html, Python | HWPX → HTML → JSON |
 | 벡터 저장 | ChromaDB | 로컬 영속 벡터 데이터베이스 |
 | 임베딩 | BAAI/bge-m3 | 1024차원 다국어 임베딩 |
 | 재정렬 | BAAI/bge-reranker-v2-m3 | Cross-Encoder 기반 정밀 순위화 |
@@ -807,15 +807,15 @@ result = service.analyze_results("reranker_comparison")
 
 ## 처리 파이프라인 상세
 
-### 1️⃣ HWP → JSON 변환
+### 1️⃣ HWPX → JSON 변환
 
-HWP 파일의 복잡한 규정 내용을 **계층적 JSON 구조**로 변환합니다.
+HWPX 파일의 복잡한 규정 내용을 **계층적 JSON 구조**로 변환합니다.
 
 **처리 단계**:
 
 | 단계 | 컴포넌트 | 설명 |
 |------|----------|------|
-| 1 | `hwp5html` | HWP를 HTML/XHTML로 변환 |
+| 1 | `hwp5html` | HWPX를 HTML/XHTML로 변환 |
 | 2 | `RegulationParser` | 편/장/절/조/항/호/목 계층 구조 파싱 |
 | 3 | `ReferenceResolver` | 상호 참조 해석 ("제15조 참조" → 링크) |
 | 4 | `enhance_for_rag.py` | RAG 최적화 필드 추가 |
@@ -823,7 +823,7 @@ HWP 파일의 복잡한 규정 내용을 **계층적 JSON 구조**로 변환합�
 **변환 예시**:
 
 ```text
-[HWP 원본]                      [JSON 출력]
+[HWPX 원본]                     [JSON 출력]
 제4조 (용어의 정의)       →     { "display_no": "제4조",
   1. 학과(전공)란...              "title": "용어의 정의",
   6. 교육편제 조정은...           "children": [
@@ -1384,7 +1384,7 @@ uv run regulation search "학교에 가기 싫어" -v
 regulation_manager/
 ├── src/
 │   ├── main.py              # 변환 파이프라인 진입점
-│   ├── converter.py         # HWP → Markdown/HTML
+│   ├── converter.py         # HWPX → Markdown/HTML
 │   ├── formatter.py         # Markdown → JSON
 │   ├── enhance_for_rag.py   # RAG 최적화 필드 추가
 │   ├── parsing/             # 파싱 모듈
@@ -1399,7 +1399,7 @@ regulation_manager/
 │           ├── infrastructure/ # LLM, 저장소, 시뮬레이터
 │           └── interface/   # Automation CLI
 ├── data/
-│   ├── input/               # HWP 파일 입력
+│   ├── input/               # HWPX 파일 입력
 │   ├── output/              # JSON 출력
 │   ├── chroma_db/           # 벡터 DB 저장소
 │   ├── test_sessions/       # 테스트 세션 저장소

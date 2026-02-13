@@ -167,7 +167,7 @@ class OpenAIClient(ILLMClient):
             Dict with key information (no actual key material).
         """
         try:
-            from .security import APIKeyProvider, APIKeyValidator
+            from .security import APIKeyValidator
 
             provider = APIKeyValidator.detect_provider(self.api_key)
             return {

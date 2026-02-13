@@ -35,7 +35,7 @@ triggers:
     - "답변 정확도"
     - "edge case"
     - "multi-turn"
-  agents: []
+  agents: ["rag-quality-evaluator", "rag-student-undergraduate", "rag-student-graduate", "rag-professor", "rag-staff-admin", "rag-parent", "rag-international-student"]
   phases: ["run", "sync"]
   languages: ["python"]
 ---

@@ -1,0 +1,28 @@
+{
+  "query": "기숙사 관련 서류 뭐 필요한가요?",
+  "answer": "",
+  "contexts": [
+    "외국인유학생입학및관리규정 > 제19조 기숙사 > ① 기숙사에 입주하고자 하: 기숙사에 입주하고자 하는 외국인 학생은 소정 기간에 이용 신청을 하여야 한다.",
+    "교직원복무규정 > 제3장 업무인계ㆍ인수 > 제21조 서류보관 등: 교직원이 퇴근하는 때에는 문서 및 물품을 잠금 장치가 된 지정 서류함에 보관하여야 한다. 이 경우 유가증권 및 비밀문서 등 특별한 관리가 필요한 문서 및 물품의 경우에는 일반문서 및 물품과 별도로 보관하여야 한다.",
+    "대학원편입학에관한세칙 > 제3조 지원구비서류 > 1. 석사학위과정 > 라. 대학원장이 필요하다고 인정한 서류: 대학원장이 필요하다고 인정한 서류",
+    "대학원입학전형에관한세칙 > 제3조 제출서류 및 전형료 > ① 이 대학원 > 4. 기타 필요한 서류: 기타 필요한 서류"
+  ],
+  "faithfulness": 0.0,
+  "answer_relevancy": 0.5,
+  "contextual_precision": 0.5,
+  "contextual_recall": 0.87,
+  "overall_score": 0.468,
+  "passed": false,
+  "failure_reasons": [
+    "Faithfulness below threshold: 0.000 < 0.6",
+    "Answer Relevancy below threshold: 0.500 < 0.7",
+    "Contextual Precision below threshold: 0.500 < 0.65",
+    "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+  ],
+  "timestamp": "2026-02-07T19:17:31.543367",
+  "metadata": {
+    "framework": "ragas",
+    "judge_model": "gpt-4o",
+    "evaluation_method": "ragas"
+  }
+}

@@ -54,13 +54,16 @@ class JSONDocumentLoader(IDocumentLoader):
             if not rule_code:
                 continue
 
+            # Get doc_type (default to "regulation" for backward compatibility)
+            doc_type = doc.get("doc_type", "regulation")
+
             # Extract chunks from content
             content = doc.get("content", [])
-            chunks.extend(self._extract_chunks_recursive(content, rule_code))
+            chunks.extend(self._extract_chunks_recursive(content, rule_code, doc_type))
 
             # Extract chunks from addenda
             addenda = doc.get("addenda", [])
-            chunks.extend(self._extract_chunks_recursive(addenda, rule_code))
+            chunks.extend(self._extract_chunks_recursive(addenda, rule_code, doc_type))
 
         return chunks
 
@@ -85,11 +88,14 @@ class JSONDocumentLoader(IDocumentLoader):
             if not rule_code or rule_code not in rule_codes:
                 continue
 
+            # Get doc_type (default to "regulation" for backward compatibility)
+            doc_type = doc.get("doc_type", "regulation")
+
             content = doc.get("content", [])
-            chunks.extend(self._extract_chunks_recursive(content, rule_code))
+            chunks.extend(self._extract_chunks_recursive(content, rule_code, doc_type))
 
             addenda = doc.get("addenda", [])
-            chunks.extend(self._extract_chunks_recursive(addenda, rule_code))
+            chunks.extend(self._extract_chunks_recursive(addenda, rule_code, doc_type))
 
         return chunks
 
@@ -162,12 +168,20 @@ class JSONDocumentLoader(IDocumentLoader):
         return ""
 
     def _extract_chunks_recursive(
-        self, nodes: List[Dict[str, Any]], rule_code: str
+        self, nodes: List[Dict[str, Any]], rule_code: str, doc_type: str = "regulation"
     ) -> List[Chunk]:
         """
         Recursively extract Chunk entities from nested nodes.
 
         Only includes nodes with is_searchable=True and non-empty text.
+
+        Args:
+            nodes: List of JSON nodes.
+            rule_code: The rule code of the parent regulation.
+            doc_type: The document type (regulation, note, etc.).
+
+        Returns:
+            List of Chunk entities.
         """
         chunks: List[Chunk] = []
 
@@ -178,13 +192,13 @@ class JSONDocumentLoader(IDocumentLoader):
             embedding_text = node.get("embedding_text", text)
 
             if is_searchable and embedding_text:
-                chunk = Chunk.from_json_node(node, rule_code)
+                chunk = Chunk.from_json_node(node, rule_code, doc_type)
                 chunks.append(chunk)
 
             # Recurse into children
             children = node.get("children", [])
             if children:
-                chunks.extend(self._extract_chunks_recursive(children, rule_code))
+                chunks.extend(self._extract_chunks_recursive(children, rule_code, doc_type))
 
         return chunks
 

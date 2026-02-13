@@ -1,0 +1,27 @@
+{
+  "query": "사무용품 관련 비품/시설 사용 규정",
+  "answer": "사무용품 관련 비품/시설 사용 규정에 관하여 answering 할 때는, 아래와 같은 내용을 고려하면 됩니다.\n\n시설 관리규정 제5조에 따르면, 시설의 관리에 관한 사항은 시설관리팀에서 관장한다. \n\n다만, 이規정에는 사무용품 관련 비품/시설 사용 규定的 specifics이 포함되지 않습니다. \n\n공간조정위원회 규정 제2조 1항에 따르면, education basic facilities는 강의실, 실험·실습실, 교수연구실, 행정실, 도서관, 학생회관, 체육관, 대학본관, 전산정보원 및 그 부대시설을 말합니다. \n\n따라서, 이 규정은 사무용품 관련 비품/시설 사용과 관련된 specifics을 포함하지 않는다. \n\n사무분장규정 제12장 관리처 제55조 8항에 따르면, 시설물의 도서관리 및 정리는 시설관리팀이 지급하고 있습니다. \n\n따라서, 이 규정은 사무용품 관련 비품/시설 사용과 관련된 specifics을 포함하지 않는다.",
+  "contexts": [
+    "시설관리규정 > 제1장 총칙 > 제4조 정의 > 1. 시설이라 함: 시설이라 함은 건축물, 구조물, 운동장, 조경, 도로, 기계설비, 전기설비, 통신설비, 소방설비, 환경설비 및 기타 건물 내·외부의 구축물을 말한다.",
+    "공간조정위원회규정 > 제2조 공간의 정의 > [종전 제 2조 > 1. 교육기본시설: 강의실, 실험·실습실, 교수연구: 교육기본시설: 강의실, 실험·실습실, 교수연구실, 행정실, 도서관, 학생회관, 체육관, 대학본관, 전산정보원 및 그 부대시설",
+    "사무분장규정 > 제12장 관리처 > 제55조 시설관리팀 > 8. 시설물: 시설물의 도서관리 및 정리",
+    "시설관리규정 > 제1장 총칙 > 제5조 주관부서: 시설의 관리에 관한 사항은 시설관리팀에서 관장한다. <개정 2008. 2. 1, 2009. 6. 16, 2009. 10. 20, 2017. 3. 1, 2022. 3. 1>"
+  ],
+  "faithfulness": 0.5,
+  "answer_relevancy": 0.92,
+  "contextual_precision": 0.5,
+  "contextual_recall": 0.87,
+  "overall_score": 0.698,
+  "passed": false,
+  "failure_reasons": [
+    "Faithfulness below threshold: 0.500 < 0.6",
+    "Contextual Precision below threshold: 0.500 < 0.65",
+    "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+  ],
+  "timestamp": "2026-02-07T20:22:40.355380",
+  "metadata": {
+    "framework": "ragas",
+    "judge_model": "gpt-4o",
+    "evaluation_method": "ragas"
+  }
+}

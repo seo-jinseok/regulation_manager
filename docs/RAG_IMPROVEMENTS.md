@@ -384,7 +384,7 @@ src/rag/
 
 ```mermaid
 flowchart LR
-    A[HWP 파일] --> B[JSON 변환]
+    A[HWPX 파일] --> B[JSON 변환]
     B --> C[벡터 DB 동기화]
     C --> D[쿼리 분석]
     D --> E[하이브리드 검색]

@@ -19,20 +19,20 @@ def test_caching_simulation(tmp_path):
     cm = CacheManager(cache_dir=str(cache_dir))
 
     # 2. Mock File and Hash
-    hwp_path = Path("data/input/규정집9-349(20251202).hwp")
+    hwp_path = Path("data/input/규정집9-349(20251202).hwpx")
     if not hwp_path.exists():
         # Fallback search
         import glob
 
-        files = glob.glob("data/input/*.hwp")
+        files = glob.glob("data/input/*.hwpx")
         if files:
             hwp_path = Path(files[0])
         else:
-            pytest.skip("HWP file not found in data/input")
+            pytest.skip("HWPX file not found in data/input")
 
-    print("Computing HWP Hash...")
+    print("Computing HWPX Hash...")
     real_hwp_hash = cm.compute_file_hash(hwp_path)
-    print(f"HWP Hash: {real_hwp_hash}")
+    print(f"HWPX Hash: {real_hwp_hash}")
 
     # 3. Create Dummy Raw MD in temp directory (auto-cleaned)
     output_dir = tmp_path / "test_output_sim"
@@ -46,7 +46,7 @@ def test_caching_simulation(tmp_path):
     print(f"Created Dummy MD at {raw_md_path}")
 
     # 4. Populate Cache manually
-    # We pretend we already processed this HWP
+    # We pretend we already processed this HWPX
     cm.update_file_state(str(hwp_path), hwp_hash=real_hwp_hash)
     cm.save_all()
 

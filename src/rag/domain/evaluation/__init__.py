@@ -10,6 +10,13 @@ from .custom_judge import (
     CustomJudgeConfig,
     CustomLLMJudge,
 )
+from .llm_judge import (
+    EvaluationBatch,
+    EvaluationSummary,
+    JudgeResult,
+    LLMJudge,
+    QualityLevel,
+)
 from .models import (
     EvaluationFramework,
     EvaluationResult,
@@ -19,6 +26,11 @@ from .models import (
     PersonaProfile,
     QualityIssue,
     TestCase,
+)
+from .parallel_evaluator import (
+    ParallelPersonaEvaluator,
+    PersonaEvaluationResult,
+    PersonaQuery,
 )
 from .personas import PERSONAS, PersonaManager
 from .quality_analyzer import QualityAnalyzer
@@ -44,6 +56,16 @@ __all__ = [
     "CustomLLMJudge",
     "CustomJudgeConfig",
     "CustomEvaluationResult",
+    # New LLM-as-Judge (rag-quality-local skill)
+    "LLMJudge",
+    "JudgeResult",
+    "EvaluationBatch",
+    "EvaluationSummary",
+    "QualityLevel",
+    # Parallel Persona Evaluation
+    "ParallelPersonaEvaluator",
+    "PersonaEvaluationResult",
+    "PersonaQuery",
     # Constants
     "PERSONAS",
 ]

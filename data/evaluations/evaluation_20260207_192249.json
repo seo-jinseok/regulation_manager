@@ -1,0 +1,28 @@
+{
+  "query": "자녀 기숙사 관련해서 알고 싶어요",
+  "answer": "",
+  "contexts": [
+    "외국인유학생입학및관리규정 > 제19조 기숙사 > ② 기숙사에 입주 시 해당 기숙사 내규를 준수하여: 기숙사에 입주 시 해당 기숙사 내규를 준수하여야 한다.",
+    "한국어연수과정운영규정 > 제3장 교육 및 학사운영 > 제16조 기숙: 어학연수생은 본 대학교 기숙사를 이용해야 하며, 기숙사 내부 운영규정을 준수해야 한다. 다만, 국내 연고지가 있거나 타 대학 전입생의 경우 개인 기숙을 허용할 수 있다.",
+    "공간조정위원회규정 > 제2조 공간의 정의 > [종전 제 2조 > 2. 지원시설: 강당, 학생기숙사 및 그 부대시설: 지원시설: 강당, 학생기숙사 및 그 부대시설",
+    "휴학규정 > 제3조 구분 및 변경 > ① 휴학 > 5. 육아휴학 : 임신, 출산 및 만 8세 이하 자: 육아휴학 : 임신, 출산 및 만 8세 이하 자녀(입양한 자녀 포함)의 육아 사유로 인한 휴학 <신설 2019. 2. 1.>"
+  ],
+  "faithfulness": 0.0,
+  "answer_relevancy": 0.5,
+  "contextual_precision": 0.5,
+  "contextual_recall": 0.87,
+  "overall_score": 0.468,
+  "passed": false,
+  "failure_reasons": [
+    "Faithfulness below threshold: 0.000 < 0.6",
+    "Answer Relevancy below threshold: 0.500 < 0.7",
+    "Contextual Precision below threshold: 0.500 < 0.65",
+    "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+  ],
+  "timestamp": "2026-02-07T19:22:49.701899",
+  "metadata": {
+    "framework": "ragas",
+    "judge_model": "gpt-4o",
+    "evaluation_method": "ragas"
+  }
+}

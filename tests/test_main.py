@@ -29,13 +29,13 @@ class TestExtractSourceMetadata:
 
     def test_missing_date(self):
         """Test when date is not in filename."""
-        result = _extract_source_metadata("규정집8-200.hwp")
+        result = _extract_source_metadata("규정집8-200.hwpx")
         assert result["source_serial"] == "8-200"
         assert result["source_date"] is None
 
     def test_no_matching_pattern(self):
         """Test when no patterns match."""
-        result = _extract_source_metadata("random_file.hwp")
+        result = _extract_source_metadata("random_file.hwpx")
         assert result["source_serial"] is None
         assert result["source_date"] is None
 

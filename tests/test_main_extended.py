@@ -36,9 +36,9 @@ class TestGetFilePaths(unittest.TestCase):
 
     def test_single_file_input(self):
         """Test single file input path."""
-        file = Path("test.hwp")
+        file = Path("test.hwpx")
         output_dir = Path("output")
-        input_path = Path("test.hwp")
+        input_path = Path("test.hwpx")
 
         result = _get_file_paths(file, output_dir, input_path)
 
@@ -50,7 +50,7 @@ class TestGetFilePaths(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             input_path = Path(temp_dir)
             output_dir = Path(temp_dir) / "output"
-            file = input_path / "subdir" / "test.hwp"
+            file = input_path / "subdir" / "test.hwpx"
 
             result = _get_file_paths(file, output_dir, input_path)
 
@@ -259,7 +259,7 @@ class TestExtractSourceMetadataExtended(unittest.TestCase):
 
     def test_no_match(self):
         """Test filename with no matching pattern."""
-        result = _extract_source_metadata("random_filename.hwp")
+        result = _extract_source_metadata("random_filename.hwpx")
 
         self.assertIsNone(result["source_serial"])
         self.assertIsNone(result["source_date"])
@@ -373,8 +373,8 @@ class TestCollectHwpFilesExtended(unittest.TestCase):
             with patch("pathlib.Path.is_dir", return_value=True):
                 with patch("pathlib.Path.rglob") as mock_rglob:
                     mock_files = [
-                        Path("file1.hwp"),
-                        Path("file2.hwp"),
+                        Path("file1.hwpx"),
+                        Path("file2.hwpx"),
                     ]
                     mock_rglob.return_value = mock_files
 
@@ -385,7 +385,7 @@ class TestCollectHwpFilesExtended(unittest.TestCase):
                     self.assertEqual(len(result), 2)
 
     def test_no_hwp_files_in_directory(self):
-        """Test directory with no HWP files."""
+        """Test directory with no HWPX files."""
         mock_console = MagicMock()
         with patch("pathlib.Path.exists", return_value=True):
             with patch("pathlib.Path.is_dir", return_value=True):

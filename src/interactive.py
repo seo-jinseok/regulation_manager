@@ -37,7 +37,7 @@ class InteractiveWizard:
             candidates.append(legacy_dir)
 
         for cand in candidates:
-            if any(cand.rglob("*.hwp")):
+            if any(cand.rglob("*.hwpx")):
                 return cand
 
         if candidates:
@@ -49,7 +49,7 @@ class InteractiveWizard:
         console.clear()
         welcome_panel = Panel(
             "[bold cyan]규정 관리 프로그램 (Regulation Manager)[/bold cyan]\n"
-            "[white]규정 HWP 파일을 마크다운/JSON으로 변환하고 관리합니다.[/white]",
+            "[white]규정 HWPX 파일을 마크다운/JSON으로 변환하고 관리합니다.[/white]",
             title="[bold green]환영합니다[/bold green]",
             subtitle="v1.0",
             style="bold blue",
@@ -66,7 +66,7 @@ class InteractiveWizard:
             target_dir = self.root_dir / "data" / "input"
             console.print(f"[bold red](!) 필수 폴더 없음:[/bold red] {target_dir}")
             console.print(
-                "    [yellow]'data/input'[/yellow] 또는 [yellow]'규정'[/yellow] 폴더를 생성하고 .hwp 파일을 넣어주세요."
+                "    [yellow]'data/input'[/yellow] 또는 [yellow]'규정'[/yellow] 폴더를 생성하고 .hwpx 파일을 넣어주세요."
             )
 
             import questionary
@@ -83,11 +83,11 @@ class InteractiveWizard:
         console.print(f"[blue]>> 입력 폴더 감지됨:[/blue] {target_dir}")
 
         with console.status("[bold green]파일 검색 중...[/bold green]", spinner="dots"):
-            hwp_files = sorted(list(target_dir.rglob("*.hwp")))
+            hwp_files = sorted(list(target_dir.rglob("*.hwpx")))
 
         if not hwp_files:
             console.print(
-                f"[bold red](!) 파일 없음:[/bold red] '{target_dir.name}' 폴더에 .hwp 파일이 없습니다."
+                f"[bold red](!) 파일 없음:[/bold red] '{target_dir.name}' 폴더에 .hwpx 파일이 없습니다."
             )
             sys.exit(0)
 
@@ -175,7 +175,7 @@ class InteractiveWizard:
             is_converted = json_path.exists()
             status_icon = "✓" if is_converted else "-"
 
-            # Format: "1. filename.hwp (✓)"
+            # Format: "1. filename.hwpx (✓)"
             title = f"{idx}. {f.name} ({status_icon})"
             choice_obj = Choice(title=title, value=f)
             choices.append(choice_obj)
@@ -221,7 +221,17 @@ class InteractiveWizard:
         import questionary
 
         class Config:
-            pass
+            output_dir: str
+            use_llm: bool
+            provider: str
+            model: Optional[str]
+            base_url: Optional[str]
+            allow_llm_fallback: bool
+            verbose: bool
+            force: bool
+            cache_dir: str
+            enhance_rag: bool
+            input_path: str
 
         config = Config()
 

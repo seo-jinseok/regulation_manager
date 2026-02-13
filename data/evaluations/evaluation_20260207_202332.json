@@ -1,0 +1,27 @@
+{
+  "query": "비자 related to visa status",
+  "answer": "저는 동의대학교 규정을 설명하는 전문가입니다. \n\n* 12년 이상 foreign school education: \n    FOREIGN STUDENT ENTRANCE REGULATION 제26조에 따르면, 외국에서 12년 이상의 학교 교육과정을 이수한 자는 이국적으로 입학할 수 없습니다.\n    또한, FOREIGN STUDENT ENTRANCE REGULATION 제7조에 따르면, 외국에서 3년 이상의 학교 교육과정을 이수한 자는 이국적로 재입학할 수 있습니다.\n\n* 교원인사규정 > 제8조 교원의 자격: \n    Giáo직인사 규정 제2장 신규임용 > 제8조 교원의 자격에 따라, 교원은 대학 또는 이와 동등 정도의 학교를 졸업한 후의 전공학과 및 그와 관련되는 학과의 대학ㆍ전문대학 또는 이와 동등-degree의 학교의 교육경력을 가지고 있습니다.\n\n* 법원: \n    법원에 관한 규정 제83조 ①에 따라, 법원의 판결 또는 다른 법률에 의하여 자격이 상실 또는 정지된자는 입학 자격을 잃습니다.",
+  "contexts": [
+    "동의대학교학칙 > 제3장 입학, 재입학 및 편입학 > 제9조 입학자격 > 3. 외국에서 12년 이상: 외국에서 12년 이상의 학교교육과정을 이수한 자",
+    "학교법인동의학원정관 > 제83조 자격 > ① 다음 각 호 > 6. 법원: 법원의 판결 또는 다른 법률에 의하여 자격이 상실 또는 정지된 자",
+    "교원인사규정 > 제2장 신규임용 > 제8조 교원의 자격 > ② 교육경력: 교육경력은 대학 또는 이와 동등 정도의 학교를 졸업한 후의 전공학과 및 그와 관련되는 학과의 대학ㆍ전문대학 또는 이와 동등 정도의 학교의 교육경력을 말하며, 그 구체적인 기준은 따로 정한다."
+  ],
+  "faithfulness": 0.5,
+  "answer_relevancy": 0.5,
+  "contextual_precision": 0.5,
+  "contextual_recall": 0.87,
+  "overall_score": 0.593,
+  "passed": false,
+  "failure_reasons": [
+    "Faithfulness below threshold: 0.500 < 0.6",
+    "Answer Relevancy below threshold: 0.500 < 0.7",
+    "Contextual Precision below threshold: 0.500 < 0.65",
+    "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+  ],
+  "timestamp": "2026-02-07T20:23:32.932067",
+  "metadata": {
+    "framework": "ragas",
+    "judge_model": "gpt-4o",
+    "evaluation_method": "ragas"
+  }
+}

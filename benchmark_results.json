@@ -1,0 +1,23 @@
+{
+  "benchmark_file": "benchmark_514.hwpx",
+  "target_time_seconds": 60.0,
+  "target_memory_mb": 2048,
+  "num_regulations": 514,
+  "sequential": {
+    "parser": "Sequential",
+    "time_seconds": 0.23865890502929688,
+    "memory_current_mb": 0.8059492111206055,
+    "memory_peak_mb": 1.0900449752807617,
+    "regulations_parsed": 514,
+    "throughput_regs_per_sec": 2153.701325064335
+  },
+  "parallel": {
+    "parser": "Parallel",
+    "time_seconds": 0.22668695449829102,
+    "memory_current_mb": 1.0565605163574219,
+    "memory_peak_mb": 2.368344306945801,
+    "regulations_parsed": 514,
+    "throughput_regs_per_sec": 2267.4441109220293
+  },
+  "speedup": 1.0528127018050177
+}

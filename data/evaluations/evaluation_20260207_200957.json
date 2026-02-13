@@ -1,0 +1,29 @@
+{
+  "query": "연구비 신청 시 필요한 서류는 무엇인가요?",
+  "answer": "동의대학교 교내연구비운영규정 제5조에 따르면, 연구비 지원 및 관리에 관한 규정에서 \"일반연구과제\"에 관하여는 researchers가 교내연구비지원신청서를 소속 대학장에게 제출하여야 한다.",
+  "contexts": [
+    "교내연구비운영규정 > 제5조 연구비 지원 및 관리 > ① 일반연구과제: 일반연구과제의 연구비를 지원받고자 하는 교원은 교내연구비지원신청서를 소속 대학장에게 제출하여야 한다. <개정 2005. 4. 15., 2011. 6. 1., 2020. 7. 1., 2024. 6. 1.>",
+    "교내연구비운영규정 > 제9조 연구비 지원 > ② 일반연구과제: 일반연구과제의 연구비는 제8조의 연구결과보고서 및 연구결과물 제출완료 후 별도의 지급청구에 의하여 지급한다. <신설 2014. 3. 1., 개정 2024. 6. 1.>",
+    "교내연구비운영규정 > 제9조 연구비 지원 > ③ 특별연구과제: 특별연구과제의 연구비는 연구책임자의 지급신청에 의하여 지급한다. <신설 2024. 6. 1.>",
+    "교내연구비운영규정 > 제9조 연구비 지원 > ① 과제당 연구비 지원 금액: 과제당 연구비 지원 금액은 총장이 따로 정한다.",
+    "교내연구비운영규정 > 제5조 연구비 지원 및 관리 > ④ 특별연구과제: 특별연구과제는 기획팀의 공모를 통하여 대학발전기획위원회의 심의·평가를 거쳐 선정된 과제를 말한다. <신설 2024. 6. 1.>"
+  ],
+  "faithfulness": 0.5,
+  "answer_relevancy": 0.5,
+  "contextual_precision": 0.5,
+  "contextual_recall": 0.87,
+  "overall_score": 0.593,
+  "passed": false,
+  "failure_reasons": [
+    "Faithfulness below threshold: 0.500 < 0.6",
+    "Answer Relevancy below threshold: 0.500 < 0.7",
+    "Contextual Precision below threshold: 0.500 < 0.65",
+    "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+  ],
+  "timestamp": "2026-02-07T20:09:57.519005",
+  "metadata": {
+    "framework": "ragas",
+    "judge_model": "gpt-4o",
+    "evaluation_method": "ragas"
+  }
+}

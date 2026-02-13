@@ -1,0 +1,27 @@
+{
+  "query": "연구년 적용 기준 상세히",
+  "answer": "**연구년 aplicatio n 기준 상세히**\n\n*   **교원연구년제규정 제 4조 applying range**: 이 규정은 연구개발 과제 제안, 연구개발의 수행, 연구결과의 보고･발표, 연구심사･평가행위 등 본교 내에서 이루어지는 모든 연구開発 전 범위에 적용된다.\n*   **Research Year Plan서1부** \n    *   연구년제 performed by : 교원(직원)\n    *   연구개발의 scope: 본교 내 연구 개발\n    *   연구 Development plan서 작성 시에 following item을 포함해야합니다. \n\n**Reference**\n 1. 교원연구년제규정 제4조 applying range \n2. 교원연구년제규정 부칙 제4조 Applying Range",
+  "contexts": [
+    "교원연구년제규정 > 부칙 > 2. 연구년제 수행계획서1부: 연구년제 수행계획서1부.",
+    "연구윤리규정 > 제1장 총칙 > 제3조 적용 범위: 이 규정은 연구개발 과제 제안, 연구개발의 수행, 연구결과의 보고･발표, 연구심사･평가행위 등 본교 내에서 이루어지는 모든 연구개발 전 범위에 적용된다.",
+    "교원연구년제규정 > 부칙 > 4. 연구년 수행기관 동의서 또: 연구년 수행기관 동의서 또는 초청장 1부. 201 학년도 연구년제 수행을 허가받고자 신청합니다. 201 년 월 일 신 청 자  (인) ( ) 학 과 장 (인) ( ) 대 학 장   (인) 직무대행서 및 학과교수 동의서"
+  ],
+  "faithfulness": 0.5,
+  "answer_relevancy": 0.5,
+  "contextual_precision": 0.5,
+  "contextual_recall": 0.87,
+  "overall_score": 0.593,
+  "passed": false,
+  "failure_reasons": [
+    "Faithfulness below threshold: 0.500 < 0.6",
+    "Answer Relevancy below threshold: 0.500 < 0.7",
+    "Contextual Precision below threshold: 0.500 < 0.65",
+    "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+  ],
+  "timestamp": "2026-02-07T19:45:51.927795",
+  "metadata": {
+    "framework": "ragas",
+    "judge_model": "gpt-4o",
+    "evaluation_method": "ragas"
+  }
+}

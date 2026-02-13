@@ -1,123 +1,80 @@
-# 대학 규정 관리 시스템 (Regulation Manager)
+# Product: Regulation Manager
 
-## 프로젝트 개요
+## Overview
 
-대학 규정 관리 시스템은 대학 규정집(HWP)을 구조화된 JSON으로 변환하고, RAG(검색 증강 생성) 기반으로 자연어 질문에 정확한 답변을 제공하는 오픈소스 AI 검색 시스템입니다.
+**Regulation Manager** is an AI-powered search system for university regulations. It converts HWP (Korean word processor) regulation files into structured JSON and provides natural language question answering using RAG (Retrieval-Augmented Generation).
 
-수백 개의 규정과 수천 개의 조항으로 구성된 방대한 대학 규정집을 기존 방식대로 PDF나 HWP 파일로 검색하면 효율성이 떨어집니다. 본 시스템은 이러한 문제를 해결하기 위해 HWP 형식의 규정집을 구조화된 데이터로 변환하고, AI 기반 검색을 통해 자연어 질문에 정확한 답변을 제공합니다.
+## Problem Statement
 
-## 타겟 사용자
+University regulations contain hundreds of regulations with thousands of articles. Traditional search methods require users to:
+- Manually search through PDF or HWP files
+- Know specific article numbers or keywords
+- Spend significant time finding relevant information
 
-### 학생
-- 휴학, 복학, 장학금, 성적 등 학업과 관련된 규정을 빠르게 조회
-- "휴학하려면 어떻게 해야 하나요?"와 같은 자연어 질문에 즉시 답변 수신
-- 복잡한 행정 절차를 이해하기 쉬운 답변으로 확인
+## Solution
 
-### 교직원
-- 교원 인사, 연구년, 휴직, 파견 연구 등 교원 관련 규정 신속 조회
-- 업무 수행 중 필요한 규정 조항을 빠르게 검색하여 활용
-- 연구년 자격, 휴직 절차 등 상세 규정 확인
+Regulation Manager provides:
+1. **HWP to JSON Conversion**: Structured data with hierarchical regulation format
+2. **Hybrid Search**: Combines keyword matching (BM25) with semantic search (vector embeddings)
+3. **AI-Powered Answers**: LLM generates accurate answers with proper citations
+4. **Multiple Interfaces**: CLI, Web UI, and MCP server for AI agent integration
 
-### 행정담당자
-- 규정 데이터베이스 관리 및 최신화
-- 검색 시스템 운영 및 유지보수
-- 규정 변경 사항 반영 및 동기화
+## Target Users
 
-### 개발자
-- AI 에이전트(Claude, Cursor 등)와 MCP 연동하여 규정 검색 자동화
-- 웹 UI, CLI, MCP 서버 등 다양한 인터페이스 활용
-- REST API를 통한 시스템 통합
+| User Type | Use Case |
+|-----------|----------|
+| **Students** | "How do I apply for leave of absence?" |
+| **Professors** | "What are the eligibility requirements for sabbatical?" |
+| **Staff** | Quick regulation lookup for administrative tasks |
+| **Developers** | Integration with AI agents (Claude, Cursor) via MCP |
 
-## 핵심 기능
+## Key Features
 
-### 1. HWP → JSON 변환
-HWP 파일을 편/장/절/조/항/호/목 계층 구조로 파싱하여 JSON으로 변환합니다. 상호 참조 해석, RAG 최적화 필드 추가, 계층 경로 보존 등의 기능을 제공합니다.
+### Core Features
+- **Regulation Conversion**: HWP → JSON with preserved hierarchy (편/장/절/조/항/호/목)
+- **Vector Database**: ChromaDB with BGE-M3 embeddings (1024 dimensions)
+- **Hybrid Search**: BM25 + Dense search with RRF fusion
+- **Reranking**: BGE Reranker v2-m3 for precision
+- **Multi-turn Conversation**: Context-aware dialogue support
 
-### 2. 하이브리드 RAG 검색
-키워드 매칭(BM25)과 의미 기반 검색(Dense)을 결합한 하이브리드 검색을 제공합니다. 형태소 분석 기반 토큰화, Reciprocal Rank Fusion(RRF) 알고리즘을 활용하여 검색 정확도를 극대화합니다.
+### Advanced RAG Techniques
+- **Agentic RAG**: LLM tool selection and execution
+- **Corrective RAG**: Automatic query expansion and re-retrieval
+- **Self-RAG**: LLM evaluates retrieval necessity and result quality
+- **HyDE**: Hypothetical document embeddings for ambiguous queries
+- **KoNLPy BM25**: Korean morpheme analysis for keyword search
 
-### 3. AI 답변 생성
-다양한 LLM(Ollama, OpenAI, Gemini 등) 지원을 통해 검색 결과를 참고하여 질문에 대한 답변을 생성합니다. 규정에 명시된 내용만으로 답변하여 환각 현상을 방지합니다.
+### Additional Capabilities
+- **Quality Evaluation**: LLM-as-Judge evaluation system with 6 persona simulation
+- **A/B Testing**: Statistical framework for component comparison
+- **Circuit Breaker**: LLM connection failure detection and recovery
+- **Ambiguity Classification**: Automatic detection and clarification of ambiguous queries
+- **Emotional Query Support**: Empathetic responses for distressed users
+- **Citation Enhancement**: Accurate article number extraction and validation
 
-### 4. 고급 RAG 기법
-- **Corrective RAG**: 검색 결과 관련성 평가 후 쿼리 확장 및 재검색
-- **Self-RAG**: LLM이 검색 필요성과 결과 품질 자체 평가
-- **HyDE**: 모호한 쿼리에 가상 문서 생성으로 검색 개선
-- **Agentic RAG**: LLM이 도구를 선택·실행하는 에이전트 기반 RAG
+## Version History
 
-### 5. 다양한 인터페이스
-- **CLI**: 대화형 모드, 일회성 검색, DB 관리
-- **Web UI**: ChatGPT 스타일 인터페이스, 파일 업로드, 예시 쿼리 카드
-- **MCP Server**: AI 에이전트(Claude, Cursor 등)와 연동
+| Version | Date | Key Improvements |
+|---------|------|------------------|
+| v1.0 | Initial | Basic RAG system |
+| v2.0 | 2025-01 | +33.8% accuracy, +70.8% speed |
+| v2.1 | 2026-01 | SPEC-RAG-001: 7 new components, 467 tests |
+| v2.2 | 2026-02 | SPEC-RAG-002: Quality improvements, 87.3% coverage |
 
-## 사용 사례 및 예시
+## Performance Metrics
 
-### 학생 휴학 질의
-```
-질문: "휴학 신청 절차가 어떻게 되나요?"
+| Metric | Value |
+|--------|-------|
+| Top-1 Accuracy | 87% |
+| NDCG@10 | 0.82 |
+| MRR | 0.89 |
+| Avg Response Time | 280ms |
+| Cache Hit Rate | 78% |
+| Test Coverage | 87.3% |
 
-답변: 휴학 신청은 다음 절차를 따릅니다.
-1. 학사시스템 로그인
-2. 휴학 신청서 작성
-3. 지도교수 승인
-4. 학과장 승인
-5. 교무처 승인
+## Project Goals
 
-참고: 교원연구년제규정 제3조, 학칙 제45조
-```
-
-### 교수 연구년 자격 확인
-```
-질문: "연구년 신청 자격이 뭐예요?"
-
-답변: 연구년 신청 자격은 다음과 같습니다.
-- 본 대학교에 6년 이상 재직한 전임교원
-- 연구 계획서 제출
-- 학과장 및 학장의 추천
-
-참고: 교원연구년제규정 제3조 제1항
-```
-
-### 의도 기반 쿼리 확장
-```
-질문: "학교에 가기 싫어요"
-
-분석: 휴직, 휴가, 연구년 관련 의도 감지
-확장 쿼리: "휴직 휴가 연구년 안식년 병가 연가"
-
-결과: 교원휴직규정, 교원연구년제규정, 교원복무규정 등 관련 규정 제시
-```
-
-### 조문 번호 검색
-```
-질문: "제15조"
-
-결과: 해당 조항 전문 직접 표시
-```
-
-### 규정 전문 조회
-```
-질문: "교원인사규정 전문"
-
-결과: 규정 전체 구조(목차, 편/장/절 계층) 표시
-```
-
-## 프로젝트 혜택
-
-### 사용자 혜택
-- **시간 절약**: 수십 분의 규정 검색을 몇 초로 단축
-- **정확성 향상**: 키워드와 의미를 모두 고려한 정확한 검색
-- **접근성 개선**: 자연어 질문으로 누구나 쉽게 이용 가능
-- **다양한 인터페이스**: CLI, Web UI, MCP 등 상황에 맞는 선택
-
-### 기술적 혜택
-- **오픈소스**: 무료로 사용 및 수정 가능 (MIT 라이선스)
-- **확장성**: Clean Architecture로 모듈화되어 유지보수 용이
-- **로컬 우선**: 로컬 LLM 지원으로 데이터 프라이버시 보호
-- **AI 에이전트 통합**: MCP로 다양한 AI 도구와 연동 가능
-
-### 행정적 혜택
-- **업무 효율성**: 행정 담당자의 규정 조회 업무 시간 단축
-- **오류 방지**: 사람에 의한 해석 오류 최소화
-- **데이터 최신화**: 증분 동기화로 쉬운 규정 업데이트
-- **투명성**: 규정 기반 답변으로 출처 명확히 제공
+1. **Accuracy**: Provide precise regulation-based answers
+2. **Usability**: Multiple interfaces for different user types
+3. **Extensibility**: Clean Architecture for easy maintenance
+4. **Quality**: Comprehensive testing and evaluation framework

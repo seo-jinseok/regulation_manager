@@ -1,0 +1,27 @@
+{
+  "query": "Tell me about 언어 in English if possible",
+  "answer": "동의대학교 대학원학위논문심사에관한 세칙 제11조에 따르면, 석사 학위 논문 청구 luận은 following 방법으로 심사에okol러합니다.\n\n①stone와 같은 stone이 청구되면 심사위원이 stone을 청구하시는 stone의 stone를 stone으로 stone으로 stone과 stone이 stone하는 stoneStone Stone stone stone Stone stone stoneStone Stone stone stoneStone stone Stone stone stoneStone Stone stoneStone StoneStone stone stone stoneStone stone Stone Stone stone Stone stoneStone stone Stone stoneStone Stone\n\nstoneandstoneandstoneStone Stone stone stoneStone Stone Stone stone StoneStone stone Stone StoneStoneStone stone Stone stoneStone StoneStone Stone \n\n Stone Stone StoneStone StoneStone Stone StoneStone Stone StoneStone Stone StoneStone Stone StoneStone Stone Stone Stone Stone Stone Stone stone Stone StoneStone Stone \n\n Stone Stone stone Stone StoneStone Stone Stone Stone StoneStone Stone StoneStone Stone Stone StoneStone Stone Stone Stone Stone\n\nstoneStone Stone Stone Stone StoneStone Stone StoneStone Stone Stone Stone StoneStone Stone StoneStone Stone Stone Stone Stone Stone StoneStone Stone \n\nStone Stone Stone StoneStone Stone Stone StoneStone Stone Stone Stone Stone StoneStone Stone StoneStone Stone Stone Stone Stone Stone stone Stone Stone \n\nStone Stone Stone Stone StoneStone Stone Stone StoneStone Stone Stone Stone Stone Stone Stone StoneStone Stone Stone Stone Stone Stone\n\nstone Stone Stone Stone Stone StoneStone Stone Stone StoneStone Stone Stone Stone Stone Stone StoneStone Stone Stone Stone Stone StoneStone Stone \n\nStone Stone Stone Stone Stone StoneStone Stone Stone Stone StoneStone Stone Stone Stone Stone StoneStone Stone Stone Stone Stone StoneStone Stone \n\nStone Stone Stone Stone Stone StoneStone Stone StoneStone Stone Stone Stone Stone Stone Stone StoneStone Stone Stone Stone Stone Stone stone Stone",
+  "contexts": [
+    "대학원학위논문심사에관한세칙 > 제11조 심사방법 > ① 석사학위 청구논문 > 4. 예비심사에 있어서: 예비심사에 있어서는 논문의 당해 학기 내 완성 가능성을 판정하고, 가능성이 있을 경우에는 본심사(구술시험)를 행한다.",
+    "대학원학위논문심사에관한세칙 > 제15조 학위논문의 완성 제출: 학위청구논문 심사에서 합격된 자는 예비심사 및 본 심사에서 지적된 바를 보완, 완성하여 그 완성된 논문과 디스켓 및 저작물 이용허락서를 대학원장에게 제출하여야 한다. 이 경우 제출부수는 별도 공문으로 통보한다. <개정 2013. 5. 1., 2013. 6. 1., 2016. 3. 1.>",
+    "대학원학위논문심사에관한세칙 > 제9조 논문심사위원 자격 > ① 논문심사위원 > 1. 석사학위논문: 석사학위논문의 심사위원 : 관련전공 3인으로 구성하되, 본 대학교의 전임교원 또는 대학원장이 인정하는 자로 한다. 단, 논문의 특성상 외부심사위원이 필요한 경우 1명만 가능하며 대학원장의 승인을 얻어야 한다. <개정 2012. 7. 1., 2013. 5. 1., 2018. 4. 1.>"
+  ],
+  "faithfulness": 0.5,
+  "answer_relevancy": 0.5,
+  "contextual_precision": 0.5,
+  "contextual_recall": 0.87,
+  "overall_score": 0.593,
+  "passed": false,
+  "failure_reasons": [
+    "Faithfulness below threshold: 0.500 < 0.6",
+    "Answer Relevancy below threshold: 0.500 < 0.7",
+    "Contextual Precision below threshold: 0.500 < 0.65",
+    "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+  ],
+  "timestamp": "2026-02-07T20:25:19.005982",
+  "metadata": {
+    "framework": "ragas",
+    "judge_model": "gpt-4o",
+    "evaluation_method": "ragas"
+  }
+}

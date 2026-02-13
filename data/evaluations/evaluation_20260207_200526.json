@@ -1,0 +1,28 @@
+{
+  "query": "휴직 적용 기준 상세히",
+  "answer": "기록물 관리 규정 제16조 ①항에 따르면, 기록관에는 모든 유형의 기록물을 효율적으로 관리할 수 있도록 recording management system과 관련 장비를 구축하도록 노력해야 합니다.\n\n이란 recording management system이란 기록물의 수집, 보존(복제본 제작 및 이중보존매체의 제작을 포함한다), 활용, 이관, 폐기 등 기록물 관리를 전자적으로 수행하는 시스템을 말합니다.\n\n따라서, 휴직 시 recording management system의 사용이 제한될 수 있습니다. However, exact details of the restriction are not specified in the regulation.\n\n위 컨텍스트에 따라, 휴직 적용 기준 자세히 설명할 수 없습니다. 기록물 관리 규정 제16조 ①항은 recording management system과 관련 장비를 구축하도록 노력해야 하는데, 이는 휴직 시도면에서 specific restriction이ไม에 명시되어 있습니다.\n\n해당 정보는 확인되지 않습니다.",
+  "contexts": [
+    "기록물관리규정 > 제3조 정의 > 7. “기록관리시스템”: “기록관리시스템”이란 기록물의 수집, 보존(복제본 제작 및 이중보존매체의 제작을 포함한다), 활용, 이관, 폐기 등 기록물 관리를 전자적으로 수행하는 시스템을 말한다.",
+    "학생연구자지원규정 > 제2장 의 무 > 제3조 산학협력단의 의무 > 4. 전산시스템 구축 등 효율적인 학생인건비 지급관: 전산시스템 구축 등 효율적인 학생인건비 지급관리체계 마련에 관한 사항",
+    "FUN학생경험지원센터규정 > 제2조 업무 > 7. 학생경력관리포털(DAP: Dongeui All: 학생경력관리포털(DAP: Dongeui All-in-onecareer assistance Platform)등 학생 경험 지원 관련 시스템 관리 및 운영",
+    "사무분장규정 > 제5장 학생지원처 > 제20조 FUN학생경험지원센터 > 6. 학생경력관리포털(DAP: Dongeui All: 학생경력관리포털(DAP: Dongeui All-in-onecareer assistance Platform)등 학생 경험 지원 관련 시스템 관리 및 운영",
+    "기록물관리규정 > 제16조 기록관리시스템 및 장비구축 > ① 기록관에: 기록관에는 모든 유형의 기록물을 효율적으로 관리할 수 있도록 기록관리시스템과 관련 장비를 구축하도록 노력해야 한다."
+  ],
+  "faithfulness": 0.5,
+  "answer_relevancy": 0.75,
+  "contextual_precision": 0.5,
+  "contextual_recall": 0.87,
+  "overall_score": 0.655,
+  "passed": false,
+  "failure_reasons": [
+    "Faithfulness below threshold: 0.500 < 0.6",
+    "Contextual Precision below threshold: 0.500 < 0.65",
+    "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+  ],
+  "timestamp": "2026-02-07T20:05:26.385061",
+  "metadata": {
+    "framework": "ragas",
+    "judge_model": "gpt-4o",
+    "evaluation_method": "ragas"
+  }
+}

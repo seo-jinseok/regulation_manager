@@ -133,11 +133,11 @@ class CacheManager:
     def update_file_state(
         self,
         file_path: str,
-        hwp_hash: str = None,
-        raw_md_hash: str = None,
-        pipeline_signature: str = None,
-        final_json_hash: str = None,
-        metadata_hash: str = None,
+        hwp_hash: Optional[str] = None,
+        raw_md_hash: Optional[str] = None,
+        pipeline_signature: Optional[str] = None,
+        final_json_hash: Optional[str] = None,
+        metadata_hash: Optional[str] = None,
     ):
         key = str(file_path)
         if key not in self.file_states:

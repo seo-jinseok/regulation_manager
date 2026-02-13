@@ -1,0 +1,27 @@
+{
+  "query": "처음이라 휴학를 잘 몰라요",
+  "answer": "",
+  "contexts": [
+    "휴학규정 > 제5조 휴학기간 > ① 일반 휴학자: 일반 휴학자의 휴학기간은 1년을 원칙으로 한다.",
+    "휴학규정 > 제8조 휴학시기 > ① 휴학: 휴학은 재학하고 있는 학기의 하(동)계 방학일로 부터 휴학하고자 하는 학기가 개시되기 전에 휴학함을 원칙으로 하나 부득이한 사유로 학기 중 휴학을 원하는 자는 수업일수 3분의 2 선까지 휴학 할 수 있다. <개정 2005. 12. 1., 2009. 7. 1., 2018. 2. 1., 2019. 2. 1.>",
+    "휴학규정 > 제3조 구분 및 변경 > ① 휴학 > 1. 일반휴학 : 질병 또: 일반휴학 : 질병 또는 기타 부득이한 사유로 인한 휴학"
+  ],
+  "faithfulness": 0.0,
+  "answer_relevancy": 0.5,
+  "contextual_precision": 0.5,
+  "contextual_recall": 0.87,
+  "overall_score": 0.468,
+  "passed": false,
+  "failure_reasons": [
+    "Faithfulness below threshold: 0.000 < 0.6",
+    "Answer Relevancy below threshold: 0.500 < 0.7",
+    "Contextual Precision below threshold: 0.500 < 0.65",
+    "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+  ],
+  "timestamp": "2026-02-07T18:50:41.099926",
+  "metadata": {
+    "framework": "ragas",
+    "judge_model": "gpt-4o",
+    "evaluation_method": "ragas"
+  }
+}

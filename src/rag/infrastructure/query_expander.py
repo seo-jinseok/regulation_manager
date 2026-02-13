@@ -205,7 +205,7 @@ class DynamicQueryExpander:
         cache_file = self._cache_dir / "expansion_cache.json"
         try:
             with open(cache_file, "w", encoding="utf-8") as f:
-                json.dump(self._cache, f, ensure_ascii=False, indent=2)
+                json.dump(self._legacy_cache, f, ensure_ascii=False, indent=2)
         except Exception as e:
             logger.warning(f"Failed to save expansion cache: {e}")
 

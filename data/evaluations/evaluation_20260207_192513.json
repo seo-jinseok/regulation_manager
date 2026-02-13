@@ -1,0 +1,28 @@
+{
+  "query": "Tell me about 수업 in English",
+  "answer": "",
+  "contexts": [
+    "동의대학교학칙 > 제2장 수업연한 및 재학연한, 학년, 학기와 수업일수, 휴업일 <제목개정 2023. 2. 1.> > 제5조 학년 및 학기 > ② 제2학기 수업: 제2학기 수업은 2주를 초과하지 아니하는 범위 안에서 학기 개시 일자 이전에 개강할 수 있다.",
+    "대학원수업․이수학점․학점인정에관한세칙 > 제1장 총칙 > 제4조 수업 > ① 대학원: 대학원의 수업은 주간과 야간, 주중과 주말에 관계없이 언제든지 수업을 실시할 수 있으며, 각 특수대학원의 수업은 야간에 함을 원칙으로 한다. <개정 2017. 10. 1, 2022. 7. 1., 2025. 1. 1.>",
+    "동의대학교대학원학칙 > 제4장 수업연한ㆍ재학연한, 수업일수ㆍ교과ㆍ학점 및 수료 > 제18조의2 학년도ㆍ수업일수ㆍ휴업일 > ② 각 대학원: 각 대학원의 수업일수는 매 학년 30주(매학기 15주) 이상으로 한다.",
+    "강의시간편성및수업규정 > 제9조 수업 및 출석 인정 > ① 다음 각호: 다음 각호의 1에 해당될 경우는 수업으로 인정한다. <개정 2016. 10. 1.>"
+  ],
+  "faithfulness": 0.0,
+  "answer_relevancy": 0.5,
+  "contextual_precision": 0.5,
+  "contextual_recall": 0.87,
+  "overall_score": 0.468,
+  "passed": false,
+  "failure_reasons": [
+    "Faithfulness below threshold: 0.000 < 0.6",
+    "Answer Relevancy below threshold: 0.500 < 0.7",
+    "Contextual Precision below threshold: 0.500 < 0.65",
+    "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+  ],
+  "timestamp": "2026-02-07T19:25:13.759170",
+  "metadata": {
+    "framework": "ragas",
+    "judge_model": "gpt-4o",
+    "evaluation_method": "ragas"
+  }
+}

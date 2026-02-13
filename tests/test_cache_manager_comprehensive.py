@@ -290,7 +290,7 @@ class TestCacheManagerComprehensive(unittest.TestCase):
     def test_update_file_state_partial_update(self):
         """Test update_file_state with partial parameters."""
         cache = CacheManager(cache_dir=self.test_dir)
-        file_path = "/path/to/file.hwp"
+        file_path = "/path/to/file.hwpx"
 
         cache.update_file_state(file_path, hwp_hash="hash1")
         state = cache.get_file_state(file_path)
@@ -303,7 +303,7 @@ class TestCacheManagerComprehensive(unittest.TestCase):
     def test_update_file_state_none_values_ignored(self):
         """Test update_file_state ignores None values."""
         cache = CacheManager(cache_dir=self.test_dir)
-        file_path = "/path/to/file.hwp"
+        file_path = "/path/to/file.hwpx"
 
         cache.update_file_state(file_path, hwp_hash="hash1", raw_md_hash=None)
         state = cache.get_file_state(file_path)

@@ -1,0 +1,29 @@
+{
+  "query": "연수 관련 비품/시설 사용 규정",
+  "answer": "",
+  "contexts": [
+    "시설관리규정 > 제1장 총칙 > 제4조 정의 > 1. 시설이라 함: 시설이라 함은 건축물, 구조물, 운동장, 조경, 도로, 기계설비, 전기설비, 통신설비, 소방설비, 환경설비 및 기타 건물 내·외부의 구축물을 말한다.",
+    "공간조정위원회규정 > 제2조 공간의 정의 > [종전 제 2조 > 1. 교육기본시설: 강의실, 실험·실습실, 교수연구: 교육기본시설: 강의실, 실험·실습실, 교수연구실, 행정실, 도서관, 학생회관, 체육관, 대학본관, 전산정보원 및 그 부대시설",
+    "시설관리규정 > 제1장 총칙 > 제5조 주관부서: 시설의 관리에 관한 사항은 시설관리팀에서 관장한다. <개정 2008. 2. 1, 2009. 6. 16, 2009. 10. 20, 2017. 3. 1, 2022. 3. 1>",
+    "사무분장규정 > 제3절 학사지원팀 > 제14조 학사지원팀 > 27. 강의실 관리 및 배정: 강의실 관리 및 배정",
+    "시설관리규정 > 제2장 시설 관리 > 제11조 <삭제 2014: <삭제 2014. 11. 1>"
+  ],
+  "faithfulness": 0.0,
+  "answer_relevancy": 0.5,
+  "contextual_precision": 0.5,
+  "contextual_recall": 0.87,
+  "overall_score": 0.468,
+  "passed": false,
+  "failure_reasons": [
+    "Faithfulness below threshold: 0.000 < 0.6",
+    "Answer Relevancy below threshold: 0.500 < 0.7",
+    "Contextual Precision below threshold: 0.500 < 0.65",
+    "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+  ],
+  "timestamp": "2026-02-07T19:15:05.564749",
+  "metadata": {
+    "framework": "ragas",
+    "judge_model": "gpt-4o",
+    "evaluation_method": "ragas"
+  }
+}

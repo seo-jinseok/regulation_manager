@@ -1,0 +1,29 @@
+{
+  "query": "교원인사 예외 사항이 있는지 확인 필요",
+  "answer": "",
+  "contexts": [
+    "교원인사규정 > 제1장 총칙 > 제3조 적용범위: 이 규정은 본 대학교 전임교원(이하 “교원”이라 한다)에게 적용한다. 다만, 비정년제 교원에 대하여는 제5조, 제13조 내지 제19조, 제21조 내지 제30조, 제32조는 적용하지 아니하며, 필요한 사항은 따로 정한다. <개정 2005. 9. 1., 2009. 5. 1., 2011. 7. 1., 2012. 6. 1.>",
+    "교원인사규정 > 제36조의2 사외이사 겸직 > ② 총장 > 4. 그밖에 학생: 그밖에 학생의 교육ㆍ지도 및 학문연구에 지장이 없도록 하기 위하여 필요하다고 인정하는 사항",
+    "교원인사규정 > 제12조 임용계약 > ① 교원을 임용할 때에 > 6. 기타 총장이 필요하다고 인정하: 기타 총장이 필요하다고 인정하는 사항",
+    "학교법인동의학원정관 > 제1절 교 원 > 제3관 교원인사위원회 > 제51조 교원인사위원회 설치: 교원(학교의 장을 제외한다)의 임용 등 인사에 관한 중요사항을 심의하게 하기 위하여 당해 학교에 교원인사위원회(이하 “인사위원회”라 한다)를 둔다. (개정 2006.11.06., 2016.10.20.)",
+    "교원인사규정 > 제6장 연구실적ㆍ임용절차 > 제34조 교원인사위원회 > ② 교원인사위원회에 관한 사항: 교원인사위원회에 관한 사항은 정관이 정하는 바에 따른다."
+  ],
+  "faithfulness": 0.0,
+  "answer_relevancy": 0.5,
+  "contextual_precision": 0.5,
+  "contextual_recall": 0.87,
+  "overall_score": 0.468,
+  "passed": false,
+  "failure_reasons": [
+    "Faithfulness below threshold: 0.000 < 0.6",
+    "Answer Relevancy below threshold: 0.500 < 0.7",
+    "Contextual Precision below threshold: 0.500 < 0.65",
+    "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+  ],
+  "timestamp": "2026-02-07T19:03:40.223303",
+  "metadata": {
+    "framework": "ragas",
+    "judge_model": "gpt-4o",
+    "evaluation_method": "ragas"
+  }
+}

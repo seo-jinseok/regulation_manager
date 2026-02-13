@@ -1,0 +1,29 @@
+{
+  "query": "복학 어떻게 해요?",
+  "answer": "",
+  "contexts": [
+    "복학규정 > 제6조 복학생의 등록절차 > 1. 인터넷 또: 인터넷 또는 학사지원팀에서 복학신청을 하고 현금 등록을 마쳐야 복학이 완료된다. <개정 2006. 4. 11., 2019. 2. 1., 2019. 2. 1.>",
+    "수강신청규정 > 제11조 복학생 수강신청 절차: 복학생은 복학절차(등록금 납부 등)를 완료하고, 제6조제1항의 장소에서 수강 신청을 하여야 한다. <개정 2005. 12. 1.>",
+    "복학규정 > 제5조 구비서류: 복학을 하고자 하는 자는 소정의 절차를 거쳐야 하며, 학기별 개강일 이후 군 전역예정 및 사회복무요원 소집해제 예정인 자가 군제대 복학 신청을 할 경우 다음의 서류를 제출하여야 한다. <개정 2015. 7. 1.>",
+    "복학규정 > 제6조 복학생의 등록절차: 복학을 신청한 자는 다음의 순서에 따라 등록 절차를 밟아야 한다.",
+    "동의대학교대학원학칙 > 제3장 등록ㆍ휴학ㆍ복학ㆍ제적 및 퇴학 > 제14조 복학: 휴학한 학생이 복학하고자 할 때에는 매학기 소정기간 내에 복학원을 제출하여 총장의 승인을 얻어야 한다."
+  ],
+  "faithfulness": 0.0,
+  "answer_relevancy": 0.5,
+  "contextual_precision": 0.5,
+  "contextual_recall": 0.87,
+  "overall_score": 0.468,
+  "passed": false,
+  "failure_reasons": [
+    "Faithfulness below threshold: 0.000 < 0.6",
+    "Answer Relevancy below threshold: 0.500 < 0.7",
+    "Contextual Precision below threshold: 0.500 < 0.65",
+    "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+  ],
+  "timestamp": "2026-02-07T18:45:33.987423",
+  "metadata": {
+    "framework": "ragas",
+    "judge_model": "gpt-4o",
+    "evaluation_method": "ragas"
+  }
+}

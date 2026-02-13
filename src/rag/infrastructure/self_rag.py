@@ -380,6 +380,7 @@ class SelfRAGPipeline:
                             token_count=chunk_data.get("token_count", 0),
                             keywords=chunk_data.get("keywords", []),
                             is_searchable=chunk_data.get("is_searchable", True),
+                            doc_type=chunk_data.get("doc_type", "regulation"),
                             effective_date=chunk_data.get("effective_date"),
                             status=chunk_data.get("status", "active"),
                         )

@@ -1,0 +1,29 @@
+{
+  "query": "휴직 관련 편/장/조 구체적 근거",
+  "answer": "",
+  "contexts": [
+    "사무분장규정 > 제3절 학사지원팀 > 제14조 학사지원팀 > 36. 전과 안내, 신청 및 확정: 전과 안내, 신청 및 확정",
+    "내부감사규정 > 제26조 이의신청 > ④ 총장 > 5. 그 밖에 이의신청과 관련된 요건 및 절차를 갖: 그 밖에 이의신청과 관련된 요건 및 절차를 갖추지 못한 경우",
+    "지식재산권관리및기술사업화촉진에관한규정 > 제4장 기술이전 및 기술지주회사의 운영 > 제15조 기술이전 대상 업체 선정 > ③ 발명자가 연구수행 체결한 계약서에 기술이전과: 발명자가 연구수행 체결한 계약서에 기술이전과 관련한 계약조건이 있으면 그 조건을 적용하여야 한다.",
+    "교원연구년제규정 > 부칙 > 2. 연구내용 및 방법: 연구내용 및 방법",
+    "지식재산권관리및기술사업화촉진에관한규정 > 제4장 기술이전 및 기술지주회사의 운영 > 제17조 기술이전 계약: 지식재산권의 실시허락, 양도 또는 그 밖의 기술이전에 관하여 실시권의 종류, 최저실시료를 포함한 실시료, 실시기간 등의 조건을 명시하여 기술이전 계약을 체결하여야 한다."
+  ],
+  "faithfulness": 0.0,
+  "answer_relevancy": 0.5,
+  "contextual_precision": 0.5,
+  "contextual_recall": 0.87,
+  "overall_score": 0.468,
+  "passed": false,
+  "failure_reasons": [
+    "Faithfulness below threshold: 0.000 < 0.6",
+    "Answer Relevancy below threshold: 0.500 < 0.7",
+    "Contextual Precision below threshold: 0.500 < 0.65",
+    "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+  ],
+  "timestamp": "2026-02-07T19:01:11.884641",
+  "metadata": {
+    "framework": "ragas",
+    "judge_model": "gpt-4o",
+    "evaluation_method": "ragas"
+  }
+}

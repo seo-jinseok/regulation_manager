@@ -1,0 +1,25 @@
+{
+  "query": "복무 관련 비품/시설 사용 규정",
+  "answer": "복무 관련 비품/시설 사용 규정에 대해서는 다음과 같이回答할 수 있습니다.\n\n1.  **시설 관리규정 제8조 ①항에 따르면**, 시설의 대규모 유지 보수가 필요한 때에는 공문으로 요청하여야 합니다.\n2.  **사무분장규정 제12장 제56조 5항에 따르면**, 학교 시설물 사용 허가가 필요합니다.",
+  "contexts": [
+    "시설관리규정 > 제2장 시설 관리 > 제8조 유지 보수 처리절차 > ① 사용자: 사용자는 시설의 대규모 유지 보수가 필요한 때에는 공문으로 요청하여야 한다.",
+    "사무분장규정 > 제12장 관리처 > 제56조 안전관리팀 > 5. 학교 시설물 사용 허가에 관한 사항: 학교 시설물 사용 허가에 관한 사항"
+  ],
+  "faithfulness": 0.5,
+  "answer_relevancy": 0.8,
+  "contextual_precision": 0.5,
+  "contextual_recall": 0.87,
+  "overall_score": 0.667,
+  "passed": false,
+  "failure_reasons": [
+    "Faithfulness below threshold: 0.500 < 0.6",
+    "Contextual Precision below threshold: 0.500 < 0.65",
+    "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+  ],
+  "timestamp": "2026-02-07T19:49:10.050623",
+  "metadata": {
+    "framework": "ragas",
+    "judge_model": "gpt-4o",
+    "evaluation_method": "ragas"
+  }
+}

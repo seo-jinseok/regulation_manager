@@ -112,7 +112,7 @@ ollama serve  # 기본 포트: 11434
 
 ```bash
 # 전처리
-uv run regulation convert "data/input/규정집.hwp" --use_llm --provider ollama --model gemma2
+uv run regulation convert "data/input/규정집.hwpx" --use_llm --provider ollama --model gemma2
 
 # 질문 답변
 uv run regulation search "교원 연구년 신청 자격은?" -a --provider ollama --model gemma2
@@ -142,7 +142,7 @@ GUI 기반 로컬 LLM 서버입니다. 설정이 직관적이며 다양한 모�
 
 ```bash
 # 전처리
-uv run regulation convert "data/input/규정집.hwp" --use_llm --provider lmstudio --base-url http://127.0.0.1:1234
+uv run regulation convert "data/input/규정집.hwpx" --use_llm --provider lmstudio --base-url http://127.0.0.1:1234
 
 # 질문 답변
 uv run regulation search "장학금 조건" -a --provider lmstudio --base-url http://127.0.0.1:1234
@@ -180,7 +180,7 @@ mlx_lm.server --model mlx-community/Llama-3.2-3B-Instruct-4bit --port 8080
 
 ```bash
 # 전처리
-uv run regulation convert "data/input/규정집.hwp" --use_llm --provider mlx --base-url http://127.0.0.1:8080
+uv run regulation convert "data/input/규정집.hwpx" --use_llm --provider mlx --base-url http://127.0.0.1:8080
 
 # 질문 답변
 uv run regulation search "휴학 절차" -a --provider mlx --base-url http://127.0.0.1:8080
@@ -238,7 +238,7 @@ OPENAI_API_KEY=sk-...
 **사용**:
 
 ```bash
-uv run regulation convert "data/input/규정집.hwp" --use_llm --provider openai --model gpt-4o
+uv run regulation convert "data/input/규정집.hwpx" --use_llm --provider openai --model gpt-4o
 uv run regulation search "졸업 요건" -a --provider openai --model gpt-4o
 ```
 
@@ -258,7 +258,7 @@ GEMINI_API_KEY=AIza...
 **사용**:
 
 ```bash
-uv run regulation convert "data/input/규정집.hwp" --use_llm --provider gemini --model models/gemini-1.5-pro
+uv run regulation convert "data/input/규정집.hwpx" --use_llm --provider gemini --model models/gemini-1.5-pro
 uv run regulation search "장학금 조건" -a --provider gemini
 ```
 
@@ -278,7 +278,7 @@ OPENROUTER_API_KEY=sk-or-...
 **사용**:
 
 ```bash
-uv run regulation convert "data/input/규정집.hwp" --use_llm --provider openrouter --model google/gemini-pro-1.5
+uv run regulation convert "data/input/규정집.hwpx" --use_llm --provider openrouter --model google/gemini-pro-1.5
 uv run regulation search "연구년 요건" -a --provider openrouter
 ```
 

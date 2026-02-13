@@ -24,7 +24,9 @@ from .formatter import RegulationFormatter
 from .llm_client import LLMClient
 from .metadata_extractor import MetadataExtractor
 from .parsing.html_table_converter import replace_markdown_tables_with_html
+from .parsing.hwpx_direct_parser import HWPXDirectParser
 from .preprocessor import Preprocessor
+from .collect_files import collect_hwp_files
 
 PIPELINE_SIGNATURE_VERSION = "v5"
 OUTPUT_SCHEMA_VERSION = "v4"
@@ -34,11 +36,11 @@ def _extract_source_metadata(file_name: str) -> Dict[str, Optional[str]]:
     """
     파일명에서 규정집 일련번호와 발행일을 추출합니다.
 
-    예시: "규정집9-343(20250909).hwp"
+    예시: "규정집9-343(20250909).hwpx"
       -> {"source_serial": "9-343", "source_date": "2025-09-09"}
 
     Args:
-        file_name: HWP 파일명
+        file_name: HWPX 파일명
 
     Returns:
         source_serial과 source_date를 담은 딕셔너리
@@ -128,7 +130,11 @@ class PipelineContext:
 
 
 def _collect_hwp_files(input_path: Path, console: "Console") -> Optional[List[Path]]:
-    """Collect HWP files from input path."""
+    """Collect HWPX files from input path.
+
+    Note: This system only accepts .hwpx files (HWP XML format).
+    If you have .hwp files, you must convert them to .hwpx first.
+    """
     if not input_path.exists():
         console.print(f"[red]입력 경로가 존재하지 않습니다: {input_path}[/red]")
         return None
@@ -137,11 +143,25 @@ def _collect_hwp_files(input_path: Path, console: "Console") -> Optional[List[Pa
     if input_path.is_file():
         files.append(input_path)
     elif input_path.is_dir():
-        files.extend(sorted(input_path.rglob("*.hwp")))
+        # Only accept .hwpx files (HWP XML format)
+        files.extend(sorted(input_path.rglob("*.hwpx")))
 
     if not files:
-        console.print("[red]처리할 HWP 파일이 없습니다.[/red]")
-        return None
+        # Check if .hwp files exist (old format - not supported)
+        hwp_legacy = list(input_path.rglob("*.hwp")) if input_path.is_dir() else []
+        if hwp_legacy:
+            console.print("[red].hwp 파일은 지원되지 않습니다.[/red]")
+            console.print("[yellow]HWP → HWPX 변환 방법:[/yellow]")
+            console.print("  1. 한글(Hwp)에서 파일 열기")
+            console.print("  2. 파일 > 다른 이름으로 저장 > HWPX 파일 형식 선택")
+            console.print("  3. 저장된 .hwpx 파일을 사용하세요")
+            console.print("")
+            console.print("[red]※ 이 시스템은 .hwpx 파일만 지원합니다.[/red]")
+            return None
+        else:
+            console.print("[red]처리할 HWPX 파일이 없습니다.[/red]")
+            console.print("[yellow]지원 형식: .hwpx (HWP XML)[/yellow]")
+            return None
 
     return files
 
@@ -335,21 +355,18 @@ def _convert_hwp_to_markdown(
             with open(paths.raw_html, "r", encoding="utf-8") as f:
                 html_content = f.read()
         if ctx.cache_manager and cache_state.hwp_hash:
-            ctx.cache_manager.update_file_state(
-                str(file),
-                hwp_hash=cache_state.hwp_hash,
-                raw_md_hash=cache_state.raw_md_hash,
-            )
+            hwp_hash_val = cache_state.hwp_hash
+            raw_md_hash_val = cache_state.raw_md_hash
+            if hwp_hash_val or raw_md_hash_val:
+                ctx.cache_manager.update_file_state(
+                    str(file),
+                    hwp_hash=hwp_hash_val,
+                    raw_md_hash=raw_md_hash_val,
+                )
         return raw_md, html_content, cache_state.raw_md_hash
 
-    # Need to convert from HWP
-    if not shutil.which("hwp5html"):
-        raise RuntimeError(
-            "hwp5html 실행 파일을 찾을 수 없습니다. "
-            "HWP 변환을 위해 hwp5html을 설치하거나, "
-            "현재 HWP와 일치하는 캐시된 raw markdown이 필요합니다."
-        )
-
+    # Need to convert from HWPX
+    # Direct HWPX parsing (ZIP+XML) - no hwp5html dependency required
     reader = HwpToMarkdownReader(keep_html=False)
     docs = reader.load_data(
         file, status_callback=status_callback, verbose=ctx.args.verbose
@@ -472,14 +489,16 @@ def _save_final_json(
     if ctx.cache_manager:
         if raw_md_hash is None:
             raw_md_hash = ctx.cache_manager.compute_text_hash(raw_md)
-        ctx.cache_manager.update_file_state(
-            str(file),
-            hwp_hash=cache_state.hwp_hash,
-            raw_md_hash=raw_md_hash,
-            pipeline_signature=ctx.pipeline_signature,
-            final_json_hash=ctx.cache_manager.compute_text_hash(final_json_text),
-            metadata_hash=ctx.cache_manager.compute_text_hash(metadata_text),
-        )
+        hwp_hash_val = cache_state.hwp_hash
+        if hwp_hash_val or raw_md_hash:
+            ctx.cache_manager.update_file_state(
+                str(file),
+                hwp_hash=hwp_hash_val or "",
+                raw_md_hash=raw_md_hash or "",
+                pipeline_signature=ctx.pipeline_signature or "",
+                final_json_hash=ctx.cache_manager.compute_text_hash(final_json_text),
+                metadata_hash=ctx.cache_manager.compute_text_hash(metadata_text),
+            )
 
 
 def _process_single_file(
@@ -518,13 +537,16 @@ def _process_single_file(
                 f"[dim]캐시 적중: {file.name} (변환/전처리/포맷팅 생략)[/dim]"
             )
         progress.advance(total_task, steps_per_file)
-        if ctx.cache_manager and cache_state.hwp_hash:
-            ctx.cache_manager.update_file_state(
-                str(file),
-                hwp_hash=cache_state.hwp_hash,
-                raw_md_hash=cache_state.raw_md_hash,
-                pipeline_signature=ctx.pipeline_signature,
-            )
+        if ctx.cache_manager and (cache_state.hwp_hash or cache_state.raw_md_hash):
+            hwp_hash_val = cache_state.hwp_hash
+            raw_md_hash_val = cache_state.raw_md_hash
+            if hwp_hash_val or raw_md_hash_val:
+                ctx.cache_manager.update_file_state(
+                    str(file),
+                    hwp_hash=hwp_hash_val or "",
+                    raw_md_hash=raw_md_hash_val or "",
+                    pipeline_signature=ctx.pipeline_signature or "",
+                )
         return True  # Success (cached)
 
     # Step 1: HWP -> MD
@@ -566,6 +588,110 @@ def _process_single_file(
     return True  # Success
 
 
+def _run_hwpx_direct_pipeline(
+    file: Path,
+    output_dir: Path,
+    ctx: PipelineContext,
+    progress: Any,
+    total_task: Any,
+    use_hwpx: bool = True,  # NEW: Parameter to control HWPX parser usage
+) -> bool:
+    """Run HWPX direct parsing pipeline.
+
+    Args:
+        file: HWPX file path.
+        output_dir: Output directory.
+        ctx: Pipeline context.
+        progress: Progress bar.
+        total_task: Total task tracker.
+
+    Returns:
+        True for success, False for failure.
+    """
+    status_callback = ctx.console.print if ctx.args.verbose else None
+
+    # Determine output paths
+    if output_dir.is_dir():
+        file_output_dir = output_dir
+    else:
+        file_output_dir = output_dir
+    file_output_dir.mkdir(parents=True, exist_ok=True)
+
+    json_out = file_output_dir / f"{file.stem}.json"
+
+    if ctx.args.verbose:
+        ctx.console.print(f"[cyan]HWPX 직접 파싱: {file.name}[/cyan]")
+
+    try:
+        # Initialize HWPX direct parser (use_hwpx passed from collect_hwp_files)
+        parser = HWPXDirectParser(
+            status_callback=lambda msg: ctx.console.print(msg) if ctx.args.verbose else None
+        )
+
+        # Parse HWPX file
+        start_time = time.time()
+        result = parser.parse_file(file)
+        parsing_time = time.time() - start_time
+
+        # Add schema version and metadata
+        source_meta = _extract_source_metadata(file.name)
+        final_json = {
+            "schema_version": OUTPUT_SCHEMA_VERSION,
+            "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "pipeline_signature": ctx.pipeline_signature + "|hwpx_direct",
+            "file_name": file.name,
+            "source_serial": source_meta["source_serial"],
+            "source_date": source_meta["source_date"],
+            "parsing_method": "hwpx_direct",
+            "parsing_time_seconds": parsing_time,
+            **result,
+        }
+
+        # Apply RAG enhancement if requested
+        if ctx.args.enhance_rag:
+            final_json = enhance_json(final_json)
+            if ctx.args.verbose:
+                ctx.console.print("[dim]RAG 최적화 적용 완료[/dim]")
+
+        # Save JSON output
+        final_json_text = json.dumps(final_json, ensure_ascii=False, indent=2)
+        with open(json_out, "w", encoding="utf-8") as f:
+            f.write(final_json_text)
+
+        # Update cache
+        if ctx.cache_manager:
+            ctx.cache_manager.update_file_state(
+                str(file),
+                hwp_hash=ctx.cache_manager.compute_file_hash(file),
+                pipeline_signature=ctx.pipeline_signature + "|hwpx_direct",
+                final_json_hash=ctx.cache_manager.compute_text_hash(final_json_text),
+            )
+
+        # Report statistics
+        metadata = final_json.get("metadata", {})
+        stats = metadata.get("parsing_statistics", {})
+        total_regs = stats.get("total_regulations", len(final_json.get("docs", [])))
+        success_rate = stats.get("success_rate", 100.0)
+
+        ctx.console.print(
+            f"[green]✓ {file.name}[/green]: "
+            f"{total_regs} 규정 파싱 완료 ({success_rate:.1f}%) "
+            f"({parsing_time:.2f}초)"
+        )
+
+        # Advance progress (direct parsing is faster - count as 2 steps)
+        progress.advance(total_task, 2)
+
+        return True
+
+    except Exception as e:
+        ctx.console.print(f"[red]HWPX 직접 파싱 실패 ({file.name}): {e}[/red]")
+        import traceback
+        if ctx.args.verbose:
+            ctx.console.print(f"[dim]{traceback.format_exc()}[/dim]")
+        return False
+
+
 def run_pipeline(args: argparse.Namespace, console: Optional["Console"] = None) -> int:
     """Run the HWP to JSON conversion pipeline.
 
@@ -594,7 +720,7 @@ def run_pipeline(args: argparse.Namespace, console: Optional["Console"] = None) 
         )
 
     # Collect files
-    files = _collect_hwp_files(input_path, console)
+    files = collect_hwp_files(input_path, console, use_hwpx=args.hwpx)
     if files is None:
         return 1
 
@@ -636,6 +762,10 @@ def run_pipeline(args: argparse.Namespace, console: Optional["Console"] = None) 
     had_errors = False
     STEPS_PER_FILE = 5
 
+    # Adjust steps for HWPX direct mode (faster - fewer steps)
+    if args.hwpx:
+        STEPS_PER_FILE = 2  # Parse + Save (no conversion/preprocessing needed)
+
     with Progress(
         SpinnerColumn(),
         TimeElapsedColumn(),
@@ -649,15 +779,29 @@ def run_pipeline(args: argparse.Namespace, console: Optional["Console"] = None) 
 
         for file in files:
             try:
-                _process_single_file(
-                    file,
-                    input_path,
-                    output_dir,
-                    ctx,
-                    progress,
-                    total_task,
-                    STEPS_PER_FILE,
-                )
+                if args.hwpx:
+                    # Use HWPX direct parser
+                    success = _run_hwpx_direct_pipeline(
+                        file,
+                        output_dir,
+                        ctx,
+                        progress,
+                        total_task,
+                        use_hwpx=ctx.args.hwpx,  # Pass hwpx flag to control parser
+                    )
+                    if not success:
+                        had_errors = True
+                else:
+                    # Use legacy converter pipeline
+                    _process_single_file(
+                        file,
+                        input_path,
+                        output_dir,
+                        ctx,
+                        progress,
+                        total_task,
+                        STEPS_PER_FILE,
+                    )
             except Exception as e:
                 console.print(f"[red]Error processing {file.name}: {e}[/red]")
                 current = progress.tasks[total_task].completed
@@ -711,6 +855,18 @@ def main():
         action="store_false",
         dest="enhance_rag",
         help="Disable RAG optimization (parent_path, full_text, keywords, etc.)",
+    )
+    parser.add_argument(
+        "--hwpx",
+        action="store_true",
+        default=True,
+        help="Use HWPX direct parser (default: enabled for better accuracy). Disable with --no-hwpx for legacy parser.",
+    )
+    parser.add_argument(
+        "--no-hwpx",
+        action="store_false",
+        dest="hwpx",
+        help="Disable HWPX direct parser and use legacy converter.",
     )
     parser.set_defaults(enhance_rag=True)
 

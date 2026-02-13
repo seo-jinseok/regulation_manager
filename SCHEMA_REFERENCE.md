@@ -48,7 +48,7 @@ JSON 파일의 최상위 루트는 단일 소스 파일에서 파싱된 문서(�
 | `schema_version` | `string` | ✓ | JSON 출력 스키마 버전입니다 (예: `"v4"`). |
 | `generated_at` | `string` | ✓ | 생성 시각(UTC, ISO 8601)입니다. |
 | `pipeline_signature` | `string` | ✓ | 캐시 및 재현성을 위한 파이프라인 시그니처입니다. |
-| `file_name` | `string` | ✓ | 원본 HWP 파일의 이름입니다. |
+| `file_name` | `string` | ✓ | 원본 HWPX 파일의 이름입니다. |
 | `toc` | `Array<Object>` | ✓ | 규정집 목차 엔트리 리스트입니다. 각 엔트리는 `title`, `rule_code`를 가집니다. |
 | `index_by_alpha` | `Array<Object>` | ✓ | 찾아보기(가나다순) 엔트리 리스트입니다. |
 | `index_by_dept` | `Object<string, Array<Object>>` | ✓ | 찾아보기(소관부서별) 엔트리 맵입니다. |
@@ -63,7 +63,7 @@ JSON 파일의 최상위 루트는 단일 소스 파일에서 파싱된 문서(�
   "schema_version": "v4",
   "generated_at": "2026-01-03T05:00:00Z",
   "pipeline_signature": "hwp5html-v0.1.16+parser-v2.1",
-  "file_name": "규정집9-343(20250909).hwp",
+  "file_name": "규정집9-343(20250909).hwpx",
   "toc": [
     { "title": "학칙", "rule_code": "2-1-1" },
     { "title": "장학금규정", "rule_code": "2-2-5" }
@@ -102,7 +102,7 @@ JSON 파일의 최상위 루트는 단일 소스 파일에서 파싱된 문서(�
 | 필드명 | 타입 | 설명 |
 |--------|------|------|
 | `rule_code` | `string` | 규정 번호 (예: "3-1-24") |
-| `source_file` | `string` | 원본 HWP 파일명 |
+| `source_file` | `string` | 원본 HWPX 파일명 |
 | `scanned_at` | `string` | 스캔 일시 (ISO 8601) |
 
 ---

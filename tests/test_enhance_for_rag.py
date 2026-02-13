@@ -318,7 +318,9 @@ class TestEnhanceJson:
         data = {"docs": []}
         result = enhance_json(data)
         assert result["rag_enhanced"] is True
-        assert result["rag_schema_version"] == "2.0"
+        assert (
+            result["rag_schema_version"] == "2.1"
+        )  # Updated for chunk splitting support
 
     def test_all_docs_enhanced(self):
         """Test that all documents are enhanced."""
@@ -473,12 +475,12 @@ class TestBuildEmbeddingText:
         node = {"text": "내용", "display_no": "제1조", "title": ""}
         result = build_embedding_text(parent_path, node)
         # 규정명(규정) + last 3(제1장, 제1절, 제1관) 포함
-        assert "규정" in result      # 문서 제목은 항상 포함
+        assert "규정" in result  # 문서 제목은 항상 포함
         assert "제1편" not in result  # 오래된 세그먼트는 제외
         assert "제2편" not in result  # 오래된 세그먼트는 제외
-        assert "제1장" in result      # last 3 중 첫 번째
-        assert "제1절" in result      # last 3 중 두 번째
-        assert "제1관" in result      # last 3 중 세 번째
+        assert "제1장" in result  # last 3 중 첫 번째
+        assert "제1절" in result  # last 3 중 두 번째
+        assert "제1관" in result  # last 3 중 세 번째
 
     def test_empty_text_returns_empty(self):
         """Test that empty text returns empty string."""
@@ -514,10 +516,10 @@ class TestBuildEmbeddingText:
         node = {"text": "내용", "display_no": "제15조", "title": "학점인정"}
         result = build_embedding_text(parent_path, node)
         assert "동의대학교학칙" in result  # 규정명
-        assert "제3장 학사" in result      # 장
-        assert "제1절 수업" in result      # 절
-        assert "제2관 학점" in result      # 관
-        assert "제15조 학점인정" in result # 조
+        assert "제3장 학사" in result  # 장
+        assert "제1절 수업" in result  # 절
+        assert "제2관 학점" in result  # 관
+        assert "제15조 학점인정" in result  # 조
 
 
 class TestExtractLastRevisionDate:
@@ -527,11 +529,7 @@ class TestExtractLastRevisionDate:
         """Test with single addendum containing effective_date."""
         from src.enhance_for_rag import extract_last_revision_date
 
-        doc = {
-            "addenda": [
-                {"effective_date": "2020-01-01", "children": []}
-            ]
-        }
+        doc = {"addenda": [{"effective_date": "2020-01-01", "children": []}]}
         assert extract_last_revision_date(doc) == "2020-01-01"
 
     def test_multiple_addenda(self):
@@ -553,11 +551,7 @@ class TestExtractLastRevisionDate:
 
         doc = {
             "addenda": [
-                {
-                    "children": [
-                        {"effective_date": "2023-05-01", "children": []}
-                    ]
-                }
+                {"children": [{"effective_date": "2023-05-01", "children": []}]}
             ]
         }
         assert extract_last_revision_date(doc) == "2023-05-01"
@@ -573,11 +567,7 @@ class TestExtractLastRevisionDate:
         """Test addenda without effective_date."""
         from src.enhance_for_rag import extract_last_revision_date
 
-        doc = {
-            "addenda": [
-                {"title": "부칙", "children": []}
-            ]
-        }
+        doc = {"addenda": [{"title": "부칙", "children": []}]}
         assert extract_last_revision_date(doc) is None
 
 
@@ -624,3 +614,320 @@ class TestEnhanceDocumentLastRevisionDate:
         assert "metadata" in doc
         assert doc["metadata"].get("last_revision_date") == "2023-01-01"
 
+
+class TestChunkPatterns:
+    """Tests for CHUNK_PATTERNS constant (REQ-001, REQ-002, REQ-003)."""
+
+    def test_chunk_patterns_exists(self):
+        """Test that CHUNK_PATTERNS constant exists."""
+        from src.enhance_for_rag import CHUNK_PATTERNS
+
+        assert CHUNK_PATTERNS is not None
+        assert isinstance(CHUNK_PATTERNS, dict)
+
+    def test_chunk_patterns_has_chapter(self):
+        """Test that chapter pattern exists (REQ-001)."""
+        from src.enhance_for_rag import CHUNK_PATTERNS
+
+        assert "chapter" in CHUNK_PATTERNS
+        assert r"제" in CHUNK_PATTERNS["chapter"]
+        assert r"장" in CHUNK_PATTERNS["chapter"]
+
+    def test_chunk_patterns_has_section(self):
+        """Test that section pattern exists (REQ-002)."""
+        from src.enhance_for_rag import CHUNK_PATTERNS
+
+        assert "section" in CHUNK_PATTERNS
+        assert r"제" in CHUNK_PATTERNS["section"]
+        assert r"절" in CHUNK_PATTERNS["section"]
+
+    def test_chunk_patterns_has_subsection(self):
+        """Test that subsection pattern exists (REQ-003)."""
+        from src.enhance_for_rag import CHUNK_PATTERNS
+
+        assert "subsection" in CHUNK_PATTERNS
+        assert r"제" in CHUNK_PATTERNS["subsection"]
+        assert r"관" in CHUNK_PATTERNS["subsection"]
+
+
+class TestDetectChunkType:
+    """Tests for detect_chunk_type function."""
+
+    def test_detect_chapter(self):
+        """Test detection of chapter pattern (REQ-001)."""
+        from src.enhance_for_rag import detect_chunk_type
+
+        result = detect_chunk_type("제1장 총칙")
+        assert result is not None
+        assert result["type"] == "chapter"
+        assert result["display_no"] == "제1장"
+        assert result["title"] == "총칙"
+
+    def test_detect_chapter_with_spaces(self):
+        """Test chapter pattern with various spacing."""
+        from src.enhance_for_rag import detect_chunk_type
+
+        result = detect_chunk_type("제 3 장 학사관리")
+        assert result is not None
+        assert result["type"] == "chapter"
+        assert result["display_no"] == "제3장"
+        assert result["title"] == "학사관리"
+
+    def test_detect_section(self):
+        """Test detection of section pattern (REQ-002)."""
+        from src.enhance_for_rag import detect_chunk_type
+
+        result = detect_chunk_type("제1절 목적")
+        assert result is not None
+        assert result["type"] == "section"
+        assert result["display_no"] == "제1절"
+        assert result["title"] == "목적"
+
+    def test_detect_section_with_spaces(self):
+        """Test section pattern with various spacing."""
+        from src.enhance_for_rag import detect_chunk_type
+
+        result = detect_chunk_type("제 5 절  교원임용")
+        assert result is not None
+        assert result["type"] == "section"
+        assert result["display_no"] == "제5절"
+        assert result["title"] == "교원임용"
+
+    def test_detect_subsection(self):
+        """Test detection of subsection pattern (REQ-003)."""
+        from src.enhance_for_rag import detect_chunk_type
+
+        result = detect_chunk_type("제1관 총칙")
+        assert result is not None
+        assert result["type"] == "subsection"
+        assert result["display_no"] == "제1관"
+        assert result["title"] == "총칙"
+
+    def test_detect_subsection_with_spaces(self):
+        """Test subsection pattern with various spacing."""
+        from src.enhance_for_rag import detect_chunk_type
+
+        result = detect_chunk_type("제 2 관  세부사항")
+        assert result is not None
+        assert result["type"] == "subsection"
+        assert result["display_no"] == "제2관"
+        assert result["title"] == "세부사항"
+
+    def test_detect_no_match(self):
+        """Test that non-matching text returns None."""
+        from src.enhance_for_rag import detect_chunk_type
+
+        result = detect_chunk_type("일반 텍스트입니다.")
+        assert result is None
+
+    def test_detect_empty_text(self):
+        """Test that empty text returns None."""
+        from src.enhance_for_rag import detect_chunk_type
+
+        assert detect_chunk_type("") is None
+        assert detect_chunk_type(None) is None
+
+    def test_priority_chapter_over_section(self):
+        """Test that chapter is checked before section."""
+        # If text could match both (which it shouldn't), chapter wins
+        from src.enhance_for_rag import detect_chunk_type
+
+        result = detect_chunk_type("제1장 교육")
+        assert result["type"] == "chapter"
+
+
+class TestCalculateHierarchyDepth:
+    """Tests for calculate_hierarchy_depth function (REQ-004)."""
+
+    def test_single_node_depth(self):
+        """Test depth of a node without children."""
+        from src.enhance_for_rag import calculate_hierarchy_depth
+
+        node = {"type": "article", "children": []}
+        assert calculate_hierarchy_depth(node) == 1
+
+    def test_node_without_children_key(self):
+        """Test depth of a node without children key."""
+        from src.enhance_for_rag import calculate_hierarchy_depth
+
+        node = {"type": "article"}
+        assert calculate_hierarchy_depth(node) == 1
+
+    def test_two_level_depth(self):
+        """Test depth with one level of children."""
+        from src.enhance_for_rag import calculate_hierarchy_depth
+
+        node = {"type": "article", "children": [{"type": "paragraph", "children": []}]}
+        assert calculate_hierarchy_depth(node) == 2
+
+    def test_three_level_depth(self):
+        """Test depth with two levels of children."""
+        from src.enhance_for_rag import calculate_hierarchy_depth
+
+        node = {
+            "type": "article",
+            "children": [
+                {"type": "paragraph", "children": [{"type": "item", "children": []}]}
+            ],
+        }
+        assert calculate_hierarchy_depth(node) == 3
+
+    def test_six_level_depth(self):
+        """Test depth with 5 levels of children (REQ-004: support up to level 6)."""
+        from src.enhance_for_rag import calculate_hierarchy_depth
+
+        # Create a 6-level hierarchy: chapter -> section -> subsection -> article -> paragraph -> item
+        node = {
+            "type": "chapter",
+            "children": [
+                {
+                    "type": "section",
+                    "children": [
+                        {
+                            "type": "subsection",
+                            "children": [
+                                {
+                                    "type": "article",
+                                    "children": [
+                                        {
+                                            "type": "paragraph",
+                                            "children": [
+                                                {"type": "item", "children": []}
+                                            ],
+                                        }
+                                    ],
+                                }
+                            ],
+                        }
+                    ],
+                }
+            ],
+        }
+        # chapter(1) -> section(2) -> subsection(3) -> article(4) -> paragraph(5) -> item(6)
+        assert calculate_hierarchy_depth(node) == 6
+
+    def test_multiple_branches_takes_max(self):
+        """Test that depth returns max from multiple branches."""
+        from src.enhance_for_rag import calculate_hierarchy_depth
+
+        node = {
+            "type": "article",
+            "children": [
+                {"type": "paragraph", "children": []},  # depth 2
+                {
+                    "type": "paragraph",
+                    "children": [
+                        {"type": "item", "children": []}  # depth 3
+                    ],
+                },
+            ],
+        }
+        assert calculate_hierarchy_depth(node) == 3
+
+
+class TestChunkLevelMapSubsection:
+    """Tests for subsection in CHUNK_LEVEL_MAP."""
+
+    def test_subsection_in_chunk_level_map(self):
+        """Test that subsection is mapped correctly (REQ-003)."""
+        from src.enhance_for_rag import CHUNK_LEVEL_MAP
+
+        assert "subsection" in CHUNK_LEVEL_MAP
+        assert CHUNK_LEVEL_MAP["subsection"] == "subsection"
+
+    def test_determine_chunk_level_subsection(self):
+        """Test determine_chunk_level returns subsection for subsection type."""
+        from src.enhance_for_rag import determine_chunk_level
+
+        node = {"type": "subsection"}
+        assert determine_chunk_level(node) == "subsection"
+
+
+class TestHWPXChunkSplitting:
+    """Tests for HWPX Direct Parser chunk splitting functionality."""
+
+    def test_split_text_into_paragraphs(self):
+        """Test splitting text into paragraphs."""
+        from src.enhance_for_rag import split_text_into_chunks
+
+        text = "① 첫 번째 항입니다. ② 두 번째 항입니다."
+        chunks = split_text_into_chunks(text)
+        assert len(chunks) == 2
+        assert chunks[0]["type"] == "paragraph"
+        assert chunks[0]["display_no"] == "①"
+        assert chunks[1]["display_no"] == "②"
+
+    def test_extract_items_from_text(self):
+        """Test extracting items from text."""
+        from src.enhance_for_rag import extract_items_from_text
+
+        text = "1. 첫 번째 호\n2. 두 번째 호\n3. 세 번째 호"
+        items = extract_items_from_text(text)
+        assert len(items) == 3
+        assert items[0]["display_no"] == "1."
+        assert items[0]["text"] == "첫 번째 호"
+
+    def test_extract_items_with_subitems(self):
+        """Test extracting items with subitems."""
+        from src.enhance_for_rag import extract_items_from_text
+
+        text = "1. 근무기간\n가. 교수 : 정년까지\n나. 부교수 : 6년"
+        items = extract_items_from_text(text)
+        assert len(items) == 1
+        assert items[0]["display_no"] == "1."
+        assert "children" in items[0]
+        assert len(items[0]["children"]) == 2
+        assert items[0]["children"][0]["display_no"] == "가."
+        assert items[0]["children"][0]["type"] == "subitem"
+
+    def test_enhance_json_hwpx_direct(self):
+        """Test that HWPX Direct Parser output is detected and processed."""
+        data = {
+            "parsing_method": "hwpx_direct",
+            "docs": [
+                {
+                    "title": "테스트규정",
+                    "content": [
+                        {
+                            "type": "article",
+                            "display_no": "제1조",
+                            "title": "목적",
+                            "text": "① 이 규정은 테스트를 위함이다.\n② 세부사항은 별도로 정한다.",
+                        }
+                    ],
+                    "addenda": [],
+                }
+            ],
+        }
+        result = enhance_json(data)
+        assert result["rag_chunk_splitting"] is True
+        assert result["rag_schema_version"] == "2.1"
+
+        # Check that content was split
+        content = result["docs"][0]["content"][0]
+        assert "children" in content
+        assert len(content["children"]) == 2
+
+    def test_enhance_json_regular_pipeline(self):
+        """Test that regular pipeline output is not affected by chunk splitting."""
+        data = {
+            "docs": [
+                {
+                    "title": "테스트규정",
+                    "doc_type": "regulation",
+                    "content": [
+                        {
+                            "type": "article",
+                            "display_no": "제1조",
+                            "title": "목적",
+                            "text": "이 규정은 테스트를 위함이다.",
+                            "children": [],
+                        }
+                    ],
+                    "addenda": [],
+                }
+            ],
+        }
+        result = enhance_json(data)
+        assert result.get("rag_chunk_splitting") is None
+        assert result["rag_schema_version"] == "2.1"

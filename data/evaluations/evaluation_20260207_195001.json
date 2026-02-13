@@ -1,0 +1,27 @@
+{
+  "query": "Tell me about 비자 in English if possible",
+  "answer": "당신은 동의대학교 규정을 설명하는 전문가입니다. \n\n직원복무규정 제26조에 따르면, 이 대학교에서 근무 중이시면 1년 이상 재직한 직원일 경우, 이직 후 재임용이 가능합니다.\n\n학칙 제6조에 quy정된 요건을 보유한 자만 대학원 입학을 지원할 수 있습니다.",
+  "contexts": [
+    "학교법인동의학원정관 > 제43조 임용 > ③ 대학교육기관 > 5. 재계약 조건 및 절차 : 근무기간 종료후 다시 임용되: 재계약 조건 및 절차 : 근무기간 종료후 다시 임용되는 조건 및 절차에 관한 사항",
+    "HK연구교수및HK연구원규정 > 제3조 자격 > 1. HK연구교수 > 다. 한국연구재단 인문한국지원사업 신청 및 참여제한: 한국연구재단 인문한국지원사업 신청 및 참여제한 조건에 저촉되지 않는 자",
+    "대학원입학전형에관한세칙 > 제2조 입학전형방법 및 지원자격 > ② 학칙 제6조에 규정된 요건을 구비한 자: 학칙 제6조에 규정된 요건을 구비한 자는 지원할 수 있다."
+  ],
+  "faithfulness": 0.5,
+  "answer_relevancy": 0.5,
+  "contextual_precision": 0.5,
+  "contextual_recall": 0.87,
+  "overall_score": 0.593,
+  "passed": false,
+  "failure_reasons": [
+    "Faithfulness below threshold: 0.500 < 0.6",
+    "Answer Relevancy below threshold: 0.500 < 0.7",
+    "Contextual Precision below threshold: 0.500 < 0.65",
+    "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+  ],
+  "timestamp": "2026-02-07T19:50:01.766226",
+  "metadata": {
+    "framework": "ragas",
+    "judge_model": "gpt-4o",
+    "evaluation_method": "ragas"
+  }
+}

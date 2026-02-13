@@ -1,0 +1,47 @@
+[
+  {
+    "persona": "professor",
+    "query": "학사위원회의 심의 권한과 절차에 대해 설명하시오",
+    "category": "academic_governance",
+    "difficulty": "medium",
+    "error": "llama_index is not installed. LLM features are unavailable.",
+    "traceback": "Traceback (most recent call last):\n  File \"/Users/truestone/Dropbox/repo/University/regulation_manager/test_professor_persona_queries.py\", line 37, in test_professor_query\n    llm_client = LLMClientAdapter(\n                 ^^^^^^^^^^^^^^^^^\n  File \"/Users/truestone/Dropbox/repo/University/regulation_manager/src/rag/infrastructure/llm_adapter.py\", line 230, in __init__\n    self._client = LLMClient(\n                   ^^^^^^^^^^\n  File \"/Users/truestone/Dropbox/repo/University/regulation_manager/",
+    "execution_time_ms": 4900.56
+  },
+  {
+    "persona": "professor",
+    "query": "교원 인사 평가 기준과 승진 요건은 무엇인가",
+    "category": "faculty_affairs",
+    "difficulty": "medium",
+    "error": "llama_index is not installed. LLM features are unavailable.",
+    "traceback": "Traceback (most recent call last):\n  File \"/Users/truestone/Dropbox/repo/University/regulation_manager/test_professor_persona_queries.py\", line 37, in test_professor_query\n    llm_client = LLMClientAdapter(\n                 ^^^^^^^^^^^^^^^^^\n  File \"/Users/truestone/Dropbox/repo/University/regulation_manager/src/rag/infrastructure/llm_adapter.py\", line 230, in __init__\n    self._client = LLMClient(\n                   ^^^^^^^^^^\n  File \"/Users/truestone/Dropbox/repo/University/regulation_manager/",
+    "execution_time_ms": 11.78
+  },
+  {
+    "persona": "professor",
+    "query": "대학원 입학 전형 방법과 평가 비율은?",
+    "category": "graduate_admissions",
+    "difficulty": "medium",
+    "error": "llama_index is not installed. LLM features are unavailable.",
+    "traceback": "Traceback (most recent call last):\n  File \"/Users/truestone/Dropbox/repo/University/regulation_manager/test_professor_persona_queries.py\", line 37, in test_professor_query\n    llm_client = LLMClientAdapter(\n                 ^^^^^^^^^^^^^^^^^\n  File \"/Users/truestone/Dropbox/repo/University/regulation_manager/src/rag/infrastructure/llm_adapter.py\", line 230, in __init__\n    self._client = LLMClient(\n                   ^^^^^^^^^^\n  File \"/Users/truestone/Dropbox/repo/University/regulation_manager/",
+    "execution_time_ms": 0.89
+  },
+  {
+    "persona": "professor",
+    "query": "연구 윤리 규정과 연구 부정행위의 정의는?",
+    "category": "research_administration",
+    "difficulty": "medium",
+    "error": "llama_index is not installed. LLM features are unavailable.",
+    "traceback": "Traceback (most recent call last):\n  File \"/Users/truestone/Dropbox/repo/University/regulation_manager/test_professor_persona_queries.py\", line 37, in test_professor_query\n    llm_client = LLMClientAdapter(\n                 ^^^^^^^^^^^^^^^^^\n  File \"/Users/truestone/Dropbox/repo/University/regulation_manager/src/rag/infrastructure/llm_adapter.py\", line 230, in __init__\n    self._client = LLMClient(\n                   ^^^^^^^^^^\n  File \"/Users/truestone/Dropbox/repo/University/regulation_manager/",
+    "execution_time_ms": 0.93
+  },
+  {
+    "persona": "professor",
+    "query": "교과 개설 및 변경 절차에 대해 알려줘",
+    "category": "academic_governance",
+    "difficulty": "medium",
+    "error": "llama_index is not installed. LLM features are unavailable.",
+    "traceback": "Traceback (most recent call last):\n  File \"/Users/truestone/Dropbox/repo/University/regulation_manager/test_professor_persona_queries.py\", line 37, in test_professor_query\n    llm_client = LLMClientAdapter(\n                 ^^^^^^^^^^^^^^^^^\n  File \"/Users/truestone/Dropbox/repo/University/regulation_manager/src/rag/infrastructure/llm_adapter.py\", line 230, in __init__\n    self._client = LLMClient(\n                   ^^^^^^^^^^\n  File \"/Users/truestone/Dropbox/repo/University/regulation_manager/",
+    "execution_time_ms": 0.94
+  }
+]

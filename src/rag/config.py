@@ -37,25 +37,28 @@ class FallbackConfig:
 
     # Fallback chain: providers tried in order
     # Each entry defines a provider configuration
+    # Note: Uses environment variables for model configuration
     provider_chain: List[Dict[str, Any]] = field(
         default_factory=lambda: [
             {
-                "provider": "openrouter",
-                "model": "google/gemini-2.0-flash-exp:free",
+                "provider": os.getenv("LLM_PROVIDER", "openrouter"),
+                "model": os.getenv("LLM_MODEL", "openai/gpt-4o-mini"),
+                "base_url": os.getenv("LLM_BASE_URL", "https://openrouter.ai/api/v1"),
                 "api_key_env_var": "OPENROUTER_API_KEY",
                 "priority": 1,
             },
             {
                 "provider": "lmstudio",
-                "model": None,  # Uses LM Studio default
-                "base_url": "http://localhost:1234",
+                "model": "local-model",  # 로컬 기본 모델
+                "base_url": "http://localhost:1234",  # 로컬 기본 URL
                 "api_key_env_var": None,
                 "priority": 2,
             },
             {
-                "provider": "openrouter",
-                "model": "deepseek/deepseek-r1:free",
-                "api_key_env_var": "OPENROUTER_API_KEY",
+                "provider": "ollama",
+                "model": "llama3.2:latest",  # Ollama 기본 모델
+                "base_url": "http://localhost:11434",
+                "api_key_env_var": None,
                 "priority": 3,
             },
         ]
@@ -412,6 +415,24 @@ class RAGConfig:
         if not self.cache_warm_queries_path:
             return None
         return Path(self.cache_warm_queries_path).resolve()
+
+    def get_embedding_model_name(self) -> str:
+        """
+        임베딩 모델 이름을 반환합니다.
+
+        환경 변수 RAG_EMBEDDING_MODEL이 설정된 경우 해당 값을 사용하고,
+        그렇지 않은 경우 한국어 의미 검색에 최적화된 기본 모델을 반환합니다.
+
+        Returns:
+            sentence-transformers용 모델 이름.
+        """
+        # 환경 변수 우선 확인
+        model_name = os.getenv("RAG_EMBEDDING_MODEL")
+        if model_name:
+            return model_name
+
+        # 기본값: 한국어 SBERT (768차원)
+        return "jhgan/ko-sbert-sts"
 
 
 # Global configuration instance (singleton)

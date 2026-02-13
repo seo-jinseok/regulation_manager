@@ -1,0 +1,28 @@
+{
+  "query": "언어 related to visa status",
+  "answer": "",
+  "contexts": [
+    "사무분장규정 > 제8장 국제교류처 > 제34조 국제언어교육원 > 10. 한국어능력시험(TOPIK) 관련 업무: 한국어능력시험(TOPIK) 관련 업무",
+    "사무분장규정 > 제8장 국제교류처 > 제34조 국제언어교육원: 국제언어교육원은 다음 각호의 사항을 분장한다.",
+    "외국인유학생입학및관리규정 > 제14조 학사관리 담당부서 > ① 외국인 학생 학사관리 담당부서 > 4. 어학연수생 : 국제언어교육원 <개정 2015: 어학연수생 : 국제언어교육원 <개정 2015. 2. 1., 2022. 3. 1.>",
+    "국외타대학이수학점인정규정 > 제4조 이수단위 > ② 어학연수(국제언어교육원 어학연수 포함): 어학연수(국제언어교육원 어학연수 포함)는 30시간 이상 강의를 1학점으로 한다. <개정 2015. 1. 1>"
+  ],
+  "faithfulness": 0.0,
+  "answer_relevancy": 0.5,
+  "contextual_precision": 0.5,
+  "contextual_recall": 0.87,
+  "overall_score": 0.468,
+  "passed": false,
+  "failure_reasons": [
+    "Faithfulness below threshold: 0.000 < 0.6",
+    "Answer Relevancy below threshold: 0.500 < 0.7",
+    "Contextual Precision below threshold: 0.500 < 0.65",
+    "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+  ],
+  "timestamp": "2026-02-07T19:26:05.952621",
+  "metadata": {
+    "framework": "ragas",
+    "judge_model": "gpt-4o",
+    "evaluation_method": "ragas"
+  }
+}
