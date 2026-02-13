@@ -5,6 +5,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.3] - 2026-02-13
+
+### Fixed - SPEC-EMBED-001 Implementation Complete
+
+#### Embedding Function Consistency Fix
+
+- **Silent Fallback 제거 (REQ-001, REQ-002)**: Config 로드 실패 시 명시적 에러 발생
+  - `get_default_embedding_function()`: ImportError/RuntimeError 발생
+  - `EmbeddingFunctionWrapper._get_model()`: Config 기반 모델명 해결 또는 에러
+
+- **명확한 에러 메시지 (REQ-003)**: 실행 가능한 가이드가 포함된 에러 메시지
+  - "RAG configuration unavailable. Ensure src.rag.config is importable."
+  - "Check that RAG_EMBEDDING_MODEL environment variable is set correctly."
+
+**기술 세부사항**:
+- 수정 파일: `src/rag/infrastructure/embedding_function.py`
+- 수정 파일: `tests/rag/unit/infrastructure/test_embedding_function.py`
+- 신규 테스트: 2개 (에러 처리 경로)
+
+**테스트 커버리지**:
+- 총 테스트: 14개 통과
+- 커버리지: 75.86% (수정된 파일)
+
+**해결된 문제**:
+- ChromaDB 쿼리 시 dimension mismatch 에러 (768 vs 384 dims)
+- Silent fallback으로 인한 예기치 못 동작 방지
+
+### Links
+
+- **SPEC Document**: `.moai/specs/SPEC-EMBED-001/spec.md`
+- **Implementation**: `src/rag/infrastructure/embedding_function.py`
+- **Tests**: `tests/rag/unit/infrastructure/test_embedding_function.py`
+
+---
+
 ## [2.3.2] - 2026-02-13
 
 ### Added - SPEC-CHUNK-002 Implementation Complete
