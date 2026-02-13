@@ -125,15 +125,47 @@ def _get_fallback_regulation_qa_prompt() -> str:
     return """당신은 동의대학교 규정 전문가입니다.
 주어진 규정 내용을 바탕으로 사용자의 질문에 **상세하고 친절하게** 답변하세요.
 
-## ⚠️ 절대 금지 사항 (할루시네이션 방지)
+## ⚠️ 절대 금지 사항 (할루시네이션 방지 - SPEC-RAG-Q-001 Phase 3 강화)
 1. **전화번호/연락처 생성 금지**: 절대로 "02-XXXX-XXXX", "02-1234-5678" 등 전화번호를 만들어내지 마세요.
 2. **다른 학교 사례 인용 금지**: 한국외국어대학교, 서울대학교 등 다른 학교 규정이나 사례를 절대 언급하지 마세요.
 3. **규정에 없는 수치/비율 생성 금지**: "40%", "30일 이내" 등 규정에 명시되지 않은 숫자를 만들어내지 마세요.
 4. **일반론 회피 금지**: "대학마다 다를 수 있습니다", "일반적으로..." 등 회피성 답변을 하지 마세요.
+5. **인용 없는 정보 생성 금지**: 규정 인용 없이 사실관계를 주장하지 마세요. 모든 정보는 반드시 인용과 함께 제공해야 합니다.
+6. **불확실한 정보 처리**: 제공된 문맥에서 답변을 찾을 수 없는 경우, 반드시 "제공된 규정에서 해당 정보를 찾을 수 없습니다"라고 명시하세요. 추측으로 답변하지 마세요.
 
 ## 기본 원칙
 - **반드시 제공된 규정 내용에 명시된 사항만 답변하세요.**
-- 규정에 없는 내용은 절대 추측하거나 일반적인 관행을 언급하지 마세요."""
+- 규정에 없는 내용은 절대 추측하거나 일반적인 관행을 언급하지 마세요.
+
+## 📋 답변 필수 형식
+
+모든 답변은 다음 형식을 따라야 합니다:
+
+### 1. 핵심 답변
+[질문에 대한 직접적인 답변 - 반드시 규정 인용 포함]
+
+### 2. 관련 규정
+- **규정명**: [규정명]
+- **조항**: [제X조 제Y항]
+- **내용**: [관련 내용 요약]
+
+### 3. 참고사항
+[추가 도움이 필요한 경우 안내]
+
+## ⚠️ 규정 인용 강제 사항 (SPEC-RAG-Q-001 Phase 4 강화)
+
+1. **모든 답변은 반드시 규정명과 조항을 인용해야 합니다.**
+2. **인용 형식 (구체적 조항 번호 필수)**:
+   - 기본 형식: "[규정명] 제X조" 또는 "[규정명] 제X조제Y항"
+   - 예시: "교원인사규정 제15조제2항", "학칙 제40조제1항"
+3. **인용 위치**: 인용은 답변의 핵심 내용 바로 다음에 괄호로 표기합니다.
+4. **인용 예시**:
+   - "휴학은 학기 개시 1개월 전까지 신청해야 합니다 (학칙 제40조제1항)."
+   - "등록금은 매학기 시작 전 납부해야 합니다 (등록금 납부 규정 제5조)."
+5. **교차 인용**: 관련된 여러 규정이 있는 경우, 모두 인용하세요.
+   - 예: "(교원인사규정 제15조제2항, 교원연구년 운영규정 제8조)"
+6. **인용 없는 답변 금지**: 규정 인용이 없는 답변은 불완전한 답변으로 간주합니다.
+7. **불확실한 인용 금지**: 조항 번호가 불확실한 경우, 규정명만이라도 인용하세요."""
 
 
 # System prompt for regulation Q&A (loaded from prompts.json)
@@ -262,6 +294,9 @@ class SearchUseCase:
         # Dynamic Query Expansion components (Phase 3)
         self._enable_query_expansion = config.enable_query_expansion
         self._query_expander = None  # Lazy initialized
+
+        # Phase 1 Integration: Query Expansion Service
+        self._query_expansion_service = None  # Will be initialized if enabled
 
         # Multi-hop Question Answering components
         self._enable_multi_hop = getattr(config, "enable_multi_hop", True)
@@ -1599,9 +1634,31 @@ class SearchUseCase:
                 enable_cache=True,
             )
 
+    def _ensure_query_expansion_service(self) -> None:
+        """Initialize QueryExpansionService if not already initialized (Phase 1)."""
+        if self._query_expansion_service is None and self._enable_query_expansion:
+            try:
+                from ..application.query_expansion import QueryExpansionService
+
+                # Initialize QueryExpansionService with synonym-based expansion
+                self._query_expansion_service = QueryExpansionService(
+                    store=self.store,
+                    synonym_service=None,  # Will use built-in academic synonyms
+                    llm_client=None,  # No LLM needed for synonym-based expansion
+                )
+                logger.debug("QueryExpansionService initialized for synonym-based expansion")
+            except ImportError as e:
+                logger.warning(f"Failed to import QueryExpansionService: {e}")
+                self._query_expansion_service = None
+            except Exception as e:
+                logger.warning(f"Failed to initialize QueryExpansionService: {e}")
+                self._query_expansion_service = None
+
     def _apply_dynamic_expansion(self, query_text: str) -> tuple[str, list[str]]:
         """
-        Apply dynamic query expansion using LLM.
+        Apply dynamic query expansion using LLM and QueryExpansionService.
+
+        Phase 1 Integration: Uses QueryExpansionService for synonym-based expansion.
 
         Args:
             query_text: Original query text.
@@ -1612,6 +1669,43 @@ class SearchUseCase:
         if not self._enable_query_expansion:
             return query_text, []
 
+        # Phase 1: Try QueryExpansionService first (synonym-based expansion)
+        self._ensure_query_expansion_service()
+        if self._query_expansion_service is not None:
+            try:
+
+                # Use synonym-based expansion (fast, no LLM required)
+                expanded_queries = self._query_expansion_service.expand_query(
+                    query_text,
+                    max_variants=3,
+                    method="synonym"  # Use synonym-based expansion
+                )
+
+                if expanded_queries and len(expanded_queries) > 1:
+                    # Extract keywords from expanded queries
+                    keywords = []
+                    for exp in expanded_queries[1:]:  # Skip original query
+                        # Extract key terms from expanded query
+                        exp_lower = exp.expanded_text.lower()
+                        query_lower = query_text.lower()
+
+                        # Find new words not in original query
+                        new_words = [
+                            word for word in exp_lower.split()
+                            if word not in query_lower and len(word) > 1
+                        ]
+                        keywords.extend(new_words[:3])  # Limit to 3 keywords per expansion
+
+                    if keywords:
+                        logger.debug(
+                            f"QueryExpansionService: {query_text[:30]}... -> keywords={keywords[:5]}"
+                        )
+                        return query_text, keywords[:7]  # Limit total keywords
+
+            except Exception as e:
+                logger.warning(f"QueryExpansionService failed: {e}")
+
+        # Fallback to existing LLM-based expansion
         self._ensure_query_expander()
         if self._query_expander is None:
             return query_text, []
@@ -2003,6 +2097,7 @@ class SearchUseCase:
         history_text: Optional[str] = None,
         search_query: Optional[str] = None,
         debug: bool = False,
+        custom_prompt: Optional[str] = None,
     ) -> Answer:
         """
         Ask a question and get an LLM-generated answer.
@@ -2016,6 +2111,7 @@ class SearchUseCase:
             history_text: Optional conversation context for the LLM.
             search_query: Optional override for retrieval query.
             debug: Whether to print debug info (prompt).
+            custom_prompt: Optional custom system prompt (e.g., for persona-specific responses).
 
         Returns:
             Answer with generated text and sources.
@@ -2089,8 +2185,13 @@ class SearchUseCase:
                 # Fall through to normal single-hop processing
 
         # Get relevant chunks
+        # Phase 1 Integration: Apply query expansion before search
+        expanded_query, expansion_keywords = self._apply_dynamic_expansion(retrieval_query)
+        if expansion_keywords:
+            logger.debug(f"Query expansion applied: {retrieval_query[:30]}... -> keywords={expansion_keywords[:5]}")
+
         results = self.search(
-            retrieval_query,
+            expanded_query,  # Use expanded query for search
             filter=filter,
             top_k=top_k * 3,
             include_abolished=include_abolished,
@@ -2121,7 +2222,7 @@ class SearchUseCase:
 
         if debug:
             logger.debug("=" * 40 + " PROMPT " + "=" * 40)
-            logger.debug(f"[System]\n{REGULATION_QA_PROMPT}\n")
+            logger.debug(f"[System]\n{custom_prompt or REGULATION_QA_PROMPT}\n")
             logger.debug(f"[User]\n{user_message}")
             logger.debug("=" * 80)
 
@@ -2131,6 +2232,7 @@ class SearchUseCase:
             context=context,
             history_text=history_text,
             debug=debug,
+            custom_prompt=custom_prompt,
         )
 
         # Self-RAG: Start async support verification
@@ -2142,8 +2244,13 @@ class SearchUseCase:
         # Compute confidence based on search scores
         confidence = self._compute_confidence(filtered_results)
 
+        # Phase 1 Integration: Enhance citations in answer
+        enhanced_answer_text = self._enhance_answer_citations(
+            answer_text, filtered_results
+        )
+
         return Answer(
-            text=answer_text,
+            text=enhanced_answer_text,
             sources=filtered_results,
             confidence=confidence,
         )
@@ -2308,8 +2415,14 @@ class SearchUseCase:
 
         # Get relevant chunks (same as ask)
         retrieval_query = search_query or question
+
+        # Phase 1 Integration: Apply query expansion before search
+        expanded_query, expansion_keywords = self._apply_dynamic_expansion(retrieval_query)
+        if expansion_keywords:
+            logger.debug(f"Query expansion applied: {retrieval_query[:30]}... -> keywords={expansion_keywords[:5]}")
+
         results = self.search(
-            retrieval_query,
+            expanded_query,  # Use expanded query for search
             filter=filter,
             top_k=top_k * 3,
             include_abolished=include_abolished,
@@ -2343,12 +2456,25 @@ class SearchUseCase:
         }
 
         # Stream LLM response token by token
+        answer_tokens = []
         for token in self.llm.stream_generate(
             system_prompt=REGULATION_QA_PROMPT,
             user_message=user_message,
             temperature=0.0,
         ):
+            answer_tokens.append(token)
             yield {"type": "token", "content": token}
+
+        # Phase 1 Integration: Apply citation enhancement after answer generation
+        answer_text = "".join(answer_tokens)
+        enhanced_answer = self._enhance_answer_citations(
+            answer_text=answer_text,
+            sources=filtered_results,
+        )
+
+        # If enhancement modified the answer, yield the enhanced version
+        if enhanced_answer != answer_text:
+            yield {"type": "enhancement", "content": enhanced_answer}
 
     def _build_user_message(
         self,
@@ -2800,6 +2926,59 @@ class SearchUseCase:
 
         return max(0.0, min(1.0, combined))
 
+    def _enhance_answer_citations(
+        self, answer_text: str, sources: List[SearchResult]
+    ) -> str:
+        """
+        Enhance citations in the answer text using CitationEnhancer (Phase 1).
+
+        Args:
+            answer_text: Original answer text
+            sources: Search results used for the answer
+
+        Returns:
+            Answer text with enhanced citations
+        """
+        try:
+            from ..domain.citation.citation_enhancer import CitationEnhancer
+
+            enhancer = CitationEnhancer()
+
+            # Extract chunks from sources
+            chunks = [source.chunk for source in sources]
+
+            # Enhance citations
+            enhanced_citations = enhancer.enhance_citations(chunks)
+
+            if not enhanced_citations:
+                # No valid citations found, return original answer
+                return answer_text
+
+            # Build citation string
+            citation_str = enhancer.format_citations(enhanced_citations)
+
+            # Check if answer already has citations
+            has_citations = any(
+                marker in answer_text
+                for marker in ["「", "제", "조", "규정"]
+            )
+
+            # If answer doesn't have proper citations, append them
+            if not has_citations and citation_str:
+                # Add citations at the end
+                enhanced_answer = f"{answer_text}\n\n**참고 규정:** {citation_str}"
+                logger.debug(f"Enhanced answer with citations: {citation_str}")
+                return enhanced_answer
+
+            return answer_text
+
+        except ImportError:
+            logger.warning("CitationEnhancer not available, skipping citation enhancement")
+            return answer_text
+        except Exception as e:
+            logger.warning(f"Citation enhancement failed: {e}")
+            return answer_text
+
     def _get_cache_key(
         self,
         query: str,
@@ -2862,6 +3041,7 @@ class SearchUseCase:
                             token_count=0,
                             keywords=[],
                             is_searchable=True,
+                            doc_type=r.get("doc_type", "regulation"),
                         )
                         # Reconstruct SearchResult
                         deserialized.append(
@@ -3306,6 +3486,7 @@ Your task is to provide **detailed and helpful answers** in English to questions
 2. **NO other school examples**: Do NOT mention regulations or examples from Korea University, Seoul National University, etc.
 3. **NO numerical fabrication**: Do NOT create percentages or deadlines like "40%", "30 days" that are not in the regulations.
 4. **NO generic avoidance**: Do NOT say "it varies by university" or "generally..." to avoid answering.
+5. **NO uncited information**: Never state facts without regulation citations. All information must be provided with proper citations.
 
 ## Basic Principles
 - **Answer ONLY based on the provided regulation content.**
@@ -3313,11 +3494,30 @@ Your task is to provide **detailed and helpful answers** in English to questions
 - Translate key Korean regulation terms accurately and provide context.
 - If the regulation does not contain information to answer the question, state clearly that the regulation does not specify it.
 
-## Response Format
-- Provide responses in clear, professional English.
-- Include specific article references (e.g., "Article 8", "Section 3") when citing regulations.
-- For procedure questions, explain step-by-step.
-- For deadline questions, provide exact dates if specified in regulations.
+## 📋 Required Response Format
+
+All answers MUST follow this structure:
+
+### 1. Core Answer
+[Direct answer to the question - MUST include regulation citations]
+
+### 2. Related Regulations
+- **Regulation**: [Regulation Name]
+- **Article**: [Article X, Section Y]
+- **Content**: [Summary of relevant content]
+
+### 3. Additional Notes
+[Guidance for additional help if needed]
+
+## ⚠️ Mandatory Citation Requirements
+
+1. **ALL answers MUST include regulation name and article citations.**
+2. **Citation Format**: "[Regulation Name] Article X" or "[Regulation Name] Article X, Section Y"
+3. **Citation Location**: Place citations in parentheses immediately after the core content.
+4. **Citation Examples**:
+   - "Leave of absence must be applied for 1 month before semester starts (University Regulations Article 40, Section 1)."
+   - "Tuition fees must be paid before each semester begins (Tuition Regulations Article 5)."
+5. **No Uncited Answers**: Answers without regulation citations are considered incomplete.
 
 ## Important Notes
 - The source text is in Korean, but you must respond in English.

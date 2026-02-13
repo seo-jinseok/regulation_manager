@@ -63,13 +63,13 @@ def _add_convert_parser(subparsers):
 
     parser = subparsers.add_parser(
         "convert",
-        help="HWP 파일을 JSON으로 변환",
-        description="HWP 규정집을 구조화된 JSON으로 변환합니다.",
+        help="HWPX 파일을 JSON으로 변환",
+        description="HWPX 규정집을 구조화된 JSON으로 변환합니다.",
     )
     parser.add_argument(
         "input_path",
         type=str,
-        help="HWP 파일 또는 디렉토리 경로",
+        help="HWPX 파일 또는 디렉토리 경로",
     )
     parser.add_argument(
         "--output-dir",
@@ -128,6 +128,11 @@ def _add_convert_parser(subparsers):
         action="store_false",
         dest="enhance_rag",
         help="RAG 최적화 비활성화",
+    )
+    parser.add_argument(
+        "--hwpx",
+        action="store_true",
+        help="HWPX 직접 파싱 사용 (HTML/Markdown 변환 과정을 건너뛰어 정확도 향상)",
     )
     parser.set_defaults(enhance_rag=True)
 
@@ -735,11 +740,11 @@ def create_parser() -> argparse.ArgumentParser:
     """Create main argument parser with all subcommands."""
     parser = argparse.ArgumentParser(
         prog="regulation",
-        description="대학 규정 관리 시스템 - HWP 변환, RAG 검색, AI Q&A",
+        description="대학 규정 관리 시스템 - HWPX 변환, RAG 검색, AI Q&A",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 예시:
-  regulation convert "규정집.hwp"       HWP → JSON 변환
+  regulation convert "규정집.hwpx"      HWPX → JSON 변환
   regulation sync data/output/규정집.json  DB 동기화
   regulation search "교원 연구년"        규정 검색
   regulation ask "휴학 절차"             AI 질문
@@ -807,6 +812,7 @@ def cmd_convert(args) -> int:
             self.cache_dir = getattr(args, "cache_dir", ".cache")
             self.verbose = getattr(args, "verbose", False)
             self.enhance_rag = getattr(args, "enhance_rag", True)
+            self.hwpx = getattr(args, "hwpx", False)
 
     from ...main import run_pipeline
 
@@ -1034,7 +1040,7 @@ def cmd_quality(args) -> int:
     )
     store = EvaluationStore(storage_dir=args.output_dir)
     persona_mgr = PersonaManager()
-    loader = JSONDocumentLoader("data/output/규정집.json")
+    loader = JSONDocumentLoader()
 
     # Initialize RAG system for answer generation
     from ..application.search_usecase import SearchUseCase
@@ -1043,7 +1049,22 @@ def cmd_quality(args) -> int:
 
     vector_store = ChromaVectorStore(persist_directory=args.db_path)
     _, provider, model, base_url = _get_default_llm_settings()
-    llm_client = LLMClientAdapter(provider=provider, model=model, base_url=base_url)
+
+    # For quality evaluation, prefer local Ollama for reliability
+    # Override with env var if explicitly set for evaluation
+    import os
+
+    eval_provider = os.getenv("EVAL_LLM_PROVIDER", "ollama")
+    eval_model = os.getenv("EVAL_LLM_MODEL", "llama3.2:latest")
+    eval_base_url = os.getenv("EVAL_LLM_BASE_URL", "http://localhost:11434")
+
+    console.print(
+        f"[dim]Using LLM: {eval_provider} ({eval_model}) at {eval_base_url}[/dim]"
+    )
+
+    llm_client = LLMClientAdapter(
+        provider=eval_provider, model=eval_model, base_url=eval_base_url
+    )
     search_usecase = SearchUseCase(
         store=vector_store, llm_client=llm_client, use_reranker=True
     )
@@ -1056,7 +1077,9 @@ def cmd_quality(args) -> int:
         for persona_id in persona_mgr.list_personas():
             console.print(f"[dim]페르소나 {persona_id} 테스트 중...[/dim]")
             queries = persona_mgr.generate_queries(
-                persona_id, count=args.queries_per_persona, topic=args.topic
+                persona_id,
+                count=args.queries_per_persona,
+                topics=[args.topic] if args.topic else None,
             )
 
             for query in queries:
@@ -1070,6 +1093,13 @@ def cmd_quality(args) -> int:
                         [r.chunk.text for r in search_results] if search_results else []
                     )
 
+                    # 검색 결과가 없는 경우 스킵
+                    if not contexts:
+                        console.print(
+                            f"[yellow]  ⚠ 검색 결과 없음: {query[:40]}...[/yellow]"
+                        )
+                        continue
+
                     # 답변 생성
                     from ..infrastructure.tool_executor import ToolExecutor
 
@@ -1077,9 +1107,22 @@ def cmd_quality(args) -> int:
                         search_usecase=search_usecase,
                         llm_client=llm_client,
                     )
+
+                    # LLM 클라이언트 확인
+                    if not llm_client:
+                        console.print("[red]  ❌ LLM 클라이언트 초기화 실패[/red]")
+                        continue
+
                     answer = tool_executor._handle_generate_answer(
                         {"question": query, "context": "\n\n".join(contexts)}
                     )
+
+                    # 응답이 비어있는 경우 처리
+                    if not answer or answer.strip() == "":
+                        console.print(
+                            f"[yellow]  ⚠ 응답 생성 실패: {query[:40]}...[/yellow]"
+                        )
+                        continue
 
                     # 평가 실행
                     result = evaluator.evaluate_single_turn(query, contexts, answer)
@@ -1092,6 +1135,9 @@ def cmd_quality(args) -> int:
                     )
                 except Exception as e:
                     console.print(f"[red]평가 실패: {e}[/red]")
+                    import traceback
+
+                    console.print(f"[dim]{traceback.format_exc()[:200]}[/dim]")
                     continue
 
         # 통계 출력
@@ -1110,7 +1156,7 @@ def cmd_quality(args) -> int:
     elif args.quality_cmd == "persona":
         console.print(f"[bold]🔍 페르소나 {args.id} 테스트 시작...[/bold]")
         queries = persona_mgr.generate_queries(
-            args.id, count=args.count, topic=args.topic
+            args.id, count=args.count, topics=[args.topic] if args.topic else None
         )
         console.print(f"[dim]{len(queries)}개 쿼리 생성 완료[/dim]")
 

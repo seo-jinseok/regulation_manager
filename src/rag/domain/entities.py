@@ -75,18 +75,20 @@ class Chunk:
     token_count: int
     keywords: List[Keyword]
     is_searchable: bool
+    doc_type: str = "regulation"  # Document type for filtering (regulation, note, etc.)
     effective_date: Optional[str] = None
     status: RegulationStatus = RegulationStatus.ACTIVE
     article_number: Optional[str] = None  # Enhanced citation support (Component 3)
 
     @classmethod
-    def from_json_node(cls, node: Dict[str, Any], rule_code: str) -> "Chunk":
+    def from_json_node(cls, node: Dict[str, Any], rule_code: str, doc_type: str = "regulation") -> "Chunk":
         """
         Create a Chunk from a JSON node.
 
         Args:
             node: A node dict from the regulation JSON.
             rule_code: The rule code of the parent regulation.
+            doc_type: The document type (regulation, note, etc.).
 
         Returns:
             A Chunk instance.
@@ -127,6 +129,7 @@ class Chunk:
             token_count=node.get("token_count", 0),
             keywords=keywords,
             is_searchable=node.get("is_searchable", True),
+            doc_type=doc_type,
             effective_date=node.get("effective_date"),
             status=status,
             article_number=article_number,
@@ -142,6 +145,7 @@ class Chunk:
             "parent_path": " > ".join(self.parent_path),
             "token_count": self.token_count,
             "is_searchable": self.is_searchable,
+            "doc_type": self.doc_type,
             "effective_date": self.effective_date or "",
             "status": self.status.value,
             "article_number": self.article_number
@@ -203,6 +207,7 @@ class Chunk:
             token_count=metadata.get("token_count", 0),
             keywords=keywords,
             is_searchable=metadata.get("is_searchable", True),
+            doc_type=metadata.get("doc_type", "regulation"),
             effective_date=metadata.get("effective_date") or None,
             status=RegulationStatus(metadata.get("status", "active")),
             article_number=metadata.get("article_number")

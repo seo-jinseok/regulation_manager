@@ -1,307 +1,168 @@
-# 기술 스택 (Technology Stack)
+# Technical Stack
 
-## 기술 스택 개요
+## Core Technologies
 
-대학 규정 관리 시스템은 Python 3.11+ 기반으로 최신 AI/ML 기술을 활용하여 구축되었습니다. Clean Architecture를 따르는 모듈화된 설계로 유지보수성과 확장성을 확보했습니다.
+| Component | Technology | Purpose |
+|-----------|-----------|---------|
+| **Language** | Python 3.11+ | Core runtime |
+| **Package Manager** | uv | Fast dependency management |
+| **Testing** | pytest | Test framework |
 
-## 핵심 프레임워크 및 라이브러리
+## RAG Components
 
-### RAG (검색 증강 생성)
-- **llama-index >= 0.14.10**: RAG 파이프라인 프레임워크
-  - 통합된 검색 및 생성 워크플로우 지원
-  - 다양한 LLM 통합 추상화
-  - 모듈화된 컴포넌트 설계
+### Vector Database
+- **ChromaDB** (v1.4+): Local persistent vector store
+- Location: `data/chroma_db/`
+- Collections: regulations, embeddings
 
-### 벡터 데이터베이스
-- **chromadb >= 1.4.0**: 로컬 영속 벡터 데이터베이스
-  - 로컬 파일 기반 저장으로 데이터 프라이버시 보호
-  - 빠른 검색 속도와 낮은 리소스 사용
-  - Python 네이티브 통합
+### Embedding Models
+| Model | Dimensions | Purpose |
+|-------|-----------|---------|
+| BAAI/bge-m3 | 1024 | Korean-optimized multilingual embeddings |
+| ko-sbert-sts | 768 | Korean sentence similarity (backup) |
 
-### 임베딩 모델
-- **flagembedding >= 1.3.5**: BGE-M3 임베딩 모델
-  - 1024차원 다국어 임베딩
-  - 한국어 최적화
-  - Dense + Sparse + Multi-Vector 혼합 지원
+### Reranker
+- **BAAI/bge-reranker-v2-m3**: Cross-encoder for precision ranking
+- Conditional reranking based on query complexity
 
-### 형태소 분석
-- **konlpy >= 0.6.0**: 한국어 형태소 분석
-  - Komoran 형태소 분석기 사용
-  - BM25 토큰화 품질 향상
-  - 복합어 분리를 통한 검색 정확도 개선
+### Keyword Search
+- **BM25**: Okapi BM25 algorithm (k1=1.5, b=0.75)
+- **KiwiPiePy**: Korean morpheme analyzer (replaces KoNLPy)
+- RRF Fusion: Reciprocal Rank Fusion (k=60)
 
-### HWP 처리
-- **pyhwp >= 0.1b15**: HWP 파일 처리
-  - HWP → HTML 변환
-  - 텍스트, 서식, 계층 구조 추출
-  - CLI 도구 제공 (hwp5html)
+## LLM Integration
 
-### 웹 UI
-- **gradio >= 6.2.0**: 대화형 웹 인터페이스
-  - ChatGPT 스타일 채팅 UI
-  - 파일 업로드 기능
-  - 빠른 프로토타이핑
+### Supported Providers
+| Provider | Models | Notes |
+|----------|--------|-------|
+| Ollama | gemma2, llama2 | Local inference |
+| LMStudio | exaone-4.0-32b-mlx | Local with MLX |
+| OpenAI | gpt-4, gpt-3.5 | Cloud API |
+| Gemini | gemini-pro | Google API |
 
-### MCP (Model Context Protocol)
-- **mcp[cli] >= 1.9.0**: AI 에이전트 연동
-  - Claude, Cursor 등 AI 도구와 통합
-  - 표준 프로토콜 기반 통신
-  - 도구 및 리소스 노출
+### LLM Features
+- **Circuit Breaker**: 3-state failure detection (CLOSED, OPEN, HALF_OPEN)
+- **Connection Pooling**: Redis (50), HTTP (100)
+- **Multi-layer Caching**: L1 (memory), L2 (Redis), L3 (ChromaDB)
 
-### Apple Silicon 최적화
-- **mlx-lm >= 0.29.1**: Apple Silicon GPU 가속
-  - M1/M2/M3 칩셋 최적화
-  - 로컬 LLM 추론 가속
-  - 낮은 메모리 사용량
+## Web Interface
 
-### CLI 도구
-- **questionary >= 2.1.1**: 대화형 CLI
-- **rich >= 14.2.0**: 터미널 UI 스타일링
+### Gradio (v6.2+)
+- ChatGPT-style interface
+- Example query cards
+- Regulation detail view
+- Target audience selection
 
-## 프레임워크 및 라이브러리 선정 이유
+### MCP Server
+- **FastMCP** (v1.9+): Model Context Protocol
+- Tools: search_regulations, ask_regulations, view_article
+- Resources: sync status, regulation list
 
-### llama-index 선택 이유
-1. **통합된 RAG 파이프라인**: 검색, 재정렬, 생성을 하나의 프레임워크로 관리
-2. **다양한 LLM 지원**: Ollama, OpenAI, Gemini 등 통합 인터페이스
-3. **모듈화된 설계**: 각 컴포넌트를 독립적으로 교체 가능
-4. **활발한 커뮤니티**: 빠른 버전 업데이트와 버그 수정
+## Advanced RAG Techniques
 
-### ChromaDB 선택 이유
-1. **로컬 우선**: 외부 서버 없이 로컬 파일 기반 저장
-2. **데이터 프라이버시**: 민감한 규정 데이터가 기관을 떠나지 않음
-3. **설치 간편**: 별도의 DB 서버 설정 불필요
-4. **Python 네이티브**: Python 애플리케이션과 원활한 통합
+### Agentic RAG
+- Tool selection by LLM
+- Tools: search_regulations, get_regulation_detail, generate_answer
 
-### BGE-M3 선택 이유
-1. **다국어 지원**: 한국어를 포함한 100+ 언어 지원
-2. **긴 문서 처리**: 최대 8192 토큰 처리 가능
-3. **혼합 임베딩**: Dense, Sparse, Multi-Vector 결합
-4. **SOTA 성능**: MTEB 벤치마크에서 최상위 성능
+### Corrective RAG (CRAG)
+- Relevance evaluation
+- Query expansion
+- Automatic re-retrieval
+- Dynamic threshold (0.3-0.5)
 
-### Gradio 선택 이유
-1. **빠른 개발**: Python 코드만으로 웹 UI 구축
-2. **사용자 친화적**: ChatGPT 스타일의 친숙한 인터페이스
-3. **공유 용이**: 공개 링크 생성 및 임베드
-4. **반응형**: 모바일 지원
+### Self-RAG
+- Retrieval necessity evaluation
+- Result quality assessment
+- Groundedness verification
 
-### KoNLPy 선택 이유
-1. **한국어 특화**: 한국어 형태소 분석에 최적화
-2. **다양한 분석기**: Komoran, Hannanum, Kkma 등 지원
-3. **BM25 토큰화**: 형태소 단위 분리로 키워드 검색 개선
-4. **간편한 통합**: pip 설치로 바로 사용 가능
+### HyDE (Hypothetical Document Embeddings)
+- Virtual document generation
+- Ambiguous query detection
+- LRU cache with zlib compression
 
-## 개발 환경 요구사항
+## Development Tools
 
-### 필수 사양
-| 항목 | 최소 사양 | 권장 사양 |
-|------|----------|----------|
-| 운영체제 | macOS 12+, Ubuntu 20.04+ | macOS 14+, Ubuntu 22.04+ |
-| Python | 3.11 | 3.12 |
-| RAM | 8GB | 16GB (Reranker 사용 시) |
-| 디스크 | 5GB | 10GB+ |
-| GPU | 불필요 | CUDA 지원 시 임베딩 가속 |
+### Testing
+- **pytest** (v9.0+): Test framework
+- **pytest-xdist** (v3.6+): Parallel execution (max 2 workers)
+- **pytest-cov** (v7.0+): Coverage reporting
+- **pytest-asyncio**: Async test support
+- **pytest-timeout**: 300s limit
+- **pytest-benchmark**: Performance testing
 
-### 패키지 매니저
-- **uv**: Python 패키지 매니저
-  - pip보다 10-100배 빠른 설치 속도
-  - 의존성 해결의 정확성
-  - 가상환경 관리 통합
+### Code Quality
+- **ruff** (v0.8+): Linting and formatting
+- **pyright**: Type checking
+- **mypy**: Static analysis (alternative)
 
-### 필수 의존성
-```bash
-# Python 패키지
-uv sync
+### Evaluation Frameworks
+- **RAGAS** (v0.4+): LLM-as-Judge evaluation
+- **DeepEval** (v3.8+): Alternative evaluation
 
-# HWP 변환 도구
-uv add pyhwp
+## Security & Validation
+
+### Input Validation
+- **Pydantic** (v2.0+): Schema validation
+- Query length limit: 1000 characters
+- Malicious pattern detection
+- top_k range: 1-100
+
+### Encryption
+- **cryptography** (v41.0+): AES-256 for sensitive cache
+- API key format validation
+- Expiration warnings (7 days)
+
+## Performance Features
+
+### Caching Strategy
+- L1: In-memory (fastest, size-limited)
+- L2: Redis (distributed, persistent)
+- L3: ChromaDB (vector similarity)
+
+### Cache Warming
+- Top 100 regulations pre-embedded
+- Scheduled warming (default: 2 AM)
+- Progressive warming by query frequency
+
+### Memory Management
+- Maximum 2 xdist workers
+- --no-cov default for pytest
+- 12GB memory limit with auto-abort
+- Batched testing for large test suites
+
+## Dependencies (Key)
+
+```toml
+# Core
+llama-index>=0.14.10
+chromadb>=1.4.0
+gradio>=6.2.0
+
+# NLP
+flagembedding>=1.3.5  # BGE models
+kiwipiepy>=0.20.0     # Korean morpheme
+sentence-transformers>=2.2.0
+
+# LLM
+openai>=2.11.0
+mlx-lm>=0.29.1
+
+# Quality
+ragas>=0.4.3
+deepeval>=3.8.1
+
+# Security
+pydantic>=2.0.0
+cryptography>=41.0.0
 ```
 
-### 선택적 의존성
-```bash
-# 개발 도구
-uv add --dev pytest pytest-cov ruff
+## Configuration Files
 
-# LLM (로컬)
-# Ollama: https://ollama.com
-# LM Studio: https://lmstudio.ai
-
-# LLM (클라우드)
-# OpenAI API Key 필요
-# Gemini API Key 필요
-```
-
-## 빌드 및 배포 설정
-
-### 로컬 개발
-```bash
-# 가상환경 생성 및 활성화
-uv venv && source .venv/bin/activate
-
-# 의존성 설치
-uv sync
-
-# 환경 변수 설정
-cp .env.example .env
-```
-
-### CLI 실행
-```bash
-# 대화형 모드
-uv run regulation
-
-# HWP 변환
-uv run regulation convert "data/input/규정집.hwp"
-
-# DB 동기화
-uv run regulation sync data/output/규정집.json
-
-# 검색
-uv run regulation search "휴학 절차"
-```
-
-### Web UI 실행
-```bash
-uv run regulation serve --web
-# 기본 주소: http://localhost:7860
-```
-
-### MCP 서버 실행
-```bash
-uv run regulation serve --mcp
-# stdio 기반 통신
-```
-
-### 테스트 실행
-```bash
-# 전체 테스트
-uv run pytest
-
-# 커버리지 포함
-uv run pytest --cov=src --cov-report=html
-
-# 특정 테스트
-uv run pytest tests/test_search.py -v
-```
-
-### 코드 품질 검사
-```bash
-# Rinting
-uv run ruff check src/
-
-# Formatting
-uv run ruff format src/
-```
-
-### 배포 (PyPI)
-```bash
-# 빌드
-uv build
-
-# 퍼블리시 (TestPyPI)
-uv publish --index testpypi
-
-# 퍼블리시 (PyPI)
-uv publish
-```
-
-## LLM 설정
-
-### 지원 프로바이더
-| 프로바이더 | 모델 예시 | 용도 |
-|-----------|----------|------|
-| Ollama | gemma2, llama3 | 로컬 추천 |
-| LM Studio | 다양 | 로컬 |
-| OpenAI | gpt-4o, gpt-4o-mini | 클라우드 |
-| Gemini | gemini-1.5-flash | 클라우드 |
-| OpenRouter | 다양 | 다중 |
-
-### 환경 변수 설정
-```bash
-# 기본 LLM 설정
-LLM_PROVIDER=ollama
-LLM_MODEL=gemma2
-LLM_BASE_URL=http://localhost:11434
-
-# OpenAI
-OPENAI_API_KEY=sk-...
-
-# Gemini
-GEMINI_API_KEY=AIza...
-```
-
-## 고급 RAG 설정
-
-### 환경 변수
-```bash
-# Self-RAG 활성화
-ENABLE_SELF_RAG=true
-
-# HyDE 활성화
-ENABLE_HYDE=true
-
-# BM25 토큰화 모드
-BM25_TOKENIZE_MODE=konlpy  # konlpy | morpheme | simple
-
-# HyDE 캐시
-HYDE_CACHE_ENABLED=true
-HYDE_CACHE_DIR=data/cache/hyde
-```
-
-### 동의어/인텐트 사전
-```bash
-# 기본 제공 (커스텀 시 경로 변경)
-RAG_SYNONYMS_PATH=data/config/synonyms.json
-RAG_INTENTS_PATH=data/config/intents.json
-```
-
-## 보안 고려사항
-
-### 데이터 보호
-- **로컬 LLM 권장**: Ollama 등 로컬 모델 사용 시 데이터가 외부 서버로 전송되지 않음
-- **클라우드 LLM 사용 시**: 해당 서비스의 데이터 처리 정책 확인
-
-### 환경 변수 관리
-- `.env` 파일을 `.gitignore`에 포함
-- API 키를 코드에 직접 하드코딩 금지
-- `.env` 파일 권한 설정 (`chmod 600 .env`)
-
-### 네트워크 보안
-- 웹 UI는 기본적으로 `localhost`에서만 접근 가능
-- 외부 공개 시 방화벽 및 인증 설정 필요
-- MCP 서버는 로컬 통신만 지원
-
-## 성능 최적화
-
-### 임베딩 캐싱
-- 임베딩 결과를 캐시하여 중복 계산 방지
-- ChromaDB의 내장 캐시 활용
-
-### LLM 캐싱
-- 동일한 프롬프트에 대한 응답 캐시
-- `data/cache/llm/`에 저장
-
-### HyDE 캐싱
-- 생성된 가상 문서를 영구 저장
-- 동일 쿼리 재사용 시 LLM 호출 생략
-
-### 증분 동기화
-- 해시 비교로 변경된 규정만 업데이트
-- 전체 재동기화보다 10-100배 빠름
-
-## 추후 확장 가능성
-
-### 벡터 DB 교체
-- ChromaDB → Pinecone, Weaviate, Qdrant 등
-- `Repository` 인터페이스 구현만 변경
-
-### LLM 추가
-- Anthropic Claude, Cohere 등
-- `LLMAdapter`만 추가 구현
-
-### 임베딩 모델 교체
-- OpenAI Embeddings, Cohere Embeddings 등
-- 설정 변경만으로 가능
-
-### 웹 프레임워크 교체
-- Gradio → Streamlit, FastAPI, Next.js 등
-- Interface 계층만 수정
+| File | Purpose |
+|------|---------|
+| pyproject.toml | Project config, dependencies |
+| .env | Environment variables |
+| pytest.ini | Test configuration |
+| .moai/config/ | MoAI-ADK settings |
+| data/config/synonyms.json | Synonym dictionary (167 terms) |
+| data/config/intents.json | Intent rules (51 rules) |

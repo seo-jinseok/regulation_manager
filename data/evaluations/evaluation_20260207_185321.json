@@ -1,0 +1,26 @@
+{
+  "query": "복학 자격이 뭐예요?",
+  "answer": "",
+  "contexts": [
+    "교류학생선발규정 > 제2조 교류학생 선발기준 및 자격 > 1. 본교 학부 또 > 가. 학부생: 학부생의 경우 신청일 기준으로 2학기 이상 수료하고, 파견 종료 후 잔여 학기가 1학기 이상인 자를 원칙으로 한다. 단, 편입생의 경우 1학기 이상 수료한 자부터 신청할 수 있다. <신설 2022. 6. 1.>",
+    "학․석사연계과정운영규정 > 제5조 신청 시기 및 자격 > ③ 연계과정 > 2. 7개 학기(5년제 학과, 9개 학기) 이내에 학사과정: 7개 학기(5년제 학과, 9개 학기) 이내에 학사과정의 졸업요건 취득이 가능한 자"
+  ],
+  "faithfulness": 0.0,
+  "answer_relevancy": 0.5,
+  "contextual_precision": 0.5,
+  "contextual_recall": 0.87,
+  "overall_score": 0.468,
+  "passed": false,
+  "failure_reasons": [
+    "Faithfulness below threshold: 0.000 < 0.6",
+    "Answer Relevancy below threshold: 0.500 < 0.7",
+    "Contextual Precision below threshold: 0.500 < 0.65",
+    "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+  ],
+  "timestamp": "2026-02-07T18:53:21.233943",
+  "metadata": {
+    "framework": "ragas",
+    "judge_model": "gpt-4o",
+    "evaluation_method": "ragas"
+  }
+}

@@ -111,7 +111,7 @@ class TestConverterExtendedCoverage(unittest.TestCase):
         mock_file = MagicMock()
         mock_path.return_value = mock_file
         mock_file.exists.return_value = True
-        mock_file.name = "test.hwp"
+        mock_file.name = "test.hwpx"
 
         mock_reader = MagicMock()
         mock_reader.load_data.return_value = [MagicMock(text="Converted text...")]

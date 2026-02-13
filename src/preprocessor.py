@@ -9,6 +9,49 @@ from .llm_client import LLMClient
 from .repair import RegulationRepair
 
 
+def clean_page_header_pattern(text: str) -> str:
+    """
+    페이지 헤더 패턴을 제거하여 깨진 제목 복구.
+
+    HWP → HTML → Markdown 변환 시 페이지 헤더가 제목에 섞여 들어가는 문제 해결.
+    예: "제3편 행정 3—1—120～연구율리센터규정" → "연구율리센터규정"
+
+    Args:
+        text: 원본 텍스트 (변환된 Markdown 라인)
+
+    Returns:
+        페이지 헤더가 제거된 텍스트
+    """
+    if not text:
+        return text
+
+    # 규정 제목에 붙은 페이지 헤더만 제거 (TOC/INDEX는 건드리지 않음)
+    # 규정 제목 패턴: 규정, 세칙, 지침 등으로 끝나는 단어
+    # 뒤에 페이지 헤더가 붙어 있으면 제거
+
+    # 패턴: "[규정유형] 페이지헤더[공백]규정유형"
+    # 예: "연구율리센터규정 3—1—120～연구율리센터규정" → "연구율리센터규정"
+    regulation_types = [
+        '규정', '세칙', '지침', '요령', '강령', '내규', '학칙', '헌장',
+        '기준', '수칙', '준칙', '요강', '운영', '정관', '시행세칙', '운영세칙',
+        '운영지침', '시행지침', '안전수칙', '소프트웨어'
+    ]
+
+    # 규정 유형으로 끝나는지 확인
+    for reg_type in regulation_types:
+        # 패턴: "{reg_type} 페이지헤더 {reg_type}" (중복 제거)
+        # 예: "연구율리센터규정 3—1—120～연구율리센터규정" → "연구율리센터규정"
+        pattern = rf'({reg_type})\s+\d+[—－]\d+[—－]\d+～\s*\1'
+        if re.search(pattern, text):
+            text = re.sub(pattern, r'\1', text)
+            break
+
+    # 연속된 공백 정리
+    text = re.sub(r'\s+', ' ', text)
+
+    return text.strip()
+
+
 class Preprocessor:
     """
     Hybrid Preprocessor for Regulation Markdown.
@@ -17,7 +60,7 @@ class Preprocessor:
     """
 
     def __init__(
-        self, llm_client: LLMClient = None, cache_manager: Optional[CacheManager] = None
+        self, llm_client: Optional[LLMClient] = None, cache_manager: Optional[CacheManager] = None
     ):
         self.llm_client = llm_client
         self.cache_manager = cache_manager

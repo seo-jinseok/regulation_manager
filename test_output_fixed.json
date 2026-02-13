@@ -1,0 +1,533 @@
+{
+  "metadata": {
+    "source_file": "규정집9-343(20250909).hwpx",
+    "parser_version": "2.1.0",
+    "parsed_at": "2026-02-11T01:51:46.072922",
+    "parsing_time_seconds": 1.318361,
+    "total_regulations": 3,
+    "successfully_parsed": 3,
+    "failed_regulations": 0,
+    "total_articles": 58,
+    "success_rate": 100.0,
+    "parsing_errors": []
+  },
+  "toc": [
+    {
+      "id": "toc-0001",
+      "rule_code": "",
+      "title": "편찬례 및 취급 요령",
+      "page": "1"
+    },
+    {
+      "id": "toc-0002",
+      "rule_code": "3-1-54",
+      "title": "제3편 행정 3-1-54～동의대학교UI(University Identity)관리규정",
+      "page": "2"
+    },
+    {
+      "id": "toc-0003",
+      "rule_code": "",
+      "title": "군입대휴학중학점인정규정",
+      "page": "3"
+    }
+  ],
+  "docs": [
+    {
+      "id": "reg-0001",
+      "kind": "regulation",
+      "title": "편찬례 및 취급 요령",
+      "rule_code": "",
+      "part": null,
+      "chapter": null,
+      "section": null,
+      "articles": [
+        {
+          "article_no": "제1",
+          "title": "회",
+          "content": "\n년 월 일",
+          "paragraphs": [],
+          "items": [],
+          "subitems": []
+        },
+        {
+          "article_no": "제2",
+          "title": "회",
+          "content": "\n년 월 일",
+          "paragraphs": [],
+          "items": [],
+          "subitems": []
+        },
+        {
+          "article_no": "제3",
+          "title": "회",
+          "content": "\n년 월 일",
+          "paragraphs": [],
+          "items": [],
+          "subitems": []
+        },
+        {
+          "article_no": "제4",
+          "title": "회",
+          "content": "\n년 월 일",
+          "paragraphs": [],
+          "items": [],
+          "subitems": []
+        },
+        {
+          "article_no": "제5",
+          "title": "회",
+          "content": "\n년 월 일",
+          "paragraphs": [],
+          "items": [],
+          "subitems": []
+        },
+        {
+          "article_no": "제6",
+          "title": "회",
+          "content": "\n년 월 일",
+          "paragraphs": [],
+          "items": [],
+          "subitems": []
+        },
+        {
+          "article_no": "제7",
+          "title": "회",
+          "content": "\n년 월 일",
+          "paragraphs": [],
+          "items": [],
+          "subitems": []
+        },
+        {
+          "article_no": "제8",
+          "title": "회",
+          "content": "\n년 월 일",
+          "paragraphs": [],
+          "items": [],
+          "subitems": []
+        },
+        {
+          "article_no": "제9",
+          "title": "회",
+          "content": "\n년 월 일",
+          "paragraphs": [],
+          "items": [],
+          "subitems": []
+        },
+        {
+          "article_no": "제10",
+          "title": "회",
+          "content": "\n년 월 일",
+          "paragraphs": [],
+          "items": [],
+          "subitems": []
+        },
+        {
+          "article_no": "제11",
+          "title": "회",
+          "content": "\n년 월 일",
+          "paragraphs": [],
+          "items": [],
+          "subitems": []
+        },
+        {
+          "article_no": "제12",
+          "title": "회",
+          "content": "\n년 월 일",
+          "paragraphs": [],
+          "items": [],
+          "subitems": []
+        },
+        {
+          "article_no": "제13",
+          "title": "회",
+          "content": "\n년 월 일",
+          "paragraphs": [],
+          "items": [],
+          "subitems": []
+        },
+        {
+          "article_no": "제14",
+          "title": "회",
+          "content": "\n년 월 일",
+          "paragraphs": [],
+          "items": [],
+          "subitems": []
+        },
+        {
+          "article_no": "제15",
+          "title": "회",
+          "content": "\n년 월 일",
+          "paragraphs": [],
+          "items": [],
+          "subitems": []
+        },
+        {
+          "article_no": "제16",
+          "title": "회",
+          "content": "\n년 월 일",
+          "paragraphs": [],
+          "items": [],
+          "subitems": []
+        },
+        {
+          "article_no": "제17",
+          "title": "회",
+          "content": "\n년 월 일",
+          "paragraphs": [],
+          "items": [],
+          "subitems": []
+        },
+        {
+          "article_no": "제18",
+          "title": "회",
+          "content": "\n년 월 일",
+          "paragraphs": [],
+          "items": [],
+          "subitems": []
+        },
+        {
+          "article_no": "제19",
+          "title": "회",
+          "content": "\n년 월 일",
+          "paragraphs": [],
+          "items": [],
+          "subitems": []
+        },
+        {
+          "article_no": "제20",
+          "title": "회",
+          "content": "\n년 월 일",
+          "paragraphs": [],
+          "items": [],
+          "subitems": []
+        },
+        {
+          "article_no": "제21",
+          "title": "회",
+          "content": "\n년 월 일",
+          "paragraphs": [],
+          "items": [],
+          "subitems": []
+        },
+        {
+          "article_no": "제22",
+          "title": "회",
+          "content": "\n년 월 일",
+          "paragraphs": [],
+          "items": [],
+          "subitems": []
+        },
+        {
+          "article_no": "제23",
+          "title": "회",
+          "content": "\n년 월 일\n규정집 관리 현황표\n인계 인수 일자인계자인수자부서장확 인직위성명(인)직위성명(인) 2011년 3월 1일 기획처 기획부 일괄 배부 년 월 일 년 월 일 년 월 일 년 월 일 년 월 일 년 월 일 년 월 일 년 월 일 년 월 일 년 월 일 년 월 일 년 월 일 년 월 일 년 월 일 년 월 일 년 월 일 년 월 일 년 월 일 년 월 일\n인계 인수 일자\n인계자\n인수자\n부서장\n확 인\n직위\n성명\n(인)\n직위\n성명\n(인)\n2011년 3월 1일\n기획처 기획부 일괄 배부\n년 월 일\n년 월 일\n년 월 일\n년 월 일\n년 월 일\n년 월 일\n년 월 일\n년 월 일\n년 월 일\n년 월 일\n년 월 일\n년 월 일\n년 월 일\n년 월 일\n년 월 일\n년 월 일\n년 월 일\n년 월 일\n년 월 일\n차 례\n동의대학교 규정집\n동의대학교 규정집\n제 학교법인\n제 학 칙\n제 행 정\n일반 행정\n성희롱·성폭력예방과처리에관한시행세칙【폐지】",
+          "paragraphs": [],
+          "items": [],
+          "subitems": []
+        }
+      ]
+    },
+    {
+      "id": "reg-0002",
+      "kind": "regulation",
+      "title": "제3편 행정 3-1-54～동의대학교UI(University Identity)관리규정",
+      "rule_code": "3-1-54",
+      "part": "제3편 행정 3-1-54～",
+      "chapter": "제4장 회 계",
+      "section": "제14절 소프트웨어교육원",
+      "articles": [
+        {
+          "article_no": "제1조",
+          "title": "목적",
+          "content": "",
+          "paragraphs": [],
+          "items": [],
+          "subitems": []
+        },
+        {
+          "article_no": "제2조",
+          "title": "정의",
+          "content": "\n② UI는 다음 각호와 같이 해설ㆍ정의한다.\n1. 교표(Symbol Mark) : 교표는 진리, 정의, 창의의 교육 목표를 추구하며 전통과 최첨단이 공존하는 미래지향적인 동의대학교의 이미지를 형상화한 것이며, 중심에 있는 DeU는 Dong-eui University의 약자이다. 중심의 T자는 진리(Truth)의 수호를 뜻하며, e 는 온라인, 인터넷, 디지털 등 첨단 캠퍼스환경을 뜻한다.\n2. 교표를 구성하고 있는 파란색과 흰색은 하늘과 바다의 색으로 영원성과 포용성을 상징한다.\n3. 고유체(Logotype) : 로고는 한글, 한문, 영문 명칭으로 동의대학교를 구체적으로 표현, 전달한다.\n4. 응용안(Application System) : 기타 응용안은 적용 상황 변화에 따라 관리부서 주관에 의해 지속적으로 수정 보완된다.",
+          "paragraphs": [],
+          "items": [],
+          "subitems": []
+        },
+        {
+          "article_no": "제3조",
+          "title": "적용 범위",
+          "content": "",
+          "paragraphs": [],
+          "items": [],
+          "subitems": []
+        },
+        {
+          "article_no": "제4조",
+          "title": "사용",
+          "content": "\n② UI는 임의로 해석하거나 변경할 수 없다.",
+          "paragraphs": [],
+          "items": [],
+          "subitems": []
+        },
+        {
+          "article_no": "제5조",
+          "title": "협의",
+          "content": "",
+          "paragraphs": [],
+          "items": [],
+          "subitems": []
+        },
+        {
+          "article_no": "제6조",
+          "title": "보호",
+          "content": "",
+          "paragraphs": [],
+          "items": [],
+          "subitems": []
+        },
+        {
+          "article_no": "제7조",
+          "title": "사무관장",
+          "content": "\n② UI의 사용과 관련하여 변경사항이 있을 경우, UI 관리부서는 전 부서 및 관련 기관에 이를 통지하여야 한다.\n부 칙\n1. 이 규정은 2003년 10월 22일부터 시행한다.\n2. (경과조치) 종전의 교표와 로고를 활용한 인쇄물 등은 소진될 때까지 병행 사용할 수 있다.\n3. 이 변경 규정은 2008년 2월 1일부터 시행한다.\n4. 이 변경 규정은 2015년 2월 1일부터 시행한다.\n5. 이 변경 규정은 2019년 1월 1일부터 시행한다.\n6. 이 변경 규정은 2023년 9월 1일부터 시행한다.",
+          "paragraphs": [],
+          "items": [],
+          "subitems": []
+        }
+      ]
+    },
+    {
+      "id": "reg-0003",
+      "kind": "regulation",
+      "title": "군입대휴학중학점인정규정",
+      "rule_code": "",
+      "part": "제3편 행정",
+      "chapter": "제5장 보칙",
+      "section": "제14절 소프트웨어교육원",
+      "articles": [
+        {
+          "article_no": "제1조",
+          "title": "목적",
+          "content": "",
+          "paragraphs": [],
+          "items": [],
+          "subitems": []
+        },
+        {
+          "article_no": "제2조",
+          "title": "적용대상",
+          "content": "",
+          "paragraphs": [],
+          "items": [],
+          "subitems": []
+        },
+        {
+          "article_no": "제3조",
+          "title": "관련근거",
+          "content": "",
+          "paragraphs": [],
+          "items": [],
+          "subitems": []
+        },
+        {
+          "article_no": "제4조",
+          "title": "수강료납부",
+          "content": "",
+          "paragraphs": [],
+          "items": [],
+          "subitems": []
+        },
+        {
+          "article_no": "제5조",
+          "title": "수강신청 및 승인",
+          "content": "",
+          "paragraphs": [],
+          "items": [],
+          "subitems": []
+        },
+        {
+          "article_no": "제6조",
+          "title": "학점인정대상",
+          "content": "",
+          "paragraphs": [],
+          "items": [],
+          "subitems": []
+        },
+        {
+          "article_no": "제7조",
+          "title": "학점인정신청",
+          "content": "",
+          "paragraphs": [],
+          "items": [],
+          "subitems": []
+        },
+        {
+          "article_no": "제8조",
+          "title": "학점인정",
+          "content": "",
+          "paragraphs": [],
+          "items": [],
+          "subitems": []
+        },
+        {
+          "article_no": "제9조",
+          "title": "준용",
+          "content": "\n부 칙\n1. 이 규정은 2010년 7월 1일부터 시행한다.\n2. (경과조치) 이 규정 시행 이전에 이루어진 제5조의 수강신청 및 승인과 제7조의 학점인정신청은 이 규정을 적용한 것으로 본다.\n3. 이 변경 규정은 2011년 2월 10일부터 시행한다.\n4. 이 변경 규정은 2015년 2월 1일부터 시행한다.\n5. 이 변경 규정은 2018년 2월 1일부터 시행한다.\n6. 이 변경 규정은 2025년 3월 1일부터 시행한다.\n[별지 제1호서식]\n군복무 중 취득학점 인정신청서1. 학점인정신청가. 군원격강좌수강학점( )나. 군교육훈련이수학점( )2. 인적사항성명학번학년단과대학학과3. 학점인정신청내역교과목(강좌)명학점성적(100점 기준) 군입대휴학 중 취득한 학점을 본 대학교의 학점으로 인정받고자 이 신청서를 제출합니다.신청인 :(인)년 월 일동의대학교총장귀하\n군복무 중 취득학점 인정신청서\n1. 학점인정신청\n가. 군원격강좌수강학점\n( )\n나. 군교육훈련이수학점\n( )\n2. 인적사항\n성명학번학년단과대학학과\n성명\n학번\n학년\n단과대학\n학과\n3. 학점인정신청내역\n교과목(강좌)명학점성적(100점 기준)\n교과목(강좌)명\n학점\n성적\n(100점 기준)\n군입대휴학 중 취득한 학점을 본 대학교의 학점으로 인정받고자 이 신청서를 제출합니다.\n신청인 :\n(인)\n년 월 일\n동의대학교총장귀하\n[별지 제2호서식]\n제 호군 교육훈련 학점인정서인적사항성 명주민등록번호주 소□□□ - □□□학습과목명학점성적이수기관이수연월일인정 학점 총계총 학점 고등교육법 제23조 제1항 제2호, 학점인정등에관한법률 제3조 제1항의 규정에 의하여 군 복무중 위와 같이 학점을 취득하였음을 인정합니다.년 월 일평생교육진흥원장\n제 호\n군 교육훈련 학점인정서\n인적\n사항\n성 명\n주민등록번호\n주 소\n□□□ - □□□\n학습과목명\n학점\n성적\n이수기관\n이수연월일\n인정 학점 총계\n총 학점\n고등교육법 제23조 제1항 제2호, 학점인정등에관한법률 제3조 제1항의 규정에 의하여 군 복무중 위와 같이 학점을 취득하였음을 인정합니다.\n년 월 일\n평생교육진흥원장",
+          "paragraphs": [],
+          "items": [],
+          "subitems": []
+        },
+        {
+          "article_no": "제1조",
+          "title": "목적",
+          "content": "",
+          "paragraphs": [],
+          "items": [],
+          "subitems": []
+        },
+        {
+          "article_no": "제2조",
+          "title": "업무 및 사업",
+          "content": "",
+          "paragraphs": [],
+          "items": [],
+          "subitems": []
+        },
+        {
+          "article_no": "제2조",
+          "title": "업무",
+          "content": "\n1. 한국어 정규과정 운영 <개정 2022. 9. 1>\n2. 한국어 집중과정 운영 <개정 2022. 9. 1>\n3. 교환학생 한국어 연수과정 운영 <개정 2022. 9. 1>\n4. 해외 자매대학 단기 한국어 연수과정 운영 <개정 2022. 9. 1>\n5. 한국어능력시험(TOPIK) 관련 업무 <개정 2022. 9. 1>\n6. 어학연수생 유치 및 관리 <개정 2022. 9. 1>\n7. 튜터(Tutor) 선발 및 운영 <개정 2022. 9. 1>\n8. 기타 위 각 호에 부수되는 사항 <개정 2022. 9. 1>\n9. <삭제 2022. 9. 1>",
+          "paragraphs": [],
+          "items": [],
+          "subitems": []
+        },
+        {
+          "article_no": "제3조",
+          "title": "전담조직 및 직원",
+          "content": "",
+          "paragraphs": [],
+          "items": [],
+          "subitems": []
+        },
+        {
+          "article_no": "제4조",
+          "title": "구성",
+          "content": "",
+          "paragraphs": [],
+          "items": [],
+          "subitems": []
+        },
+        {
+          "article_no": "제5조",
+          "title": "교원 및 강사",
+          "content": "\n② 교원 및 대우전임교원은 상호계약에 의하되, 급여는 연봉제로 하며 세부사항은 따로 정한다.",
+          "paragraphs": [],
+          "items": [],
+          "subitems": []
+        },
+        {
+          "article_no": "제6조",
+          "title": "재정 및 회계",
+          "content": "",
+          "paragraphs": [],
+          "items": [],
+          "subitems": []
+        },
+        {
+          "article_no": "제7조",
+          "title": "교육내용 및 교육대상",
+          "content": "\n② 어학 및 한국어강좌의 교육대상은 본교 재학생, 자매대학, 일반인, 외국인을 대상으로 한다. <개정 2022. 4. 1>\n③ 어학연수생에 대한 교육지침은 한국어능력 함양으로 희망하는 학과에 진학하여 전문지식과 기능을 습득케 함과 한국의 전통문화를 이해시켜 친한감정 조성 및 우수한 인재로 성장할 수 있도록 최선을 다한다.",
+          "paragraphs": [],
+          "items": [],
+          "subitems": []
+        },
+        {
+          "article_no": "제8조",
+          "title": "교육과정",
+          "content": "\n② 정규과정은 수준에 따라 초급반, 중급반, 고급반으로 구분하여, 특별과정에 관한 세부사항은 별도로 정한다.",
+          "paragraphs": [],
+          "items": [],
+          "subitems": []
+        },
+        {
+          "article_no": "제9조",
+          "title": "연수기간",
+          "content": "",
+          "paragraphs": [],
+          "items": [],
+          "subitems": []
+        },
+        {
+          "article_no": "제10조",
+          "title": "입학절차",
+          "content": "\n① 한국어연수과정 지원자는 다음 각 호의 서류를 첨부하여 신청하여야 하며, 심의를 거쳐 총장이 선발한다.\n1. 지원서\n2. 최종학교 졸업증명서 및 성적증명서\n3. 은행잔고증명서(법무부 ｢외국인 유학생 사증발급 및 체류관리 지침｣의 재정능력 심사기준에 따름) <개정 2022. 12. 1.>\n4. 신원보증서\n5. 기타 필요한 서류\n② 기타 과정의 운영에 관한 세부사항은 따로 정한다.",
+          "paragraphs": [],
+          "items": [],
+          "subitems": []
+        },
+        {
+          "article_no": "제11조",
+          "title": "수강료 및 환불",
+          "content": "\n② 수강료 납부 후 연수 기간 전 취소하거나 불합격 시 전형료를 제외하고 전액 환불한다. <개정 2022. 4. 1>\n③ 그 외의 수강료 환불에 관한 세부사항은 총장의 승인을 받아 별도로 정한다. <신설 2022. 4. 1>",
+          "paragraphs": [],
+          "items": [],
+          "subitems": []
+        },
+        {
+          "article_no": "제12조",
+          "title": "출석 및 성적평가",
+          "content": "\n② 매학기 읽기, 쓰기, 말하기, 듣기, 태도 및 과제의 부분별 점수를 합산하여 성적을 부여한다.\n구분배점읽기100쓰기100말하기100듣기100태도 및 과제100총점500\n구분\n배점\n읽기\n100\n쓰기\n100\n말하기\n100\n듣기\n100\n태도 및 과제\n100\n총점\n500\n③교과목별 학업 성적은 다음과 같이 분류한다.\n등급실점수평점등급실점수평점A+95 ～ 1004.5C°70 ～ 742.0A°90 ～ 944.0D+65 ～ 691.5B+85 ～ 893.5D°60 ～ 641.0B°80 ～ 843.0F 0 ～ 590.0C+75 ～ 792.5\n등급\n실점수\n평점\n등급\n실점수\n평점\nA+\n95 ～ 100\n4.5\nC°\n70 ～ 74\n2.0\nA°\n90 ～ 94\n4.0\nD+\n65 ～ 69\n1.5\nB+\n85 ～ 89\n3.5\nD°\n60 ～ 64\n1.0\nB°\n80 ～ 84\n3.0\nF\n0 ～ 59\n0.0\nC+\n75 ～ 79\n2.5",
+          "paragraphs": [],
+          "items": [],
+          "subitems": []
+        },
+        {
+          "article_no": "제13조",
+          "title": "수료증 발급 대상",
+          "content": "",
+          "paragraphs": [],
+          "items": [],
+          "subitems": []
+        },
+        {
+          "article_no": "제14조",
+          "title": "장학금",
+          "content": "",
+          "paragraphs": [],
+          "items": [],
+          "subitems": []
+        },
+        {
+          "article_no": "제15조",
+          "title": "징계",
+          "content": "\n① 범죄행위자 및 품행이 불량하다고 인정되는 자\n② 정당한 사유없이 장기간 출석을 하지 않는 자\n③ 기타 학생의 본분을 위배한자",
+          "paragraphs": [],
+          "items": [],
+          "subitems": []
+        },
+        {
+          "article_no": "제16조",
+          "title": "기숙",
+          "content": "",
+          "paragraphs": [],
+          "items": [],
+          "subitems": []
+        },
+        {
+          "article_no": "제17조",
+          "title": "귀국",
+          "content": "\n② 학기중 일시 귀국은 원칙적으로 불허한다. 다만, 직계가족의 병고, 사망, 혼인 등의 경우에는 기간 협의 하에 일시 귀국할 수 있다.\n③ 어학연수생이 연수 과정이 계속되기 어렵다고 인정될 경우 연수 중단에 따른 조기 귀국을 명할 수 있다.",
+          "paragraphs": [],
+          "items": [],
+          "subitems": []
+        },
+        {
+          "article_no": "제18조",
+          "title": "기타",
+          "content": "\n부 칙\n1. 이 규정은 2011년 3월 1일부터 시행한다.\n2. 이 변경 규정은 2019년 10월 1일부터 시행한다.\n3. 이 변경 규정은 2020년 1월 1일부터 시행한다.\n4. 이 변경 규정은 2022년 4월 1일부터 시행한다.\n5. 이 변경 규정은 2022년 9월 1일부터 시행한다.\n6. 이 변경 규정은 2022년 12월 1일부터 시행한다.",
+          "paragraphs": [],
+          "items": [],
+          "subitems": []
+        }
+      ]
+    }
+  ]
+}

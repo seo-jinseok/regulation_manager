@@ -1,0 +1,42 @@
+[
+  {
+    "persona": "professor",
+    "query": "교원 연구년 승인 절차와 교원회 의결 사항은 무엇입니까?",
+    "category": "faculty_affairs",
+    "difficulty": "medium",
+    "error": "llama_index is not installed. LLM features are unavailable.",
+    "execution_time_ms": 3258.13
+  },
+  {
+    "persona": "professor",
+    "query": "정년 보장 심사 기준과 제출 서류를 알려주세요",
+    "category": "faculty_affairs",
+    "difficulty": "medium",
+    "error": "llama_index is not installed. LLM features are unavailable.",
+    "execution_time_ms": 11.02
+  },
+  {
+    "persona": "professor",
+    "query": "교과과정 개편 절차와 교원회 의결 정족수는 어떻게 됩니까?",
+    "category": "academic_governance",
+    "difficulty": "medium",
+    "error": "llama_index is not installed. LLM features are unavailable.",
+    "execution_time_ms": 0.89
+  },
+  {
+    "persona": "professor",
+    "query": "겸임 교원의 업적 평가 시 본교와 겸임교 기여도 배분 기준을 어느 규정에서 따릅니까?",
+    "category": "faculty_affairs",
+    "difficulty": "hard",
+    "error": "llama_index is not installed. LLM features are unavailable.",
+    "execution_time_ms": 0.85
+  },
+  {
+    "persona": "professor",
+    "query": "연구윤리 위반 학생 지도 교원의 연구년 자격 제한 규정과 적용 범위를 확인하고 싶습니다",
+    "category": "research_administration",
+    "difficulty": "hard",
+    "error": "llama_index is not installed. LLM features are unavailable.",
+    "execution_time_ms": 0.83
+  }
+]

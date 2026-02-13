@@ -828,20 +828,184 @@ def main():
     )
     parser.add_argument("--db-path", default="data/chroma_db", help="Path to ChromaDB")
     parser.add_argument("--output", default=None, help="Output report to file")
+    parser.add_argument(
+        "--use-llm-judge",
+        action="store_true",
+        help="Use new LLM-as-Judge 4-metric evaluation (Accuracy, Completeness, Citations, Context Relevance)",
+    )
+    parser.add_argument(
+        "--parallel",
+        action="store_true",
+        help="Use parallel persona evaluation (requires --use-llm-judge)",
+    )
+    parser.add_argument(
+        "--queries-per-persona",
+        type=int,
+        default=5,
+        help="Number of queries per persona for parallel evaluation",
+    )
 
     args = parser.parse_args()
 
-    evaluator = RAGQualityEvaluator(db_path=args.db_path)
-    evaluator.run_evaluation(limit=args.limit)
+    # Check for parallel mode
+    if args.parallel and not args.use_llm_judge:
+        print(
+            "⚠️  --parallel requires --use-llm-judge. Enabling LLM-as-Judge evaluation."
+        )
+        args.use_llm_judge = True
 
-    report = evaluator.generate_report()
+    if args.use_llm_judge:
+        # Use new LLM-as-Judge evaluation system
+        from src.rag.config import get_config
+        from src.rag.domain.evaluation import (
+            LLMJudge,
+            ParallelPersonaEvaluator,
+        )
+        from src.rag.infrastructure.llm_adapter import LLMClientAdapter
 
-    if args.output:
-        with open(args.output, "w", encoding="utf-8") as f:
-            f.write(report)
-        print(f"✅ Report saved to: {args.output}")
+        config = get_config()
+        llm_client = LLMClientAdapter(
+            provider=config.llm_provider,
+            model=config.llm_model,
+            base_url=config.llm_base_url,
+        )
+
+        if args.parallel:
+            # Parallel persona evaluation
+            print("🚀 Running parallel persona evaluation with LLM-as-Judge...")
+            evaluator = ParallelPersonaEvaluator(
+                db_path=args.db_path,
+                llm_client=llm_client,
+            )
+            persona_results = evaluator.evaluate_parallel(
+                queries_per_persona=args.queries_per_persona
+            )
+
+            # Generate and save report
+            report = evaluator.generate_report()
+            timestamp = time.strftime("%Y%m%d_%H%M%S")
+
+            if args.output:
+                output_path = args.output
+            else:
+                output_path = f"data/evaluations/parallel_eval_{timestamp}.md"
+
+            with open(output_path, "w", encoding="utf-8") as f:
+                f.write(report)
+
+            # Save JSON results
+            json_path = evaluator.save_results()
+
+            print(f"✅ Report saved to: {output_path}")
+            print(f"✅ JSON results saved to: {json_path}")
+            print()
+
+            # Print summary
+            print("📊 Persona Summary:")
+            for persona, result in persona_results.items():
+                print(
+                    f"  {persona}: {result.avg_score:.3f} avg, "
+                    f"{result.pass_rate:.1%} pass rate"
+                )
+
+        else:
+            # Single query LLM-as-Judge evaluation
+            print("🔍 Running LLM-as-Judge evaluation...")
+            judge = LLMJudge(llm_client=llm_client)
+
+            # Run evaluation using existing evaluator
+            legacy_evaluator = RAGQualityEvaluator(db_path=args.db_path)
+            legacy_evaluator.run_evaluation(limit=args.limit)
+
+            # Re-evaluate results with LLM judge
+            from src.rag.domain.evaluation import EvaluationBatch
+
+            batch = EvaluationBatch(judge=judge)
+
+            for legacy_result in legacy_evaluator.results:
+                judge_result = judge.evaluate(
+                    query=legacy_result.query,
+                    answer=legacy_result.answer_text,
+                    sources=legacy_result.sources,
+                )
+                batch.add_result(judge_result)
+
+            # Generate report
+            summary = batch.get_summary()
+
+            report_lines = [
+                "=" * 80,
+                "RAG Quality Evaluation Report (LLM-as-Judge)",
+                "=" * 80,
+                "",
+                "## Summary",
+                f"- Total queries tested: {summary.total_queries}",
+                f"- Passed: {summary.passed}",
+                f"- Failed: {summary.failed}",
+                f"- Pass rate: {summary.pass_rate:.1%}",
+                "",
+                "## Average Scores",
+                f"- Overall: {summary.avg_overall_score:.3f}",
+                f"- Accuracy: {summary.avg_accuracy:.3f}",
+                f"- Completeness: {summary.avg_completeness:.3f}",
+                f"- Citations: {summary.avg_citations:.3f}",
+                f"- Context Relevance: {summary.avg_context_relevance:.3f}",
+                "",
+                "## Failure Patterns",
+            ]
+
+            for issue, count in sorted(
+                summary.failure_patterns.items(), key=lambda x: x[1], reverse=True
+            ):
+                report_lines.append(f"- {issue}: {count}x")
+
+            report_lines.extend(["", "## Detailed Results", ""])
+
+            for i, result in enumerate(batch.results, 1):
+                report_lines.extend(
+                    [
+                        f"### {i}. {result.query}",
+                        f"**Score:** {result.overall_score:.3f} ({'PASS' if result.passed else 'FAIL'})",
+                        f"**Metrics:** Acc={result.accuracy:.3f}, Comp={result.completeness:.3f}, "
+                        f"Cit={result.citations:.3f}, Ctx={result.context_relevance:.3f}",
+                    ]
+                )
+
+                if result.issues:
+                    report_lines.append(f"**Issues:** {', '.join(result.issues)}")
+                if result.strengths:
+                    report_lines.append(f"**Strengths:** {', '.join(result.strengths)}")
+
+                report_lines.extend(
+                    [
+                        f"**Answer:** {result.answer[:200]}...",
+                        "",
+                    ]
+                )
+
+            report_lines.append("=" * 80)
+            report = "\n".join(report_lines)
+
+            if args.output:
+                with open(args.output, "w", encoding="utf-8") as f:
+                    f.write(report)
+                print(f"✅ Report saved to: {args.output}")
+            else:
+                print(report)
+
     else:
-        print(report)
+        # Use legacy 3-point scale evaluation
+        evaluator = RAGQualityEvaluator(db_path=args.db_path)
+        evaluator.run_evaluation(limit=args.limit)
+
+        report = evaluator.generate_report()
+
+        if args.output:
+            with open(args.output, "w", encoding="utf-8") as f:
+                f.write(report)
+            print(f"✅ Report saved to: {args.output}")
+        else:
+            print(report)
 
 
 if __name__ == "__main__":

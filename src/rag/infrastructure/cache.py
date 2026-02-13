@@ -325,7 +325,7 @@ class RedisBackend:
                 )
             except ImportError:
                 logger.error("Redis password required but not provided")
-                raise ValueError("Redis password required but not provided")
+                raise ValueError("Redis password required but not provided") from None
 
         self._connection_params = {
             "host": host,
@@ -625,7 +625,7 @@ class RedisBackend:
         except ImportError:
             # Security module not available, do basic validation
             if ".." in key or key.startswith("/") or key.startswith("\\"):
-                raise ValueError(f"Invalid cache key: {key}")
+                raise ValueError(f"Invalid cache key: {key}") from None
 
         return f"{self._prefix}{key}"
 

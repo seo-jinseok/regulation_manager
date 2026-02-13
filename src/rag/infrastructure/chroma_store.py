@@ -231,7 +231,7 @@ class ChromaVectorStore(IVectorStore):
             distances = results.get("distances", [[]])[0]
 
             for i, (id_, doc, meta, dist) in enumerate(
-                zip(ids, documents, metadatas, distances, strict=False)
+                zip(ids, documents, metadatas, distances, strict=True)
             ):
                 # Convert distance to similarity score (cosine)
                 # ChromaDB returns distance; clamp to [0, 1]
@@ -307,7 +307,7 @@ class ChromaVectorStore(IVectorStore):
         docs = results.get("documents", [])
         metas = results.get("metadatas", [])
 
-        for doc_id, text, meta in zip(ids, docs, metas, strict=False):
+        for doc_id, text, meta in zip(ids, docs, metas, strict=True):
             if text:  # Only include non-empty documents
                 documents.append((doc_id, text, meta or {}))
 

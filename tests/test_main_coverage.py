@@ -80,7 +80,7 @@ class TestCollectHwpFiles(unittest.TestCase):
     @patch("pathlib.Path.is_file", return_value=True)
     def test_single_file(self, mock_is_file, mock_exists):
         """Test collecting single file."""
-        result = _collect_hwp_files(Path("test.hwp"), self.console)
+        result = _collect_hwp_files(Path("test.hwpx"), self.console)
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0], Path("test.hwp"))
 
@@ -90,19 +90,19 @@ class TestExtractSourceMetadataExtended(unittest.TestCase):
 
     def test_single_digit_serial(self):
         """Test single digit serial number."""
-        result = _extract_source_metadata("regulation1-1(20250101).hwp")
+        result = _extract_source_metadata("regulation1-1(20250101).hwpx")
         # Pattern requires "규정집" prefix in Korean, not "regulation"
         self.assertIsNone(result["source_serial"])
 
     def test_large_serial_number(self):
         """Test large serial number."""
-        result = _extract_source_metadata("regulation999-999(20251231).hwp")
+        result = _extract_source_metadata("regulation999-999(20251231).hwpx")
         # Pattern requires "규정집" prefix
         self.assertIsNone(result["source_serial"])
 
     def test_invalid_date_still_parsed(self):
         """Test invalid date is still parsed."""
-        result = _extract_source_metadata("regulation1-1(20241301).hwp")
+        result = _extract_source_metadata("regulation1-1(20241301).hwpx")
         # Pattern requires "규정집" prefix
         self.assertIsNone(result["source_serial"])
 

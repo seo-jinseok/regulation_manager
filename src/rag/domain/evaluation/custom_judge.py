@@ -14,6 +14,7 @@ Metrics Calculated:
 Clean Architecture: Domain layer with infrastructure dependency only for OpenAI client.
 """
 
+import asyncio
 import json
 import logging
 import os
@@ -531,9 +532,6 @@ class CustomLLMJudge:
             },
         }
 
-
-# Import asyncio for retry delay
-import asyncio
 
 # Export main classes
 __all__ = [

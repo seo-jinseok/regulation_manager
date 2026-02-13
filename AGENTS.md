@@ -35,7 +35,7 @@ uv run ruff format
 
 # Run the CLI
 uv run regulation                    # Interactive mode
-uv run regulation convert "file.hwp" # HWP to JSON
+uv run regulation convert "file.hwpx" # HWPX to JSON
 uv run regulation sync <json>        # Sync to vector DB
 uv run regulation search "query"     # Search
 uv run regulation search "query" -a  # Search + LLM answer

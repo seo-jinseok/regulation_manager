@@ -71,23 +71,23 @@ usage: regulation [-h] {convert,sync,search,status,reset,serve} ...
 
 ### 목적
 
-HWP 형식의 규정집 파일을 AI가 이해할 수 있는 **구조화된 JSON**으로 변환합니다. 이 과정에서 편/장/절/조/항/호/목의 계층 구조가 보존됩니다.
+HWPX 형식의 규정집 파일을 AI가 이해할 수 있는 **구조화된 JSON**으로 변환합니다. 이 과정에서 편/장/절/조/항/호/목의 계층 구조가 보존됩니다.
 
 ### 사전 요구사항
 
 - `hwp5html` CLI가 설치되어 있어야 합니다.
-- HWP 파일을 `data/input/` 폴더에 배치합니다.
+- HWPX 파일을 `data/input/` 폴더에 배치합니다.
 
 ### 절차
 
 ```bash
-uv run regulation convert "data/input/규정집.hwp"
+uv run regulation convert "data/input/규정집.hwpx"
 ```
 
 **옵션: LLM 전처리 활성화** (변환 품질 향상)
 
 ```bash
-uv run regulation convert "data/input/규정집.hwp" --use_llm
+uv run regulation convert "data/input/규정집.hwpx" --use_llm
 ```
 
 > LLM 전처리는 복잡한 문서 구조를 더 정확하게 파싱하는 데 도움이 됩니다.
@@ -303,7 +303,7 @@ uv run regulation serve --mcp
 | 작업 | 명령어 |
 |------|--------|
 | **대화형 모드** | `uv run regulation` |
-| 변환 | `uv run regulation convert "data/input/규정집.hwp"` |
+| 변환 | `uv run regulation convert "data/input/규정집.hwpx"` |
 | 동기화 | `uv run regulation sync <json-path>` |
 | 검색/질문 | `uv run regulation search "<쿼리>" [-a/-q]` |
 | 상태 확인 | `uv run regulation status` |
@@ -332,10 +332,10 @@ uv run regulation sync data/output/규정집.json
 
 ```bash
 # 절대 경로 예시
-uv run regulation convert "/Users/user/Documents/규정집.hwp"
+uv run regulation convert "/Users/user/Documents/규정집.hwpx"
 
 # 상대 경로 예시
-uv run regulation convert "data/input/규정집.hwp"
+uv run regulation convert "data/input/규정집.hwpx"
 ```
 
 ### "hwp5html 실행 파일을 찾을 수 없습니다"
@@ -351,7 +351,7 @@ uv run regulation convert "data/input/규정집.hwp"
 **해결**: LLM 전처리를 활성화하세요:
 
 ```bash
-uv run regulation convert "규정.hwp" --use_llm --provider ollama --model gemma2
+uv run regulation convert "규정.hwpx" --use_llm --provider ollama --model gemma2
 ```
 
 > LLM 설정에 대한 자세한 내용은 [LLM_GUIDE.md](./LLM_GUIDE.md)를 참고하세요.

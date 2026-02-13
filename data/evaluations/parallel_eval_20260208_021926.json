@@ -1,0 +1,19 @@
+{
+  "summary": {
+    "evaluation_id": "",
+    "timestamp": "2026-02-08T02:19:26.991608",
+    "total_queries": 0,
+    "passed": 0,
+    "failed": 0,
+    "pass_rate": 0.0,
+    "avg_accuracy": 0.0,
+    "avg_completeness": 0.0,
+    "avg_citations": 0.0,
+    "avg_context_relevance": 0.0,
+    "avg_overall_score": 0.0,
+    "by_persona": {},
+    "by_category": {},
+    "failure_patterns": {}
+  },
+  "results": []
+}

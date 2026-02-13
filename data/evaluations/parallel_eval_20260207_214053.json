@@ -1,0 +1,673 @@
+{
+  "summary": {
+    "evaluation_id": "batch_20260207_214053",
+    "timestamp": "2026-02-07T21:40:53.436497",
+    "total_queries": 36,
+    "passed": 0,
+    "failed": 36,
+    "pass_rate": 0.0,
+    "avg_accuracy": 0.5,
+    "avg_completeness": 0.0,
+    "avg_citations": 0.0,
+    "avg_context_relevance": 0.0,
+    "avg_overall_score": 0.1749999999999999,
+    "by_persona": {},
+    "by_category": {},
+    "failure_patterns": {
+      "일부 부정확한 정보": 36,
+      "핵심 정보 누락": 36,
+      "규정 인용 부족 또는 부정확": 36,
+      "검색된 문서 관련성 낮음": 36
+    }
+  },
+  "results": [
+    {
+      "evaluation_id": "eval_20260207_213929",
+      "query": "휴학 기간과 방법, 그리고 필요한 서류가 뭐야?",
+      "answer": "",
+      "accuracy": 0.5,
+      "completeness": 0.0,
+      "citations": 0.0,
+      "context_relevance": 0.0,
+      "overall_score": 0.175,
+      "passed": false,
+      "issues": [
+        "일부 부정확한 정보",
+        "핵심 정보 누락",
+        "규정 인용 부족 또는 부정확",
+        "검색된 문서 관련성 낮음"
+      ],
+      "strengths": []
+    },
+    {
+      "evaluation_id": "eval_20260207_213935",
+      "query": "연구년 절차가 궁금합니다",
+      "answer": "",
+      "accuracy": 0.5,
+      "completeness": 0.0,
+      "citations": 0.0,
+      "context_relevance": 0.0,
+      "overall_score": 0.175,
+      "passed": false,
+      "issues": [
+        "일부 부정확한 정보",
+        "핵심 정보 누락",
+        "규정 인용 부족 또는 부정확",
+        "검색된 문서 관련성 낮음"
+      ],
+      "strengths": []
+    },
+    {
+      "evaluation_id": "eval_20260207_213943",
+      "query": "연구년 자격과 절차, 그리고 제출 서류가 무엇인가요?",
+      "answer": "",
+      "accuracy": 0.5,
+      "completeness": 0.0,
+      "citations": 0.0,
+      "context_relevance": 0.0,
+      "overall_score": 0.175,
+      "passed": false,
+      "issues": [
+        "일부 부정확한 정보",
+        "핵심 정보 누락",
+        "규정 인용 부족 또는 부정확",
+        "검색된 문서 관련성 낮음"
+      ],
+      "strengths": []
+    },
+    {
+      "evaluation_id": "eval_20260207_213945",
+      "query": "휴학 방법 알려줘",
+      "answer": "",
+      "accuracy": 0.5,
+      "completeness": 0.0,
+      "citations": 0.0,
+      "context_relevance": 0.0,
+      "overall_score": 0.175,
+      "passed": false,
+      "issues": [
+        "일부 부정확한 정보",
+        "핵심 정보 누락",
+        "규정 인용 부족 또는 부정확",
+        "검색된 문서 관련성 낮음"
+      ],
+      "strengths": []
+    },
+    {
+      "evaluation_id": "eval_20260207_213948",
+      "query": "휴학...",
+      "answer": "",
+      "accuracy": 0.5,
+      "completeness": 0.0,
+      "citations": 0.0,
+      "context_relevance": 0.0,
+      "overall_score": 0.175,
+      "passed": false,
+      "issues": [
+        "일부 부정확한 정보",
+        "핵심 정보 누락",
+        "규정 인용 부족 또는 부정확",
+        "검색된 문서 관련성 낮음"
+      ],
+      "strengths": []
+    },
+    {
+      "evaluation_id": "eval_20260207_213951",
+      "query": "휴학 어떻게 해요?",
+      "answer": "",
+      "accuracy": 0.5,
+      "completeness": 0.0,
+      "citations": 0.0,
+      "context_relevance": 0.0,
+      "overall_score": 0.175,
+      "passed": false,
+      "issues": [
+        "일부 부정확한 정보",
+        "핵심 정보 누락",
+        "규정 인용 부족 또는 부정확",
+        "검색된 문서 관련성 낮음"
+      ],
+      "strengths": []
+    },
+    {
+      "evaluation_id": "eval_20260207_213952",
+      "query": "연구년 어떻게 해요?",
+      "answer": "",
+      "accuracy": 0.5,
+      "completeness": 0.0,
+      "citations": 0.0,
+      "context_relevance": 0.0,
+      "overall_score": 0.175,
+      "passed": false,
+      "issues": [
+        "일부 부정확한 정보",
+        "핵심 정보 누락",
+        "규정 인용 부족 또는 부정확",
+        "검색된 문서 관련성 낮음"
+      ],
+      "strengths": []
+    },
+    {
+      "evaluation_id": "eval_20260207_213956",
+      "query": "연구년 어떻게 해요?",
+      "answer": "",
+      "accuracy": 0.5,
+      "completeness": 0.0,
+      "citations": 0.0,
+      "context_relevance": 0.0,
+      "overall_score": 0.175,
+      "passed": false,
+      "issues": [
+        "일부 부정확한 정보",
+        "핵심 정보 누락",
+        "규정 인용 부족 또는 부정확",
+        "검색된 문서 관련성 낮음"
+      ],
+      "strengths": []
+    },
+    {
+      "evaluation_id": "eval_20260207_213957",
+      "query": "연구년 어떻게 해요?",
+      "answer": "",
+      "accuracy": 0.5,
+      "completeness": 0.0,
+      "citations": 0.0,
+      "context_relevance": 0.0,
+      "overall_score": 0.175,
+      "passed": false,
+      "issues": [
+        "일부 부정확한 정보",
+        "핵심 정보 누락",
+        "규정 인용 부족 또는 부정확",
+        "검색된 문서 관련성 낮음"
+      ],
+      "strengths": []
+    },
+    {
+      "evaluation_id": "eval_20260207_213958",
+      "query": "연구년 관련 규정 안내",
+      "answer": "",
+      "accuracy": 0.5,
+      "completeness": 0.0,
+      "citations": 0.0,
+      "context_relevance": 0.0,
+      "overall_score": 0.175,
+      "passed": false,
+      "issues": [
+        "일부 부정확한 정보",
+        "핵심 정보 누락",
+        "규정 인용 부족 또는 부정확",
+        "검색된 문서 관련성 낮음"
+      ],
+      "strengths": []
+    },
+    {
+      "evaluation_id": "eval_20260207_214003",
+      "query": "휴학 어떻게 해요?",
+      "answer": "",
+      "accuracy": 0.5,
+      "completeness": 0.0,
+      "citations": 0.0,
+      "context_relevance": 0.0,
+      "overall_score": 0.175,
+      "passed": false,
+      "issues": [
+        "일부 부정확한 정보",
+        "핵심 정보 누락",
+        "규정 인용 부족 또는 부정확",
+        "검색된 문서 관련성 낮음"
+      ],
+      "strengths": []
+    },
+    {
+      "evaluation_id": "eval_20260207_214003",
+      "query": "연구년 관련 규정과 예외 사항을 포괄적으로 설명하시오",
+      "answer": "",
+      "accuracy": 0.5,
+      "completeness": 0.0,
+      "citations": 0.0,
+      "context_relevance": 0.0,
+      "overall_score": 0.175,
+      "passed": false,
+      "issues": [
+        "일부 부정확한 정보",
+        "핵심 정보 누락",
+        "규정 인용 부족 또는 부정확",
+        "검색된 문서 관련성 낮음"
+      ],
+      "strengths": []
+    },
+    {
+      "evaluation_id": "eval_20260207_214004",
+      "query": "연구년 어떻게 해요?",
+      "answer": "",
+      "accuracy": 0.5,
+      "completeness": 0.0,
+      "citations": 0.0,
+      "context_relevance": 0.0,
+      "overall_score": 0.175,
+      "passed": false,
+      "issues": [
+        "일부 부정확한 정보",
+        "핵심 정보 누락",
+        "규정 인용 부족 또는 부정확",
+        "검색된 문서 관련성 낮음"
+      ],
+      "strengths": []
+    },
+    {
+      "evaluation_id": "eval_20260207_214006",
+      "query": "연구년 관련",
+      "answer": "",
+      "accuracy": 0.5,
+      "completeness": 0.0,
+      "citations": 0.0,
+      "context_relevance": 0.0,
+      "overall_score": 0.175,
+      "passed": false,
+      "issues": [
+        "일부 부정확한 정보",
+        "핵심 정보 누락",
+        "규정 인용 부족 또는 부정확",
+        "검색된 문서 관련성 낮음"
+      ],
+      "strengths": []
+    },
+    {
+      "evaluation_id": "eval_20260207_214006",
+      "query": "그게 뭐냐면 연구년",
+      "answer": "",
+      "accuracy": 0.5,
+      "completeness": 0.0,
+      "citations": 0.0,
+      "context_relevance": 0.0,
+      "overall_score": 0.175,
+      "passed": false,
+      "issues": [
+        "일부 부정확한 정보",
+        "핵심 정보 누락",
+        "규정 인용 부족 또는 부정확",
+        "검색된 문서 관련성 낮음"
+      ],
+      "strengths": []
+    },
+    {
+      "evaluation_id": "eval_20260207_214009",
+      "query": "휴학 어떻게 해요?",
+      "answer": "",
+      "accuracy": 0.5,
+      "completeness": 0.0,
+      "citations": 0.0,
+      "context_relevance": 0.0,
+      "overall_score": 0.175,
+      "passed": false,
+      "issues": [
+        "일부 부정확한 정보",
+        "핵심 정보 누락",
+        "규정 인용 부족 또는 부정확",
+        "검색된 문서 관련성 낮음"
+      ],
+      "strengths": []
+    },
+    {
+      "evaluation_id": "eval_20260207_214011",
+      "query": "연구년 어떻게 해요?",
+      "answer": "",
+      "accuracy": 0.5,
+      "completeness": 0.0,
+      "citations": 0.0,
+      "context_relevance": 0.0,
+      "overall_score": 0.175,
+      "passed": false,
+      "issues": [
+        "일부 부정확한 정보",
+        "핵심 정보 누락",
+        "규정 인용 부족 또는 부정확",
+        "검색된 문서 관련성 낮음"
+      ],
+      "strengths": []
+    },
+    {
+      "evaluation_id": "eval_20260207_214011",
+      "query": "연구년 어떻게 해요?",
+      "answer": "",
+      "accuracy": 0.5,
+      "completeness": 0.0,
+      "citations": 0.0,
+      "context_relevance": 0.0,
+      "overall_score": 0.175,
+      "passed": false,
+      "issues": [
+        "일부 부정확한 정보",
+        "핵심 정보 누락",
+        "규정 인용 부족 또는 부정확",
+        "검색된 문서 관련성 낮음"
+      ],
+      "strengths": []
+    },
+    {
+      "evaluation_id": "eval_20260207_214012",
+      "query": "복무 처리 절차",
+      "answer": "",
+      "accuracy": 0.5,
+      "completeness": 0.0,
+      "citations": 0.0,
+      "context_relevance": 0.0,
+      "overall_score": 0.175,
+      "passed": false,
+      "issues": [
+        "일부 부정확한 정보",
+        "핵심 정보 누락",
+        "규정 인용 부족 또는 부정확",
+        "검색된 문서 관련성 낮음"
+      ],
+      "strengths": []
+    },
+    {
+      "evaluation_id": "eval_20260207_214012",
+      "query": "복무 진행 절차, 필요 서류, 승인 기준을 안내",
+      "answer": "",
+      "accuracy": 0.5,
+      "completeness": 0.0,
+      "citations": 0.0,
+      "context_relevance": 0.0,
+      "overall_score": 0.175,
+      "passed": false,
+      "issues": [
+        "일부 부정확한 정보",
+        "핵심 정보 누락",
+        "규정 인용 부족 또는 부정확",
+        "검색된 문서 관련성 낮음"
+      ],
+      "strengths": []
+    },
+    {
+      "evaluation_id": "eval_20260207_214012",
+      "query": "복무 어떻게 해요?",
+      "answer": "",
+      "accuracy": 0.5,
+      "completeness": 0.0,
+      "citations": 0.0,
+      "context_relevance": 0.0,
+      "overall_score": 0.175,
+      "passed": false,
+      "issues": [
+        "일부 부정확한 정보",
+        "핵심 정보 누락",
+        "규정 인용 부족 또는 부정확",
+        "검색된 문서 관련성 낮음"
+      ],
+      "strengths": []
+    },
+    {
+      "evaluation_id": "eval_20260207_214015",
+      "query": "복무 어디서 해요?",
+      "answer": "",
+      "accuracy": 0.5,
+      "completeness": 0.0,
+      "citations": 0.0,
+      "context_relevance": 0.0,
+      "overall_score": 0.175,
+      "passed": false,
+      "issues": [
+        "일부 부정확한 정보",
+        "핵심 정보 누락",
+        "규정 인용 부족 또는 부정확",
+        "검색된 문서 관련성 낮음"
+      ],
+      "strengths": []
+    },
+    {
+      "evaluation_id": "eval_20260207_214018",
+      "query": "복무 어떻게 해요?",
+      "answer": "",
+      "accuracy": 0.5,
+      "completeness": 0.0,
+      "citations": 0.0,
+      "context_relevance": 0.0,
+      "overall_score": 0.175,
+      "passed": false,
+      "issues": [
+        "일부 부정확한 정보",
+        "핵심 정보 누락",
+        "규정 인용 부족 또는 부정확",
+        "검색된 문서 관련성 낮음"
+      ],
+      "strengths": []
+    },
+    {
+      "evaluation_id": "eval_20260207_214018",
+      "query": "등록금 어떻게 해요?",
+      "answer": "",
+      "accuracy": 0.5,
+      "completeness": 0.0,
+      "citations": 0.0,
+      "context_relevance": 0.0,
+      "overall_score": 0.175,
+      "passed": false,
+      "issues": [
+        "일부 부정확한 정보",
+        "핵심 정보 누락",
+        "규정 인용 부족 또는 부정확",
+        "검색된 문서 관련성 낮음"
+      ],
+      "strengths": []
+    },
+    {
+      "evaluation_id": "eval_20260207_214019",
+      "query": "등록금 어떻게 하나요?",
+      "answer": "",
+      "accuracy": 0.5,
+      "completeness": 0.0,
+      "citations": 0.0,
+      "context_relevance": 0.0,
+      "overall_score": 0.175,
+      "passed": false,
+      "issues": [
+        "일부 부정확한 정보",
+        "핵심 정보 누락",
+        "규정 인용 부족 또는 부정확",
+        "검색된 문서 관련성 낮음"
+      ],
+      "strengths": []
+    },
+    {
+      "evaluation_id": "eval_20260207_214019",
+      "query": "등록금 신청하는 법과 마감일, 그리고 필요한 것들 알려주세요",
+      "answer": "",
+      "accuracy": 0.5,
+      "completeness": 0.0,
+      "citations": 0.0,
+      "context_relevance": 0.0,
+      "overall_score": 0.175,
+      "passed": false,
+      "issues": [
+        "일부 부정확한 정보",
+        "핵심 정보 누락",
+        "규정 인용 부족 또는 부정확",
+        "검색된 문서 관련성 낮음"
+      ],
+      "strengths": []
+    },
+    {
+      "evaluation_id": "eval_20260207_214021",
+      "query": "등록금...",
+      "answer": "",
+      "accuracy": 0.5,
+      "completeness": 0.0,
+      "citations": 0.0,
+      "context_relevance": 0.0,
+      "overall_score": 0.175,
+      "passed": false,
+      "issues": [
+        "일부 부정확한 정보",
+        "핵심 정보 누락",
+        "규정 인용 부족 또는 부정확",
+        "검색된 문서 관련성 낮음"
+      ],
+      "strengths": []
+    },
+    {
+      "evaluation_id": "eval_20260207_214025",
+      "query": "등록금 어떻게 해요?",
+      "answer": "",
+      "accuracy": 0.5,
+      "completeness": 0.0,
+      "citations": 0.0,
+      "context_relevance": 0.0,
+      "overall_score": 0.175,
+      "passed": false,
+      "issues": [
+        "일부 부정확한 정보",
+        "핵심 정보 누락",
+        "규정 인용 부족 또는 부정확",
+        "검색된 문서 관련성 낮음"
+      ],
+      "strengths": []
+    },
+    {
+      "evaluation_id": "eval_20260207_214025",
+      "query": "Tell me about 비자 process and requirements",
+      "answer": "",
+      "accuracy": 0.5,
+      "completeness": 0.0,
+      "citations": 0.0,
+      "context_relevance": 0.0,
+      "overall_score": 0.175,
+      "passed": false,
+      "issues": [
+        "일부 부정확한 정보",
+        "핵심 정보 누락",
+        "규정 인용 부족 또는 부정확",
+        "검색된 문서 관련성 낮음"
+      ],
+      "strengths": []
+    },
+    {
+      "evaluation_id": "eval_20260207_214026",
+      "query": "How do I 비자?",
+      "answer": "",
+      "accuracy": 0.5,
+      "completeness": 0.0,
+      "citations": 0.0,
+      "context_relevance": 0.0,
+      "overall_score": 0.175,
+      "passed": false,
+      "issues": [
+        "일부 부정확한 정보",
+        "핵심 정보 누락",
+        "규정 인용 부족 또는 부정확",
+        "검색된 문서 관련성 낮음"
+      ],
+      "strengths": []
+    },
+    {
+      "evaluation_id": "eval_20260207_214026",
+      "query": "등록금 어떻게 해요?",
+      "answer": "",
+      "accuracy": 0.5,
+      "completeness": 0.0,
+      "citations": 0.0,
+      "context_relevance": 0.0,
+      "overall_score": 0.175,
+      "passed": false,
+      "issues": [
+        "일부 부정확한 정보",
+        "핵심 정보 누락",
+        "규정 인용 부족 또는 부정확",
+        "검색된 문서 관련성 낮음"
+      ],
+      "strengths": []
+    },
+    {
+      "evaluation_id": "eval_20260207_214029",
+      "query": "비자 어떻게 해요?",
+      "answer": "",
+      "accuracy": 0.5,
+      "completeness": 0.0,
+      "citations": 0.0,
+      "context_relevance": 0.0,
+      "overall_score": 0.175,
+      "passed": false,
+      "issues": [
+        "일부 부정확한 정보",
+        "핵심 정보 누락",
+        "규정 인용 부족 또는 부정확",
+        "검색된 문서 관련성 낮음"
+      ],
+      "strengths": []
+    },
+    {
+      "evaluation_id": "eval_20260207_214031",
+      "query": "비자?",
+      "answer": "",
+      "accuracy": 0.5,
+      "completeness": 0.0,
+      "citations": 0.0,
+      "context_relevance": 0.0,
+      "overall_score": 0.175,
+      "passed": false,
+      "issues": [
+        "일부 부정확한 정보",
+        "핵심 정보 누락",
+        "규정 인용 부족 또는 부정확",
+        "검색된 문서 관련성 낮음"
+      ],
+      "strengths": []
+    },
+    {
+      "evaluation_id": "eval_20260207_214032",
+      "query": "비자 어떻게 해요?",
+      "answer": "",
+      "accuracy": 0.5,
+      "completeness": 0.0,
+      "citations": 0.0,
+      "context_relevance": 0.0,
+      "overall_score": 0.175,
+      "passed": false,
+      "issues": [
+        "일부 부정확한 정보",
+        "핵심 정보 누락",
+        "규정 인용 부족 또는 부정확",
+        "검색된 문서 관련성 낮음"
+      ],
+      "strengths": []
+    },
+    {
+      "evaluation_id": "eval_20260207_214032",
+      "query": "비자 어떻게 해요?",
+      "answer": "",
+      "accuracy": 0.5,
+      "completeness": 0.0,
+      "citations": 0.0,
+      "context_relevance": 0.0,
+      "overall_score": 0.175,
+      "passed": false,
+      "issues": [
+        "일부 부정확한 정보",
+        "핵심 정보 누락",
+        "규정 인용 부족 또는 부정확",
+        "검색된 문서 관련성 낮음"
+      ],
+      "strengths": []
+    },
+    {
+      "evaluation_id": "eval_20260207_214053",
+      "query": "복무 어떻게 해요?",
+      "answer": "",
+      "accuracy": 0.5,
+      "completeness": 0.0,
+      "citations": 0.0,
+      "context_relevance": 0.0,
+      "overall_score": 0.175,
+      "passed": false,
+      "issues": [
+        "일부 부정확한 정보",
+        "핵심 정보 누락",
+        "규정 인용 부족 또는 부정확",
+        "검색된 문서 관련성 낮음"
+      ],
+      "strengths": []
+    }
+  ]
+}

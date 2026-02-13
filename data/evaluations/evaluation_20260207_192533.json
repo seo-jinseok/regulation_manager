@@ -1,0 +1,28 @@
+{
+  "query": "Tell me about 기숙사 in English if possible",
+  "answer": "",
+  "contexts": [
+    "한국어연수과정운영규정 > 제3장 교육 및 학사운영 > 제16조 기숙: 어학연수생은 본 대학교 기숙사를 이용해야 하며, 기숙사 내부 운영규정을 준수해야 한다. 다만, 국내 연고지가 있거나 타 대학 전입생의 경우 개인 기숙을 허용할 수 있다.",
+    "외국인유학생입학및관리규정 > 제19조 기숙사 > ① 기숙사에 입주하고자 하: 기숙사에 입주하고자 하는 외국인 학생은 소정 기간에 이용 신청을 하여야 한다.",
+    "공간조정위원회규정 > 제2조 공간의 정의 > [종전 제 2조 > 2. 지원시설: 강당, 학생기숙사 및 그 부대시설: 지원시설: 강당, 학생기숙사 및 그 부대시설",
+    "사무분장규정 > 제5장 학생지원처 > 제20조 FUN학생경험지원센터 > 6. 학생경력관리포털(DAP: Dongeui All: 학생경력관리포털(DAP: Dongeui All-in-onecareer assistance Platform)등 학생 경험 지원 관련 시스템 관리 및 운영"
+  ],
+  "faithfulness": 0.0,
+  "answer_relevancy": 0.5,
+  "contextual_precision": 0.5,
+  "contextual_recall": 0.87,
+  "overall_score": 0.468,
+  "passed": false,
+  "failure_reasons": [
+    "Faithfulness below threshold: 0.000 < 0.6",
+    "Answer Relevancy below threshold: 0.500 < 0.7",
+    "Contextual Precision below threshold: 0.500 < 0.65",
+    "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+  ],
+  "timestamp": "2026-02-07T19:25:33.800681",
+  "metadata": {
+    "framework": "ragas",
+    "judge_model": "gpt-4o",
+    "evaluation_method": "ragas"
+  }
+}

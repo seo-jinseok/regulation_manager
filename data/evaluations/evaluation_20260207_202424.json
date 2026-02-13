@@ -1,0 +1,29 @@
+{
+  "query": "기숙사 English version available?",
+  "answer": "기숙사 영어 버전 사용 가능성에 대한 câu hỏi는 본 Regulation_title을 기준으로 following 관련 규정을 확인하겠습니다.\n\n기숙사 영어 버전 사용 가능성에 대한 답변은 \"해당 정보는 확인되지 않습니다.\"입니다.",
+  "contexts": [
+    "교원인사규정 > 제12조 임용계약 > ① 교원을 임용할 때에 > 3. 근무조건 : 주당 교수시간, 연구지원, 근무지: 근무조건 : 주당 교수시간, 연구지원, 근무지, 주된 업무내용, 학사업무 수행 등에 관한 사항으로 그 구체적인 기준은 총장이 따로 정한다.",
+    "휴학규정 > 부칙 > 7. 이 변경 규정: 이 변경 규정은 1996년 3월 1일부터 시행한다.",
+    "사무분장규정 > 제3절 학사지원팀 > 제14조 학사지원팀 > 35. 휴학ㆍ복학ㆍ자퇴 및 제적 안내, 신청 접수 및: 휴학ㆍ복학ㆍ자퇴 및 제적 안내, 신청 접수 및 처리",
+    "휴학규정 > 제3조 구분 및 변경 > ③ 군입대휴학 후 귀가조치를 받: 군입대휴학 후 귀가조치를 받은 경우 10일 이내에 학생정보시스템의 휴학변경신청에서 관련 서류(귀가증) 스캔 파일을 첨부하여 일반휴학으로 변경 신청하여야 한다. <신설 2011. 12. 1., 개정 2020. 7. 1.>",
+    "연구노트작성․관리규정 > 제2장 연구노트의 작성 > 제5조 작성방법 > 8. 연구노트 기록자: 연구노트 기록자의 작업 내용이나 의견이 아닌 경우 혹은 인용한 내용은 출처를 분명하게 밝혀야 한다."
+  ],
+  "faithfulness": 0.5,
+  "answer_relevancy": 0.5,
+  "contextual_precision": 0.5,
+  "contextual_recall": 0.87,
+  "overall_score": 0.593,
+  "passed": false,
+  "failure_reasons": [
+    "Faithfulness below threshold: 0.500 < 0.6",
+    "Answer Relevancy below threshold: 0.500 < 0.7",
+    "Contextual Precision below threshold: 0.500 < 0.65",
+    "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+  ],
+  "timestamp": "2026-02-07T20:24:24.037146",
+  "metadata": {
+    "framework": "ragas",
+    "judge_model": "gpt-4o",
+    "evaluation_method": "ragas"
+  }
+}

@@ -696,3 +696,29 @@ class RAGQualityEvaluator:
             passed=passed,
             reason=reason,
         )
+
+    def evaluate_single_turn(
+        self,
+        query: str,
+        contexts: List[str],
+        answer: str,
+        ground_truth: Optional[str] = None,
+    ) -> EvaluationResult:
+        """
+        Synchronous wrapper for evaluate() method.
+
+        This is a convenience method for calling the async evaluate() method
+        from synchronous code like CLI handlers.
+
+        Args:
+            query: User query
+            answer: Generated answer from RAG system
+            contexts: Retrieved context documents
+            ground_truth: Optional ground truth answer
+
+        Returns:
+            EvaluationResult with all metric scores and pass/fail status
+        """
+        import asyncio
+
+        return asyncio.run(self.evaluate(query, answer, contexts, ground_truth))

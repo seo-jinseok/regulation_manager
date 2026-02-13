@@ -1,214 +1,206 @@
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
+# ============================================
+# MoAI-ADK Package Distribution .gitignore
+# ============================================
+# Version: 0.33.0
+# Updated: 2026-01-10
+# Purpose: Essential patterns for user projects
+# ============================================
+
+# ===========================================
+# Go Build Artifacts
+# ===========================================
+bin/
+*.exe
+*.exe~
+*.dll
 *.so
-.Python
+*.dylib
+cover.out
+cover.html
+cpu.prof
+mem.prof
+
+# ===========================================
+# Build Artifacts & Distribution
+# ===========================================
 build/
-develop-eggs/
 dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
 *.egg-info/
-.installed.cfg
 *.egg
 
-# Virtual Environment
-.venv/
-venv/
-ENV/
-env/
-
-# Environment Variables (CRITICAL)
-.env
-.env.local
-
-# IDEs
-.vscode/
-.idea/
-.cursor/
-*.swp
-*.swo
-*.code-workspace
-
-# MacOS
-.DS_Store
-
-# Logs
-*.log
-logs/
-
-# Caches
-.cache/
-.cache*/
+# ===========================================
+# Python Cache & Bytecode
+# ===========================================
+__pycache__/
 .pytest_cache/
-.ruff_cache/
+*.pyc
+*.pyo
+*.pyd
 .mypy_cache/
+.ruff_cache/
+*.db
+*.sqlite
+*.sqlite3
+*.rdb
+*.dbm
 
-# Coverage
+# ===========================================
+# Virtual Environments
+# ===========================================
+venv/
+.venv/
+env/
+.env/
+.uv_cache/
+.uv-cache/
+
+# ===========================================
+# Test Coverage
+# ===========================================
 .coverage
+coverage.json
 htmlcov/
 
-# Backup & Temp
-*.bak
-*.tmp
-
-# Data & Output
-data/output/*
-!data/output/.gitkeep
-data/input/*
-!data/input/.gitkeep
-data/chroma_db/
-data/llm_cache/
-data/cache/rag/
-data/sync_state.json
-output/*
-!output/.gitkeep
-규정/*
-!규정/.gitkeep
-
-# Debug & Temporary
-debug_output/
-debug_output_test/
-tmp_html_debug/
-tests/debug/
-hwp.log
-todo.md
-output_verify/
-verify_*.py
-
-# Test temporary outputs
-data/test_output*/
-.cache_test*/
-
-# Debug scripts and outputs (project root)
-debug_*.py
-debug_*.txt
-grep_*.txt
-*_grep.txt
-inspect_*.py
-inspection_*.txt
-.firebase/
-.claude/.env.local*
-*.pyo
-.claude/settings.local.json
-*.secret.*
-*.pyc
-*.p12
-.uv-cache/
-.VolumeIcon.icns
-*_key.*
-*.sublime-project
-*-backup/
-secret-*.*
-.claude/skills/*/*/*token*
-.DocumentRevisions-V100
-out/
-*.pfx
-# Claude Code Configuration
-# Test Coverage
-# Virtual Environments
-.aws/config
-# Updated: 2026-01-10
-*.sqlite3
-.env.*
-# Cloud provider credentials
-.netlify/
-*.sqlite
-.nuxt/
-# Mac
-# Linux
-.uv_cache/
-!.env.example
-# Node.js (for docs/Nextra)
-*.pem
-# Private keys (specific patterns to avoid false positives)
-# MoAI-ADK Package Distribution .gitignore
-*_token=*
-# Python Cache & Bytecode
-coverage.json
-node_modules/
-*.pyd
-.claude/settings.local.*.json
-.vercel/
-*.dbm
-*-secret-key.*
-*_secret=*
-*.backup/
-# Version: 0.33.0
-# Logs & Temporary Files
-.claude/plans/
-.AppleDouble
-*-key.*
-*.sublime-workspace
-.moai-backups/
-*.suo
-*.key.*
-# Purpose: Essential patterns for user projects
-*.jks
-# Certificate files
-*_secret.*
-Thumbs.db
-.next/
-*.sln
-.claude/skills/*/*/*secret*
-# Build Artifacts & Distribution
-[Dd]esktop.ini
-# Deployment & CI/CD
-# Backups
-.Spotlight-V100
-# Build Tools & Frameworks
-.claude/skills/*/secrets/
-.directory
-*.rdb
-api-key-*
-# Environment files
-*~
-.claude/skills/*/.env*
-*.sw?
-# Secrets and Credentials (CRITICAL)
-# FIXED: Issue #237 - Replaced overly broad *key* and *secret* patterns
-.turbo/
-*-api-key.*
-# OS Files
-*.njsproj
-# ============================================
-dist-ssr/
-.Trashes
-.claude/local/
-*.tsbuildinfo
-ehthumbs.db
-*.backup
 # ===========================================
-.#*
-.aws/credentials
-.claude/skills/*/*/*key*
-.env/
-.LSOverride
-*_backup_*/
-# Windows
-private-key*
-.fseventsd
-# Credential patterns in environment files
-# Skill-specific credentials
 # IDE & Editors
-*-secret.*
-*.db
-.tscache/
-secret-key-*
-*.temp
+# ===========================================
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sw?
+*~
+.cursor/
+*.sublime-project
+*.sublime-workspace
+*.njsproj
+*.sln
+*.suo
+.#*
+
+# ===========================================
+# OS Files
+# ===========================================
+# Mac
+.DS_Store
+.AppleDouble
+.LSOverride
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
 .TemporaryItems
+.Trashes
+.VolumeIcon.icns
 
-# MoAI-ADK Session State
-.moai/memory/
-.moai/cache/
+# Windows
+[Dd]esktop.ini
+Thumbs.db
+ehthumbs.db
 
-# UV Lock File (project-specific dependency resolution)
-uv.lock
+# Linux
+.directory
+
+# ===========================================
+# Logs & Temporary Files
+# ===========================================
+*.log
+logs/
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# ===========================================
+# Backups
+# ===========================================
+.moai-backups/
+*.backup/
+*-backup/
+*_backup_*/
+
+# ===========================================
+# Secrets and Credentials (CRITICAL)
+# ===========================================
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Certificate files
+*.pem
+*.p12
+*.pfx
+*.jks
+
+# Private keys (specific patterns to avoid false positives)
+# FIXED: Issue #237 - Replaced overly broad *key* and *secret* patterns
+*-key.*
+*_key.*
+*.key.*
+*-secret-key.*
+*-api-key.*
+api-key-*
+secret-key-*
+private-key*
+*-secret.*
+*_secret.*
+*.secret.*
+secret-*.*
+
+# Credential patterns in environment files
+*_secret=*
+*_token=*
+
+# Cloud provider credentials
+.aws/config
+.aws/credentials
+
+# ===========================================
+# Claude Code Configuration
+# ===========================================
+.claude/settings.local.json
+.claude/settings.local.*.json
+.claude/.env.local*
+.claude/local/
+.claude/plans/
+
+# Skill-specific credentials
+.claude/skills/*/.env*
+.claude/skills/*/secrets/
+.claude/skills/*/*/*secret*
+.claude/skills/*/*/*key*
+.claude/skills/*/*/*token*
+# Re-include legitimate skill module files containing "token" in their name
+!.claude/skills/*/modules/*token*.md
+
+# ===========================================
+# Node.js (for docs/Nextra)
+# ===========================================
+node_modules/
+*.tsbuildinfo
+.tscache/
+.next/
+out/
+
+# ===========================================
+# Build Tools & Frameworks
+# ===========================================
+.turbo/
+.nuxt/
+dist-ssr/
+
+# ===========================================
+# Deployment & CI/CD
+# ===========================================
+.vercel/
+.netlify/
+.firebase/
+
+# ===========================================
+# Large Data Files (>100MB - GitHub limit)
+# ===========================================
+data/output/규정집9-349*.json
+data/output/규정집9-350*.json
+data/output/규정집_rag.json
+data/output/규정집9-343*_rag.json
+data/input/*.hwpx

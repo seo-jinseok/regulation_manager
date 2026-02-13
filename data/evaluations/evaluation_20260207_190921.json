@@ -1,0 +1,29 @@
+{
+  "query": "급여 업무 처리 절차 확인",
+  "answer": "",
+  "contexts": [
+    "규정류관리기본규정 > 제2장 규정류의 체계 및 형식 > 제4조 체계 > ③ 본칙에: 본칙에는 당해 규정의 목적을 달성하기 위한 기본적인 사항 또는 지침 및 업무 처리의 절차 등을 명시한다.",
+    "구매업무규정 > 제43조 사후정산 및 노무비 지급확인 등 > ① 계약담당자 > 1. 4대사회보험 및 퇴직급여충당금 및 퇴직공제부금 등: 4대사회보험 및 퇴직급여충당금 및 퇴직공제부금 등의 경우",
+    "강사인사규정 > 제16조 급여 등 > ① 강사: 강사의 급여는 주당 강의시간에 의하여 산정하며, 시간당 강사료는 담당교과목에 대해 교수하는 시간뿐 아니라 담당강의를 계획ㆍ준비하고, 수강학생의 학습지도ㆍ평가ㆍ환류 등 운영, 학사업무처리와 이에 부수되는 일체의 업무에 소요되는 시간에 대한 대가를 포함한다.",
+    "휴학규정 > 부칙 > 5. 현금등록을 필한 자가 학기 중 일반휴학을 하: 현금등록을 필한 자가 학기 중 일반휴학을 하는 경우에는 기 납부한 등록금을 휴학처리일에 따라 차등 이월한다.(‘휴학규정’제10조제②항 참조) ■ 휴학절차 : 휴학 신청 → 지도교수 상담 및 확인 → 학사지원팀 처리 【별지 제2호 서식】<삭제 2019. 2. 1>",
+    "구매업무규정 > 제7조 구매절차 > ① 구매업무 > 6. 검수(검사)필인 확인 및 대금 지급 요청: 검수(검사)필인 확인 및 대금 지급 요청"
+  ],
+  "faithfulness": 0.0,
+  "answer_relevancy": 0.5,
+  "contextual_precision": 0.5,
+  "contextual_recall": 0.87,
+  "overall_score": 0.468,
+  "passed": false,
+  "failure_reasons": [
+    "Faithfulness below threshold: 0.000 < 0.6",
+    "Answer Relevancy below threshold: 0.500 < 0.7",
+    "Contextual Precision below threshold: 0.500 < 0.65",
+    "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+  ],
+  "timestamp": "2026-02-07T19:09:21.538586",
+  "metadata": {
+    "framework": "ragas",
+    "judge_model": "gpt-4o",
+    "evaluation_method": "ragas"
+  }
+}

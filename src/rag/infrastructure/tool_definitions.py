@@ -5,7 +5,7 @@ Defines JSON Schema for all tools that FunctionGemma can call.
 Based on the OpenAI function calling format for compatibility.
 """
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 # Tool schemas in OpenAI-compatible format
 TOOL_DEFINITIONS: List[Dict[str, Any]] = [
@@ -303,7 +303,7 @@ def get_tool_names() -> List[str]:
     return [t["function"]["name"] for t in TOOL_DEFINITIONS]
 
 
-def get_tool_by_name(name: str) -> Dict[str, Any] | None:
+def get_tool_by_name(name: str) -> Optional[Dict[str, Any]]:
     """Get tool definition by name."""
     for tool in TOOL_DEFINITIONS:
         if tool["function"]["name"] == name:

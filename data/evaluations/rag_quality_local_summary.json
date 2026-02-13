@@ -1,0 +1,96 @@
+{
+  "evaluation_id": "rag-quality-local-20260209-144201",
+  "timestamp": "2026-02-09T14:42:01.015078Z",
+  "evaluation_type": "persona_based_parallel",
+  "status": "partial_success",
+  "personas": {
+    "total": 6,
+    "completed": 1,
+    "failed": 5,
+    "success_rate": 0.167
+  },
+  "completed_personas": [
+    {
+      "name": "student-undergraduate",
+      "queries_tested": 5,
+      "avg_score": 0.8035,
+      "pass_rate": 1.0,
+      "metrics": {
+        "accuracy": 0.8008,
+        "completeness": 0.8302,
+        "citations": 0.7832,
+        "context_relevance": 0.7999
+      }
+    }
+  ],
+  "failed_personas": [
+    {
+      "name": "student-graduate",
+      "error": "API Error: 429 Insufficient balance"
+    },
+    {
+      "name": "professor",
+      "error": "API Error: 429 Insufficient balance"
+    },
+    {
+      "name": "staff-admin",
+      "error": "API Error: 429 Insufficient balance"
+    },
+    {
+      "name": "parent",
+      "error": "API Error: 429 Insufficient balance"
+    },
+    {
+      "name": "international-student",
+      "error": "API Error: 429 Insufficient balance"
+    }
+  ],
+  "overall_metrics": {
+    "total_queries": 5,
+    "passed": 5,
+    "pass_rate": 1.0,
+    "avg_accuracy": 0.8008,
+    "avg_completeness": 0.8302,
+    "avg_citations": 0.7832,
+    "avg_context_relevance": 0.7999,
+    "avg_overall_score": 0.8035
+  },
+  "issues_found": {
+    "information_inaccuracy": 2,
+    "low_document_relevance": 2,
+    "insufficient_citations": 1
+  },
+  "recommendations": [
+    {
+      "priority": "critical",
+      "issue": "API Stability",
+      "action": "Recharge API balance for full evaluation"
+    },
+    {
+      "priority": "high",
+      "issue": "Information Accuracy",
+      "action": "Implement hallucination detection and fact verification"
+    },
+    {
+      "priority": "high",
+      "issue": "Document Relevance",
+      "action": "Optimize search algorithm and relevance scoring"
+    },
+    {
+      "priority": "medium",
+      "issue": "Citation Quality",
+      "action": "Enhance regulation article citation with specific references"
+    }
+  ],
+  "next_steps": [
+    "Recharge API balance",
+    "Re-run full evaluation with all 6 personas",
+    "Establish baseline metrics",
+    "Implement improvement recommendations"
+  ],
+  "metadata": {
+    "skill_version": "1.0.0",
+    "skill_name": "rag-quality-local",
+    "rag_system": "University Regulation Manager"
+  }
+}

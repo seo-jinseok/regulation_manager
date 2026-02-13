@@ -1,0 +1,28 @@
+{
+  "query": "등록금 related to visa status",
+  "answer": "동의대학교 등록금 관련 visa 상태에 관한 규정은 다음과 같습니다.\n\n*   **Registration Fee**: 동의대학교 학생 registration fee는 한국은행에서 입금하여 school account로 인도됩니다. 비자 상태와 관계없이 registration fee가 정상적으로 입금되었으면 student ID card를 발급받을 수 있습니다.\n*   **Visa Status and Registration Fee**: 비자 상태가 정상적이지만 registration fee가 비정상적으로 입금되었을 때, registration fee를 다시 입금하거나 학교에 보다 많은 등록금을 지불해야 하는 상황은 있었습니다. 이는 동의대학교 등록금 관련 규정 제 33조에 따라 진행됩니다.\n*   **Registration Fee and Visa Status**: 학생 registration fee는 비자 상태에 관계없이 정상적으로 입금되었기 때문에, student ID card가 발급되었습니다.\n\n위 컨텍스트를 바탕으로 제 33조 \"이사회의결 제척사유\"에 따르면, 이사회의 결의가 발생할 경우 임원 자신은 법인과 직접 관계되는 사항에 관련하여 분쟁을 일으킬 수 있습니다.",
+  "contexts": [
+    "학교법인동의학원정관 > 제2절 이사회 > 제33조 이사회의결 제척사유 > 2. 금전 및 재산: 금전 및 재산의 수수를 수반하는 사항으로서 임원 자신이 법인과 직접 관계되는 사항",
+    "학교법인동의학원정관 > 제8장 학교운영위원회 (개정 2006.11.06.) > 제111조 위원의 자격상실 > ① 위원이 다음 각호: 위원이 다음 각호의 1에 해당될 때에는 자격을 상실한다.",
+    "학교법인동의학원정관 > 제116조 학교교육분쟁조정위원회의 기능 등 > ① 학교교육분쟁조정위원회(이하 “위원회” 라 한다) > 1. 학생생활지도 등 교육활동과 관련하여 교원과 학: 학생생활지도 등 교육활동과 관련하여 교원과 학부모(보호자를 포함한다. 이하 같다)간에 발생한 분쟁",
+    "학교법인동의학원정관 > 제8장 학교운영위원회 (개정 2006.11.06.) > 제110조 위원의 자격 > ② 위원: 위원은 다른 학교의 위원을 겸할 수 없다."
+  ],
+  "faithfulness": 0.5,
+  "answer_relevancy": 0.6,
+  "contextual_precision": 0.5,
+  "contextual_recall": 0.87,
+  "overall_score": 0.618,
+  "passed": false,
+  "failure_reasons": [
+    "Faithfulness below threshold: 0.500 < 0.6",
+    "Answer Relevancy below threshold: 0.600 < 0.7",
+    "Contextual Precision below threshold: 0.500 < 0.65",
+    "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+  ],
+  "timestamp": "2026-02-07T20:23:40.873759",
+  "metadata": {
+    "framework": "ragas",
+    "judge_model": "gpt-4o",
+    "evaluation_method": "ragas"
+  }
+}

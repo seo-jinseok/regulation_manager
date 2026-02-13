@@ -1,0 +1,29 @@
+{
+  "query": "등록금 관련하여 조언 부탁드립니다",
+  "answer": "",
+  "contexts": [
+    "동의대학교학칙 > 제15장 학생의 등록금 > 제55조 납입의무: 학생은 매 학기 등록기간 내에 수업료 및 기타의 납부금으로 구성되는 등록금을 납부하여야 한다.",
+    "등록금에관한규정 > 부칙 > 11. 경과조치: 수업료 및 입학금반환에 관한 적용은 시행일이 속하는 학기의 수업료 및 입학금부터 적용한다.",
+    "조기취업형계약학과운영규정 > 제11조 등록 등 > ③ 등록금: 등록금의 부과는 학기별로 함을 원칙으로 하고, 등록금 반환 및 수업연한이 지났으나 수료학점을 취득하지 못하여 등록하는 학생의 등록금에 대해서는 「등록금에관한규정」에 따른다.",
+    "등록금심의위원회규정 > 제2조 목적: 이 위원회는 합리적인 예ㆍ결산 및 등록금심의를 위하여 교직원, 학생, 관련 전문가들의 의견을 적극 수렴하기 위한 절차 등 등록금 심의에 필요한 제반사항을 논의ㆍ합의하여 총장에게 건의함을 그 목적으로 한다. <개정 2011. 1. 1., 2014. 1. 1.>",
+    "등록금에관한규정 > 제3조 납부방법 > ① 등록금: 등록금은 매학기 납부하여야 한다."
+  ],
+  "faithfulness": 0.0,
+  "answer_relevancy": 0.5,
+  "contextual_precision": 0.5,
+  "contextual_recall": 0.87,
+  "overall_score": 0.468,
+  "passed": false,
+  "failure_reasons": [
+    "Faithfulness below threshold: 0.000 < 0.6",
+    "Answer Relevancy below threshold: 0.500 < 0.7",
+    "Contextual Precision below threshold: 0.500 < 0.65",
+    "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+  ],
+  "timestamp": "2026-02-07T18:59:30.754116",
+  "metadata": {
+    "framework": "ragas",
+    "judge_model": "gpt-4o",
+    "evaluation_method": "ragas"
+  }
+}

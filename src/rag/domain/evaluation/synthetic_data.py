@@ -21,7 +21,14 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
-from sentence_transformers import SentenceTransformer
+
+try:
+    from sentence_transformers import SentenceTransformer
+
+    SENTENCE_TRANSFORMERS_AVAILABLE = True
+except ImportError:
+    SentenceTransformer = None  # type: ignore
+    SENTENCE_TRANSFORMERS_AVAILABLE = False
 
 from .models import TestCase
 
@@ -427,6 +434,13 @@ class SemanticValidator:
         Args:
             model_name: Sentence transformer model name
         """
+        self.model = None
+        if not SENTENCE_TRANSFORMERS_AVAILABLE:
+            logger.warning(
+                "sentence_transformers not available, semantic validation disabled"
+            )
+            return
+
         try:
             self.model = SentenceTransformer(model_name)
             logger.info(f"Loaded semantic validator model: {model_name}")

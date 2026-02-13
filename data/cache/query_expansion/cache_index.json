@@ -1,121 +1,173 @@
 {
-  "85c0fc49ab26940cde71f1ff8ecd23be": {
+  "f1f4506beec4ec2e68cca05ad63eb2f7": {
     "cache_type": "query_expansion",
-    "query_hash": "85c0fc49ab26940cde71f1ff8ecd23be",
+    "query_hash": "f1f4506beec4ec2e68cca05ad63eb2f7",
     "data": {
       "keywords": [
-        "kw1",
-        "kw2"
+        "연구비",
+        "지원요건",
+        "연구비규정",
+        "연구비지급기준",
+        "연구개발비"
       ],
-      "intent": "test",
-      "confidence": 0.9,
-      "expanded_query": "테스트 kw1 kw2",
-      "method": "llm"
-    },
-    "timestamp": 1769385603.0042229,
-    "ttl_hours": 168
-  },
-  "d7d06433bd0c10e66a170808afb3a9dd": {
-    "cache_type": "query_expansion",
-    "query_hash": "d7d06433bd0c10e66a170808afb3a9dd",
-    "data": {
-      "keywords": [
-        "키워드1",
-        "키워드2",
-        "키워드3"
-      ],
-      "intent": "test_intent",
-      "confidence": 0.9,
-      "expanded_query": "테스트 1 키워드1 키워드2 키워드3",
-      "method": "llm"
-    },
-    "timestamp": 1769385603.02729,
-    "ttl_hours": 168
-  },
-  "bdefccdcd3252b4a33729f9562d2c8c9": {
-    "cache_type": "query_expansion",
-    "query_hash": "bdefccdcd3252b4a33729f9562d2c8c9",
-    "data": {
-      "keywords": [
-        "키워드1",
-        "키워드2",
-        "키워드3"
-      ],
-      "intent": "test_intent",
-      "confidence": 0.9,
-      "expanded_query": "테스트 2 키워드1 키워드2 키워드3",
-      "method": "llm"
-    },
-    "timestamp": 1769385603.027531,
-    "ttl_hours": 168
-  },
-  "f66dbe151f9372ede45f5b153316c01a": {
-    "cache_type": "query_expansion",
-    "query_hash": "f66dbe151f9372ede45f5b153316c01a",
-    "data": {
-      "keywords": [
-        "키워드1",
-        "키워드2",
-        "키워드3"
-      ],
-      "intent": "test_intent",
-      "confidence": 0.9,
-      "expanded_query": "장학금 키워드1 키워드2 키워드3",
-      "method": "llm"
-    },
-    "timestamp": 1769385603.034645,
-    "ttl_hours": 168
-  },
-  "ce624e150f5ae46f03b60a0a05a0a41c": {
-    "cache_type": "query_expansion",
-    "query_hash": "ce624e150f5ae46f03b60a0a05a0a41c",
-    "data": {
-      "keywords": [
-        "키워드1",
-        "키워드2",
-        "키워드3"
-      ],
-      "intent": "test_intent",
-      "confidence": 0.9,
-      "expanded_query": "테스트 쿼리 키워드1 키워드2 키워드3",
-      "method": "llm"
-    },
-    "timestamp": 1769385684.693064,
-    "ttl_hours": 168
-  },
-  "23992a0c7f52b6cce95a799ec2145692": {
-    "cache_type": "query_expansion",
-    "query_hash": "23992a0c7f52b6cce95a799ec2145692",
-    "data": {
-      "keywords": [
-        "키워드1",
-        "키워드2",
-        "키워드3"
-      ],
-      "intent": "test_intent",
-      "confidence": 0.9,
-      "expanded_query": "영구 캐시 테스트 키워드1 키워드2 키워드3",
-      "method": "llm"
-    },
-    "timestamp": 1769385684.704222,
-    "ttl_hours": 168
-  },
-  "26ddb1b3c6f223c8f3251f2c5f5ac954": {
-    "cache_type": "query_expansion",
-    "query_hash": "26ddb1b3c6f223c8f3251f2c5f5ac954",
-    "data": {
-      "keywords": [
-        "휴학",
-        "휴학 신청",
-        "휴학 규정",
-        "休学申请"
-      ],
-      "intent": "휴학 신청 문의",
+      "intent": "연구비 지원 요건 문의",
       "confidence": 0.95,
-      "expanded_query": "휴학 신청은 어떻게 하나요? 휴학 신청 휴학 규정 休学申请",
+      "expanded_query": "연구비 지원 요건이 어떻게 되나요? 지원요건 연구비규정 연구비지급기준",
       "method": "llm"
     },
-    "timestamp": 1769399451.02881,
+    "timestamp": 1770722903.686015,
+    "ttl_hours": 168
+  },
+  "cb5a9619cf5bdf47b1ed0b6bd1d4940b": {
+    "cache_type": "query_expansion",
+    "query_hash": "cb5a9619cf5bdf47b1ed0b6bd1d4940b",
+    "data": {
+      "keywords": [
+        "논문 심사",
+        "심사 절차",
+        "학술 논문 평가",
+        "논문 심사 규정",
+        "연구 윤리"
+      ],
+      "intent": "논문 심사 절차 문의",
+      "confidence": 0.95,
+      "expanded_query": "논문 심사 절차 상세히 알려주세요 논문 심사 심사 절차 학술 논문 평가",
+      "method": "llm"
+    },
+    "timestamp": 1770723140.296572,
+    "ttl_hours": 168
+  },
+  "7e4372f377d7880e9be921e10d69476c": {
+    "cache_type": "query_expansion",
+    "query_hash": "7e4372f377d7880e9be921e10d69476c",
+    "data": {
+      "keywords": [
+        "연구년",
+        "연구년 규정",
+        "연구년 적용 기준",
+        "연구년 신청 절차",
+        "연구활동 지원"
+      ],
+      "intent": "연구년 적용 기준 및 절차 문의",
+      "confidence": 0.95,
+      "expanded_query": "연구년 적용 기준 상세히 연구년 규정 연구년 적용 기준 연구년 신청 절차",
+      "method": "llm"
+    },
+    "timestamp": 1770724951.666684,
+    "ttl_hours": 168
+  },
+  "1f27f9449db2fd1c61944c7872153bea": {
+    "cache_type": "query_expansion",
+    "query_hash": "1f27f9449db2fd1c61944c7872153bea",
+    "data": {
+      "keywords": [
+        "휴가",
+        "휴가신청",
+        "휴가절차",
+        "휴가규정",
+        "휴가인가"
+      ],
+      "intent": "휴가 신청 및 처리 절차 문의",
+      "confidence": 0.95,
+      "expanded_query": "휴가 업무 처리 절차 확인 휴가신청 휴가절차 휴가규정",
+      "method": "llm"
+    },
+    "timestamp": 1770725598.809979,
+    "ttl_hours": 168
+  },
+  "83d6e2ba1141cb829762e3eb8d7eb37e": {
+    "cache_type": "query_expansion",
+    "query_hash": "83d6e2ba1141cb829762e3eb8d7eb37e",
+    "data": {
+      "keywords": [
+        "급여",
+        "서식",
+        "양식",
+        "급여명세서",
+        "급여지급규정"
+      ],
+      "intent": "급여 관련 서식 양식 문의",
+      "confidence": 0.95,
+      "expanded_query": "급여 관련 서식 양식 알려주세요 급여명세서 급여지급규정",
+      "method": "llm"
+    },
+    "timestamp": 1770725806.037316,
+    "ttl_hours": 168
+  },
+  "406d434e30be2cd4b5d446f771228610": {
+    "cache_type": "query_expansion",
+    "query_hash": "406d434e30be2cd4b5d446f771228610",
+    "data": {
+      "keywords": [
+        "연수승인",
+        "권한자",
+        "승인권자",
+        "교육훈련규정",
+        "인사규정"
+      ],
+      "intent": "연수 승인 권한자 문의",
+      "confidence": 0.95,
+      "expanded_query": "연수 승인 권한자가 누구인가요? 연수승인 권한자 승인권자",
+      "method": "llm"
+    },
+    "timestamp": 1770726016.3157818,
+    "ttl_hours": 168
+  },
+  "751e5f10188db4f5d739484b3405fc0e": {
+    "cache_type": "query_expansion",
+    "query_hash": "751e5f10188db4f5d739484b3405fc0e",
+    "data": {
+      "keywords": [
+        "복무",
+        "기한",
+        "처리기한",
+        "의무복무",
+        "병역법"
+      ],
+      "intent": "복무 처리 기한 문의",
+      "confidence": 0.95,
+      "expanded_query": "복무 처리 기한이 언제까지인가요? 기한 처리기한 의무복무",
+      "method": "llm"
+    },
+    "timestamp": 1770726379.393037,
+    "ttl_hours": 168
+  },
+  "11ca85d335a2a98007e613dd15d37a26": {
+    "cache_type": "query_expansion",
+    "query_hash": "11ca85d335a2a98007e613dd15d37a26",
+    "data": {
+      "keywords": [
+        "기숙사",
+        "비용",
+        "숙사",
+        "주거비",
+        "기숙사 규정"
+      ],
+      "intent": "기숙사 비용 문의",
+      "confidence": 0.95,
+      "expanded_query": "기숙사 비용이 어떻게 되나요? 비용 숙사 주거비",
+      "method": "llm"
+    },
+    "timestamp": 1770726968.205933,
+    "ttl_hours": 168
+  },
+  "cf671c57772c72a53613da65736d2174": {
+    "cache_type": "query_expansion",
+    "query_hash": "cf671c57772c72a53613da65736d2174",
+    "data": {
+      "keywords": [
+        "기숙사",
+        "주거비",
+        "비용",
+        "숙사",
+        "생활비"
+      ],
+      "intent": "기숙사 비용 문의",
+      "confidence": 0.95,
+      "expanded_query": "기숙사 비용이 어떻게 되나요? 비용 숙사 주거비 생활비",
+      "method": "llm"
+    },
+    "timestamp": 1770726989.77039,
     "ttl_hours": 168
   }
 }
