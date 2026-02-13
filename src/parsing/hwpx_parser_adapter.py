@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 try:
-    from hwpx import TextExtractor, SectionInfo, ParagraphInfo
+    from hwpx import TextExtractor
 except ImportError:
     raise ImportError(
         "python-hwpx is required. Install with: pip install python-hwpx"

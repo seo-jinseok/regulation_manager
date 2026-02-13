@@ -15,7 +15,7 @@ from .regulation_parser import RegulationParser
 from .table_extractor import TableExtractor
 from .multi_format_parser import HWPXMultiFormatParser
 from .structure_analyzer import StructureAnalyzer, StructureInfo, get_authority_display_name, get_structure_summary
-from .structure_patterns import RegulationAuthority, StructurePattern, StructurePatterns, detect_authority_from_text
+from .structure_patterns import RegulationAuthority, StructurePattern, detect_authority_from_text
 
 __all__ = [
     "RegulationParser",

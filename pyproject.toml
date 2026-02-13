@@ -12,13 +12,6 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Topic :: Text Processing :: General",
 ]
-
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
-[tool.hatch.build.targets.wheel]
-packages = ["src"]
 dependencies = [
     "llama-index>=0.14.10",
     "llama-index-llms-openai",
@@ -48,9 +41,15 @@ dependencies = [
     "pydantic>=2.0.0",
     "cryptography>=41.0.0",
     "editdistance>=0.6.2",
-    "ragas>=0.1.0",
-    "click>=8.0",
 ]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
+
 [project.optional-dependencies]
 dev = [
     "pytest>=9.0.0",
@@ -61,6 +60,7 @@ dev = [
     "ragas>=0.1.0",
     "deepeval>=0.21.0",
 ]
+
 [project.scripts]
 # Main entry points
 reg = "src.rag.interface.unified_cli:main"
