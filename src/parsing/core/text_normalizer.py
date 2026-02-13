@@ -6,7 +6,7 @@ addressing common artifacts that prevent accurate regulation parsing.
 """
 import re
 import logging
-from typing import Optional, Tuple
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 

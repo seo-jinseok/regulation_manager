@@ -409,13 +409,13 @@ class HwpxParserAdapter:
         with open(output_path, "w", encoding="utf-8") as f:
             json.dump(result, f, ensure_ascii=False, indent=2)
 
-        print(f"\n=== Parsing Complete ===")
+        print("\n=== Parsing Complete ===")
         print(f"Output file: {output_path}")
         print(f"File size: {output_path.stat().st_size / 1024:.1f} KB")
         print(f"Regulations found: {len(result['docs'])}")
         print(f"TOC entries: {len(result['toc'])}")
         if result['toc']:
-            print(f"Sample TOC entries:")
+            print("Sample TOC entries:")
             for entry in result['toc'][:5]:
                 print(f"  - {entry['title']} ({entry['rule_code']})")
 

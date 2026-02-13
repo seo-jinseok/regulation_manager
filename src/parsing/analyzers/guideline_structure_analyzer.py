@@ -15,8 +15,7 @@ Reference: SPEC-HWXP-002, TASK-004
 """
 import re
 import logging
-from dataclasses import dataclass, field
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 
 from src.parsing.format.format_type import FormatType
 

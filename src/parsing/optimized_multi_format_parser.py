@@ -13,12 +13,11 @@ Memory Target: <2GB peak memory usage
 Version: 2.0.0 (Optimized)
 Reference: SPEC-HWXP-002, TASK-008
 """
-import json
 import logging
 import zipfile
 import re
 from pathlib import Path
-from typing import Dict, Any, List, Optional, Callable, Tuple
+from typing import Dict, Any, List, Optional, Callable
 from functools import lru_cache
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import threading
