@@ -5,6 +5,57 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.1] - 2026-02-13
+
+### Added - SPEC-CHUNK-001 Implementation Complete
+
+#### HWPX Direct Parser Chunk Enhancement
+
+- **Chapter Detection (REQ-001)**: 장(Chapter) 레벨 청크 타입 감지 기능 추가
+  - `제\d+장` 패턴 인식 (예: "제1장 총칙")
+  - 공백 포함 패턴 지원 (예: "제 1 장")
+
+- **Section Detection (REQ-002)**: 절(Section) 레벨 청크 타입 감지 기능 추가
+  - `제\d+절` 패턴 인식 (예: "제1절 목적")
+  - 공백 포함 패턴 지원
+
+- **Subsection Detection (REQ-003)**: 관(Subsection) 레벨 청크 타입 감지 기능 추가
+  - `제\d+관` 패턴 인식 (예: "제1관 학점")
+
+- **Hierarchy Depth Extension (REQ-004)**: 계층 깊이 3단계에서 6단계로 확장
+  - 새로운 계층 구조: chapter > section > subsection > article > paragraph > item/subitem
+  - `calculate_hierarchy_depth()` 함수 추가
+
+**Technical Details**:
+- Modified file: `src/enhance_for_rag.py` (+449 lines)
+  - Added `CHUNK_PATTERNS` constant for regex patterns
+  - Added `detect_chunk_type()` function
+  - Added `calculate_hierarchy_depth()` function
+  - Updated `CHUNK_LEVEL_MAP` with subsection support
+- Modified file: `tests/test_enhance_for_rag.py` (+355/-26 lines)
+  - Added 4 new test classes (25 tests total)
+
+**Test Coverage**:
+- Total tests: 86 (기존 61개 + 신규 25개)
+- New test classes:
+  - `TestDetectChunkType`: 청크 타입 감지 테스트
+  - `TestCalculateHierarchyDepth`: 계층 깊이 계산 테스트
+  - `TestChunkPatterns`: 패턴 매칭 테스트
+  - `TestChunkLevelMap`: 레벨 맵 확장 테스트
+
+**Performance**:
+- No LLM dependency (REQ-007)
+- Backward compatible (REQ-006)
+- Ruff linting passed
+
+### Links
+
+- **SPEC Document**: `.moai/specs/SPEC-CHUNK-001/spec.md`
+- **Implementation**: `src/enhance_for_rag.py`
+- **Tests**: `tests/test_enhance_for_rag.py`
+
+---
+
 ## [2.3.0] - 2026-02-10
 
 ### Breaking Changes
