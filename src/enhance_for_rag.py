@@ -59,6 +59,7 @@ KEYWORD_PATTERNS = [
 CHUNK_LEVEL_MAP = {
     "chapter": "chapter",
     "section": "section",
+    "subsection": "subsection",
     "article": "article",
     "paragraph": "paragraph",
     "item": "item",
@@ -69,8 +70,418 @@ CHUNK_LEVEL_MAP = {
     "text": "text",
 }
 
+# Regex patterns for detecting chunk types (REQ-001, REQ-002, REQ-003)
+CHUNK_PATTERNS = {
+    "chapter": r"^제\s*(\d+)\s*장\s+(.+)$",
+    "section": r"^제\s*(\d+)\s*절\s+(.+)$",
+    "subsection": r"^제\s*(\d+)\s*관\s+(.+)$",
+    "article": r"^제\s*(\d+)\s*조\s*(?:\(([^)]+)\))?\s*(.*)$",
+    "paragraph": r"^([①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳])\s*(.*)$",
+    "item": r"^(\d+)\.\s*(.+)$",
+    "subitem": r"^([가-힣])\.\s*(.+)$",
+}
+
 # Average characters per token (Korean text approximation)
 CHARS_PER_TOKEN = 2.5
+
+# Chunk splitting patterns for HWPX Direct Parser
+PARAGRAPH_PATTERN = r"([①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳])([^①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳]*)"
+
+# Unicode circled numbers mapping
+CIRCLED_NUMBERS = "①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳"
+
+
+# ============================================================================
+# HWPX Direct Parser Chunk Splitting Functions
+# ============================================================================
+
+
+def detect_chunk_type(text: str) -> Optional[Dict[str, Any]]:
+    """
+    Detect chunk type from text using pattern matching.
+
+    Supports Korean legal document patterns:
+    - Chapter (장): 제1장 총칙
+    - Section (절): 제1절 목적
+    - Subsection (관): 제1관 총칙
+
+    Args:
+        text: The text to analyze for chunk type detection.
+
+    Returns:
+        Dictionary with 'type', 'display_no', and 'title' keys, or None if no match.
+    """
+    if not text:
+        return None
+
+    text = text.strip()
+
+    # Check patterns in priority order: chapter > section > subsection
+    for chunk_type, pattern in [
+        ("chapter", CHUNK_PATTERNS["chapter"]),
+        ("section", CHUNK_PATTERNS["section"]),
+        ("subsection", CHUNK_PATTERNS["subsection"]),
+    ]:
+        match = re.match(pattern, text)
+        if match:
+            number = match.group(1)
+            title = match.group(2).strip() if len(match.groups()) > 1 else ""
+            suffix = {"chapter": "장", "section": "절", "subsection": "관"}[chunk_type]
+            return {
+                "type": chunk_type,
+                "display_no": f"제{number}{suffix}",
+                "title": title,
+            }
+
+    return None
+
+
+def split_text_into_chunks(text: str) -> List[Dict[str, Any]]:
+    """
+    Split article text into hierarchical chunks (paragraphs, items, subitems).
+
+    Args:
+        text: The full text of an article.
+
+    Returns:
+        List of chunk dictionaries with type, display_no, and text.
+    """
+    if not text:
+        return []
+
+    chunks = []
+
+    # Find all paragraph markers and their positions
+    paragraph_positions = []
+    for match in re.finditer(PARAGRAPH_PATTERN, text):
+        marker = match.group(1)
+        content = match.group(2).strip()
+        start_pos = match.start()
+        paragraph_positions.append((marker, content, start_pos))
+
+    if paragraph_positions:
+        # Extract preamble (text before first paragraph)
+        first_para_pos = paragraph_positions[0][2]
+        if first_para_pos > 0:
+            preamble = text[:first_para_pos].strip()
+            if preamble:
+                chunks.append(
+                    {
+                        "type": "text",
+                        "display_no": "",
+                        "text": preamble,
+                    }
+                )
+
+        # Process each paragraph
+        for marker, content, _ in paragraph_positions:
+            # Split content into items if present
+            items = extract_items_from_text(content)
+
+            if items:
+                # Paragraph has items - add paragraph without full content
+                chunks.append(
+                    {
+                        "type": "paragraph",
+                        "display_no": marker,
+                        "text": "",  # Will be filled with non-item content
+                        "children": items,
+                    }
+                )
+            else:
+                # Standalone paragraph
+                chunks.append(
+                    {
+                        "type": "paragraph",
+                        "display_no": marker,
+                        "text": content,
+                    }
+                )
+    else:
+        # No paragraph markers - try to extract items directly
+        items = extract_items_from_text(text)
+        if items:
+            chunks.extend(items)
+        else:
+            # No structure found - return as single text chunk
+            chunks.append(
+                {
+                    "type": "text",
+                    "display_no": "",
+                    "text": text,
+                }
+            )
+
+    return chunks
+
+
+def extract_items_from_text(text: str) -> List[Dict[str, Any]]:
+    """
+    Extract items (1., 2., etc.) and subitems (가., 나., etc.) from text.
+
+    This function processes text line by line and groups subitems under their
+    parent items based on line sequence.
+
+    Args:
+        text: The text to extract items from.
+
+    Returns:
+        List of item dictionaries with potential subitem children.
+    """
+    items = []
+    current_item = None
+    current_subitems = []
+    lines = text.split("\n")
+
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+
+        # Check if line starts with number followed by dot (e.g., "1.", "2.", etc.)
+        if re.match(r"^\d+\.", line):
+            # Save previous item with its subitems
+            if current_item:
+                if current_subitems:
+                    current_item["children"] = current_subitems
+                items.append(current_item)
+
+            # Start new item
+            parts = line.split(".", 1)
+            item_no = parts[0].strip()
+            item_content = parts[1].strip() if len(parts) > 1 else ""
+
+            current_item = {
+                "type": "item",
+                "display_no": f"{item_no}.",
+                "text": item_content,
+            }
+            current_subitems = []
+
+        # Check if line starts with Korean letter followed by dot (e.g., "가.", "나.", etc.)
+        elif re.match(r"^[가-힣]\.", line) and current_item:
+            parts = line.split(".", 1)
+            if len(parts) == 2:
+                marker = parts[0].strip()
+                content = parts[1].strip()
+                current_subitems.append(
+                    {
+                        "type": "subitem",
+                        "display_no": f"{marker}.",
+                        "text": content,
+                    }
+                )
+
+    # Don't forget the last item
+    if current_item:
+        if current_subitems:
+            current_item["children"] = current_subitems
+        items.append(current_item)
+
+    return items
+
+
+def extract_subitems_from_text(text: str) -> List[Dict[str, Any]]:
+    """
+    Extract subitems (가., 나., etc.) from text.
+
+    Args:
+        text: The text to extract subitems from.
+
+    Returns:
+        List of subitem dictionaries.
+    """
+    subitems = []
+    lines = text.split("\n")
+
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+
+        # Check if line starts with Korean letter followed by dot (e.g., "가.", "나.", etc.)
+        if re.match(r"^[가-힣]\.", line):
+            parts = line.split(".", 1)
+            if len(parts) == 2:
+                marker = parts[0].strip()
+                content = parts[1].strip()
+                subitems.append(
+                    {
+                        "type": "subitem",
+                        "display_no": f"{marker}.",
+                        "text": content,
+                    }
+                )
+
+    return subitems
+
+
+def convert_article_to_children_structure(article: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Convert a flat article to a children-structured article.
+
+    Args:
+        article: The article dictionary with 'text' field.
+
+    Returns:
+        Article with children structure for RAG optimization.
+    """
+    text = article.get("text", "")
+    display_no = article.get("display_no", "")
+    title = article.get("title", "")
+    article_type = article.get("type", "article")
+
+    # Split text into chunks
+    chunks = split_text_into_chunks(text)
+
+    if not chunks:
+        return article
+
+    # If only one chunk with no structure, keep original
+    if len(chunks) == 1 and chunks[0].get("type") == "text":
+        return article
+
+    # Create new article structure
+    new_article = {
+        "type": article_type,
+        "display_no": display_no,
+        "title": title,
+        "text": "",  # Main article text is now distributed to children
+        "children": chunks,
+    }
+
+    # Copy over other fields
+    for key in article:
+        if key not in ("type", "display_no", "title", "text"):
+            new_article[key] = article[key]
+
+    return new_article
+
+
+def enhance_node_for_hwpx(
+    node: Dict[str, Any],
+    parent_path: List[str],
+    doc_title: str,
+) -> None:
+    """
+    Recursively enhance a HWPX node with RAG optimization fields.
+
+    This function is similar to enhance_node but handles the chunked structure.
+
+    Args:
+        node: The node to enhance.
+        parent_path: List of ancestor path labels.
+        doc_title: The document title for the root path.
+    """
+    # Build current path with doc title at root
+    current_path = [doc_title] + parent_path if doc_title else parent_path.copy()
+    current_path = _dedupe_path_segments(current_path)
+
+    # Add current node's label to path for children
+    node_label = build_path_label(node)
+    text = node.get("text", "")
+
+    # 1. parent_path
+    node["parent_path"] = current_path.copy()
+
+    # 2. full_text (for display, includes path)
+    embedding_text = ""
+    if text:
+        node["full_text"] = build_full_text(current_path, node)
+
+    # 3. embedding_text (for vector embedding, with path context)
+    if text:
+        embedding_text = build_embedding_text(current_path, node)
+        if embedding_text:
+            node["embedding_text"] = embedding_text
+
+    # 4. chunk_level
+    node["chunk_level"] = determine_chunk_level(node)
+
+    # 5. is_searchable
+    node["is_searchable"] = is_node_searchable(node)
+
+    # 6. token_count (based on embedding_text)
+    if embedding_text:
+        node["token_count"] = calculate_token_count(embedding_text)
+
+    # 7. keywords (combine title and text)
+    combined_text = f"{node.get('title', '')} {text}"
+    keywords = extract_keywords(combined_text)
+    if keywords:
+        node["keywords"] = keywords
+
+    # 8. amendment_history (from text only, not title)
+    if text:
+        history = extract_amendment_history(text)
+        if history:
+            node["amendment_history"] = history
+
+    # 9. effective_date (for addendum nodes)
+    node_type = node.get("type", "")
+    if node_type in ("addendum", "addendum_item") and text:
+        effective_date = extract_effective_date(text)
+        if effective_date:
+            node["effective_date"] = effective_date
+
+    # Recursively process children
+    children = node.get("children", [])
+    child_parent_path = parent_path + [node_label] if node_label else parent_path
+    child_parent_path = _dedupe_path_segments(child_parent_path)
+
+    for child in children:
+        enhance_node_for_hwpx(child, child_parent_path, doc_title)
+
+
+def enhance_document_for_hwpx(doc: Dict[str, Any]) -> None:
+    """
+    Enhance a HWPX Direct Parser document with chunk splitting.
+
+    This function:
+    1. Converts flat articles to children structure
+    2. Applies RAG enhancement to all nodes
+
+    Args:
+        doc: The document to enhance.
+    """
+    doc_title = doc.get("title", "")
+    doc_type = doc.get("doc_type", "")
+
+    # 1. status for document level
+    status, abolished_date = determine_status(doc_title)
+    doc["status"] = status
+    if abolished_date:
+        doc["abolished_date"] = abolished_date
+
+    # 2. is_index_duplicate flag
+    if doc_type in ("toc", "index_alpha", "index_dept", "index"):
+        doc["is_index_duplicate"] = True
+
+    # 3. Process content nodes - convert to children structure
+    content = doc.get("content", [])
+    new_content = []
+
+    for node in content:
+        # Convert flat article to children structure
+        converted = convert_article_to_children_structure(node)
+        new_content.append(converted)
+
+    doc["content"] = new_content
+
+    # 4. Enhance all content nodes with RAG fields
+    for node in doc["content"]:
+        enhance_node_for_hwpx(node, [], doc_title)
+
+    # 5. Enhance addenda nodes
+    addenda = doc.get("addenda", [])
+    for node in addenda:
+        enhance_node_for_hwpx(node, ["부칙"], doc_title)
+
+    # 6. Extract last revision date from addenda
+    last_revision = extract_last_revision_date(doc)
+    if last_revision:
+        metadata = doc.setdefault("metadata", {})
+        metadata["last_revision_date"] = last_revision
 
 
 # ============================================================================
@@ -190,6 +601,30 @@ def calculate_token_count(text: str) -> int:
     if not text:
         return 0
     return max(1, int(len(text) / CHARS_PER_TOKEN))
+
+
+def calculate_hierarchy_depth(node: Dict[str, Any]) -> int:
+    """
+    Calculate the depth of hierarchy for a node.
+
+    A leaf node has depth 1. Each level of children adds 1 to the depth.
+    Supports hierarchy up to level 6 (REQ-004).
+
+    Args:
+        node: The node dictionary with optional 'children' key.
+
+    Returns:
+        The maximum depth of the node hierarchy (minimum 1).
+
+    Example:
+        >>> node = {"type": "article", "children": [{"type": "paragraph", "children": []}]}
+        >>> calculate_hierarchy_depth(node)
+        2
+    """
+    children = node.get("children", [])
+    if not children:
+        return 1
+    return 1 + max(calculate_hierarchy_depth(child) for child in children)
 
 
 def is_node_searchable(node: Dict[str, Any]) -> bool:
@@ -517,20 +952,30 @@ def enhance_json(data: Dict[str, Any]) -> Dict[str, Any]:
     """
     Enhance the entire JSON structure with RAG optimization fields.
 
+    Automatically detects HWPX Direct Parser output and applies chunk splitting.
+
     Args:
         data: The parsed JSON data.
 
     Returns:
         The enhanced JSON data (modified in-place and returned).
     """
+    # Detect HWPX Direct Parser output
+    is_hwpx_direct = data.get("parsing_method") == "hwpx_direct"
+
     # Process each document
     docs = data.get("docs", [])
     for doc in docs:
-        enhance_document(doc)
+        if is_hwpx_direct:
+            enhance_document_for_hwpx(doc)
+        else:
+            enhance_document(doc)
 
     # Add enhancement metadata
     data["rag_enhanced"] = True
-    data["rag_schema_version"] = "2.0"
+    data["rag_schema_version"] = "2.1"  # Bumped for chunk splitting support
+    if is_hwpx_direct:
+        data["rag_chunk_splitting"] = True
 
     return data
 
