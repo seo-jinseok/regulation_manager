@@ -736,6 +736,40 @@ def _add_synonym_parser(subparsers):
     list_parser.add_argument("term", nargs="?", help="특정 용어만 조회 (생략 시 전체)")
 
 
+def _add_reparse_parser(subparsers):
+    """Add reparse subcommand parser for HWPX full reparse."""
+    parser = subparsers.add_parser(
+        "reparse",
+        help="HWPX 파일 일괄 재파싱 및 품질 분석",
+        description="모든 HWPX 파일을 재파싱하고 품질 분석 리포트를 생성합니다.",
+    )
+    parser.add_argument(
+        "-i",
+        "--input-dir",
+        type=str,
+        default="data/input",
+        help="HWPX 파일 디렉토리 (기본: data/input)",
+    )
+    parser.add_argument(
+        "-o",
+        "--output-dir",
+        type=str,
+        default="data/output",
+        help="출력 디렉토리 (기본: data/output)",
+    )
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        help="상세 출력",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="실제 파일 생성 없이 미리보기",
+    )
+
+
 def create_parser() -> argparse.ArgumentParser:
     """Create main argument parser with all subcommands."""
     parser = argparse.ArgumentParser(
@@ -785,6 +819,7 @@ def create_parser() -> argparse.ArgumentParser:
     _add_analyze_parser(subparsers)
     _add_quality_parser(subparsers)
     _add_synonym_parser(subparsers)
+    _add_reparse_parser(subparsers)
 
     return parser
 
@@ -852,6 +887,24 @@ def cmd_reset(args) -> int:
     from .cli import cmd_reset as _cmd_reset
 
     return _cmd_reset(args)
+
+
+def cmd_reparse(args) -> int:
+    """Execute reparse command - HWPX full reparse with quality analysis."""
+    from ...commands.reparse_hwpx import main as reparse_main
+
+    # Build argv for reparse_hwpx
+    argv = []
+    if args.input_dir:
+        argv.extend(["--input-dir", args.input_dir])
+    if args.output_dir:
+        argv.extend(["--output-dir", args.output_dir])
+    if args.verbose:
+        argv.append("--verbose")
+    if args.dry_run:
+        argv.append("--dry-run")
+
+    return reparse_main(argv)
 
 
 def cmd_serve(args) -> int:
@@ -1282,6 +1335,7 @@ def main(argv: Optional[list] = None) -> int:
         "ask": cmd_ask,
         "status": cmd_status,
         "reset": cmd_reset,
+        "reparse": cmd_reparse,
         "serve": cmd_serve,
         "evaluate": cmd_evaluate,
         "extract-keywords": cmd_extract_keywords,
