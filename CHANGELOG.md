@@ -5,6 +5,69 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.2] - 2026-02-13
+
+### Added - SPEC-CHUNK-002 Implementation Complete
+
+#### HWPX Full Reparse and Quality Analysis
+
+- **CLI Command (REQ-001, REQ-002)**: `reparse-hwpx` 명령어 추가
+  - `--input-dir`: 입력 디렉터리 지정 (기본: `data/input/`)
+  - `--output-dir`: 출력 디렉터리 지정 (기본: `data/output/`)
+  - `--verbose`: 상세 로깅 활성화
+  - `--dry-run`: 파일 처리 없이 실행 계획만 출력
+
+- **File Discovery and Validation (REQ-001)**: HWPX 파일 발견 및 무결성 검증
+  - 파일 크기 > 0 검증
+  - 파일 읽기 권한 확인
+  - HWPX ZIP 구조 유효성 검사
+
+- **Timestamped Backup (REQ-005)**: 기존 출력 파일 백업
+  - `{filename}_hwpx_direct_{YYYYMMDD_HHMMSS}.json.bak` 형식
+  - 기존 파일 존재 시 자동 백업 후 덮어쓰기
+
+- **Dual JSON Output (REQ-003)**: 이중 JSON 출력 생성
+  - `{filename}_hwpx_direct.json`: 표준 JSON 출력
+  - `{filename}_hwpx_direct_rag.json`: RAG 최적화 JSON 출력
+
+- **Quality Analysis Report (REQ-004)**: 품질 분석 리포트 자동 생성
+  - 처리된 파일 수 및 성공/실패 통계
+  - 청크 타입별 분포 (chapter, section, subsection, article, paragraph, item)
+  - 계층 깊이 평균 및 최대값
+  - 처리 시간 통계
+
+**Technical Details**:
+- New directory: `src/commands/` (CLI 명령어 모듈)
+- New directory: `src/analysis/` (품질 분석 모듈)
+- New files:
+  - `src/commands/__init__.py`
+  - `src/commands/reparse_hwpx.py` (메인 CLI 진입점)
+  - `src/analysis/__init__.py`
+  - `src/analysis/quality_reporter.py` (품질 분석 리포트)
+- Test files:
+  - `tests/test_reparse_hwpx.py` (32 tests)
+
+**Test Coverage**:
+- Total tests: 32 passed
+- File discovery tests: 5
+- Backup strategy tests: 6
+- Output generation tests: 8
+- Quality report tests: 7
+- CLI integration tests: 6
+
+**Performance**:
+- Processing time: < 60 seconds per file
+- Memory usage: < 500MB peak
+- Error isolation: Individual file errors do not stop batch processing
+
+### Links
+
+- **SPEC Document**: `.moai/specs/SPEC-CHUNK-002/spec.md`
+- **Implementation**: `src/commands/reparse_hwpx.py`, `src/analysis/quality_reporter.py`
+- **Tests**: `tests/test_reparse_hwpx.py`
+
+---
+
 ## [2.3.1] - 2026-02-13
 
 ### Added - SPEC-CHUNK-001 Implementation Complete
