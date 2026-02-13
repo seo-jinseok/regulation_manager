@@ -56,11 +56,11 @@ dev = [
 [project.scripts]
 # Main entry point
 regulation = "src.rag.interface.unified_cli:main"
-# Shortcut aliases for simpler commands
-run_regulation = "python -m src.main"
-run = "python -m src.main"
 # HWPX reparse command (SPEC-CHUNK-002)
 reparse-hwpx = "src.commands.reparse_hwpx:main"
+
+[tool.uv]
+package = true
 
 [dependency-groups]
 dev = [
