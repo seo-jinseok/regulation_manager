@@ -195,3 +195,12 @@ dist-ssr/
 .vercel/
 .netlify/
 .firebase/
+
+# ===========================================
+# Large Data Files (>100MB - GitHub limit)
+# ===========================================
+data/output/규정집9-349*.json
+data/output/규정집9-350*.json
+data/output/규정집_rag.json
+data/output/규정집9-343*_rag.json
+data/input/*.hwpx
