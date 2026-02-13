@@ -15,6 +15,12 @@ regulation_manager/
 │   ├── converter.py            # HWP conversion
 │   ├── formatter.py            # JSON formatting
 │   ├── enhance_for_rag.py      # RAG optimization
+│   ├── commands/               # CLI commands
+│   │   ├── __init__.py
+│   │   └── reparse_hwpx.py     # HWPX full reparse command
+│   ├── analysis/               # Quality analysis
+│   │   ├── __init__.py
+│   │   └── quality_reporter.py # Quality report generator
 │   ├── parsing/                # Document parsing
 │   │   ├── regulation_parser.py
 │   │   ├── reference_resolver.py
