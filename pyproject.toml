@@ -41,6 +41,7 @@ dependencies = [
     "cryptography>=41.0.0",
     "editdistance>=0.6.2",
     "ragas>=0.1.0",
+    "click>=8.0",
 ]
 [project.optional-dependencies]
 dev = [
@@ -58,3 +59,11 @@ regulation = "src.rag.interface.unified_cli:main"
 # Shortcut aliases for simpler commands
 run_regulation = "python -m src.main"
 run = "python -m src.main"
+# HWPX reparse command (SPEC-CHUNK-002)
+reparse-hwpx = "src.commands.reparse_hwpx:main"
+
+[dependency-groups]
+dev = [
+    "pytest-cov>=7.0.0",
+    "ruff>=0.15.1",
+]
