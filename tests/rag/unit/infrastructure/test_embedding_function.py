@@ -69,6 +69,40 @@ class TestEmbeddingFunctionWrapper:
 
         assert len(result) == 3
 
+    @patch("src.rag.config.get_config")
+    @patch("sentence_transformers.SentenceTransformer")
+    def test_wrapper_uses_config_when_no_model_name(
+        self, mock_transformer, mock_config
+    ):
+        """Test that wrapper uses config when model_name is None."""
+        mock_config_obj = MagicMock()
+        mock_config_obj.get_embedding_model_name.return_value = "jhgan/ko-sbert-sts"
+        mock_config.return_value = mock_config_obj
+        mock_model = MagicMock()
+        mock_model.encode.return_value = np.array([[0.1, 0.2]], dtype=np.float32)
+        mock_transformer.return_value = mock_model
+
+        wrapper = EmbeddingFunctionWrapper(None)
+        result = wrapper(["test"])
+
+        mock_config_obj.get_embedding_model_name.assert_called_once()
+        assert len(result) == 1
+
+    @patch("src.rag.config.get_config")
+    def test_wrapper_raises_error_when_no_model_and_config_fails(self, mock_config):
+        """Test that wrapper raises RuntimeError when no model_name and config fails."""
+        mock_config.side_effect = Exception("Config unavailable")
+
+        wrapper = EmbeddingFunctionWrapper(None)
+
+        with pytest.raises(RuntimeError) as exc_info:
+            wrapper(["test"])
+
+        assert "No embedding model specified and configuration unavailable" in str(
+            exc_info.value
+        )
+        assert "Config unavailable" in str(exc_info.value)
+
 
 class TestEmbeddingFunctionCache:
     """Tests for embedding function caching mechanism."""
@@ -131,19 +165,15 @@ class TestDefaultEmbeddingFunction:
         assert result is not None
 
     @patch("src.rag.config.get_config")
-    @patch("src.rag.infrastructure.embedding_function.EmbeddingFunctionWrapper")
-    def test_default_fallback_on_config_error(self, mock_wrapper_class, mock_config):
-        """Test that default falls back to paraphrase-multilingual-MiniLM-L12-v2 if config fails."""
+    def test_default_raises_error_on_config_error(self, mock_config):
+        """Test that default raises RuntimeError if config loading fails (no silent fallback)."""
         mock_config.side_effect = Exception("Config error")
-        mock_wrapper_instance = MagicMock()
-        mock_wrapper_class.return_value = mock_wrapper_instance
 
-        result = get_default_embedding_function()
+        with pytest.raises(RuntimeError) as exc_info:
+            get_default_embedding_function()
 
-        mock_wrapper_class.assert_called_once_with(
-            "paraphrase-multilingual-MiniLM-L12-v2"
-        )
-        assert result is not None
+        assert "Failed to load embedding model configuration" in str(exc_info.value)
+        assert "Config error" in str(exc_info.value)
 
 
 class TestCreateEmbeddingFunction:
