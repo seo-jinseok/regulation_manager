@@ -95,19 +95,27 @@ def get_default_embedding_function():
         ChromaDB-compatible EmbeddingFunctionWrapper instance using the configured model.
 
     Raises:
-        ImportError: If sentence-transformers is not installed.
+        ImportError: If RAG configuration module is not available.
+        RuntimeError: If configuration loading fails.
     """
     try:
         from ..config import get_config
+    except ImportError as e:
+        raise ImportError(
+            "RAG configuration unavailable. Ensure src.rag.config is importable. "
+            f"Original error: {e}"
+        ) from e
 
+    try:
         config = get_config()
         model_name = config.get_embedding_model_name()
         logger.info(f"Using configured embedding model: {model_name}")
-    except Exception:
-        # Fallback to multilingual model if config is unavailable
-        # Using paraphrase-multilingual-MiniLM-L12-v2 (384 dims) for compatibility with existing DB
-        model_name = "paraphrase-multilingual-MiniLM-L12-v2"
-        logger.warning(f"Config unavailable, using fallback model: {model_name}")
+    except Exception as e:
+        raise RuntimeError(
+            f"Failed to load embedding model configuration: {e}. "
+            "Check that RAG_EMBEDDING_MODEL environment variable is set correctly, "
+            "or ensure the default model 'jhgan/ko-sbert-sts' is available."
+        ) from e
 
     # Return EmbeddingFunctionWrapper instance instead of plain function
     return EmbeddingFunctionWrapper(model_name)
@@ -148,9 +156,26 @@ class EmbeddingFunctionWrapper:
         if self._model is None:
             try:
                 from sentence_transformers import SentenceTransformer
+            except ImportError as e:
+                raise ImportError(
+                    "sentence-transformers is required for embedding functions. "
+                    "Install with: uv add sentence-transformers"
+                ) from e
 
-                if self._model_name is None:
-                    self._model_name = "jhgan/ko-sbert-sts"
+            if self._model_name is None:
+                # Try to get from config
+                try:
+                    from ..config import get_config
+
+                    self._model_name = get_config().get_embedding_model_name()
+                except Exception as e:
+                    raise RuntimeError(
+                        "No embedding model specified and configuration unavailable. "
+                        "Either provide model_name parameter or ensure RAG config is accessible. "
+                        f"Original error: {e}"
+                    ) from e
+
+            try:
                 self._model = SentenceTransformer(self._model_name)
                 logger.info(f"Loaded SentenceTransformer model: {self._model_name}")
             except Exception as e:
