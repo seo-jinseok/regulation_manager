@@ -206,7 +206,7 @@ class FormatClassifier:
         Returns:
             ClassificationResult if list format detected, None otherwise
         """
-        lines = content.split('\n')
+        _lines = content.split('\n')
 
         # Count different list patterns
         numeric_count = len(self.NUMERIC_LIST_PATTERN.findall(content))
@@ -227,7 +227,7 @@ class FormatClassifier:
             return None
 
         # Determine the dominant pattern
-        max_count = max(pattern_counts.values())
+        _max_count = max(pattern_counts.values())
 
         # Check for mixed patterns (more lenient - multiple patterns present)
         pattern_types_present = sum(1 for count in pattern_counts.values() if count > 0)

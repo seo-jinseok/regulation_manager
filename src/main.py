@@ -607,7 +607,7 @@ def _run_hwpx_direct_pipeline(
     Returns:
         True for success, False for failure.
     """
-    status_callback = ctx.console.print if ctx.args.verbose else None
+    _status_callback = ctx.console.print if ctx.args.verbose else None
 
     # Determine output paths
     if output_dir.is_dir():
