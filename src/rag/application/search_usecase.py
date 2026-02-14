@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from ..domain.entities import Answer, Chunk, ChunkLevel, SearchResult
 from ..domain.repositories import IHybridSearcher, ILLMClient, IReranker, IVectorStore
+from .hallucination_filter import FilterMode, HallucinationFilter
 from ..domain.value_objects import Query, SearchFilter
 from ..infrastructure.cache import CacheType, RAGQueryCache
 from ..infrastructure.hybrid_search import ScoredDocument
@@ -221,6 +222,7 @@ class SearchUseCase:
         use_hybrid: Optional[bool] = None,
         reranker: Optional[IReranker] = None,
         enable_warmup: Optional[bool] = None,
+        hallucination_filter: Optional[HallucinationFilter] = None,
     ):
         """
         Initialize search use case.
@@ -233,6 +235,7 @@ class SearchUseCase:
             use_hybrid: Whether to use hybrid search (default: from config).
             reranker: Optional reranker implementation (auto-created if None and use_reranker=True).
             enable_warmup: Whether to warmup in background (default: WARMUP_ON_INIT env).
+            hallucination_filter: Optional HallucinationFilter (auto-created from config if None).
         """
         # Use config defaults if not explicitly specified
         from ..config import get_config
@@ -290,6 +293,25 @@ class SearchUseCase:
         self._enable_fact_check = config.enable_fact_check
         self._fact_check_max_retries = config.fact_check_max_retries
         self._fact_checker = None  # Lazy initialized
+
+        # Hallucination filter components (SPEC-RAG-Q-002)
+        if hallucination_filter is not None:
+            self.hallucination_filter = hallucination_filter
+        elif config.enable_hallucination_filter:
+            try:
+                mode = FilterMode(config.hallucination_filter_mode)
+                self.hallucination_filter = HallucinationFilter(mode=mode)
+                logger.info(
+                    f"Hallucination filter enabled (mode={mode.value})"
+                )
+            except ValueError as e:
+                logger.warning(
+                    f"Invalid hallucination filter mode '{config.hallucination_filter_mode}': {e}. "
+                    f"Using SANITIZE mode."
+                )
+                self.hallucination_filter = HallucinationFilter(mode=FilterMode.SANITIZE)
+        else:
+            self.hallucination_filter = None
 
         # Dynamic Query Expansion components (Phase 3)
         self._enable_query_expansion = config.enable_query_expansion
@@ -2241,6 +2263,24 @@ class SearchUseCase:
                 question, context, answer_text
             )
 
+        # Apply hallucination filter (SPEC-RAG-Q-002)
+        if self.hallucination_filter:
+            context_texts = [
+                r.chunk.text for r in filtered_results if hasattr(r, "chunk")
+            ]
+            filter_result = self.hallucination_filter.filter_response(
+                response=answer_text, context=context_texts
+            )
+            answer_text = filter_result.sanitized_response
+            if filter_result.issues:
+                logger.info(
+                    f"Hallucination filter applied: {len(filter_result.issues)} issues fixed"
+                )
+            if filter_result.blocked:
+                logger.warning(
+                    f"Hallucination filter blocked response: {filter_result.block_reason}"
+                )
+
         # Compute confidence based on search scores
         confidence = self._compute_confidence(filtered_results)
 
@@ -2465,8 +2505,24 @@ class SearchUseCase:
             answer_tokens.append(token)
             yield {"type": "token", "content": token}
 
-        # Phase 1 Integration: Apply citation enhancement after answer generation
+        # Combine tokens into answer text
         answer_text = "".join(answer_tokens)
+
+        # Apply hallucination filter (SPEC-RAG-Q-002)
+        if self.hallucination_filter:
+            context_texts = [
+                r.chunk.text for r in filtered_results if hasattr(r, "chunk")
+            ]
+            filter_result = self.hallucination_filter.filter_response(
+                response=answer_text, context=context_texts
+            )
+            answer_text = filter_result.sanitized_response
+            if filter_result.issues:
+                logger.info(
+                    f"Hallucination filter applied: {len(filter_result.issues)} issues fixed"
+                )
+
+        # Phase 1 Integration: Apply citation enhancement after answer generation
         enhanced_answer = self._enhance_answer_citations(
             answer_text=answer_text,
             sources=filtered_results,
@@ -3356,6 +3412,20 @@ class SearchUseCase:
             self._self_rag_pipeline.start_async_support_check(
                 question, context, answer_text
             )
+
+        # Apply hallucination filter (SPEC-RAG-Q-002)
+        if self.hallucination_filter:
+            context_texts = [
+                r.chunk.text for r in filtered_results if hasattr(r, "chunk")
+            ]
+            filter_result = self.hallucination_filter.filter_response(
+                response=answer_text, context=context_texts
+            )
+            answer_text = filter_result.sanitized_response
+            if filter_result.issues:
+                logger.info(
+                    f"Hallucination filter applied: {len(filter_result.issues)} issues fixed"
+                )
 
         # Compute confidence
         confidence = self._compute_confidence(filtered_results)

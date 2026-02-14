@@ -228,6 +228,17 @@ class RAGConfig:
         default_factory=lambda: int(os.getenv("FACT_CHECK_MAX_RETRIES", "2"))
     )
 
+    # Hallucination filter settings (SPEC-RAG-Q-002)
+    enable_hallucination_filter: bool = field(
+        default_factory=lambda: os.getenv(
+            "ENABLE_HALLUCINATION_FILTER", "true"
+        ).lower()
+        == "true"
+    )
+    hallucination_filter_mode: str = field(
+        default_factory=lambda: os.getenv("HALLUCINATION_FILTER_MODE", "sanitize")
+    )  # Options: warn, sanitize, block, passthrough
+
     # RAG Query Cache settings
     enable_cache: bool = field(
         default_factory=lambda: os.getenv("RAG_ENABLE_CACHE", "true").lower() == "true"
