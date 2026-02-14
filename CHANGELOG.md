@@ -5,6 +5,55 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.4] - 2026-02-14
+
+### Added - SPEC-RAG-Q-002 Implementation Complete
+
+#### Hallucination Prevention Filter
+
+- **Contact Information Validation (REQ-001)**: LLM 응답의 연락처(전화번호, 이메일) 검증
+  - 검색 결과에 없는 연락처는 "자세한 연락처는 해당 부서에 직접 문의해 주시기 바랍니다"로 대체
+  - 한국어 전화번호 형식 지원 (02-XXXX-XXXX, 010-XXXX-XXXX 등)
+  - 이메일 주소 검증 포함
+
+- **Department Name Validation (REQ-002)**: 부서명/조직명 검증
+  - 검색 결과에 없는 부서명은 "담당 부서"로 대체
+  - 한국어 부서명 패턴 지원 (XX팀, XX부, XX처, XX과 등)
+
+- **Citation Grounding (REQ-003)**: 규정 조항 인용 검증
+  - 검색 결과에 없는 조항 인용은 "관련 규정"으로 일반화
+  - 조항 번호 추출 및 정규화 지원
+
+- **Multiple Filter Modes**: 다양한 필터 모드 지원
+  - `warn`: 경고 로그만 기록, 응답 변경 없음
+  - `sanitize`: 미확인 정보 자동 대체 (기본값)
+  - `block`: 미확인 정보 포함 시 응답 차단
+  - `passthrough`: 필터링 비활성화
+
+**Technical Details**:
+- New file: `src/rag/application/hallucination_filter.py` (379 lines)
+- Modified file: `src/rag/application/search_usecase.py` (HallucinationFilter 통합)
+- Modified file: `src/rag/config.py` (설정 옵션 추가)
+- Test files:
+  - `tests/rag/unit/application/test_hallucination_filter.py`
+  - `tests/rag/automation/infrastructure/test_hallucination_detector.py`
+
+**Test Coverage**:
+- Total tests: 47 passed
+- Code coverage: 96.35%
+
+**Configuration Options**:
+- `ENABLE_HALLUCINATION_FILTER=true`: 필터 활성화/비활성화
+- `HALLUCINATION_FILTER_MODE=sanitize`: 필터 모드 설정
+
+### Links
+
+- **SPEC Document**: `.moai/specs/SPEC-RAG-Q-002/spec.md`
+- **Implementation**: `src/rag/application/hallucination_filter.py`
+- **Tests**: `tests/rag/unit/application/test_hallucination_filter.py`
+
+---
+
 ## [2.3.3] - 2026-02-13
 
 ### Fixed - SPEC-EMBED-001 Implementation Complete
