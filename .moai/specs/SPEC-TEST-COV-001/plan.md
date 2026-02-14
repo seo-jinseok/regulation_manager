@@ -1,8 +1,100 @@
 # Implementation Plan: SPEC-TEST-COV-001
 
+**Created**: 2026-02-14
+**SPEC Version**: 1.0.0
+**Status**: READY FOR APPROVAL
+**Agent**: core-planner
+**Development Mode**: Hybrid (DDD PRESERVE phase for existing code)
+
+---
+
 ## Overview
 
 This plan outlines the multi-iteration approach for improving test coverage from 6.94% to 85% across the Regulation Manager project. The implementation follows a phased strategy prioritizing critical business logic while maintaining existing test quality.
+
+### Strategic Analysis (Philosopher Framework)
+
+**Assumption Audit**:
+| Assumption | Confidence | Risk | Validation |
+|------------|------------|------|------------|
+| Current 6.94% coverage is accurate | High | Misestimate effort | Run coverage report |
+| Existing 100% modules remain stable | Medium | Regression | Run existing tests first |
+| Mock strategies are sufficient | Medium | Flaky tests | Review mock patterns |
+| 85% target achievable without refactoring | Low | Coverage ceiling | Analyze code complexity |
+
+**Trade-off Analysis**:
+- Chosen approach: Hybrid Critical + Dependency Chain
+- What we gain: Ensures critical paths are fully testable
+- What we sacrifice: Slightly more planning overhead
+- Alternative considered: Layer-by-Layer (lower business value alignment)
+
+---
+
+## TAG Chain Design
+
+### TAG Dependency Graph
+
+```
+TAG-001 (Mock Infrastructure)
+    │
+    ├──► TAG-002 (Critical Infrastructure: query_analyzer)
+    │        │
+    │        └──► TAG-003 (Critical Application: search_usecase)
+    │                 │
+    │                 ├──► TAG-004 (High Priority Application)
+    │                 │
+    │                 └──► TAG-005 (Medium Priority)
+    │
+    ├──► TAG-006 (Domain Layer)
+    │
+    └──► TAG-007 (Low Priority)
+             │
+             └──► TAG-008 (Coverage Validation)
+
+TAG-009 (Regression Prevention) [Parallel]
+```
+
+### TAG Definitions
+
+| TAG ID | Name | Purpose | Dependencies | Completion Criteria |
+|--------|------|---------|--------------|---------------------|
+| TAG-001 | Mock Infrastructure Setup | Create reusable mock fixtures | None | All mocks pass validation |
+| TAG-002 | Critical Infrastructure Tests | 90% coverage for query_analyzer | TAG-001 | 90% coverage, all branches |
+| TAG-003 | Critical Application Tests | 90% coverage for search_usecase | TAG-001, TAG-002 | 90% coverage, integration paths |
+| TAG-004 | High Priority Application Tests | 85% coverage for high priority | TAG-003 | 85% per module |
+| TAG-005 | Medium Priority Tests | 85% coverage for medium priority | TAG-001, TAG-003 | 85% per module |
+| TAG-006 | Domain Layer Tests | 85% coverage for domain | TAG-001 | 85% per module |
+| TAG-007 | Low Priority Tests | 85% coverage for low priority | TAG-001 | 85% per module |
+| TAG-008 | Coverage Validation | Verify overall >=85% | All TAGs | Coverage report confirms |
+| TAG-009 | Regression Prevention | Maintain 100% modules | None (parallel) | All existing tests pass |
+
+---
+
+## Task Decomposition (SDD 2025 Standard)
+
+| Task ID | Description | Requirement | Dependencies | Acceptance Criteria |
+|---------|-------------|-------------|--------------|---------------------|
+| TASK-001 | Create LLM mock infrastructure | REQ-007 | None | Mock responds to generate() and embed() |
+| TASK-002 | Create ChromaDB mock fixtures | REQ-007 | None | Mock returns predictable query results |
+| TASK-003 | Create embedding mock fixtures | REQ-007 | None | Mock returns deterministic embeddings |
+| TASK-004 | Test query_analyzer.py (Critical) | REQ-002, REQ-005 | TASK-001 | 90% coverage, all parsing paths |
+| TASK-005 | Test llm_client.py | REQ-002 | TASK-001 | 85% coverage |
+| TASK-006 | Test search_usecase.py (Critical) | REQ-001, REQ-005 | TASK-001, TASK-002, TASK-004 | 90% coverage |
+| TASK-007 | Test multi_hop_handler.py | REQ-001 | TASK-006 | 85% coverage |
+| TASK-008 | Test conversation_memory.py | REQ-001 | None | 85% coverage |
+| TASK-009 | Test synonym_generator_service.py | REQ-001 | TASK-001 | 85% coverage |
+| TASK-010 | Test experiment_service.py | REQ-001 | TASK-001 | 85% coverage |
+| TASK-011 | Test full_view_usecase.py | REQ-001 | TASK-001 | 85% coverage |
+| TASK-012 | Test query_expansion.py | REQ-001 | TASK-001 | 85% coverage |
+| TASK-013 | Test reranker.py | REQ-002 | TASK-001 | 85% coverage |
+| TASK-014 | Test vector_index_builder.py | REQ-002 | TASK-001 | 85% coverage |
+| TASK-015 | Test llm_judge.py | REQ-003 | TASK-001 | 85% coverage |
+| TASK-016 | Test quality_evaluator.py | REQ-003 | TASK-001 | 85% coverage |
+| TASK-017 | Test custom_judge.py | REQ-003 | TASK-001 | 85% coverage |
+| TASK-018 | Test auto_learn.py | REQ-001 | TASK-001 | 85% coverage |
+| TASK-019 | Test evaluate.py | REQ-001 | TASK-001 | 85% coverage |
+| TASK-020 | Validate overall coverage | REQ-004 | All TASKs | >=85% total, >=90% critical |
+| TASK-021 | Verify no regression | REQ-008 | None | 100% modules still at 100% |
 
 ---
 
