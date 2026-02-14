@@ -1,8 +1,10 @@
 import gc
+import json
 import sys
 import weakref
 from pathlib import Path
-from typing import Any
+from typing import Any, Dict, List, Optional
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -267,3 +269,387 @@ def pytest_report_header(config):
     if parts:
         return "\n".join(parts)
     return None
+
+
+# =============================================================================
+# Mock Fixtures for SPEC-TEST-COV-001
+# =============================================================================
+
+
+@pytest.fixture
+def llm_client_mock():
+    """
+    Mock LLM client for deterministic testing.
+
+    Supports:
+    - generate() method with configurable responses
+    - Error simulation via side_effect
+    - No actual network calls
+
+    Usage:
+        mock = llm_client_mock()
+        mock.generate.return_value = '{"normalized": "query", "keywords": ["kw1"]}'
+        # Or simulate error:
+        mock.generate.side_effect = Exception("LLM error")
+    """
+
+    class MockLLMClient:
+        """Synchronous mock LLM client for testing."""
+
+        def __init__(self):
+            self._default_response = json.dumps(
+                {"normalized": "normalized query", "keywords": ["keyword1", "keyword2"]}
+            )
+            self._response: Optional[str] = None
+            self._side_effect: Optional[Exception] = None
+            self._call_count = 0
+            self._call_history: List[Dict[str, Any]] = []
+
+        def generate(
+            self,
+            system_prompt: str,
+            user_message: str,
+            temperature: float = 0.0,
+        ) -> str:
+            """Generate a response - mock implementation."""
+            self._call_count += 1
+            self._call_history.append(
+                {
+                    "system_prompt": system_prompt,
+                    "user_message": user_message,
+                    "temperature": temperature,
+                }
+            )
+
+            if self._side_effect:
+                raise self._side_effect
+
+            return self._response or self._default_response
+
+        def set_response(self, response: str) -> None:
+            """Set the response to return."""
+            self._response = response
+
+        def set_json_response(self, data: Dict[str, Any]) -> None:
+            """Set response as JSON string."""
+            self._response = json.dumps(data, ensure_ascii=False)
+
+        def set_error(self, error: Exception) -> None:
+            """Set an error to raise on generate()."""
+            self._side_effect = error
+
+        def reset(self) -> None:
+            """Reset mock state."""
+            self._response = None
+            self._side_effect = None
+            self._call_count = 0
+            self._call_history = []
+
+        @property
+        def call_count(self) -> int:
+            """Number of times generate() was called."""
+            return self._call_count
+
+        @property
+        def last_call(self) -> Optional[Dict[str, Any]]:
+            """Get the last call arguments."""
+            return self._call_history[-1] if self._call_history else None
+
+    return MockLLMClient()
+
+
+@pytest.fixture
+def chroma_collection_mock():
+    """
+    Mock ChromaDB collection for deterministic testing.
+
+    Supports:
+    - query() method with configurable results
+    - add() method for document insertion
+    - delete() method for document deletion
+    - Edge cases: empty results, large result sets
+
+    Usage:
+        mock = chroma_collection_mock()
+        mock.set_query_results({
+            "ids": [["id1", "id2"]],
+            "documents": [["doc1", "doc2"]],
+            "metadatas": [[{}, {}]],
+            "distances": [[0.1, 0.2]]
+        })
+    """
+
+    class MockChromaCollection:
+        """Mock ChromaDB collection for testing."""
+
+        def __init__(self):
+            self._query_results = {
+                "ids": [[]],
+                "documents": [[]],
+                "metadatas": [[]],
+                "distances": [[]],
+            }
+            self._documents: Dict[str, str] = {}
+            self._metadatas: Dict[str, Dict] = {}
+            self._call_count = {"query": 0, "add": 0, "delete": 0}
+
+        def query(
+            self,
+            query_texts: Optional[List[str]] = None,
+            query_embeddings: Optional[List[List[float]]] = None,
+            n_results: int = 10,
+            where: Optional[Dict] = None,
+            **kwargs,
+        ) -> Dict[str, Any]:
+            """Mock query method."""
+            self._call_count["query"] += 1
+            # Return limited results based on n_results
+            results = {
+                "ids": [self._query_results["ids"][0][:n_results]],
+                "documents": [self._query_results["documents"][0][:n_results]],
+                "metadatas": [self._query_results["metadatas"][0][:n_results]],
+                "distances": [self._query_results["distances"][0][:n_results]],
+            }
+            return results
+
+        def add(
+            self,
+            ids: List[str],
+            documents: List[str],
+            metadatas: Optional[List[Dict]] = None,
+            embeddings: Optional[List[List[float]]] = None,
+            **kwargs,
+        ) -> None:
+            """Mock add method."""
+            self._call_count["add"] += 1
+            for i, doc_id in enumerate(ids):
+                self._documents[doc_id] = documents[i]
+                if metadatas:
+                    self._metadatas[doc_id] = metadatas[i]
+
+        def delete(
+            self,
+            ids: Optional[List[str]] = None,
+            where: Optional[Dict] = None,
+            **kwargs,
+        ) -> None:
+            """Mock delete method."""
+            self._call_count["delete"] += 1
+            if ids:
+                for doc_id in ids:
+                    self._documents.pop(doc_id, None)
+                    self._metadatas.pop(doc_id, None)
+
+        def set_query_results(self, results: Dict[str, Any]) -> None:
+            """Set the results to return from query()."""
+            self._query_results = results
+
+        def set_empty_results(self) -> None:
+            """Set empty query results."""
+            self._query_results = {
+                "ids": [[]],
+                "documents": [[]],
+                "metadatas": [[]],
+                "distances": [[]],
+            }
+
+        def set_large_results(self, count: int = 100) -> None:
+            """Set large result set for performance testing."""
+            self._query_results = {
+                "ids": [[f"id_{i}" for i in range(count)]],
+                "documents": [[f"document {i}" for i in range(count)]],
+                "metadatas": [[{"index": i} for i in range(count)]],
+                "distances": [[0.1 * i for i in range(count)]],
+            }
+
+        @property
+        def call_count(self) -> Dict[str, int]:
+            """Get call counts for each method."""
+            return self._call_count
+
+        def reset(self) -> None:
+            """Reset mock state."""
+            self._query_results = {
+                "ids": [[]],
+                "documents": [[]],
+                "metadatas": [[]],
+                "distances": [[]],
+            }
+            self._documents.clear()
+            self._metadatas.clear()
+            self._call_count = {"query": 0, "add": 0, "delete": 0}
+
+    return MockChromaCollection()
+
+
+@pytest.fixture
+def embedding_function_mock():
+    """
+    Mock embedding function for deterministic testing.
+
+    Supports:
+    - Single and batch embedding calls
+    - Configurable dimension (default 1024)
+    - Deterministic vectors based on input text
+
+    Usage:
+        mock = embedding_function_mock()
+        mock.set_dimension(768)
+        vectors = mock(["query1", "query2"])
+    """
+
+    class MockEmbeddingFunction:
+        """Mock embedding function for testing."""
+
+        def __init__(self, dimension: int = 1024):
+            self._dimension = dimension
+            self._call_count = 0
+            self._call_history: List[List[str]] = []
+
+        def __call__(self, texts: List[str]) -> List[List[float]]:
+            """Generate deterministic embeddings."""
+            self._call_count += 1
+            self._call_history.append(texts)
+            return [self._generate_vector(text) for text in texts]
+
+        def _generate_vector(self, text: str) -> List[float]:
+            """Generate a deterministic vector based on text hash."""
+            # Use hash of text to generate deterministic values
+            text_hash = hash(text)
+            base_value = (text_hash % 1000) / 10000.0
+            return [base_value + (i * 0.0001) for i in range(self._dimension)]
+
+        def set_dimension(self, dimension: int) -> None:
+            """Set the embedding dimension."""
+            self._dimension = dimension
+
+        @property
+        def dimension(self) -> int:
+            """Get the current dimension."""
+            return self._dimension
+
+        @property
+        def call_count(self) -> int:
+            """Get number of times called."""
+            return self._call_count
+
+        @property
+        def last_texts(self) -> Optional[List[str]]:
+            """Get the last texts embedded."""
+            return self._call_history[-1] if self._call_history else None
+
+        def reset(self) -> None:
+            """Reset mock state."""
+            self._call_count = 0
+            self._call_history = []
+
+    return MockEmbeddingFunction()
+
+
+@pytest.fixture
+def typo_corrector_mock():
+    """
+    Mock TypoCorrector for deterministic testing.
+
+    Supports:
+    - Configurable correction pairs
+    - "No correction" scenario
+    - "Multiple corrections" scenario
+    - Method tracking (rule, symspell, edit_distance, llm)
+
+    Usage:
+        mock = typo_corrector_mock()
+        mock.add_correction("시퍼", "싶어")
+        mock.set_method("rule")
+        result = mock.correct("받고시퍼")
+    """
+
+    class MockTypoCorrector:
+        """Mock TypoCorrector for testing."""
+
+        def __init__(self):
+            self._corrections: Dict[str, str] = {}
+            self._method = "rule"
+            self._confidence = 0.95
+            self._call_count = 0
+            self._call_history: List[str] = []
+            self._regulation_names: List[str] = []
+
+        def correct(
+            self, query: str, use_llm_fallback: bool = True
+        ) -> Any:  # Returns TypoCorrectionResult
+            """Mock correct method."""
+            from dataclasses import dataclass
+            from typing import List, Tuple
+
+            @dataclass(frozen=True)
+            class TypoCorrectionResult:
+                original: str
+                corrected: str
+                method: str
+                corrections: List[Tuple[str, str]]
+                confidence: float
+
+            self._call_count += 1
+            self._call_history.append(query)
+
+            corrected = query
+            corrections = []
+
+            # Apply configured corrections
+            for original, replacement in self._corrections.items():
+                if original in corrected:
+                    corrected = corrected.replace(original, replacement)
+                    corrections.append((original, replacement))
+
+            return TypoCorrectionResult(
+                original=query,
+                corrected=corrected,
+                method=self._method if corrections else "none",
+                corrections=corrections,
+                confidence=self._confidence if corrections else 1.0,
+            )
+
+        def add_correction(self, original: str, corrected: str) -> None:
+            """Add a correction pair."""
+            self._corrections[original] = corrected
+
+        def set_corrections(self, corrections: Dict[str, str]) -> None:
+            """Set all correction pairs."""
+            self._corrections = corrections
+
+        def set_method(self, method: str) -> None:
+            """Set the method to report (rule, symspell, edit_distance, llm, none)."""
+            self._method = method
+
+        def set_confidence(self, confidence: float) -> None:
+            """Set the confidence level."""
+            self._confidence = confidence
+
+        def set_regulation_names(self, regulation_names: List[str]) -> None:
+            """Set regulation names for edit distance matching."""
+            self._regulation_names = regulation_names
+
+        def clear_cache(self) -> None:
+            """Mock clear cache method."""
+            pass
+
+        @property
+        def call_count(self) -> int:
+            """Get number of times correct() was called."""
+            return self._call_count
+
+        @property
+        def last_query(self) -> Optional[str]:
+            """Get the last query corrected."""
+            return self._call_history[-1] if self._call_history else None
+
+        def reset(self) -> None:
+            """Reset mock state."""
+            self._corrections.clear()
+            self._method = "rule"
+            self._confidence = 0.95
+            self._call_count = 0
+            self._call_history = []
+
+    return MockTypoCorrector()
