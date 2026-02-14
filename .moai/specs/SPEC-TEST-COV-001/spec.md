@@ -7,7 +7,7 @@
 | SPEC ID     | SPEC-TEST-COV-001             |
 | Title       | Test Coverage Improvement to 85% |
 | Created     | 2026-02-14                    |
-| Status      | Planned                       |
+| Status      | Completed                     |
 | Priority    | High                          |
 | Assigned    | expert-testing                |
 | Lifecycle   | spec-anchored                 |
