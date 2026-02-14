@@ -38,6 +38,9 @@ if TYPE_CHECKING:
     from .multi_hop_handler import MultiHopHandler
     from .academic_calendar_service import AcademicCalendarService
     from ..infrastructure.period_keyword_detector import PeriodKeywordDetector
+    from ..domain.citation.citation_verification_service import (
+        CitationVerificationService,
+    )
 
 
 class SearchStrategy(Enum):
@@ -307,15 +310,15 @@ class SearchUseCase:
             try:
                 mode = FilterMode(config.hallucination_filter_mode)
                 self.hallucination_filter = HallucinationFilter(mode=mode)
-                logger.info(
-                    f"Hallucination filter enabled (mode={mode.value})"
-                )
+                logger.info(f"Hallucination filter enabled (mode={mode.value})")
             except ValueError as e:
                 logger.warning(
                     f"Invalid hallucination filter mode '{config.hallucination_filter_mode}': {e}. "
                     f"Using SANITIZE mode."
                 )
-                self.hallucination_filter = HallucinationFilter(mode=FilterMode.SANITIZE)
+                self.hallucination_filter = HallucinationFilter(
+                    mode=FilterMode.SANITIZE
+                )
         else:
             self.hallucination_filter = None
 
@@ -326,6 +329,7 @@ class SearchUseCase:
         else:
             # Lazy import to avoid circular dependency
             from ..infrastructure.period_keyword_detector import PeriodKeywordDetector
+
             self._period_keyword_detector = PeriodKeywordDetector()
             logger.debug("PeriodKeywordDetector initialized")
 
@@ -355,6 +359,12 @@ class SearchUseCase:
 
         # Reranking metrics (Cycle 3)
         self._reranking_metrics = RerankingMetrics()
+
+        # Citation Verification Service (SPEC-RAG-Q-004)
+        # Lazy initialized to avoid circular imports
+        self._citation_verification_service: Optional["CitationVerificationService"] = (
+            None
+        )
 
         # Cache initialization
         self._enable_cache = config.enable_cache
@@ -1690,7 +1700,9 @@ class SearchUseCase:
                     synonym_service=None,  # Will use built-in academic synonyms
                     llm_client=None,  # No LLM needed for synonym-based expansion
                 )
-                logger.debug("QueryExpansionService initialized for synonym-based expansion")
+                logger.debug(
+                    "QueryExpansionService initialized for synonym-based expansion"
+                )
             except ImportError as e:
                 logger.warning(f"Failed to import QueryExpansionService: {e}")
                 self._query_expansion_service = None
@@ -1717,12 +1729,11 @@ class SearchUseCase:
         self._ensure_query_expansion_service()
         if self._query_expansion_service is not None:
             try:
-
                 # Use synonym-based expansion (fast, no LLM required)
                 expanded_queries = self._query_expansion_service.expand_query(
                     query_text,
                     max_variants=3,
-                    method="synonym"  # Use synonym-based expansion
+                    method="synonym",  # Use synonym-based expansion
                 )
 
                 if expanded_queries and len(expanded_queries) > 1:
@@ -1735,10 +1746,13 @@ class SearchUseCase:
 
                         # Find new words not in original query
                         new_words = [
-                            word for word in exp_lower.split()
+                            word
+                            for word in exp_lower.split()
                             if word not in query_lower and len(word) > 1
                         ]
-                        keywords.extend(new_words[:3])  # Limit to 3 keywords per expansion
+                        keywords.extend(
+                            new_words[:3]
+                        )  # Limit to 3 keywords per expansion
 
                     if keywords:
                         logger.debug(
@@ -1792,6 +1806,22 @@ class SearchUseCase:
             from ..infrastructure.fact_checker import FactChecker
 
             self._fact_checker = FactChecker(store=self.store)
+
+    def _ensure_citation_verification_service(self) -> "CitationVerificationService":
+        """
+        Initialize CitationVerificationService if not already initialized.
+
+        Returns:
+            CitationVerificationService instance.
+        """
+        if self._citation_verification_service is None:
+            from ..domain.citation.citation_verification_service import (
+                CitationVerificationService,
+            )
+
+            self._citation_verification_service = CitationVerificationService()
+            logger.debug("CitationVerificationService initialized")
+        return self._citation_verification_service
 
     def _apply_self_rag_relevance_filter(
         self, query: str, results: List[SearchResult]
@@ -2230,9 +2260,13 @@ class SearchUseCase:
 
         # Get relevant chunks
         # Phase 1 Integration: Apply query expansion before search
-        expanded_query, expansion_keywords = self._apply_dynamic_expansion(retrieval_query)
+        expanded_query, expansion_keywords = self._apply_dynamic_expansion(
+            retrieval_query
+        )
         if expansion_keywords:
-            logger.debug(f"Query expansion applied: {retrieval_query[:30]}... -> keywords={expansion_keywords[:5]}")
+            logger.debug(
+                f"Query expansion applied: {retrieval_query[:30]}... -> keywords={expansion_keywords[:5]}"
+            )
 
         results = self.search(
             expanded_query,  # Use expanded query for search
@@ -2306,6 +2340,9 @@ class SearchUseCase:
                 logger.warning(
                     f"Hallucination filter blocked response: {filter_result.block_reason}"
                 )
+
+        # SPEC-RAG-Q-004: Verify citations against source chunks
+        answer_text = self._verify_citations(answer_text, filtered_results)
 
         # Compute confidence based on search scores
         confidence = self._compute_confidence(filtered_results)
@@ -2483,9 +2520,13 @@ class SearchUseCase:
         retrieval_query = search_query or question
 
         # Phase 1 Integration: Apply query expansion before search
-        expanded_query, expansion_keywords = self._apply_dynamic_expansion(retrieval_query)
+        expanded_query, expansion_keywords = self._apply_dynamic_expansion(
+            retrieval_query
+        )
         if expansion_keywords:
-            logger.debug(f"Query expansion applied: {retrieval_query[:30]}... -> keywords={expansion_keywords[:5]}")
+            logger.debug(
+                f"Query expansion applied: {retrieval_query[:30]}... -> keywords={expansion_keywords[:5]}"
+            )
 
         results = self.search(
             expanded_query,  # Use expanded query for search
@@ -2547,6 +2588,9 @@ class SearchUseCase:
                 logger.info(
                     f"Hallucination filter applied: {len(filter_result.issues)} issues fixed"
                 )
+
+        # SPEC-RAG-Q-004: Verify citations against source chunks
+        answer_text = self._verify_citations(answer_text, filtered_results)
 
         # Phase 1 Integration: Apply citation enhancement after answer generation
         enhanced_answer = self._enhance_answer_citations(
@@ -3041,8 +3085,7 @@ class SearchUseCase:
 
             # Check if answer already has citations
             has_citations = any(
-                marker in answer_text
-                for marker in ["「", "제", "조", "규정"]
+                marker in answer_text for marker in ["「", "제", "조", "규정"]
             )
 
             # If answer doesn't have proper citations, append them
@@ -3055,11 +3098,134 @@ class SearchUseCase:
             return answer_text
 
         except ImportError:
-            logger.warning("CitationEnhancer not available, skipping citation enhancement")
+            logger.warning(
+                "CitationEnhancer not available, skipping citation enhancement"
+            )
             return answer_text
         except Exception as e:
             logger.warning(f"Citation enhancement failed: {e}")
             return answer_text
+
+    def _verify_citations(self, answer: str, source_chunks: List[SearchResult]) -> str:
+        """
+        Verify citations in answer against source chunks (SPEC-RAG-Q-004).
+
+        Post-generation hook that extracts citations from the answer,
+        verifies each against the source chunks used for generation,
+        and sanitizes unverifiable citations.
+
+        Metrics tracked (TASK-014):
+        - Total citations found
+        - Verified citations (found in sources)
+        - Sanitized citations (not found in sources)
+        - Verification rate
+
+        Args:
+            answer: LLM-generated answer text.
+            source_chunks: Search results used as context for the answer.
+
+        Returns:
+            Answer with sanitized citations (unverifiable ones replaced).
+        """
+        if not answer or not source_chunks:
+            return answer
+
+        try:
+            service = self._ensure_citation_verification_service()
+
+            # Extract citations from answer
+            citations = service.extract_citations(answer)
+
+            if not citations:
+                logger.debug("Citation verification: No citations found in answer")
+                return answer
+
+            # Convert SearchResult list to dict format expected by service
+            chunks_for_verification = []
+            for result in source_chunks:
+                chunk = result.chunk
+                chunk_dict = {
+                    "text": chunk.text,
+                    "metadata": {
+                        "regulation_name": getattr(chunk, "regulation_name", None),
+                        "article": getattr(chunk, "article", None),
+                        "paragraph": getattr(chunk, "paragraph", None),
+                    },
+                }
+                chunks_for_verification.append(chunk_dict)
+
+            # Track metrics for logging
+            total_citations = len(citations)
+            verified_citations = []
+            sanitized_citations = []
+            sanitized_answer = answer
+
+            # Verify each citation
+            for citation in citations:
+                is_verified = service.verify_grounding(
+                    citation, chunks_for_verification
+                )
+
+                if is_verified:
+                    verified_citations.append(citation.to_standard_format())
+                    logger.debug(
+                        f"Citation verified: {citation.to_standard_format()} "
+                        f"(regulation={citation.regulation_name}, article={citation.article})"
+                    )
+                else:
+                    # Sanitize unverifiable citation
+                    replacement = service.sanitize_unverifiable(citation)
+                    original_format = citation.to_standard_format()
+
+                    # Replace in answer (case-insensitive to handle variations)
+                    replaced = False
+                    if original_format in sanitized_answer:
+                        sanitized_answer = sanitized_answer.replace(
+                            original_format, replacement
+                        )
+                        replaced = True
+                    # Also try to replace the original text if different
+                    elif citation.original_text in sanitized_answer:
+                        sanitized_answer = sanitized_answer.replace(
+                            citation.original_text, replacement
+                        )
+                        replaced = True
+
+                    if replaced:
+                        sanitized_citations.append(original_format)
+                        logger.debug(
+                            f"Citation sanitized: {original_format} -> {replacement} "
+                            f"(regulation={citation.regulation_name}, article={citation.article})"
+                        )
+
+            # Log comprehensive metrics
+            verification_rate = (
+                len(verified_citations) / total_citations * 100
+                if total_citations > 0
+                else 0
+            )
+            logger.info(
+                f"Citation verification complete: "
+                f"total={total_citations}, "
+                f"verified={len(verified_citations)}, "
+                f"sanitized={len(sanitized_citations)}, "
+                f"rate={verification_rate:.1f}%"
+            )
+
+            # Log detailed info for debugging
+            if verified_citations:
+                logger.debug(f"Verified citations: {verified_citations}")
+            if sanitized_citations:
+                logger.debug(f"Sanitized citations: {sanitized_citations}")
+
+            return sanitized_answer
+
+        except ImportError:
+            logger.warning("CitationVerificationService not available")
+            return answer
+        except Exception as e:
+            logger.warning(f"Citation verification failed: {e}")
+            return answer
 
     def _is_period_related_query(self, query: str) -> bool:
         """
@@ -3097,7 +3263,9 @@ class SearchUseCase:
         # Detect period keywords for logging
         detected_keywords = []
         if self._period_keyword_detector:
-            detected_keywords = self._period_keyword_detector.detect_period_keywords(query)
+            detected_keywords = self._period_keyword_detector.detect_period_keywords(
+                query
+            )
             if detected_keywords:
                 logger.debug(f"Period keywords detected in query: {detected_keywords}")
 
@@ -3111,13 +3279,19 @@ class SearchUseCase:
                     # Format events for context
                     calendar_info_lines = []
                     for event in events:
-                        if hasattr(event, 'start_date') and hasattr(event, 'name'):
-                            if hasattr(event, 'end_date') and event.end_date:
+                        if hasattr(event, "start_date") and hasattr(event, "name"):
+                            if hasattr(event, "end_date") and event.end_date:
                                 date_str = f"{event.start_date} ~ {event.end_date}"
                             else:
                                 date_str = event.start_date
-                            description = f" ({event.description})" if hasattr(event, 'description') and event.description else ""
-                            calendar_info_lines.append(f"- {event.name}: {date_str}{description}")
+                            description = (
+                                f" ({event.description})"
+                                if hasattr(event, "description") and event.description
+                                else ""
+                            )
+                            calendar_info_lines.append(
+                                f"- {event.name}: {date_str}{description}"
+                            )
 
                     if calendar_info_lines:
                         calendar_info = "\n".join(calendar_info_lines)
@@ -3126,7 +3300,9 @@ class SearchUseCase:
                             f"[학사일정 정보]\n{calendar_info}\n\n"
                             f"[관련 규정]\n{context}"
                         )
-                        logger.info("Context enhanced with academic calendar information")
+                        logger.info(
+                            "Context enhanced with academic calendar information"
+                        )
                         return enhanced_context
             except Exception as e:
                 logger.warning(f"Failed to enhance context with calendar info: {e}")
@@ -3526,6 +3702,9 @@ class SearchUseCase:
                 logger.info(
                     f"Hallucination filter applied: {len(filter_result.issues)} issues fixed"
                 )
+
+        # SPEC-RAG-Q-004: Verify citations against source chunks
+        answer_text = self._verify_citations(answer_text, filtered_results)
 
         # Compute confidence
         confidence = self._compute_confidence(filtered_results)

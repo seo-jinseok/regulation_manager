@@ -3,6 +3,8 @@ Fact Checker for LLM Answer Verification.
 
 Extracts regulation/article citations from LLM answers and verifies
 them against the actual database. Supports iterative correction.
+
+Enhanced with source_chunks verification for RAG citation grounding.
 """
 
 import logging
@@ -65,6 +67,16 @@ class FactChecker:
 
     Extracts citations like 「교원인사규정」 제36조 and verifies
     they exist in the vector store.
+
+    Enhanced with source_chunks verification for RAG citation grounding.
+    When source_chunks is provided, uses CitationVerificationService for
+    direct verification against retrieved source chunks.
+
+    Backward Compatibility:
+        - verify_citation(citation) - uses vector store search (original behavior)
+        - verify_citation(citation, source_chunks) - uses CitationVerificationService
+        - check(answer_text) - uses vector store search (original behavior)
+        - check(answer_text, source_chunks) - uses CitationVerificationService
     """
 
     # Patterns for extracting citations
@@ -85,6 +97,22 @@ class FactChecker:
             store: Vector store for verification queries.
         """
         self.store = store
+        self._verification_service = None  # Lazy initialization
+
+    def _get_verification_service(self):
+        """
+        Get or create CitationVerificationService (lazy initialization).
+
+        Returns:
+            CitationVerificationService instance.
+        """
+        if self._verification_service is None:
+            from ..domain.citation.citation_verification_service import (
+                CitationVerificationService,
+            )
+
+            self._verification_service = CitationVerificationService()
+        return self._verification_service
 
     def extract_citations(self, text: str) -> List[Citation]:
         """
@@ -125,9 +153,83 @@ class FactChecker:
 
         return citations
 
-    def verify_citation(self, citation: Citation) -> VerificationResult:
+    def verify_citation(
+        self, citation: Citation, source_chunks: Optional[List[dict]] = None
+    ) -> VerificationResult:
         """
-        Verify a single citation against the database.
+        Verify a single citation against the database or source chunks.
+
+        When source_chunks is provided, uses CitationVerificationService
+        for direct verification against the retrieved source chunks.
+        Otherwise, falls back to vector store search (original behavior).
+
+        Args:
+            citation: Citation to verify.
+            source_chunks: Optional list of source chunks with metadata.
+                Each chunk should have:
+                - "text": The chunk text content
+                - "metadata": Dict with "regulation_name" and "article" fields
+
+        Returns:
+            VerificationResult with verification status.
+
+        Examples:
+            # Original behavior (vector store search)
+            >>> result = checker.verify_citation(citation)
+
+            # Enhanced behavior (source chunks verification)
+            >>> chunks = [{"text": "...", "metadata": {"regulation_name": "학칙", "article": 25}}]
+            >>> result = checker.verify_citation(citation, source_chunks=chunks)
+        """
+        # If source_chunks provided, use CitationVerificationService
+        if source_chunks is not None:
+            return self._verify_with_source_chunks(citation, source_chunks)
+
+        # Fallback to original vector store verification
+        return self._verify_with_store(citation)
+
+    def _verify_with_source_chunks(
+        self, citation: Citation, source_chunks: List[dict]
+    ) -> VerificationResult:
+        """
+        Verify citation using CitationVerificationService against source chunks.
+
+        Args:
+            citation: Citation to verify.
+            source_chunks: List of source chunks from RAG retrieval.
+
+        Returns:
+            VerificationResult with verification status.
+        """
+
+        service = self._get_verification_service()
+
+        # Convert Citation to ExtractedCitation for service
+        extracted = self._citation_to_extracted(citation)
+
+        # Verify using the service
+        is_verified = service.verify_grounding(extracted, source_chunks)
+
+        if is_verified:
+            # Get matching chunk for content
+            enhanced = service.include_content(extracted, source_chunks)
+            return VerificationResult(
+                citation=citation,
+                verified=True,
+                matched_content=enhanced.content[:200] if enhanced.content else None,
+                confidence=1.0,  # High confidence for direct chunk match
+            )
+
+        return VerificationResult(
+            citation=citation,
+            verified=False,
+            matched_content=None,
+            confidence=0.0,
+        )
+
+    def _verify_with_store(self, citation: Citation) -> VerificationResult:
+        """
+        Verify citation using vector store search (original behavior).
 
         Args:
             citation: Citation to verify.
@@ -139,7 +241,9 @@ class FactChecker:
 
         # Build search query
         if citation.article_sub:
-            query_text = f"{citation.regulation} 제{citation.article}조의{citation.article_sub}"
+            query_text = (
+                f"{citation.regulation} 제{citation.article}조의{citation.article_sub}"
+            )
         else:
             query_text = f"{citation.regulation} 제{citation.article}조"
 
@@ -157,7 +261,9 @@ class FactChecker:
             chunk_normalized = chunk_text.replace(" ", "").replace("·", "")
 
             # Check regulation name match
-            reg_match = reg_normalized in chunk_normalized or citation.regulation in chunk_text
+            reg_match = (
+                reg_normalized in chunk_normalized or citation.regulation in chunk_text
+            )
 
             # Check article number match
             article_match = article_pattern in chunk_text
@@ -177,15 +283,75 @@ class FactChecker:
             confidence=0.0,
         )
 
-    def check(self, answer_text: str) -> FactCheckResult:
+    def _citation_to_extracted(self, citation: Citation):
+        """
+        Convert Citation to ExtractedCitation for service compatibility.
+
+        Args:
+            citation: Citation object to convert.
+
+        Returns:
+            ExtractedCitation object.
+        """
+        from ..domain.citation.citation_verification_service import ExtractedCitation
+
+        # Parse article number (handle string to int conversion)
+        try:
+            article_num = int(citation.article)
+        except ValueError:
+            article_num = 0
+
+        # Parse paragraph if present
+        paragraph_num = None
+        if citation.paragraph:
+            try:
+                paragraph_num = int(citation.paragraph)
+            except ValueError:
+                pass
+
+        # Parse sub_article if present
+        sub_article_num = None
+        if citation.article_sub:
+            try:
+                sub_article_num = int(citation.article_sub)
+            except ValueError:
+                pass
+
+        return ExtractedCitation(
+            regulation_name=citation.regulation,
+            article=article_num,
+            paragraph=paragraph_num,
+            sub_article=sub_article_num,
+            original_text=citation.original_text,
+        )
+
+    def check(
+        self, answer_text: str, source_chunks: Optional[List[dict]] = None
+    ) -> FactCheckResult:
         """
         Perform full fact check on an answer.
 
+        When source_chunks is provided, uses CitationVerificationService
+        for direct verification against the retrieved source chunks.
+        Otherwise, falls back to vector store search (original behavior).
+
         Args:
             answer_text: LLM-generated answer text.
+            source_chunks: Optional list of source chunks with metadata.
+                Each chunk should have:
+                - "text": The chunk text content
+                - "metadata": Dict with "regulation_name" and "article" fields
 
         Returns:
             FactCheckResult with all verification results.
+
+        Examples:
+            # Original behavior (vector store search)
+            >>> result = checker.check(answer_text)
+
+            # Enhanced behavior (source chunks verification)
+            >>> chunks = [{"text": "...", "metadata": {"regulation_name": "학칙", "article": 25}}]
+            >>> result = checker.check(answer_text, source_chunks=chunks)
         """
         citations = self.extract_citations(answer_text)
 
@@ -201,7 +367,7 @@ class FactChecker:
         verified_count = 0
 
         for citation in citations:
-            result = self.verify_citation(citation)
+            result = self.verify_citation(citation, source_chunks=source_chunks)
             results.append(result)
             if result.verified:
                 verified_count += 1
