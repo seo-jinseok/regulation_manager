@@ -195,3 +195,14 @@ dist-ssr/
 .vercel/
 .netlify/
 .firebase/
+
+# ===========================================
+# RAG Data & Cache
+# ===========================================
+.cache/
+data/cache/
+data/chroma_db/
+data/output/
+data/output_test/
+data/evaluations/
+.metrics/
