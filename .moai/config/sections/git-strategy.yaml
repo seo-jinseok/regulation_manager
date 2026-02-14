@@ -1,5 +1,7 @@
 git_strategy:
     github_username: seo-jinseok
+    gitlab:
+        instance_url: ""
     manual:
         auto_checkpoint: disabled
         automation:
@@ -44,6 +46,7 @@ git_strategy:
         main_branch: main
         push_to_remote: true
         workflow: github-flow
+    provider: github
     team:
         automation:
             auto_branch: true
