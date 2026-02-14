@@ -316,6 +316,86 @@ class RegulationOverview:
 
 
 @dataclass
+class CalendarEvent:
+    """
+    A single event in the academic calendar.
+
+    Represents events like course registration periods, exam periods,
+    semester start/end dates, etc.
+    """
+
+    name: str
+    start_date: str
+    category: str
+    end_date: Optional[str] = None
+    description: Optional[str] = None
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "CalendarEvent":
+        """Create CalendarEvent from dictionary."""
+        return cls(
+            name=data["name"],
+            start_date=data["start_date"],
+            end_date=data.get("end_date"),
+            category=data["category"],
+            description=data.get("description"),
+        )
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert CalendarEvent to dictionary."""
+        return {
+            "name": self.name,
+            "start_date": self.start_date,
+            "end_date": self.end_date,
+            "category": self.category,
+            "description": self.description,
+        }
+
+
+@dataclass
+class AcademicCalendar:
+    """
+    Academic calendar for a specific year and semester.
+
+    Contains all scheduled events for the academic period.
+    """
+
+    year: int
+    semester: str
+    events: List[CalendarEvent] = field(default_factory=list)
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "AcademicCalendar":
+        """Create AcademicCalendar from dictionary."""
+        events = [CalendarEvent.from_dict(e) for e in data.get("events", [])]
+        return cls(
+            year=data["year"],
+            semester=data["semester"],
+            events=events,
+        )
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert AcademicCalendar to dictionary."""
+        return {
+            "year": self.year,
+            "semester": self.semester,
+            "events": [e.to_dict() for e in self.events],
+        }
+
+    def get_events_by_category(self, category: str) -> List[CalendarEvent]:
+        """
+        Filter events by category.
+
+        Args:
+            category: The category to filter by (e.g., "수강신청", "시험").
+
+        Returns:
+            List of events matching the category.
+        """
+        return [e for e in self.events if e.category == category]
+
+
+@dataclass
 class RerankingMetrics:
     """
     Metrics tracking reranker performance and usage patterns (Cycle 3).

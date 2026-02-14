@@ -36,6 +36,8 @@ logger = logging.getLogger(__name__)
 if TYPE_CHECKING:
     from ..domain.llm.ambiguity_classifier import DisambiguationDialog
     from .multi_hop_handler import MultiHopHandler
+    from .academic_calendar_service import AcademicCalendarService
+    from ..infrastructure.period_keyword_detector import PeriodKeywordDetector
 
 
 class SearchStrategy(Enum):
@@ -223,6 +225,8 @@ class SearchUseCase:
         reranker: Optional[IReranker] = None,
         enable_warmup: Optional[bool] = None,
         hallucination_filter: Optional[HallucinationFilter] = None,
+        period_keyword_detector: Optional["PeriodKeywordDetector"] = None,
+        academic_calendar_service: Optional["AcademicCalendarService"] = None,
     ):
         """
         Initialize search use case.
@@ -236,6 +240,8 @@ class SearchUseCase:
             reranker: Optional reranker implementation (auto-created if None and use_reranker=True).
             enable_warmup: Whether to warmup in background (default: WARMUP_ON_INIT env).
             hallucination_filter: Optional HallucinationFilter (auto-created from config if None).
+            period_keyword_detector: Optional PeriodKeywordDetector for deadline/date queries.
+            academic_calendar_service: Optional AcademicCalendarService for academic calendar info.
         """
         # Use config defaults if not explicitly specified
         from ..config import get_config
@@ -312,6 +318,22 @@ class SearchUseCase:
                 self.hallucination_filter = HallucinationFilter(mode=FilterMode.SANITIZE)
         else:
             self.hallucination_filter = None
+
+        # Period Keyword Detection (SPEC-RAG-Q-003)
+        # Initialize PeriodKeywordDetector for deadline/date queries
+        if period_keyword_detector is not None:
+            self._period_keyword_detector = period_keyword_detector
+        else:
+            # Lazy import to avoid circular dependency
+            from ..infrastructure.period_keyword_detector import PeriodKeywordDetector
+            self._period_keyword_detector = PeriodKeywordDetector()
+            logger.debug("PeriodKeywordDetector initialized")
+
+        # Academic Calendar Service (SPEC-RAG-Q-003)
+        # Optional service - will be None until implemented
+        self._academic_calendar_service = academic_calendar_service
+        if academic_calendar_service is not None:
+            logger.info("AcademicCalendarService enabled for period queries")
 
         # Dynamic Query Expansion components (Phase 3)
         self._enable_query_expansion = config.enable_query_expansion
@@ -2239,6 +2261,10 @@ class SearchUseCase:
         # Build context from search results
         context = self._build_context(filtered_results)
 
+        # SPEC-RAG-Q-003: Enhance context with period information if query is period-related
+        if self._is_period_related_query(question):
+            context = self._enhance_context_with_period_info(question, context)
+
         # Generate answer
         user_message = self._build_user_message(question, context, history_text)
 
@@ -3034,6 +3060,80 @@ class SearchUseCase:
         except Exception as e:
             logger.warning(f"Citation enhancement failed: {e}")
             return answer_text
+
+    def _is_period_related_query(self, query: str) -> bool:
+        """
+        Check if the query is related to periods, deadlines, or dates.
+
+        Uses PeriodKeywordDetector to identify queries that ask about
+        deadlines, dates, schedules, or time periods.
+
+        Args:
+            query: User's question text.
+
+        Returns:
+            True if the query contains period-related keywords.
+        """
+        if not self._period_keyword_detector:
+            return False
+
+        return self._period_keyword_detector.is_period_related(query)
+
+    def _enhance_context_with_period_info(self, query: str, context: str) -> str:
+        """
+        Enhance context with academic calendar information for period-related queries.
+
+        SPEC-RAG-Q-003: When a query is period-related, this method enhances
+        the context with academic calendar information if available.
+
+        Args:
+            query: User's question text.
+            context: Current context built from search results.
+
+        Returns:
+            Enhanced context with academic calendar information if available,
+            otherwise the original context.
+        """
+        # Detect period keywords for logging
+        detected_keywords = []
+        if self._period_keyword_detector:
+            detected_keywords = self._period_keyword_detector.detect_period_keywords(query)
+            if detected_keywords:
+                logger.debug(f"Period keywords detected in query: {detected_keywords}")
+
+        # If AcademicCalendarService is available, enhance context
+        if self._academic_calendar_service:
+            try:
+                # Get relevant calendar events for the query
+                events = self._academic_calendar_service.get_relevant_events(query)
+
+                if events:
+                    # Format events for context
+                    calendar_info_lines = []
+                    for event in events:
+                        if hasattr(event, 'start_date') and hasattr(event, 'name'):
+                            if hasattr(event, 'end_date') and event.end_date:
+                                date_str = f"{event.start_date} ~ {event.end_date}"
+                            else:
+                                date_str = event.start_date
+                            description = f" ({event.description})" if hasattr(event, 'description') and event.description else ""
+                            calendar_info_lines.append(f"- {event.name}: {date_str}{description}")
+
+                    if calendar_info_lines:
+                        calendar_info = "\n".join(calendar_info_lines)
+                        # Prepend calendar information to context
+                        enhanced_context = (
+                            f"[학사일정 정보]\n{calendar_info}\n\n"
+                            f"[관련 규정]\n{context}"
+                        )
+                        logger.info("Context enhanced with academic calendar information")
+                        return enhanced_context
+            except Exception as e:
+                logger.warning(f"Failed to enhance context with calendar info: {e}")
+
+        # If no calendar service or no info available, return original context
+        # The LLM prompt already contains period guidelines from prompts.json
+        return context
 
     def _get_cache_key(
         self,

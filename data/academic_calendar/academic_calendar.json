@@ -1,0 +1,336 @@
+{
+  "description": "Academic Calendar for University Regulations",
+  "version": "1.0.0",
+  "calendars": [
+    {
+      "year": 2024,
+      "semester": "1학기",
+      "events": [
+        {
+          "name": "수강신청 기간",
+          "start_date": "2024-02-19",
+          "end_date": "2024-02-23",
+          "category": "수강신청",
+          "description": "2024학년도 1학기 수강신청"
+        },
+        {
+          "name": "등록금 납부 기간",
+          "start_date": "2024-02-23",
+          "end_date": "2024-02-27",
+          "category": "등록",
+          "description": "1학기 등록금 납부"
+        },
+        {
+          "name": "개강일",
+          "start_date": "2024-03-04",
+          "end_date": null,
+          "category": "개강",
+          "description": "2024학년도 1학기 개강"
+        },
+        {
+          "name": "휴학 신청 기간",
+          "start_date": "2024-03-04",
+          "end_date": "2024-03-15",
+          "category": "휴학",
+          "description": "1학기 휴학 신청"
+        },
+        {
+          "name": "복학 신청 기간",
+          "start_date": "2024-02-01",
+          "end_date": "2024-02-28",
+          "category": "복학",
+          "description": "1학기 복학 신청"
+        },
+        {
+          "name": "중간고사 기간",
+          "start_date": "2024-04-15",
+          "end_date": "2024-04-19",
+          "category": "시험",
+          "description": "2024학년도 1학기 중간고사"
+        },
+        {
+          "name": "기말고사 기간",
+          "start_date": "2024-06-10",
+          "end_date": "2024-06-21",
+          "category": "시험",
+          "description": "2024학년도 1학기 기말고사"
+        },
+        {
+          "name": "종강일",
+          "start_date": "2024-06-21",
+          "end_date": null,
+          "category": "종강",
+          "description": "2024학년도 1학기 종강"
+        },
+        {
+          "name": "성적공시 기간",
+          "start_date": "2024-06-24",
+          "end_date": "2024-06-26",
+          "category": "성적",
+          "description": "성적 열람 및 이의신청"
+        }
+      ]
+    },
+    {
+      "year": 2024,
+      "semester": "2학기",
+      "events": [
+        {
+          "name": "수강신청 기간",
+          "start_date": "2024-08-12",
+          "end_date": "2024-08-16",
+          "category": "수강신청",
+          "description": "2024학년도 2학기 수강신청"
+        },
+        {
+          "name": "등록금 납부 기간",
+          "start_date": "2024-08-23",
+          "end_date": "2024-08-27",
+          "category": "등록",
+          "description": "2학기 등록금 납부"
+        },
+        {
+          "name": "개강일",
+          "start_date": "2024-09-02",
+          "end_date": null,
+          "category": "개강",
+          "description": "2024학년도 2학기 개강"
+        },
+        {
+          "name": "휴학 신청 기간",
+          "start_date": "2024-09-02",
+          "end_date": "2024-09-13",
+          "category": "휴학",
+          "description": "2학기 휴학 신청"
+        },
+        {
+          "name": "복학 신청 기간",
+          "start_date": "2024-08-01",
+          "end_date": "2024-08-31",
+          "category": "복학",
+          "description": "2학기 복학 신청"
+        },
+        {
+          "name": "중간고사 기간",
+          "start_date": "2024-10-14",
+          "end_date": "2024-10-18",
+          "category": "시험",
+          "description": "2024학년도 2학기 중간고사"
+        },
+        {
+          "name": "기말고사 기간",
+          "start_date": "2024-12-09",
+          "end_date": "2024-12-20",
+          "category": "시험",
+          "description": "2024학년도 2학기 기말고사"
+        },
+        {
+          "name": "종강일",
+          "start_date": "2024-12-20",
+          "end_date": null,
+          "category": "종강",
+          "description": "2024학년도 2학기 종강"
+        },
+        {
+          "name": "성적공시 기간",
+          "start_date": "2024-12-23",
+          "end_date": "2024-12-26",
+          "category": "성적",
+          "description": "성적 열람 및 이의신청"
+        }
+      ]
+    },
+    {
+      "year": 2024,
+      "semester": "여름학기",
+      "events": [
+        {
+          "name": "수강신청 기간",
+          "start_date": "2024-06-24",
+          "end_date": "2024-06-27",
+          "category": "수강신청",
+          "description": "2024년 여름학기 수강신청"
+        },
+        {
+          "name": "개강일",
+          "start_date": "2024-06-24",
+          "end_date": null,
+          "category": "개강",
+          "description": "2024년 여름학기 개강"
+        },
+        {
+          "name": "종강일",
+          "start_date": "2024-07-26",
+          "end_date": null,
+          "category": "종강",
+          "description": "2024년 여름학기 종강"
+        }
+      ]
+    },
+    {
+      "year": 2024,
+      "semester": "겨울학기",
+      "events": [
+        {
+          "name": "수강신청 기간",
+          "start_date": "2024-12-16",
+          "end_date": "2024-12-19",
+          "category": "수강신청",
+          "description": "2024년 겨울학기 수강신청"
+        },
+        {
+          "name": "개강일",
+          "start_date": "2024-12-23",
+          "end_date": null,
+          "category": "개강",
+          "description": "2024년 겨울학기 개강"
+        },
+        {
+          "name": "종강일",
+          "start_date": "2025-01-24",
+          "end_date": null,
+          "category": "종강",
+          "description": "2024년 겨울학기 종강"
+        }
+      ]
+    },
+    {
+      "year": 2025,
+      "semester": "1학기",
+      "events": [
+        {
+          "name": "수강신청 기간",
+          "start_date": "2025-02-17",
+          "end_date": "2025-02-21",
+          "category": "수강신청",
+          "description": "2025학년도 1학기 수강신청"
+        },
+        {
+          "name": "등록금 납부 기간",
+          "start_date": "2025-02-21",
+          "end_date": "2025-02-25",
+          "category": "등록",
+          "description": "1학기 등록금 납부"
+        },
+        {
+          "name": "개강일",
+          "start_date": "2025-03-03",
+          "end_date": null,
+          "category": "개강",
+          "description": "2025학년도 1학기 개강"
+        },
+        {
+          "name": "휴학 신청 기간",
+          "start_date": "2025-03-03",
+          "end_date": "2025-03-14",
+          "category": "휴학",
+          "description": "1학기 휴학 신청"
+        },
+        {
+          "name": "복학 신청 기간",
+          "start_date": "2025-02-03",
+          "end_date": "2025-02-28",
+          "category": "복학",
+          "description": "1학기 복학 신청"
+        },
+        {
+          "name": "중간고사 기간",
+          "start_date": "2025-04-14",
+          "end_date": "2025-04-18",
+          "category": "시험",
+          "description": "2025학년도 1학기 중간고사"
+        },
+        {
+          "name": "기말고사 기간",
+          "start_date": "2025-06-09",
+          "end_date": "2025-06-20",
+          "category": "시험",
+          "description": "2025학년도 1학기 기말고사"
+        },
+        {
+          "name": "종강일",
+          "start_date": "2025-06-20",
+          "end_date": null,
+          "category": "종강",
+          "description": "2025학년도 1학기 종강"
+        },
+        {
+          "name": "성적공시 기간",
+          "start_date": "2025-06-23",
+          "end_date": "2025-06-25",
+          "category": "성적",
+          "description": "성적 열람 및 이의신청"
+        }
+      ]
+    },
+    {
+      "year": 2025,
+      "semester": "2학기",
+      "events": [
+        {
+          "name": "수강신청 기간",
+          "start_date": "2025-08-11",
+          "end_date": "2025-08-15",
+          "category": "수강신청",
+          "description": "2025학년도 2학기 수강신청"
+        },
+        {
+          "name": "등록금 납부 기간",
+          "start_date": "2025-08-22",
+          "end_date": "2025-08-26",
+          "category": "등록",
+          "description": "2학기 등록금 납부"
+        },
+        {
+          "name": "개강일",
+          "start_date": "2025-09-01",
+          "end_date": null,
+          "category": "개강",
+          "description": "2025학년도 2학기 개강"
+        },
+        {
+          "name": "휴학 신청 기간",
+          "start_date": "2025-09-01",
+          "end_date": "2025-09-12",
+          "category": "휴학",
+          "description": "2학기 휴학 신청"
+        },
+        {
+          "name": "복학 신청 기간",
+          "start_date": "2025-08-01",
+          "end_date": "2025-08-29",
+          "category": "복학",
+          "description": "2학기 복학 신청"
+        },
+        {
+          "name": "중간고사 기간",
+          "start_date": "2025-10-13",
+          "end_date": "2025-10-17",
+          "category": "시험",
+          "description": "2025학년도 2학기 중간고사"
+        },
+        {
+          "name": "기말고사 기간",
+          "start_date": "2025-12-08",
+          "end_date": "2025-12-19",
+          "category": "시험",
+          "description": "2025학년도 2학기 기말고사"
+        },
+        {
+          "name": "종강일",
+          "start_date": "2025-12-19",
+          "end_date": null,
+          "category": "종강",
+          "description": "2025학년도 2학기 종강"
+        },
+        {
+          "name": "성적공시 기간",
+          "start_date": "2025-12-22",
+          "end_date": "2025-12-24",
+          "category": "성적",
+          "description": "성적 열람 및 이의신청"
+        }
+      ]
+    }
+  ]
+}
