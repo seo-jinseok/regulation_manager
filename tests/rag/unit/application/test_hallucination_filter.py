@@ -455,3 +455,181 @@ class TestComplexScenarios:
         # Should recognize that "학 적 팀" with spaces is "학적팀"
         # This is a more lenient match
         assert "학적팀" in result[0] or "학 적 팀" in result[0]
+
+
+class TestDepartmentWithGwaPattern:
+    """Test departments ending with '과' (REQ-002)."""
+
+    def test_department_with_gwa_in_context(self):
+        """
+        WHEN context contains department ending with '과'
+        THEN should add both full and normalized form to context_depts
+        """
+        filter_service = HallucinationFilter()
+        response = "학생과에 문의하세요."
+        context = ["담당 부서: 학생과"]
+
+        result = filter_service.validate_departments(response, context)
+
+        # 학생과 is in context, should be kept
+        assert "학생과" in result[0]
+        assert result[1] == []
+
+    def test_department_with_gwa_not_in_context(self):
+        """
+        WHEN response contains '과' department not in context
+        THEN should sanitize it
+        """
+        filter_service = HallucinationFilter()
+        response = "교무과에 문의하세요."
+        context = ["다른 부서: 행정팀"]
+
+        result = filter_service.validate_departments(response, context)
+
+        # 교무과 is not in context, should be replaced
+        assert "교무과" not in result[0]
+        assert "담당 부서" in result[0]
+        assert len(result[1]) > 0
+
+    def test_department_with_gwa_non_overlapping(self):
+        """
+        WHEN '과' department doesn't overlap with regular department pattern
+        THEN should add it to matches
+        """
+        filter_service = HallucinationFilter()
+        # Use a response where '과' department appears separately from regular departments
+        response = "행정팀과 학생과에 문의하세요."
+        context = ["담당: 행정팀", "부서: 학생과"]
+
+        result = filter_service.validate_departments(response, context)
+
+        # Both departments should be kept since they're in context
+        assert "행정팀" in result[0]
+        assert "학생과" in result[0]
+        assert result[1] == []
+
+
+class TestCitationWithWarnings:
+    """Test citation validation with warning generation."""
+
+    def test_citation_issues_generate_warnings(self):
+        """
+        WHEN citation validation finds issues
+        THEN warnings should include citation issue count
+        """
+        filter_service = HallucinationFilter(mode=FilterMode.WARN)
+        response = "규정 제99조와 제88조를 참고하세요."
+        context = ["다른 규정 정보만 있습니다."]
+
+        result = filter_service.filter_response(response, context)
+
+        # Should have citation issues
+        assert len(result.issues) > 0
+        # Should have warning about citation validation issues
+        citation_warnings = [w for w in result.warnings if "Citation" in w]
+        assert len(citation_warnings) > 0
+
+
+class TestNormalizeMethods:
+    """Test helper normalization methods."""
+
+    def test_normalize_phone_with_hyphens(self):
+        """
+        WHEN phone has hyphens and parentheses
+        THEN should return digits only
+        """
+        filter_service = HallucinationFilter()
+
+        result = filter_service._normalize_phone("02-1234-5678")
+        assert result == "0212345678"
+
+        result = filter_service._normalize_phone("(02) 1234-5678")
+        assert result == "0212345678"
+
+    def test_normalize_phones_from_text(self):
+        """
+        WHEN text contains multiple phone formats
+        THEN should extract and normalize all
+        """
+        filter_service = HallucinationFilter()
+        text = "연락처: 02-1234-5678, 핸드폰: 010-123-4567"
+
+        result = filter_service._normalize_phones(text)
+
+        assert "0212345678" in result
+        assert "0101234567" in result
+
+    def test_normalize_department_with_spaces(self):
+        """
+        WHEN department name has spaces
+        THEN should remove spaces and lowercase
+        """
+        filter_service = HallucinationFilter()
+
+        result = filter_service._normalize_department("학 적 팀")
+        assert result == "학적팀"
+
+        result = filter_service._normalize_department("학술 연구 지원 팀")
+        assert " " not in result
+
+
+class TestEdgeCases:
+    """Test edge cases and boundary conditions."""
+
+    def test_response_with_only_invalid_citation(self):
+        """
+        WHEN response has only invalid citation
+        THEN should replace with fallback
+        """
+        filter_service = HallucinationFilter()
+        response = "제99조에 따라 처리됩니다."
+        context = ["다른 규정 정보"]
+
+        result = filter_service.validate_citations(response, context)
+
+        assert "제99조" not in result[0]
+        assert "관련 규정" in result[0]
+
+    def test_multiple_contact_types_in_response(self):
+        """
+        WHEN response has both phone and email
+        THEN should validate both types
+        """
+        filter_service = HallucinationFilter()
+        response = "연락처: 02-1234-5678, 이메일: test@example.com"
+        context = ["전화: 02-1234-5678", "메일: test@example.com"]
+
+        result = filter_service.validate_contacts(response, context)
+
+        assert "02-1234-5678" in result[0]
+        assert "test@example.com" in result[0]
+        assert result[1] == []
+
+    def test_block_mode_with_citation_issues(self):
+        """
+        WHEN BLOCK mode has citation issues
+        THEN should block and include in block reason
+        """
+        filter_service = HallucinationFilter(mode=FilterMode.BLOCK)
+        response = "제99조에 따라 처리됩니다."
+        context = ["다른 규정"]
+
+        result = filter_service.filter_response(response, context)
+
+        assert result.blocked is True
+        assert result.block_reason is not None
+        assert "Unverified citation" in result.issues[0]
+
+    def test_phone_format_with_parentheses(self):
+        """
+        WHEN phone number uses parentheses format
+        THEN should recognize and normalize
+        """
+        filter_service = HallucinationFilter()
+        response = "연락처: (02) 1234-5678"
+        context = ["전화: 02-1234-5678"]
+
+        result = filter_service.validate_contacts(response, context)
+
+        # Should recognize (02) 1234-5678 matches 02-1234-5678
+        assert len(result[1]) == 0  # No issues since it matches
