@@ -5,6 +5,58 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.6] - 2026-02-14
+
+### Added - SPEC-RAG-Q-004 Implementation Complete
+
+#### Citation Verification
+
+- **Citation Format Standardization (REQ-001)**: 인용 형식 표준화
+  - 표준 형식: `「규정명」 제X조` (완전한 형식)
+  - 항 포함: `「규정명」 제X조 제X항`
+  - 조의 포함: `「규정명」 제X조의Y`
+  - CitationFormat enum으로 형식 분류
+
+- **Citation Grounding Verification (REQ-002)**: 인용 출처 검증
+  - 검색 결과에서 인용된 규정명+조항 확인
+  - 검증된 인용 유지, 미검증 인용 제거/일반화
+  - CitationVerificationService 클래스 구현
+
+- **Citation Content Inclusion (REQ-003)**: 인용 내용 포함
+  - 검증된 인용에 핵심 내용 포함
+  - 첫 문장 추출로 핵심 내용 자동 추출
+  - ExtractedCitation 데이터클래스로 구조화
+
+- **Unverifiable Citation Handling (REQ-004)**: 미검증 인용 처리
+  - 인용 제거 후 일반적 설명 대체
+  - "관련 규정에 따르면" fallback 문구
+  - "해당 규정의 구체적 조항 확인이 필요합니다" 안내
+
+- **FactChecker Enhancement**: 기존 FactChecker 확장
+  - source_chunks 파라미터로 직접 검증 지원
+  - CitationVerificationService 통합
+  - backward compatibility 유지
+
+**Technical Details**:
+- New file: `src/rag/domain/citation/citation_patterns.py` (184 lines)
+- New file: `src/rag/domain/citation/citation_verification_service.py` (376 lines)
+- Modified file: `src/rag/infrastructure/fact_checker.py` (+120 lines, source_chunks 지원)
+- Test coverage: 89-98% on new code
+
+**Acceptance Criteria Results**:
+- AC-001: Citation Accuracy - 인용 출처 검증 기능 구현
+- AC-002: Format Compliance - 표준 형식 준수 패턴 구현
+- AC-003: Quality Metrics - 인용 검증으로 Citations 점수 향상
+- AC-004: Traceability - 모든 인용에 원문 추적 가능
+
+### Links
+
+- **SPEC Document**: `.moai/specs/SPEC-RAG-Q-004/spec.md`
+- **Implementation**: `src/rag/domain/citation/citation_patterns.py`, `src/rag/domain/citation/citation_verification_service.py`
+- **Modified**: `src/rag/infrastructure/fact_checker.py`
+
+---
+
 ## [2.3.5] - 2026-02-14
 
 ### Added - SPEC-RAG-Q-003 Implementation Complete
