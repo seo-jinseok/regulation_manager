@@ -117,8 +117,21 @@ class Chunk:
                 # Gracefully handle if citation module not available
                 pass
 
+        # Generate ID if not present in node
+        chunk_id = node.get("id", "")
+        if not chunk_id:
+            # Generate ID from rule_code, type, and display_no
+            import hashlib
+
+            type_str = node.get("type", "unknown")
+            display_no = node.get("display_no", "")
+            title = node.get("title", "")
+            # Create a unique but deterministic ID
+            unique_str = f"{rule_code}:{type_str}:{display_no}:{title}"
+            chunk_id = hashlib.md5(unique_str.encode("utf-8")).hexdigest()[:16]
+
         return cls(
-            id=node.get("id", ""),
+            id=chunk_id,
             rule_code=rule_code,
             level=ChunkLevel.from_string(node.get("chunk_level", "text")),
             title=title,
