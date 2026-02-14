@@ -452,3 +452,109 @@ class TestConversationService:
         # Should have some overlap due to shared words
         assert similarity > 0.0
         assert similarity < 1.0
+
+    def test_compute_similarity_empty_query1(self):
+        """Test similarity computation with empty first query."""
+        service = ConversationService()
+
+        similarity = service._compute_similarity("", "등록금 납부")
+
+        assert similarity == 0.0
+
+    def test_compute_similarity_empty_query2(self):
+        """Test similarity computation with empty second query."""
+        service = ConversationService()
+
+        similarity = service._compute_similarity("휴학 방법", "")
+
+        assert similarity == 0.0
+
+    def test_compute_similarity_both_empty(self):
+        """Test similarity computation with both queries empty."""
+        service = ConversationService()
+
+        similarity = service._compute_similarity("", "")
+
+        assert similarity == 0.0
+
+    def test_summarize_early_turns_with_empty_queries(self):
+        """Test summarizing turns with empty/minimal queries."""
+        service = ConversationService(context_window_size=2)
+        session = service.create_session()
+
+        # Add turns with empty/whitespace queries
+        service.add_turn(
+            session_id=session.session_id,
+            query="   ",  # Whitespace only
+            response="Response 1",
+        )
+        service.add_turn(
+            session_id=session.session_id,
+            query="",  # Empty
+            response="Response 2",
+        )
+        # Add more turns to trigger summarization
+        service.add_turn(
+            session_id=session.session_id,
+            query="Third question",
+            response="Response 3",
+        )
+
+        # Retrieve and check that summary was created
+        retrieved = service.get_session(session.session_id)
+        assert retrieved is not None
+        # Summary should be created even with empty topics
+        assert retrieved.context_summary != ""
+
+    def test_cleanup_expired_sessions(self):
+        """Test cleanup of expired sessions (REQ-MUL-015)."""
+        service = ConversationService()
+
+        # cleanup_expired_sessions is a placeholder that returns 0
+        # since cache handles expiration automatically
+        result = service.cleanup_expired_sessions()
+
+        assert result == 0
+
+    def test_make_cache_key_format(self):
+        """Test cache key format generation."""
+        service = ConversationService()
+
+        cache_key = service._make_cache_key("test-session-id")
+
+        assert cache_key == "conversation_session:test-session-id"
+
+    def test_get_conversation_context_nonexistent_session(self):
+        """Test getting context from nonexistent session."""
+        service = ConversationService()
+
+        context = service.get_conversation_context("nonexistent-session")
+
+        assert context == ""
+
+    def test_get_conversation_context_includes_summary(self):
+        """Test that context includes summary when available (REQ-MUL-005)."""
+        service = ConversationService(context_window_size=2)
+        session = service.create_session()
+
+        # Add turns beyond context window to trigger summarization
+        service.add_turn(
+            session_id=session.session_id,
+            query="첫 번째 질문",
+            response="첫 번째 답변",
+        )
+        service.add_turn(
+            session_id=session.session_id,
+            query="두 번째 질문",
+            response="두 번째 답변",
+        )
+        service.add_turn(
+            session_id=session.session_id,
+            query="세 번째 질문",
+            response="세 번째 답변",
+        )
+
+        context = service.get_conversation_context(session.session_id)
+
+        # Context should include summary
+        assert "이전 대화 요약" in context
