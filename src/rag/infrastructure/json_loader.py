@@ -153,8 +153,19 @@ class JSONDocumentLoader(IDocumentLoader):
         return normalized
 
     def _extract_rule_code(self, doc: Dict[str, Any]) -> str:
-        """Extract rule_code from document."""
-        # Try metadata first
+        """Extract rule_code from document.
+
+        Checks multiple locations in order of preference:
+        1. doc["metadata"]["rule_code"]
+        2. doc["rule_code"] (top-level field)
+        3. node["metadata"]["rule_code"] in content nodes
+        4. doc["id"] (fallback identifier)
+        """
+        # Try doc["rule_code"] first (top-level field from HWPX parser)
+        if doc.get("rule_code"):
+            return doc["rule_code"]
+
+        # Try metadata second
         metadata = doc.get("metadata", {})
         if metadata.get("rule_code"):
             return metadata["rule_code"]
@@ -164,6 +175,10 @@ class JSONDocumentLoader(IDocumentLoader):
             node_meta = node.get("metadata", {})
             if node_meta.get("rule_code"):
                 return node_meta["rule_code"]
+
+        # Fallback to doc["id"] if available
+        if doc.get("id"):
+            return doc["id"]
 
         return ""
 
