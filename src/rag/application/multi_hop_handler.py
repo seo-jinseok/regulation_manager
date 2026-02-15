@@ -776,3 +776,76 @@ Please provide a comprehensive, synthesized answer to the original question."""
             hop_count=0,
             success=False,
         )
+
+    def validate_completeness(
+        self, result: MultiHopResult, min_completeness: float = 0.88
+    ) -> tuple[bool, float, List[str]]:
+        """
+        Validate completeness of multi-hop query result.
+
+        REQ-P3-002: Ensures completeness score >= 0.88 for multi-intent queries.
+
+        Args:
+            result: MultiHopResult to validate
+            min_completeness: Minimum completeness threshold (default: 0.88)
+
+        Returns:
+            Tuple of (is_complete, completeness_score, missing_intents)
+            - is_complete: True if completeness >= min_completeness
+            - completeness_score: Calculated completeness (0.0 to 1.0)
+            - missing_intents: List of unaddressed sub-query descriptions
+        """
+        if not result.sub_queries:
+            return (False, 0.0, ["No sub-queries to validate"])
+
+        if not result.hop_results:
+            return (False, 0.0, ["No hop results available"])
+
+        missing_intents: List[str] = []
+        addressed_count = 0
+        total_count = len(result.sub_queries)
+
+        # Check each sub-query for adequate response
+        for sub_query in result.sub_queries:
+            # Find matching hop result
+            hop_result = next(
+                (hr for hr in result.hop_results if hr.hop_id == sub_query.query_id),
+                None,
+            )
+
+            if hop_result is None:
+                missing_intents.append(f"Missing: {sub_query.query_text}")
+                continue
+
+            # Check if hop was successful
+            if hop_result.status != HopStatus.COMPLETED:
+                missing_intents.append(
+                    f"Failed ({hop_result.status.value}): {sub_query.query_text}"
+                )
+                continue
+
+            # Check if answer is meaningful
+            if not hop_result.answer or len(hop_result.answer.strip()) < 10:
+                missing_intents.append(f"Incomplete answer: {sub_query.query_text}")
+                continue
+
+            # Check if sources were found
+            if not hop_result.sources:
+                missing_intents.append(f"No sources found: {sub_query.query_text}")
+                continue
+
+            addressed_count += 1
+
+        # Calculate completeness score
+        completeness_score = addressed_count / total_count if total_count > 0 else 0.0
+
+        # Determine if complete
+        is_complete = completeness_score >= min_completeness
+
+        if not is_complete:
+            logger.info(
+                f"Completeness {completeness_score:.2f} below threshold "
+                f"{min_completeness}. Missing: {missing_intents}"
+            )
+
+        return (is_complete, completeness_score, missing_intents)

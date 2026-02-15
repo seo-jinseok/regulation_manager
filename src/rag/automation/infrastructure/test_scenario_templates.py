@@ -1429,3 +1429,287 @@ class EdgeCaseTemplates:
             EdgeCaseCategory.CONTRADICTORY: cls.CONTRADICTORY,
         }
         return category_mapping.get(category, [])
+
+
+class TypoEdgeCaseTemplates:
+    """
+    Template collection for typo edge cases.
+
+    REQ-P4-001: Tests RAG system's robustness to common Korean typos.
+    Provides 3 typo scenarios targeting common user input errors.
+    """
+
+    # Typo edge cases (3 templates)
+    TYPO_SCENARIOS = [
+        {
+            "scenario_id": "edge-typo-001",
+            "name": "신정 → 신청",
+            "category": EdgeCaseCategory.TYPO,
+            "difficulty": DifficultyLevel.EASY,
+            "persona_type": PersonaType.FRESHMAN,
+            "query": "휴학 신정 어떻게 하나요?",
+            "typo_type": "consonant_confusion",
+            "original_word": "신청",
+            "typo_word": "신정",
+            "expected_interpretation": "휴학 신청",
+            "expected_correction": "신정 → 신청으로 자동 수정 안내",
+            "should_provide_answer": True,
+            "expected_regulations": ["휴학 규정"],
+            "should_ask_clarification": False,
+        },
+        {
+            "scenario_id": "edge-typo-002",
+            "name": "규칙 → 규정",
+            "category": EdgeCaseCategory.TYPO,
+            "difficulty": DifficultyLevel.EASY,
+            "persona_type": PersonaType.JUNIOR,
+            "query": "졸업 규칙이 뭐예요?",
+            "typo_type": "word_confusion",
+            "original_word": "규정",
+            "typo_word": "규칙",
+            "expected_interpretation": "졸업 규정",
+            "expected_correction": "규칙 → 규정으로 안내",
+            "should_provide_answer": True,
+            "expected_regulations": ["졸업 요건 규정"],
+            "should_ask_clarification": False,
+        },
+        {
+            "scenario_id": "edge-typo-003",
+            "name": "장학급 → 장학금",
+            "category": EdgeCaseCategory.TYPO,
+            "difficulty": DifficultyLevel.EASY,
+            "persona_type": PersonaType.FRESHMAN,
+            "query": "장학급 받으려면 뭐 해야 돼요?",
+            "typo_type": "sound_confusion",
+            "original_word": "장학금",
+            "typo_word": "장학급",
+            "expected_interpretation": "장학금 신청",
+            "expected_correction": "장학급 → 장학금으로 안내",
+            "should_provide_answer": True,
+            "expected_regulations": ["장학금 규정"],
+            "should_ask_clarification": False,
+        },
+    ]
+
+    @classmethod
+    def get_all_templates(cls) -> List[Dict[str, Any]]:
+        """Get all typo edge case templates."""
+        return cls.TYPO_SCENARIOS
+
+
+class AmbiguousQueryEdgeCaseTemplates:
+    """
+    Template collection for ambiguous query edge cases.
+
+    REQ-P4-002: Tests RAG system's handling of highly ambiguous queries.
+    Provides 3 ambiguous query scenarios requiring clarification.
+    """
+
+    # Ambiguous edge cases (3 templates)
+    AMBIGUOUS_SCENARIOS = [
+        {
+            "scenario_id": "edge-ambiguous-001",
+            "name": "그거 마감 언제야",
+            "category": EdgeCaseCategory.AMBIGUOUS,
+            "difficulty": DifficultyLevel.HARD,
+            "persona_type": PersonaType.FRESHMAN,
+            "query": "그거 마감 언제야?",
+            "ambiguity_type": "missing_context",
+            "possible_interpretations": [
+                "휴학 신청 마감",
+                "장학금 신청 마감",
+                "등록금 납부 마감",
+                "수강 신청 마감",
+            ],
+            "expected_behavior": "ask_clarification",
+            "should_provide_answer": False,
+            "expected_clarification_options": [
+                "휴학 신청",
+                "장학금 신청",
+                "등록금 납부",
+                "수강 신청",
+            ],
+            "expected_regulations": [],
+            "should_ask_clarification": True,
+        },
+        {
+            "scenario_id": "edge-ambiguous-002",
+            "name": "이거 되나요",
+            "category": EdgeCaseCategory.AMBIGUOUS,
+            "difficulty": DifficultyLevel.HARD,
+            "persona_type": PersonaType.JUNIOR,
+            "query": "이거 되나요?",
+            "ambiguity_type": "missing_context",
+            "possible_interpretations": [
+                "신청 가능 여부",
+                "자격 요건 충족",
+                "규정 허용 여부",
+                "기간 내 가능",
+            ],
+            "expected_behavior": "ask_clarification",
+            "should_provide_answer": False,
+            "expected_clarification_options": [
+                "신청 가능 여부",
+                "자격 요건",
+                "규정 확인",
+            ],
+            "expected_regulations": [],
+            "should_ask_clarification": True,
+        },
+        {
+            "scenario_id": "edge-ambiguous-003",
+            "name": "어떻게 해야 돼",
+            "category": EdgeCaseCategory.AMBIGUOUS,
+            "difficulty": DifficultyLevel.HARD,
+            "persona_type": PersonaType.FRESHMAN,
+            "query": "어떻게 해야 돼?",
+            "ambiguity_type": "missing_context",
+            "possible_interpretations": [
+                "신청 절차",
+                "준비 서류",
+                "자격 요건",
+                "기간 확인",
+            ],
+            "expected_behavior": "ask_clarification",
+            "should_provide_answer": False,
+            "expected_clarification_options": [
+                "신청 방법",
+                "필요 서류",
+                "자격 확인",
+                "기간 안내",
+            ],
+            "expected_regulations": [],
+            "should_ask_clarification": True,
+        },
+    ]
+
+    @classmethod
+    def get_all_templates(cls) -> List[Dict[str, Any]]:
+        """Get all ambiguous query edge case templates."""
+        return cls.AMBIGUOUS_SCENARIOS
+
+
+class NonExistentRegulationTemplates:
+    """
+    Template collection for non-existent regulation queries.
+
+    REQ-P4-003: Tests RAG system's handling of non-existent regulation queries.
+    Provides 2 scenarios for regulations that don't exist in the database.
+    """
+
+    # Non-existent regulation edge cases (2 templates)
+    NON_EXISTENT_SCENARIOS = [
+        {
+            "scenario_id": "edge-nonexist-001",
+            "name": "로봇 연구 규정",
+            "category": EdgeCaseCategory.NON_EXISTENT,
+            "difficulty": DifficultyLevel.EASY,
+            "persona_type": PersonaType.GRADUATE,
+            "query": "로봇 연구 규정이 어떻게 되나요?",
+            "regulation_type": "non_existent",
+            "expected_behavior": "inform_not_found",
+            "should_provide_answer": False,
+            "expected_message": "해당 규정을 찾을 수 없습니다",
+            "should_suggest_alternatives": True,
+            "expected_alternatives": ["연구 규정", "연구실 안전 규정", "실험실 규정"],
+            "should_ask_clarification": False,
+        },
+        {
+            "scenario_id": "edge-nonexist-002",
+            "name": "드론 비행 규칙",
+            "category": EdgeCaseCategory.NON_EXISTENT,
+            "difficulty": DifficultyLevel.EASY,
+            "persona_type": PersonaType.JUNIOR,
+            "query": "학교 드론 비행 규칙 알려주세요",
+            "regulation_type": "non_existent",
+            "expected_behavior": "inform_not_found",
+            "should_provide_answer": False,
+            "expected_message": "해당 규정을 찾을 수 없습니다",
+            "should_suggest_alternatives": True,
+            "expected_alternatives": ["시설 안전 규정", "교내 시설 이용 규정"],
+            "should_ask_clarification": False,
+        },
+    ]
+
+    @classmethod
+    def get_all_templates(cls) -> List[Dict[str, Any]]:
+        """Get all non-existent regulation edge case templates."""
+        return cls.NON_EXISTENT_SCENARIOS
+
+
+class OutOfScopeQueryTemplates:
+    """
+    Template collection for out-of-scope queries.
+
+    REQ-P4-004: Tests RAG system's handling of queries outside regulation scope.
+    Provides 2 scenarios for non-regulation related queries.
+    """
+
+    # Out-of-scope edge cases (2 templates)
+    OUT_OF_SCOPE_SCENARIOS = [
+        {
+            "scenario_id": "edge-outofscope-001",
+            "name": "오늘 점심 메뉴",
+            "category": EdgeCaseCategory.OUT_OF_SCOPE,
+            "difficulty": DifficultyLevel.EASY,
+            "persona_type": PersonaType.FRESHMAN,
+            "query": "오늘 학식 메뉴 뭐야?",
+            "scope_type": "out_of_scope",
+            "expected_behavior": "inform_out_of_scope",
+            "should_provide_answer": False,
+            "expected_message": "규정과 관련 없는 질문입니다",
+            "should_suggest_contact": True,
+            "expected_contact_suggestion": "학식 관련 부서 문의",
+            "should_ask_clarification": False,
+        },
+        {
+            "scenario_id": "edge-outofscope-002",
+            "name": "교수님 연락처",
+            "category": EdgeCaseCategory.OUT_OF_SCOPE,
+            "difficulty": DifficultyLevel.EASY,
+            "persona_type": PersonaType.FRESHMAN,
+            "query": "김철수 교수님 연락처 알려주세요",
+            "scope_type": "out_of_scope",
+            "expected_behavior": "inform_out_of_scope",
+            "should_provide_answer": False,
+            "expected_message": "개인 연락처 정보는 제공할 수 없습니다",
+            "should_suggest_contact": True,
+            "expected_contact_suggestion": "학과 사무실 문의",
+            "should_ask_clarification": False,
+        },
+    ]
+
+    @classmethod
+    def get_all_templates(cls) -> List[Dict[str, Any]]:
+        """Get all out-of-scope query edge case templates."""
+        return cls.OUT_OF_SCOPE_SCENARIOS
+
+
+class ExtendedEdgeCaseTemplates:
+    """
+    Combined edge case templates including all new categories.
+
+    REQ-P4-001 to REQ-P4-004: Provides 10+ edge case scenarios
+    for comprehensive RAG system testing.
+    """
+
+    @classmethod
+    def get_all_extended_templates(cls) -> List[Dict[str, Any]]:
+        """Get all extended edge case templates (10+ scenarios)."""
+        all_templates = []
+        all_templates.extend(TypoEdgeCaseTemplates.get_all_templates())
+        all_templates.extend(AmbiguousQueryEdgeCaseTemplates.get_all_templates())
+        all_templates.extend(NonExistentRegulationTemplates.get_all_templates())
+        all_templates.extend(OutOfScopeQueryTemplates.get_all_templates())
+        return all_templates
+
+    @classmethod
+    def get_templates_by_category(cls, category: str) -> List[Dict[str, Any]]:
+        """Get templates by extended category name."""
+        category_mapping = {
+            "typo": TypoEdgeCaseTemplates.get_all_templates(),
+            "ambiguous": AmbiguousQueryEdgeCaseTemplates.get_all_templates(),
+            "non_existent": NonExistentRegulationTemplates.get_all_templates(),
+            "out_of_scope": OutOfScopeQueryTemplates.get_all_templates(),
+        }
+        return category_mapping.get(category, [])

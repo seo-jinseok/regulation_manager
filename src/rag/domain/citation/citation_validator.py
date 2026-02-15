@@ -340,3 +340,42 @@ class CitationValidator:
                 lines.append("")
 
         return "\n".join(lines)
+
+    def validate_with_confidence(
+        self, regulation: str, article_number: str, min_confidence: float = 0.9
+    ) -> ValidationResult:
+        """
+        Validate a citation with confidence threshold.
+
+        REQ-P2-002: Ensures citation confidence score >= 0.9 for quality assurance.
+
+        Args:
+            regulation: Regulation name (e.g., "교원인사규정")
+            article_number: Article number (e.g., "제26조", "제10조의2")
+            min_confidence: Minimum confidence threshold (default: 0.9)
+
+        Returns:
+            ValidationResult with validation status and confidence score.
+            Confidence score >= min_confidence indicates high-quality citation.
+        """
+        # Get base validation result
+        result = self.validate_citation(regulation, article_number)
+
+        # If already invalid, return as-is
+        if not result.is_valid:
+            result.confidence = min(result.confidence, 0.5)
+            return result
+
+        # Boost confidence for exact matches with article_number field
+        if result.matched_chunk and result.matched_chunk.article_number:
+            if result.matched_chunk.article_number == article_number:
+                result.confidence = max(result.confidence, 0.95)
+
+        # Check confidence threshold
+        if result.confidence < min_confidence:
+            logger.info(
+                f"Citation confidence {result.confidence:.2f} below threshold "
+                f"{min_confidence} for {regulation} {article_number}"
+            )
+
+        return result

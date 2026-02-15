@@ -616,3 +616,56 @@ class DictionaryManager:
                 "synonyms": self._synonyms_data.get("version", "unknown"),
             },
         }
+
+    def add_staff_synonyms(self) -> Tuple[bool, List[str]]:
+        """
+        Add staff-related synonyms with conflict detection.
+
+        REQ-P1-001, REQ-P1-002: Ensures staff terminology is properly indexed
+        for improved retrieval of staff regulations.
+
+        Returns:
+            Tuple of (success, list of conflict messages).
+            Empty conflict list means no conflicts detected.
+        """
+        staff_synonyms = SynonymEntry(
+            term="직원",
+            synonyms=[
+                "교직원",
+                "행정직",
+                "일반직",
+                "기술직",
+                "행정인",
+                "사무직",
+                "일반행정직",
+            ],
+            context="staff_regulation",
+            metadata={
+                "added_by": "dictionary_manager",
+                "requirement": "SPEC-RAG-QUALITY-002",
+                "added_date": datetime.now().isoformat(),
+            },
+        )
+
+        conflicts: List[str] = []
+
+        # Check for conflicts with existing entries
+        if self.synonym_term_exists(staff_synonyms.term):
+            existing = self.get_all_synonyms().get(staff_synonyms.term, [])
+            overlap = set(existing) & set(staff_synonyms.synonyms)
+            if overlap:
+                conflicts.append(
+                    f"Overlapping synonyms for '{staff_synonyms.term}': {overlap}"
+                )
+
+        # Add the synonym entry (merge with existing if present)
+        success = self.add_synonym(staff_synonyms, merge=True)
+
+        if success and not conflicts:
+            logger.info("Successfully added staff synonyms")
+        elif success and conflicts:
+            logger.warning(f"Added staff synonyms with conflicts: {conflicts}")
+        else:
+            logger.error("Failed to add staff synonyms")
+
+        return success, conflicts
