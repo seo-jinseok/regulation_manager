@@ -5,6 +5,55 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.0] - 2026-02-15
+
+### Added - SPEC-RAG-QUALITY-002 Implementation Complete
+
+#### RAG Quality Comprehensive Improvement
+
+This release implements comprehensive quality improvements based on the evaluation analysis from SPEC-RAG-QUALITY-001 baseline, focusing on staff regulation indexing, citation quality, completeness, and edge case handling.
+
+- **Phase 1: Staff Regulation Indexing Enhancement (P1-Critical)**
+  - Added staff-related synonyms to `synonyms.json`: 교직원, 행정직, 일반직, 기술직, 행정인, 사무직, 일반행정직
+  - Implemented `add_staff_synonyms()` method in `DictionaryManager` with conflict detection
+  - Staff-related queries now return relevant regulations in top 5 search results
+  - Target: Staff Pass Rate 60% → 85%
+
+- **Phase 2: Citation Quality Enhancement (P2-High)**
+  - Added `validate_with_confidence()` method in `CitationValidator`
+  - Updated fallback prompt with citation format instructions: 「규정명」 제X조 제Y항
+  - Citation confidence score target: >= 0.9
+  - Target: Citation Score 0.850 → 0.920
+
+- **Phase 3: Completeness Improvement (P3-Medium)**
+  - Added `validate_completeness()` method in `MultiHopHandler`
+  - Multi-intent query decomposition for comprehensive answers
+  - Completeness score target: >= 0.88
+  - Target: Completeness Score 0.815 → 0.880
+
+- **Phase 4: Edge Case Test Coverage (P4-Low)**
+  - Added 4 edge case template classes in `test_scenario_templates.py`
+  - Categories: TypoEdgeCaseTemplates (3), AmbiguousQueryEdgeCaseTemplates (3)
+  - Categories: NonExistentRegulationTemplates (2), OutOfScopeQueryTemplates (2)
+  - Added 4 EdgeCaseCategory values: TYPO, AMBIGUOUS, NON_EXISTENT, OUT_OF_SCOPE
+
+**Technical Details**:
+- Modified file: `data/config/synonyms.json` (staff synonyms)
+- Modified file: `data/config/intents.json` (promotion intent triggers)
+- Modified file: `src/rag/infrastructure/dictionary_manager.py` (add_staff_synonyms)
+- Modified file: `src/rag/domain/citation/citation_validator.py` (validate_with_confidence)
+- Modified file: `src/rag/application/search_usecase.py` (citation format in fallback prompt)
+- Modified file: `src/rag/application/multi_hop_handler.py` (validate_completeness)
+- Modified file: `src/rag/automation/infrastructure/test_scenario_templates.py` (edge cases)
+- Modified file: `src/rag/automation/domain/extended_entities.py` (EdgeCaseCategory)
+
+**Quality Metrics**:
+- Previous baseline (2026-02-13): 43.3% pass rate, 0.795 avg score
+- After SPEC-RAG-QUALITY-001 (2026-02-15): 83.3% pass rate, 0.863 avg score
+- Target after SPEC-RAG-QUALITY-002: 90% pass rate, 0.88+ avg score
+
+---
+
 ## [2.4.0] - 2026-02-15
 
 ### Added - SPEC-RAG-QUALITY-001 Implementation Complete
