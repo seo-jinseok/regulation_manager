@@ -8,18 +8,24 @@ Implements the 4-metric evaluation system defined in rag-quality-local skill:
 4. Context Relevance - Retrieved sources relevance
 
 Phase 1 Integration: Uses improved EvaluationPrompts for better assessment.
+Phase 4 (SPEC-RAG-QUALITY-003): Graceful degradation, judgment caching, multi-provider support.
 """
 
+import hashlib
 import json
 import logging
 import re
+from collections import OrderedDict
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timedelta
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
 from src.rag.config import get_config
 from src.rag.infrastructure.llm_adapter import LLMClientAdapter
+
+if TYPE_CHECKING:
+    from src.rag.infrastructure.evaluation.semantic_evaluator import SemanticEvaluator
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +36,14 @@ try:
 except ImportError:
     EVALUATION_PROMPTS_AVAILABLE = False
     EvaluationPrompts = None
+
+# Phase 4: Import SemanticEvaluator for graceful degradation
+try:
+    from src.rag.infrastructure.evaluation.semantic_evaluator import SemanticEvaluator
+    SEMANTIC_EVALUATOR_AVAILABLE = True
+except ImportError:
+    SEMANTIC_EVALUATOR_AVAILABLE = False
+    SemanticEvaluator = None
 
 
 class QualityLevel(Enum):
@@ -78,8 +92,174 @@ class JudgeResult:
             self.timestamp = datetime.now().isoformat()
 
 
+class JudgmentCache:
+    """
+    LRU cache for LLM judgments to improve efficiency.
+
+    Phase 4 (SPEC-RAG-QUALITY-003): Caching for judgment efficiency.
+
+    Features:
+    - LRU eviction policy
+    - Configurable TTL for cache entries
+    - Cache hit/miss statistics
+    - Hash-based key generation for consistent lookup
+    """
+
+    def __init__(
+        self,
+        max_size: int = 500,
+        ttl_seconds: int = 3600,
+    ):
+        """
+        Initialize judgment cache.
+
+        Args:
+            max_size: Maximum number of cached judgments
+            ttl_seconds: Time-to-live for cache entries in seconds
+        """
+        self._max_size = max_size
+        self._ttl_seconds = ttl_seconds
+        self._cache: OrderedDict[str, tuple[JudgeResult, datetime]] = OrderedDict()
+        self._hits = 0
+        self._misses = 0
+
+    def _generate_key(
+        self,
+        query: str,
+        answer: str,
+        sources: List[Dict[str, Any]],
+        expected_info: Optional[List[str]] = None,
+    ) -> str:
+        """
+        Generate a unique cache key for the judgment.
+
+        Uses SHA-256 hash for consistent key generation.
+
+        Args:
+            query: User query
+            answer: Generated answer
+            sources: Retrieved sources
+            expected_info: Optional expected information
+
+        Returns:
+            Cache key string
+        """
+        # Create a deterministic string representation
+        key_data = {
+            "query": query,
+            "answer": answer,
+            "sources": [
+                {"content": s.get("content", "")[:200], "score": s.get("score", 0)}
+                for s in sources[:3]  # Only use top 3 sources for key
+            ],
+            "expected_info": sorted(expected_info) if expected_info else None,
+        }
+        key_str = json.dumps(key_data, sort_keys=True, ensure_ascii=False)
+        return hashlib.sha256(key_str.encode("utf-8")).hexdigest()
+
+    def get(
+        self,
+        query: str,
+        answer: str,
+        sources: List[Dict[str, Any]],
+        expected_info: Optional[List[str]] = None,
+    ) -> Optional[JudgeResult]:
+        """
+        Get cached judgment if available and not expired.
+
+        Args:
+            query: User query
+            answer: Generated answer
+            sources: Retrieved sources
+            expected_info: Optional expected information
+
+        Returns:
+            Cached JudgeResult or None if not found/expired
+        """
+        key = self._generate_key(query, answer, sources, expected_info)
+
+        if key in self._cache:
+            result, timestamp = self._cache[key]
+
+            # Check TTL
+            if datetime.now() - timestamp > timedelta(seconds=self._ttl_seconds):
+                # Expired, remove from cache
+                del self._cache[key]
+                self._misses += 1
+                return None
+
+            # Move to end (most recently used)
+            self._cache.move_to_end(key)
+            self._hits += 1
+            logger.debug(f"Judgment cache hit for query: {query[:50]}...")
+            return result
+
+        self._misses += 1
+        return None
+
+    def set(
+        self,
+        result: JudgeResult,
+        query: str,
+        answer: str,
+        sources: List[Dict[str, Any]],
+        expected_info: Optional[List[str]] = None,
+    ) -> None:
+        """
+        Cache a judgment result.
+
+        Args:
+            result: JudgeResult to cache
+            query: User query
+            answer: Generated answer
+            sources: Retrieved sources
+            expected_info: Optional expected information
+        """
+        key = self._generate_key(query, answer, sources, expected_info)
+
+        # Evict oldest if at capacity
+        if len(self._cache) >= self._max_size:
+            self._cache.popitem(last=False)
+            logger.debug("Judgment cache eviction (LRU)")
+
+        self._cache[key] = (result, datetime.now())
+
+    def get_stats(self) -> Dict[str, Any]:
+        """
+        Get cache statistics.
+
+        Returns:
+            Dictionary with cache stats
+        """
+        total_requests = self._hits + self._misses
+        hit_rate = self._hits / total_requests if total_requests > 0 else 0.0
+
+        return {
+            "cache_size": len(self._cache),
+            "max_size": self._max_size,
+            "hits": self._hits,
+            "misses": self._misses,
+            "hit_rate": round(hit_rate, 4),
+            "ttl_seconds": self._ttl_seconds,
+        }
+
+    def clear(self) -> None:
+        """Clear all cached judgments."""
+        self._cache.clear()
+        self._hits = 0
+        self._misses = 0
+        logger.info("Judgment cache cleared")
+
+
 class LLMJudge:
-    """LLM-as-Judge evaluator for RAG responses."""
+    """
+    LLM-as-Judge evaluator for RAG responses.
+
+    Phase 4 (SPEC-RAG-QUALITY-003) Enhancements:
+    - Judgment caching for efficiency
+    - Graceful degradation using SemanticEvaluator when LLM unavailable
+    - Multiple provider support via LLMClientAdapter fallback chain
+    """
 
     # Quality thresholds
     THRESHOLDS = {
@@ -105,11 +285,27 @@ class LLMJudge:
         "일반적으로",
     ]
 
-    def __init__(self, llm_client: Optional[LLMClientAdapter] = None):
-        """Initialize the LLM Judge.
+    def __init__(
+        self,
+        llm_client: Optional[LLMClientAdapter] = None,
+        semantic_evaluator: Optional["SemanticEvaluator"] = None,
+        enable_cache: bool = True,
+        cache_max_size: int = 500,
+        cache_ttl_seconds: int = 3600,
+    ):
+        """
+        Initialize the LLM Judge.
+
+        Phase 4 enhancements:
+        - Added semantic_evaluator parameter for graceful degradation
+        - Added cache parameters for judgment caching
 
         Args:
             llm_client: Optional LLM client for judge evaluation
+            semantic_evaluator: Optional SemanticEvaluator for fallback evaluation
+            enable_cache: Whether to enable judgment caching (default: True)
+            cache_max_size: Maximum number of cached judgments
+            cache_ttl_seconds: Cache TTL in seconds
         """
         if llm_client is None:
             config = get_config()
@@ -124,15 +320,65 @@ class LLMJudge:
         # Phase 1: Use improved prompts if available
         self.use_improved_prompts = EVALUATION_PROMPTS_AVAILABLE
 
+        # Phase 4: Semantic evaluator for graceful degradation
+        self._semantic_evaluator = semantic_evaluator
+        self._semantic_evaluator_available = (
+            semantic_evaluator is not None or SEMANTIC_EVALUATOR_AVAILABLE
+        )
+
+        # Phase 4: Judgment caching
+        self._enable_cache = enable_cache
+        self._cache = (
+            JudgmentCache(
+                max_size=cache_max_size,
+                ttl_seconds=cache_ttl_seconds,
+            )
+            if enable_cache
+            else None
+        )
+
+        # Statistics tracking
+        self._stats = {
+            "llm_evaluations": 0,
+            "fallback_evaluations": 0,
+            "cache_hits": 0,
+            "cache_misses": 0,
+        }
+
+    def _get_semantic_evaluator(self) -> Optional["SemanticEvaluator"]:
+        """
+        Get or create semantic evaluator for fallback.
+
+        Returns:
+            SemanticEvaluator instance or None if unavailable
+        """
+        if self._semantic_evaluator is not None:
+            return self._semantic_evaluator
+
+        if SEMANTIC_EVALUATOR_AVAILABLE:
+            from src.rag.infrastructure.evaluation.semantic_evaluator import (
+                SemanticEvaluator as SE,
+            )
+
+            self._semantic_evaluator = SE()
+            return self._semantic_evaluator
+
+        return None
+
     def evaluate_with_llm(
         self,
         query: str,
         answer: str,
         sources: List[Dict[str, Any]],
         expected_info: Optional[List[str]] = None,
+        use_cache: bool = True,
     ) -> JudgeResult:
         """
         Evaluate a RAG response using LLM with improved prompts (Phase 1).
+
+        Phase 4 enhancements:
+        - Added judgment caching for efficiency
+        - Graceful degradation to semantic evaluation when LLM unavailable
 
         This method uses the improved EvaluationPrompts for more accurate assessment.
 
@@ -141,14 +387,24 @@ class LLMJudge:
             answer: The RAG system's answer
             sources: Retrieved source documents
             expected_info: Optional list of expected information points
+            use_cache: Whether to use cached judgment if available (default: True)
 
         Returns:
             JudgeResult with 4-metric scores and analysis
         """
+        # Phase 4: Check cache first
+        if self._enable_cache and use_cache and self._cache:
+            cached = self._cache.get(query, answer, sources, expected_info)
+            if cached is not None:
+                self._stats["cache_hits"] += 1
+                return cached
+
+        self._stats["cache_misses"] += 1
+
         if not self.use_improved_prompts or not EvaluationPrompts:
             # Fallback to rule-based evaluation
             logger.warning("Improved prompts not available, using rule-based evaluation")
-            return self.evaluate(query, answer, sources, expected_info)
+            return self._evaluate_with_fallback(query, answer, sources, expected_info)
 
         try:
             # Format prompt with improved EvaluationPrompts
@@ -220,7 +476,7 @@ class LLMJudge:
                 issues = eval_result.get("issues", [])
                 strengths = eval_result.get("strengths", [])
 
-                return JudgeResult(
+                result = JudgeResult(
                     query=query,
                     answer=answer,
                     sources=sources,
@@ -235,15 +491,148 @@ class LLMJudge:
                     strengths=strengths,
                 )
 
+                # Phase 4: Cache the result
+                if self._enable_cache and self._cache:
+                    self._cache.set(result, query, answer, sources, expected_info)
+
+                self._stats["llm_evaluations"] += 1
+                return result
+
             except (json.JSONDecodeError, ValueError) as e:
                 logger.warning(f"Failed to parse LLM evaluation response: {e}")
-                # Fallback to rule-based evaluation
-                return self.evaluate(query, answer, sources, expected_info)
+                # Fallback to rule-based evaluation with semantic enhancement
+                return self._evaluate_with_fallback(query, answer, sources, expected_info)
 
         except Exception as e:
             logger.warning(f"LLM-based evaluation failed: {e}")
-            # Fallback to rule-based evaluation
-            return self.evaluate(query, answer, sources, expected_info)
+            # Phase 4: Graceful degradation
+            return self._evaluate_with_fallback(query, answer, sources, expected_info)
+
+    def _evaluate_with_fallback(
+        self,
+        query: str,
+        answer: str,
+        sources: List[Dict[str, Any]],
+        expected_info: Optional[List[str]] = None,
+    ) -> JudgeResult:
+        """
+        Evaluate with graceful degradation to semantic evaluation.
+
+        Phase 4 (SPEC-RAG-QUALITY-003): Graceful degradation when LLM unavailable.
+
+        Falls back in this order:
+        1. Semantic evaluation (if available)
+        2. Rule-based evaluation
+
+        Args:
+            query: The user's query
+            answer: The RAG system's answer
+            sources: Retrieved source documents
+            expected_info: Optional list of expected information points
+
+        Returns:
+            JudgeResult with evaluation scores
+        """
+        self._stats["fallback_evaluations"] += 1
+
+        # Try semantic evaluation first
+        semantic_evaluator = self._get_semantic_evaluator()
+        if semantic_evaluator is not None:
+            try:
+                # Use semantic similarity for accuracy evaluation
+                if expected_info:
+                    expected_text = " ".join(expected_info)
+                    semantic_result = semantic_evaluator.evaluate_with_query(
+                        query=query,
+                        answer=answer,
+                        expected=expected_text,
+                    )
+
+                    # Enhance rule-based evaluation with semantic score
+                    base_result = self.evaluate(query, answer, sources, expected_info)
+
+                    # Blend semantic score into accuracy
+                    blended_accuracy = (
+                        base_result.accuracy * 0.5 + semantic_result.similarity_score * 0.5
+                    )
+
+                    # Recalculate overall score
+                    weights = {
+                        "accuracy": 0.35,
+                        "completeness": 0.25,
+                        "citations": 0.20,
+                        "context_relevance": 0.20,
+                    }
+                    overall_score = (
+                        blended_accuracy * weights["accuracy"]
+                        + base_result.completeness * weights["completeness"]
+                        + base_result.citations * weights["citations"]
+                        + base_result.context_relevance * weights["context_relevance"]
+                    )
+
+                    # Update reasoning to indicate semantic fallback
+                    reasoning = base_result.reasoning.copy()
+                    reasoning["accuracy"] = f"[Semantic Fallback] {reasoning['accuracy']}"
+                    reasoning["evaluation_method"] = "semantic_fallback"
+
+                    logger.info("Used semantic evaluation as fallback for accuracy")
+
+                    return JudgeResult(
+                        query=query,
+                        answer=answer,
+                        sources=sources,
+                        accuracy=round(blended_accuracy, 3),
+                        completeness=base_result.completeness,
+                        citations=base_result.citations,
+                        context_relevance=base_result.context_relevance,
+                        overall_score=round(overall_score, 3),
+                        passed=overall_score >= self.THRESHOLDS["overall"]
+                        and blended_accuracy >= self.THRESHOLDS["accuracy"],
+                        reasoning=reasoning,
+                        issues=base_result.issues,
+                        strengths=base_result.strengths,
+                    )
+            except Exception as e:
+                logger.warning(f"Semantic fallback evaluation failed: {e}")
+
+        # Final fallback to rule-based evaluation
+        logger.info("Using rule-based evaluation as final fallback")
+        return self.evaluate(query, answer, sources, expected_info)
+
+    def get_stats(self) -> Dict[str, Any]:
+        """
+        Get evaluation statistics.
+
+        Returns:
+            Dictionary with evaluation and cache statistics
+        """
+        stats = self._stats.copy()
+
+        if self._enable_cache and self._cache:
+            cache_stats = self._cache.get_stats()
+            stats["cache"] = cache_stats
+            # Update hit rate from cache
+            stats["cache_hit_rate"] = cache_stats["hit_rate"]
+
+        return stats
+
+    def clear_cache(self) -> None:
+        """Clear the judgment cache."""
+        if self._cache:
+            self._cache.clear()
+
+    def is_llm_available(self) -> bool:
+        """
+        Check if LLM evaluation is available.
+
+        Returns:
+            True if LLM can be used for evaluation
+        """
+        try:
+            # Simple availability check
+            return self.llm_client is not None and self.use_improved_prompts
+        except Exception:
+            return False
 
     def evaluate(
         self,

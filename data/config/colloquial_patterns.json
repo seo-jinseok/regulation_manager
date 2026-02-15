@@ -1,0 +1,376 @@
+{
+  "version": "1.0.0",
+  "description": "Colloquial-to-formal Korean query transformation patterns for RAG system",
+  "mappings": [
+    {
+      "pattern": "어떻게 해",
+      "formal": "방법",
+      "context": "procedure"
+    },
+    {
+      "pattern": "어떻게해",
+      "formal": "방법",
+      "context": "procedure"
+    },
+    {
+      "pattern": "뭐야",
+      "formal": "정의",
+      "context": "definition"
+    },
+    {
+      "pattern": "뭐에요",
+      "formal": "정의",
+      "context": "definition"
+    },
+    {
+      "pattern": "알려줘",
+      "formal": "안내",
+      "context": "information"
+    },
+    {
+      "pattern": "알려주세요",
+      "formal": "안내",
+      "context": "information"
+    },
+    {
+      "pattern": "언제까지",
+      "formal": "기한",
+      "context": "deadline"
+    },
+    {
+      "pattern": "언제 까지",
+      "formal": "기한",
+      "context": "deadline"
+    },
+    {
+      "pattern": "어디서",
+      "formal": "위치",
+      "context": "location"
+    },
+    {
+      "pattern": "어디에",
+      "formal": "위치",
+      "context": "location"
+    },
+    {
+      "pattern": "누가",
+      "formal": "대상",
+      "context": "subject"
+    },
+    {
+      "pattern": "왜",
+      "formal": "사유",
+      "context": "reason"
+    },
+    {
+      "pattern": "어떤",
+      "formal": "종류",
+      "context": "category"
+    },
+    {
+      "pattern": "얼마나",
+      "formal": "기준",
+      "context": "criteria"
+    },
+    {
+      "pattern": "필요해",
+      "formal": "필요서류",
+      "context": "requirements"
+    },
+    {
+      "pattern": "필요한거",
+      "formal": "필요서류",
+      "context": "requirements"
+    },
+    {
+      "pattern": "뭐가 필요",
+      "formal": "필요서류",
+      "context": "requirements"
+    },
+    {
+      "pattern": "할 수 있",
+      "formal": "가능여부",
+      "context": "eligibility"
+    },
+    {
+      "pattern": "할수있",
+      "formal": "가능여부",
+      "context": "eligibility"
+    },
+    {
+      "pattern": "되나요",
+      "formal": "가능여부",
+      "context": "eligibility"
+    },
+    {
+      "pattern": "되나",
+      "formal": "가능여부",
+      "context": "eligibility"
+    },
+    {
+      "pattern": "안되나",
+      "formal": "제한사항",
+      "context": "restriction"
+    },
+    {
+      "pattern": "안 되나",
+      "formal": "제한사항",
+      "context": "restriction"
+    },
+    {
+      "pattern": "못해",
+      "formal": "제한사항",
+      "context": "restriction"
+    },
+    {
+      "pattern": "못 해",
+      "formal": "제한사항",
+      "context": "restriction"
+    },
+    {
+      "pattern": "어떻게 하나요",
+      "formal": "절차",
+      "context": "procedure"
+    },
+    {
+      "pattern": "어떻게하나요",
+      "formal": "절차",
+      "context": "procedure"
+    },
+    {
+      "pattern": "하는법",
+      "formal": "방법",
+      "context": "procedure"
+    },
+    {
+      "pattern": "하는 법",
+      "formal": "방법",
+      "context": "procedure"
+    },
+    {
+      "pattern": "하는 방법",
+      "formal": "방법",
+      "context": "procedure"
+    },
+    {
+      "pattern": "하고 싶",
+      "formal": "신청",
+      "context": "application"
+    },
+    {
+      "pattern": "하고싶",
+      "formal": "신청",
+      "context": "application"
+    },
+    {
+      "pattern": "신청하려",
+      "formal": "신청절차",
+      "context": "application"
+    },
+    {
+      "pattern": "받고 싶",
+      "formal": "지급신청",
+      "context": "benefit"
+    },
+    {
+      "pattern": "받고싶",
+      "formal": "지급신청",
+      "context": "benefit"
+    },
+    {
+      "pattern": "받을 수",
+      "formal": "지급대상",
+      "context": "benefit"
+    },
+    {
+      "pattern": "받을수",
+      "formal": "지급대상",
+      "context": "benefit"
+    },
+    {
+      "pattern": "얼마",
+      "formal": "금액",
+      "context": "amount"
+    },
+    {
+      "pattern": "몇 점",
+      "formal": "기준점수",
+      "context": "score"
+    },
+    {
+      "pattern": "몇학점",
+      "formal": "이수학점",
+      "context": "credit"
+    },
+    {
+      "pattern": "몇 학점",
+      "formal": "이수학점",
+      "context": "credit"
+    },
+    {
+      "pattern": "몇 년",
+      "formal": "기간",
+      "context": "duration"
+    },
+    {
+      "pattern": "몇년",
+      "formal": "기간",
+      "context": "duration"
+    },
+    {
+      "pattern": "기간이",
+      "formal": "기간",
+      "context": "duration"
+    },
+    {
+      "pattern": "까지만",
+      "formal": "기한",
+      "context": "deadline"
+    },
+    {
+      "pattern": "까지 만",
+      "formal": "기한",
+      "context": "deadline"
+    },
+    {
+      "pattern": "언제부터",
+      "formal": "시작일",
+      "context": "startdate"
+    },
+    {
+      "pattern": "언제 부터",
+      "formal": "시작일",
+      "context": "startdate"
+    },
+    {
+      "pattern": "언제까지야",
+      "formal": "기한",
+      "context": "deadline"
+    },
+    {
+      "pattern": "어디임",
+      "formal": "위치",
+      "context": "location"
+    },
+    {
+      "pattern": "어디야",
+      "formal": "위치",
+      "context": "location"
+    },
+    {
+      "pattern": "누구야",
+      "formal": "대상",
+      "context": "subject"
+    },
+    {
+      "pattern": "누구",
+      "formal": "대상",
+      "context": "subject"
+    },
+    {
+      "pattern": "학생인데",
+      "formal": "학생 대상",
+      "context": "subject"
+    },
+    {
+      "pattern": "교수님",
+      "formal": "교원",
+      "context": "subject"
+    },
+    {
+      "pattern": "교수인데",
+      "formal": "교원 대상",
+      "context": "subject"
+    }
+  ],
+  "regex_patterns": [
+    {
+      "pattern": "(.+)하는법",
+      "replacement": "\\1 방법"
+    },
+    {
+      "pattern": "(.+)하는 법",
+      "replacement": "\\1 방법"
+    },
+    {
+      "pattern": "(.+)어디서",
+      "replacement": "\\1 위치"
+    },
+    {
+      "pattern": "(.+)어디야",
+      "replacement": "\\1 위치"
+    },
+    {
+      "pattern": "(.+)언제",
+      "replacement": "\\1 기한"
+    },
+    {
+      "pattern": "(.+)어떻게",
+      "replacement": "\\1 방법"
+    },
+    {
+      "pattern": "(.+)뭐야",
+      "replacement": "\\1 정의"
+    },
+    {
+      "pattern": "(.+)뭐에요",
+      "replacement": "\\1 정의"
+    },
+    {
+      "pattern": "(.+)되나요",
+      "replacement": "\\1 가능여부"
+    },
+    {
+      "pattern": "(.+)되나",
+      "replacement": "\\1 가능여부"
+    },
+    {
+      "pattern": "(.+)안되나",
+      "replacement": "\\1 제한사항"
+    },
+    {
+      "pattern": "(.+)필요해",
+      "replacement": "\\1 필요서류"
+    },
+    {
+      "pattern": "(.+)필요한거",
+      "replacement": "\\1 필요서류"
+    },
+    {
+      "pattern": "(.+)받고싶",
+      "replacement": "\\1 지급신청"
+    },
+    {
+      "pattern": "(.+)하고싶",
+      "replacement": "\\1 신청"
+    }
+  ],
+  "endings": {
+    "해요": "하십시오",
+    "해": "하십시오",
+    "나요": "합니까",
+    "인가요": "입니까",
+    "인감": "입니까",
+    "되나요": "됩니까",
+    "되나": "됩니까",
+    "줘": "주십시오",
+    "주세요": "주십시오",
+    "봐줘": "바랍니다",
+    "바래": "바랍니다"
+  },
+  "formal_indicators": [
+    "규정",
+    "학칙",
+    "세칙",
+    "지침",
+    "제\\d+조",
+    "제\\d+항",
+    "제\\d+호",
+    "에 따르",
+    "것이다",
+    "바 있다",
+    "규정에",
+    "학칙에",
+    "세칙에"
+  ]
+}
