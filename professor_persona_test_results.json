@@ -1,0 +1,358 @@
+[
+  {
+    "persona": "professor",
+    "query": "교원 연구년 선정 기준이 학칙 제몇 조에 명시되어 있습니까?",
+    "category": "faculty_affairs",
+    "difficulty": "easy",
+    "result": {
+      "type": "search",
+      "success": true,
+      "sources_count": 5,
+      "top_sources": [
+        {
+          "regulation": "(SUN) 운영",
+          "rule_code": "reg-0541",
+          "path": "(SUN) 운영"
+        },
+        {
+          "regulation": "교원연구년제규정",
+          "rule_code": "reg-0598",
+          "path": "교원연구년제규정 > 제3조 자격"
+        },
+        {
+          "regulation": "교원인사규정",
+          "rule_code": "reg-0553",
+          "path": "교원인사규정 > 제43조 호봉승급제한 해제시 호봉승급 방법 > ①"
+        }
+      ],
+      "execution_time_ms": 5596.85
+    },
+    "evaluation": {
+      "legal_accuracy": 5,
+      "citation_completeness": 5,
+      "official_language": 5,
+      "satisfaction": "very_satisfied"
+    }
+  },
+  {
+    "persona": "professor",
+    "query": "책임 시수 연간 기준을 알려주세요",
+    "category": "faculty_affairs",
+    "difficulty": "easy",
+    "result": {
+      "type": "search",
+      "success": true,
+      "sources_count": 5,
+      "top_sources": [
+        {
+          "regulation": "교육업적 평가기준",
+          "rule_code": "reg-0555",
+          "path": "교육업적 평가기준"
+        },
+        {
+          "regulation": "강사료지급규정",
+          "rule_code": "reg-0569",
+          "path": "강사료지급규정 > 제3조 강의 책임시간 > ② > 1. 직전 학년도 연간 책임시간이 미달될"
+        },
+        {
+          "regulation": "비정년제전임교원규정",
+          "rule_code": "reg-0631",
+          "path": "비정년제전임교원규정 > 제2조 구분"
+        }
+      ],
+      "execution_time_ms": 255.32
+    },
+    "evaluation": {
+      "legal_accuracy": 5,
+      "citation_completeness": 5,
+      "official_language": 5,
+      "satisfaction": "very_satisfied"
+    }
+  },
+  {
+    "persona": "professor",
+    "query": "교원 승진 심사 정족수를 확인하고 싶습니다",
+    "category": "faculty_affairs",
+    "difficulty": "easy",
+    "result": {
+      "type": "clarification",
+      "success": true,
+      "options": [
+        "교수",
+        "학생",
+        "직원"
+      ],
+      "execution_time_ms": 0.26
+    },
+    "evaluation": {
+      "legal_accuracy": 3,
+      "citation_completeness": 3,
+      "official_language": 3,
+      "satisfaction": "neutral"
+    }
+  },
+  {
+    "persona": "professor",
+    "query": "교원 연구년 신청 자격 요건은 무엇입니까?",
+    "category": "faculty_affairs",
+    "difficulty": "easy",
+    "error": "zip() argument 2 is shorter than argument 1",
+    "execution_time_ms": 359.8
+  },
+  {
+    "persona": "professor",
+    "query": "정년 보장 심사 신청 서류를 알려주세요",
+    "category": "faculty_affairs",
+    "difficulty": "easy",
+    "result": {
+      "type": "search",
+      "success": true,
+      "sources_count": 5,
+      "top_sources": [
+        {
+          "regulation": "(SUN) 운영",
+          "rule_code": "reg-0541",
+          "path": "(SUN) 운영"
+        },
+        {
+          "regulation": "교직원복무규정",
+          "rule_code": "reg-0600",
+          "path": "교직원복무규정 > 제28조 특별휴가"
+        },
+        {
+          "regulation": "명예(조기)퇴직수당지급규정",
+          "rule_code": "reg-0593",
+          "path": "명예(조기)퇴직수당지급규정"
+        }
+      ],
+      "execution_time_ms": 208.46
+    },
+    "evaluation": {
+      "legal_accuracy": 5,
+      "citation_completeness": 5,
+      "official_language": 4,
+      "satisfaction": "very_satisfied"
+    }
+  },
+  {
+    "persona": "professor",
+    "query": "연구년 신청 시 학장 추천과 교원회 의결 절차를 알려주세요",
+    "category": "academic_governance",
+    "difficulty": "medium",
+    "error": "zip() argument 2 is shorter than argument 1",
+    "execution_time_ms": 208.71
+  },
+  {
+    "persona": "professor",
+    "query": "정년 보장 심사 시 부정 저작물 처리 기준을 알려주세요",
+    "category": "compliance",
+    "difficulty": "hard",
+    "result": {
+      "type": "search",
+      "success": true,
+      "sources_count": 5,
+      "top_sources": [
+        {
+          "regulation": "(SUN) 운영",
+          "rule_code": "reg-0541",
+          "path": "(SUN) 운영"
+        },
+        {
+          "regulation": "교직원복무규정",
+          "rule_code": "reg-0600",
+          "path": "교직원복무규정 > 제28조 특별휴가"
+        },
+        {
+          "regulation": "HK연구교수및HK연구원규정",
+          "rule_code": "reg-0648",
+          "path": "HK연구교수및HK연구원규정 > 제10조 정년보장교원의 직위확보"
+        }
+      ],
+      "execution_time_ms": 223.61
+    },
+    "evaluation": {
+      "legal_accuracy": 5,
+      "citation_completeness": 5,
+      "official_language": 4,
+      "satisfaction": "very_satisfied"
+    }
+  },
+  {
+    "persona": "professor",
+    "query": "교과과정 개정 시 교원회, 운영위원회, 이사회 심의 순서를 알려주세요",
+    "category": "academic_governance",
+    "difficulty": "medium",
+    "result": {
+      "type": "search",
+      "success": true,
+      "sources_count": 5,
+      "top_sources": [
+        {
+          "regulation": "감사 지침",
+          "rule_code": "reg-0538",
+          "path": "감사 지침"
+        },
+        {
+          "regulation": "대학원교과과정운영에관한세칙",
+          "rule_code": "reg-0839",
+          "path": "대학원교과과정운영에관한세칙 > 제3조 교과과정 설정 및 개정"
+        },
+        {
+          "regulation": "교육과정편성및이수규정",
+          "rule_code": "reg-0776",
+          "path": "교육과정편성및이수규정 > 제2조 교육과정개정"
+        }
+      ],
+      "execution_time_ms": 222.55
+    },
+    "evaluation": {
+      "legal_accuracy": 5,
+      "citation_completeness": 5,
+      "official_language": 5,
+      "satisfaction": "very_satisfied"
+    }
+  },
+  {
+    "persona": "professor",
+    "query": "겸임 교원의 업적 평가 기준을 알려주세요",
+    "category": "faculty_affairs",
+    "difficulty": "hard",
+    "error": "zip() argument 2 is shorter than argument 1",
+    "execution_time_ms": 238.27
+  },
+  {
+    "persona": "professor",
+    "query": "학칙 개정안 교원회 부결 시 재심의 절차를 알려주세요",
+    "category": "academic_governance",
+    "difficulty": "hard",
+    "result": {
+      "type": "search",
+      "success": true,
+      "sources_count": 5,
+      "top_sources": [
+        {
+          "regulation": "(SUN) 운영",
+          "rule_code": "reg-0541",
+          "path": "(SUN) 운영"
+        },
+        {
+          "regulation": "겸임교원임용등에관한시행세칙",
+          "rule_code": "reg-0673",
+          "path": "겸임교원임용등에관한시행세칙 > 제8조 심사구분"
+        },
+        {
+          "regulation": "동의대학교대학원학칙",
+          "rule_code": "reg-0427",
+          "path": "동의대학교대학원학칙 > 제45조 시행세칙 > ①"
+        }
+      ],
+      "execution_time_ms": 201.7
+    },
+    "evaluation": {
+      "legal_accuracy": 5,
+      "citation_completeness": 5,
+      "official_language": 3,
+      "satisfaction": "satisfied"
+    }
+  },
+  {
+    "persona": "professor",
+    "query": "연구윤리 위반 시 연구년 자격 제한 규정을 확인하고 싶습니다",
+    "category": "compliance",
+    "difficulty": "hard",
+    "result": {
+      "type": "search",
+      "success": true,
+      "sources_count": 5,
+      "top_sources": [
+        {
+          "regulation": "감사 지침",
+          "rule_code": "reg-0538",
+          "path": "감사 지침"
+        },
+        {
+          "regulation": "제3편 행정 3—1—121～연구윤리규정 3—1—121～연구윤리규정",
+          "rule_code": "reg-0678",
+          "path": "제3편 행정 3—1—121～연구윤리규정 3—1—121～연구윤리규정 > 제5조 국가연구개발사"
+        },
+        {
+          "regulation": "제3편 행정 3—1—120～연구윤리센터규정 3—1—120～연구윤리센터규정",
+          "rule_code": "reg-0677",
+          "path": "제3편 행정 3—1—120～연구윤리센터규정 3—1—120～연구윤리센터규정 > 제2조 직무"
+        }
+      ],
+      "execution_time_ms": 332.75
+    },
+    "evaluation": {
+      "legal_accuracy": 5,
+      "citation_completeness": 5,
+      "official_language": 5,
+      "satisfaction": "very_satisfied"
+    }
+  },
+  {
+    "persona": "professor",
+    "query": "교원 휴직 신청 시 학장 승인 기준은 무엇입니까?",
+    "category": "faculty_affairs",
+    "difficulty": "medium",
+    "result": {
+      "type": "search",
+      "success": true,
+      "sources_count": 5,
+      "top_sources": [
+        {
+          "regulation": "(SUN) 운영",
+          "rule_code": "reg-0541",
+          "path": "(SUN) 운영"
+        },
+        {
+          "regulation": "산학협력업적 평가기준",
+          "rule_code": "reg-0558",
+          "path": "산학협력업적 평가기준"
+        },
+        {
+          "regulation": "교원연구년제규정",
+          "rule_code": "reg-0598",
+          "path": "교원연구년제규정 > 제3조 자격"
+        }
+      ],
+      "execution_time_ms": 250.47
+    },
+    "evaluation": {
+      "legal_accuracy": 5,
+      "citation_completeness": 5,
+      "official_language": 5,
+      "satisfaction": "very_satisfied"
+    }
+  },
+  {
+    "persona": "professor",
+    "query": "교원 업적 평가 시 논문 피인용 지수 반영 비율이 어떻게 됩니까?",
+    "category": "faculty_affairs",
+    "difficulty": "medium",
+    "error": "zip() argument 2 is shorter than argument 1",
+    "execution_time_ms": 279.73
+  },
+  {
+    "persona": "professor",
+    "query": "정교수 승진 심사 위원회 구성을 알려주세요",
+    "category": "faculty_affairs",
+    "difficulty": "medium",
+    "result": {
+      "type": "clarification",
+      "success": true,
+      "options": [
+        "교수",
+        "학생",
+        "직원"
+      ],
+      "execution_time_ms": 0.05
+    },
+    "evaluation": {
+      "legal_accuracy": 3,
+      "citation_completeness": 3,
+      "official_language": 3,
+      "satisfaction": "neutral"
+    }
+  }
+]

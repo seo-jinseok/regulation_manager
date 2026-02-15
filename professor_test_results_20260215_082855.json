@@ -1,0 +1,47 @@
+[
+  {
+    "persona": "professor",
+    "query": "학사위원회의 심의 권한과 절차에 대해 설명하시오",
+    "category": "academic_governance",
+    "difficulty": "medium",
+    "error": "'HybridSearcher' object has no attribute 'retrieve'",
+    "traceback": "Traceback (most recent call last):\n  File \"/Users/truestone/Dropbox/repo/University/regulation_manager/test_professor_persona_queries.py\", line 44, in test_professor_query\n    docs = retriever.retrieve(query, top_k=5)\n           ^^^^^^^^^^^^^^^^^^\nAttributeError: 'HybridSearcher' object has no attribute 'retrieve'\n",
+    "execution_time_ms": 1196.45
+  },
+  {
+    "persona": "professor",
+    "query": "교원 인사 평가 기준과 승진 요건은 무엇인가",
+    "category": "faculty_affairs",
+    "difficulty": "medium",
+    "error": "'HybridSearcher' object has no attribute 'retrieve'",
+    "traceback": "Traceback (most recent call last):\n  File \"/Users/truestone/Dropbox/repo/University/regulation_manager/test_professor_persona_queries.py\", line 44, in test_professor_query\n    docs = retriever.retrieve(query, top_k=5)\n           ^^^^^^^^^^^^^^^^^^\nAttributeError: 'HybridSearcher' object has no attribute 'retrieve'\n",
+    "execution_time_ms": 2.16
+  },
+  {
+    "persona": "professor",
+    "query": "대학원 입학 전형 방법과 평가 비율은?",
+    "category": "graduate_admissions",
+    "difficulty": "medium",
+    "error": "'HybridSearcher' object has no attribute 'retrieve'",
+    "traceback": "Traceback (most recent call last):\n  File \"/Users/truestone/Dropbox/repo/University/regulation_manager/test_professor_persona_queries.py\", line 44, in test_professor_query\n    docs = retriever.retrieve(query, top_k=5)\n           ^^^^^^^^^^^^^^^^^^\nAttributeError: 'HybridSearcher' object has no attribute 'retrieve'\n",
+    "execution_time_ms": 9.57
+  },
+  {
+    "persona": "professor",
+    "query": "연구 윤리 규정과 연구 부정행위의 정의는?",
+    "category": "research_administration",
+    "difficulty": "medium",
+    "error": "'HybridSearcher' object has no attribute 'retrieve'",
+    "traceback": "Traceback (most recent call last):\n  File \"/Users/truestone/Dropbox/repo/University/regulation_manager/test_professor_persona_queries.py\", line 44, in test_professor_query\n    docs = retriever.retrieve(query, top_k=5)\n           ^^^^^^^^^^^^^^^^^^\nAttributeError: 'HybridSearcher' object has no attribute 'retrieve'\n",
+    "execution_time_ms": 0.9
+  },
+  {
+    "persona": "professor",
+    "query": "교과 개설 및 변경 절차에 대해 알려줘",
+    "category": "academic_governance",
+    "difficulty": "medium",
+    "error": "'HybridSearcher' object has no attribute 'retrieve'",
+    "traceback": "Traceback (most recent call last):\n  File \"/Users/truestone/Dropbox/repo/University/regulation_manager/test_professor_persona_queries.py\", line 44, in test_professor_query\n    docs = retriever.retrieve(query, top_k=5)\n           ^^^^^^^^^^^^^^^^^^\nAttributeError: 'HybridSearcher' object has no attribute 'retrieve'\n",
+    "execution_time_ms": 0.84
+  }
+]
