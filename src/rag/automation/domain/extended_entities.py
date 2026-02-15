@@ -44,6 +44,11 @@ class EdgeCaseCategory(Enum):
     LANGUAGE_BARRIER = "language_barrier"  # 언어 장벽: 이해 어려움
     EXCEPTIONAL = "exceptional"  # 예외적: 특수 상황
     TECHNICAL = "technical"  # 기술적: 복잡한 절차
+    # SPEC-RAG-QUALITY-002 new categories
+    TYPO = "typo"  # 오타: 입력 실수
+    AMBIGUOUS = "ambiguous"  # 모호한 쿼리: 맥락 부족
+    NON_EXISTENT = "non_existent"  # 존재하지 않는 규정: 데이터베이스에 없음
+    OUT_OF_SCOPE = "out_of_scope"  # 범위 외: 규정과 무관한 질문
 
 
 class AmbiguityType(Enum):
