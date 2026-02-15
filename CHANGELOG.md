@@ -5,6 +5,47 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.0] - 2026-02-15
+
+### Added - SPEC-RAG-QUALITY-003 Phase 4-5 Implementation
+
+#### RAG Retrieval Quality Improvement (Continued)
+
+This release completes SPEC-RAG-QUALITY-003 with Phase 4 and Phase 5 implementations, adding LLM-as-Judge enhancements and hybrid weight optimization for improved retrieval quality.
+
+- **Phase 4 (P4-Medium): LLM-as-Judge Integration**
+  - Added `JudgmentCache` class for LRU caching of judgment results with TTL support
+  - Implemented graceful degradation using `SemanticEvaluator` as fallback when LLM unavailable
+  - Added cache statistics tracking (hits, misses, hit rate)
+  - Enhanced `LLMJudge` with configurable cache settings (max_size, ttl_seconds)
+  - Added `is_llm_available()` method for availability checking
+  - Cache hit rate target: >= 70%
+
+- **Phase 5 (P5-Medium): Hybrid Weight Optimization**
+  - Created new `HybridWeightOptimizer` class for dynamic weight adjustment
+  - Implemented formal/informal query detection using `ColloquialTransformer`
+  - Dynamic weight calculation: formal queries (0.5 BM25, 0.5 vector), colloquial queries (0.3 BM25, 0.7 vector)
+  - Rule-based formality detection as fallback when ColloquialTransformer unavailable
+  - Statistics tracking for formal/colloquial query distribution
+  - Manual weight override capability
+  - Formal/informal detection accuracy target: >= 85%
+
+**Technical Details**:
+- Modified file: `src/rag/domain/evaluation/llm_judge.py` (Phase 4 enhancements)
+- New file: `src/rag/application/hybrid_weight_optimizer.py` (Phase 5)
+- New file: `tests/rag/unit/domain/evaluation/test_llm_judge.py` (52 tests)
+- New file: `tests/rag/unit/application/test_hybrid_weight_optimizer.py` (52 tests)
+
+**Integration Points**:
+- `LLMJudge` uses `SemanticEvaluator` for fallback evaluation
+- `HybridWeightOptimizer` uses `ColloquialTransformer` for formality detection
+- Both components integrate with existing RAG pipeline
+
+**Quality Metrics**:
+- All 104 Phase 4-5 tests passing
+- Cache hit rate: Configurable (default 500 entries, 1 hour TTL)
+- Detection accuracy: 85%+ target for formality classification
+
 ## [2.5.0] - 2026-02-15
 
 ### Added - SPEC-RAG-QUALITY-002 Implementation Complete
