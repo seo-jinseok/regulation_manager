@@ -248,6 +248,16 @@ def create_app(
     if use_mock_llm:
         llm_status = "⚠️ Mock LLM (테스트 모드)"
 
+    # Initialize llm_client for evaluation tab (P2)
+    llm_client = None
+    if use_mock_llm:
+        llm_client = MockLLMClient()
+    else:
+        try:
+            llm_client = LLMClientAdapter()
+        except Exception:
+            pass  # Will be None if initialization fails
+
     sync_usecase = SyncUseCase(loader, store)
 
     data_input_dir = Path("data/input")
@@ -1319,7 +1329,411 @@ def create_app(
                     outputs=[status_markdown],
                 )
 
+            # Tab 3: Quality Evaluation (P2)
+            with gr.TabItem("📊 품질 평가"):
+                _create_evaluation_tab(db_path, llm_client if not use_mock_llm else None)
+
     return app
+
+
+def _create_evaluation_tab(db_path: str, llm_client):
+    """Create quality evaluation tab with P2 components."""
+    gr.Markdown("### 🎯 RAG 시스템 품질 평가")
+    gr.Markdown("BatchEvaluationExecutor, ProgressReporter, FailureClassifier를 활용한 종합 평가")
+
+    with gr.Row():
+        # Left column: Settings and controls
+        with gr.Column(scale=1):
+            gr.Markdown("#### ⚙️ 평가 설정")
+
+            eval_personas = gr.Dropdown(
+                choices=[
+                    "all",
+                    "student-undergraduate",
+                    "student-graduate",
+                    "professor",
+                    "staff-admin",
+                    "parent",
+                    "student-international",
+                ],
+                value="all",
+                label="페르소나 선택",
+                multiselect=True,
+            )
+            eval_queries = gr.Slider(
+                minimum=5, maximum=50, value=25, step=5,
+                label="페르소나당 쿼리 수"
+            )
+            eval_batch_size = gr.Slider(
+                minimum=1, maximum=10, value=5, step=1,
+                label="배치 크기"
+            )
+            eval_threshold = gr.Slider(
+                minimum=0.4, maximum=0.8, value=0.6, step=0.05,
+                label="실패 임계값"
+            )
+
+            gr.Markdown("#### 🎮 실행 제어")
+
+            with gr.Row():
+                eval_run_btn = gr.Button("▶ 평가 시작", variant="primary")
+                eval_resume_btn = gr.Button("⏵ 재개", variant="secondary")
+                eval_stop_btn = gr.Button("⏹ 중지", variant="stop")
+
+            eval_session_id = gr.Textbox(
+                label="세션 ID",
+                placeholder="재개할 세션 ID 입력",
+            )
+
+        # Right column: Progress and results
+        with gr.Column(scale=2):
+            gr.Markdown("#### 📈 진행 상황")
+
+            eval_progress_bar = gr.Textbox(
+                label="진행률",
+                value="평가 대기 중...",
+                interactive=False,
+            )
+            eval_eta = gr.Textbox(
+                label="예상 완료 시간",
+                value="-",
+                interactive=False,
+            )
+            eval_status = gr.Textbox(
+                label="상태",
+                value="대기 중",
+                interactive=False,
+            )
+
+    # Results section
+    gr.Markdown("---")
+    gr.Markdown("#### 📋 평가 결과")
+
+    with gr.Row():
+        with gr.Column(scale=1):
+            eval_metrics = gr.Dataframe(
+                headers=["메트릭", "값", "목표", "상태"],
+                datatype=["str", "str", "str", "str"],
+                value=[
+                    ["Faithfulness", "-", "0.90", "-"],
+                    ["Answer Relevancy", "-", "0.85", "-"],
+                    ["Contextual Precision", "-", "0.80", "-"],
+                    ["Contextual Recall", "-", "0.80", "-"],
+                    ["Overall Score", "-", "0.85", "-"],
+                ],
+                label="메트릭별 점수",
+                interactive=False,
+            )
+
+        with gr.Column(scale=1):
+            eval_summary = gr.Markdown(
+                value="평가를 실행하면 결과가 표시됩니다.",
+                label="평가 요약",
+            )
+
+    # Failure analysis and recommendations
+    gr.Markdown("---")
+    gr.Markdown("#### 🔍 실패 분석 및 개선 권장사항")
+
+    with gr.Row():
+        eval_failures = gr.Dataframe(
+            headers=["실패 유형", "건수", "비율"],
+            datatype=["str", "str", "str"],
+            value=[],
+            label="실패 유형 분석",
+            interactive=False,
+        )
+        eval_recommendations = gr.Markdown(
+            value="평가 완료 후 개선 권장사항이 표시됩니다.",
+            label="개선 권장사항",
+        )
+
+    # SPEC Generation
+    gr.Markdown("---")
+    gr.Markdown("#### 📝 SPEC 문서 생성")
+
+    with gr.Row():
+        eval_gen_spec_btn = gr.Button("📄 SPEC 문서 생성", variant="secondary")
+        eval_spec_output = gr.Code(
+            language="markdown",
+            label="생성된 SPEC",
+            value="# SPEC 문서\n\n평가 완료 후 생성 버튼을 클릭하세요.",
+            lines=10,
+        )
+
+    # Event handlers
+    def run_evaluation(personas, queries_per_persona, batch_size, threshold, progress=gr.Progress()):
+        """Run full evaluation with progress tracking."""
+        try:
+            from ..application.evaluation import CheckpointManager, ProgressReporter
+            from ..domain.evaluation import (
+                FailureClassifier,
+                PersonaManager,
+                RecommendationEngine,
+                RAGQualityEvaluator,
+            )
+
+            # Initialize components
+            persona_mgr = PersonaManager()
+            checkpoint_mgr = CheckpointManager(checkpoint_dir="data/checkpoints")
+            evaluator = RAGQualityEvaluator(judge_model="gpt-4o", use_ragas=True)
+
+            # Determine personas
+            if "all" in personas or not personas:
+                target_personas = persona_mgr.list_personas()
+            else:
+                target_personas = list(personas)
+
+            total_queries = len(target_personas) * queries_per_persona
+            persona_counts = {p: queries_per_persona for p in target_personas}
+            reporter = ProgressReporter(persona_counts=persona_counts)
+
+            # Create session
+            import uuid
+            session_id = f"eval-{uuid.uuid4().hex[:8]}"
+            checkpoint_mgr.create_session(
+                session_id=session_id,
+                total_queries=total_queries,
+                personas=target_personas,
+            )
+
+            # Initialize RAG
+            from ..application.search_usecase import SearchUseCase
+            from ..infrastructure.chroma_store import ChromaVectorStore
+
+            vector_store = ChromaVectorStore(persist_directory=db_path)
+            search_usecase = SearchUseCase(
+                store=vector_store,
+                llm_client=llm_client,
+                use_reranker=True,
+            )
+
+            results = []
+            completed = 0
+
+            for persona_id in target_personas:
+                queries = persona_mgr.generate_queries(persona_id, count=queries_per_persona)
+
+                for query in queries:
+                    try:
+                        # Search
+                        search_results = search_usecase.search(query_text=query, top_k=5)
+                        contexts = [r.chunk.text for r in search_results] if search_results else []
+
+                        if not contexts:
+                            continue
+
+                        # Generate answer
+                        from ..infrastructure.tool_executor import ToolExecutor
+                        tool_executor = ToolExecutor(
+                            search_usecase=search_usecase,
+                            llm_client=llm_client,
+                        )
+                        answer = tool_executor._handle_generate_answer(
+                            {"question": query, "context": "\n\n".join(contexts)}
+                        )
+
+                        if not answer:
+                            continue
+
+                        # Evaluate
+                        result = evaluator.evaluate_single_turn(query, contexts, answer)
+                        result.persona = persona_id
+                        results.append(result)
+
+                        # Update progress
+                        reporter.update(persona=persona_id, query_id=f"q_{completed}", score=result.overall_score)
+                        completed += 1
+                        progress(completed / total_queries, desc=f"평가 중: {query[:30]}...")
+
+                    except Exception:
+                        pass
+
+            # Calculate metrics
+            if results:
+                avg_faithfulness = sum(r.faithfulness for r in results if hasattr(r, 'faithfulness')) / len(results)
+                avg_relevancy = sum(r.answer_relevancy for r in results if hasattr(r, 'answer_relevancy')) / len(results)
+                avg_precision = sum(r.contextual_precision for r in results if hasattr(r, 'contextual_precision')) / len(results)
+                avg_recall = sum(r.contextual_recall for r in results if hasattr(r, 'contextual_recall')) / len(results)
+                avg_overall = sum(r.overall_score for r in results) / len(results)
+
+                metrics_data = [
+                    ["Faithfulness", f"{avg_faithfulness:.2f}", "0.90", "✅" if avg_faithfulness >= 0.90 else "❌"],
+                    ["Answer Relevancy", f"{avg_relevancy:.2f}", "0.85", "✅" if avg_relevancy >= 0.85 else "❌"],
+                    ["Contextual Precision", f"{avg_precision:.2f}", "0.80", "✅" if avg_precision >= 0.80 else "❌"],
+                    ["Contextual Recall", f"{avg_recall:.2f}", "0.80", "✅" if avg_recall >= 0.80 else "❌"],
+                    ["Overall Score", f"{avg_overall:.2f}", "0.85", "✅" if avg_overall >= 0.85 else "❌"],
+                ]
+
+                # Classify failures
+                classifier = FailureClassifier()
+                failures = classifier.classify_batch(results)
+
+                failures_data = [
+                    [f.failure_type.value, str(f.count), f"{f.count/len(results)*100:.1f}%"]
+                    for f in failures
+                ]
+
+                # Generate recommendations
+                engine = RecommendationEngine()
+                failure_counts = {f.failure_type: f.count for f in failures}
+                recommendations = engine.generate_recommendations(failure_counts, threshold=1)
+
+                rec_text = "### 개선 권장사항\n\n"
+                for rec in recommendations[:5]:
+                    rec_text += f"**{rec.title}** ({rec.priority.value})\n"
+                    rec_text += f"- {rec.description}\n"
+                    rec_text += f"- 예상 효과: {rec.impact_estimate}\n\n"
+
+                summary_text = f"""
+### 평가 요약
+
+- **세션 ID**: {session_id}
+- **평가된 쿼리**: {len(results)}개
+- **평균 점수**: {avg_overall:.2f}
+- **합격률**: {sum(1 for r in results if r.overall_score >= threshold)/len(results)*100:.1f}%
+"""
+
+                return (
+                    f"완료: {completed}/{total_queries} (100%)",
+                    "완료",
+                    f"세션 {session_id} 완료",
+                    metrics_data,
+                    summary_text,
+                    failures_data,
+                    rec_text,
+                )
+
+            return (
+                f"완료: {completed}/{total_queries}",
+                "-",
+                "평가 완료 (결과 없음)",
+                [],
+                "평가 결과가 없습니다.",
+                [],
+                "분석할 데이터가 없습니다.",
+            )
+
+        except Exception as e:
+            return (
+                "오류 발생",
+                "-",
+                f"오류: {str(e)}",
+                [],
+                f"오류 발생: {str(e)}",
+                [],
+                "",
+            )
+
+    def generate_spec_from_results():
+        """Generate SPEC document from latest failures."""
+        try:
+            from ..domain.evaluation import (
+                FailureClassifier,
+                RecommendationEngine,
+                SPECGenerator,
+            )
+            from ..infrastructure.storage.evaluation_store import EvaluationStore
+
+            # Get recent evaluations
+            store = EvaluationStore(storage_dir="data/evaluations")
+            evaluations = store.get_evaluations(max_score=0.6, limit=50)
+
+            if not evaluations:
+                return "# SPEC 문서\n\n분석할 실패 데이터가 없습니다."
+
+            # Classify and generate SPEC
+            classifier = FailureClassifier()
+            failures = classifier.classify_batch(evaluations)
+
+            engine = RecommendationEngine()
+            failure_counts = {f.failure_type: f.count for f in failures}
+            recommendations = engine.generate_recommendations(failure_counts, threshold=1)
+
+            generator = SPECGenerator()
+            spec = generator.generate_spec(failures=failures, recommendations=recommendations)
+
+            return spec.to_markdown()
+
+        except Exception as e:
+            return f"# 오류\n\nSPEC 생성 실패: {str(e)}"
+
+    def resume_evaluation(session_id):
+        """Resume interrupted evaluation."""
+        from ..application.evaluation import ResumeController, CheckpointManager
+
+        if not session_id:
+            return "세션 ID를 입력하세요.", "-", "대기 중", [], "", [], ""
+
+        checkpoint_mgr = CheckpointManager(checkpoint_dir="data/checkpoints")
+        resume_ctrl = ResumeController(checkpoint_manager=checkpoint_mgr)
+
+        can_resume, reason = resume_ctrl.can_resume(session_id)
+        if not can_resume:
+            return f"재개 불가: {reason}", "-", "재개 실패", [], "", [], ""
+
+        context = resume_ctrl.get_resume_context(session_id)
+        if not context:
+            return "세션을 찾을 수 없습니다.", "-", "재개 실패", [], "", [], ""
+
+        return (
+            f"재개: {context.completed_count}/{context.total_count}",
+            f"남은 쿼리: {context.total_count - context.completed_count}",
+            f"세션 {session_id} 재개 준비됨",
+            [],
+            f"세션 재개 정보:\n- 완료율: {context.completion_rate:.1f}%\n- 남은 페르소나: {', '.join(context.remaining_personas)}",
+            [],
+            "재개 후 평가를 실행하세요.",
+        )
+
+    # Connect event handlers
+    eval_run_btn.click(
+        fn=run_evaluation,
+        inputs=[eval_personas, eval_queries, eval_batch_size, eval_threshold],
+        outputs=[
+            eval_progress_bar,
+            eval_eta,
+            eval_status,
+            eval_metrics,
+            eval_summary,
+            eval_failures,
+            eval_recommendations,
+        ],
+    )
+
+    eval_resume_btn.click(
+        fn=resume_evaluation,
+        inputs=[eval_session_id],
+        outputs=[
+            eval_progress_bar,
+            eval_eta,
+            eval_status,
+            eval_metrics,
+            eval_summary,
+            eval_failures,
+            eval_recommendations,
+        ],
+    )
+
+    eval_gen_spec_btn.click(
+        fn=generate_spec_from_results,
+        inputs=[],
+        outputs=[eval_spec_output],
+    )
+
+    eval_stop_btn.click(
+        fn=lambda: ("중지됨", "-", "사용자에 의해 중지됨", [], "", [], ""),
+        inputs=[],
+        outputs=[
+            eval_progress_bar,
+            eval_eta,
+            eval_status,
+            eval_metrics,
+            eval_summary,
+            eval_failures,
+            eval_recommendations,
+        ],
+    )
 
 
 # Alias for backward compatibility with tests

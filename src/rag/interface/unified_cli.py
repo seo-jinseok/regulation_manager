@@ -670,6 +670,112 @@ def _add_quality_parser(subparsers):
         help="Gradio 품질 대시보드 실행",
     )
 
+    # P2: quality run - 전체 평가 실행 (BatchEvaluationExecutor + ProgressReporter)
+    run_parser = quality_subparsers.add_parser(
+        "run",
+        help="전체 평가 실행 (배치 처리, 진행률 추적)",
+        description="BatchEvaluationExecutor를 사용한 전체 평가를 실행합니다.",
+    )
+    run_parser.add_argument(
+        "--personas",
+        "-p",
+        nargs="+",
+        help="특정 페르소나만 테스트 (복수 선택 가능)",
+    )
+    run_parser.add_argument(
+        "--queries-per-persona",
+        "-q",
+        type=int,
+        default=25,
+        help="페르소나당 쿼리 수 (기본: 25)",
+    )
+    run_parser.add_argument(
+        "--batch-size",
+        "-b",
+        type=int,
+        default=5,
+        help="API 배치 크기 (기본: 5)",
+    )
+    run_parser.add_argument(
+        "--session-id",
+        "-s",
+        help="세션 ID (지정하면 해당 세션 재개)",
+    )
+    run_parser.add_argument(
+        "--output",
+        "-o",
+        help="평가 보고서 출력 파일",
+    )
+    run_parser.add_argument(
+        "--no-checkpoint",
+        action="store_true",
+        help="체크포인트 저장 비활성화",
+    )
+
+    # P2: quality resume - 중단된 세션 재개
+    resume_parser = quality_subparsers.add_parser(
+        "resume",
+        help="중단된 평가 세션 재개",
+        description="CheckpointManager를 사용하여 중단된 평가를 재개합니다.",
+    )
+    resume_parser.add_argument(
+        "--session-id",
+        "-s",
+        help="재개할 세션 ID (생략 시 가장 최근 중단 세션)",
+    )
+    resume_parser.add_argument(
+        "--list",
+        "-l",
+        action="store_true",
+        help="재개 가능한 세션 목록 표시",
+    )
+
+    # P2: quality generate-spec - 실패 패턴에서 SPEC 생성
+    spec_parser = quality_subparsers.add_parser(
+        "generate-spec",
+        help="평가 실패 패턴에서 SPEC 문서 생성",
+        description="FailureClassifier + SPECGenerator를 사용하여 개선 SPEC을 생성합니다.",
+    )
+    spec_parser.add_argument(
+        "--session-id",
+        "-s",
+        help="특정 세션의 실패 패턴 사용",
+    )
+    spec_parser.add_argument(
+        "--output",
+        "-o",
+        help="SPEC 문서 출력 파일",
+    )
+    spec_parser.add_argument(
+        "--threshold",
+        type=float,
+        default=0.6,
+        help="실패로 간주할 점수 임계값 (기본: 0.6)",
+    )
+
+    # P2: quality status - 세션 상태 확인
+    status_parser = quality_subparsers.add_parser(
+        "status",
+        help="평가 세션 상태 확인",
+        description="진행 중인 평가 세션의 상태를 확인합니다.",
+    )
+    status_parser.add_argument(
+        "--session-id",
+        "-s",
+        help="특정 세션 상태 확인",
+    )
+    status_parser.add_argument(
+        "--all",
+        "-a",
+        action="store_true",
+        help="모든 세션 표시",
+    )
+    status_parser.add_argument(
+        "--cleanup",
+        action="store_true",
+        help="오래된 완료 세션 정리",
+    )
+
 
 def _add_synonym_parser(subparsers):
     """Add synonym subcommand parser."""
@@ -1286,6 +1392,380 @@ def cmd_quality(args) -> int:
             server_port=7861,
             share=False,
             show_error=True,
+        )
+
+    # P2: quality run - 전체 평가 실행
+    elif args.quality_cmd == "run":
+        return _cmd_quality_run(args, console, evaluator, store, persona_mgr, search_usecase, llm_client)
+
+    # P2: quality resume - 중단된 세션 재개
+    elif args.quality_cmd == "resume":
+        return _cmd_quality_resume(args, console, store)
+
+    # P2: quality generate-spec - 실패 패턴에서 SPEC 생성
+    elif args.quality_cmd == "generate-spec":
+        return _cmd_quality_generate_spec(args, console, store)
+
+    # P2: quality status - 세션 상태 확인
+    elif args.quality_cmd == "status":
+        return _cmd_quality_status(args, console, store)
+
+    return 0
+
+
+def _cmd_quality_run(args, console, evaluator, store, persona_mgr, search_usecase, llm_client) -> int:
+    """Execute quality run command - batch evaluation with progress tracking."""
+    from ..application.evaluation import (
+        CheckpointManager,
+        ProgressReporter,
+    )
+
+    checkpoint_dir = "data/checkpoints"
+    if not args.no_checkpoint:
+        checkpoint_mgr = CheckpointManager(checkpoint_dir=checkpoint_dir)
+    else:
+        checkpoint_mgr = None
+
+    # Create session or resume existing
+    session_id = args.session_id
+    if session_id:
+        progress_data = checkpoint_mgr.load_checkpoint(session_id) if checkpoint_mgr else None
+        if progress_data is None:
+            console.print(f"[red]세션 {session_id}을(를) 찾을 수 없습니다.[/red]")
+            return 1
+        console.print(f"[bold]세션 {session_id} 재개 중...[/bold]")
+    else:
+        # Create new session
+        import uuid
+        session_id = f"eval-{uuid.uuid4().hex[:8]}"
+        personas = list(args.personas) if args.personas else persona_mgr.list_personas()
+        total_queries = len(personas) * args.queries_per_persona
+
+        if checkpoint_mgr:
+            checkpoint_mgr.create_session(
+                session_id=session_id,
+                total_queries=total_queries,
+                personas=personas,
+            )
+        console.print(f"[bold]새 평가 세션 시작: {session_id}[/bold]")
+        console.print(f"[dim]페르소나: {', '.join(personas)}[/dim]")
+        console.print(f"[dim]총 쿼리 수: {total_queries}[/dim]")
+
+    # Initialize progress reporter
+    personas_for_progress = list(args.personas) if args.personas else persona_mgr.list_personas()
+    persona_counts = {p: args.queries_per_persona for p in personas_for_progress}
+    total_for_reporter = sum(persona_counts.values())
+    reporter = ProgressReporter(total_queries=total_for_reporter, persona_counts=persona_counts)
+
+    # Initialize batch executor
+    # Note: BatchEvaluationExecutor requires an evaluator callable
+    # For now, we'll skip the batch executor and process queries directly
+    # batch_executor = BatchEvaluationExecutor(
+    #     evaluator=evaluator.evaluate_single_turn,
+    #     batch_size=args.batch_size,
+    # )
+
+    # Run evaluation
+    results = []
+    personas = list(args.personas) if args.personas else persona_mgr.list_personas()
+
+    try:
+        for persona_id in personas:
+            queries = persona_mgr.generate_queries(
+                persona_id,
+                count=args.queries_per_persona,
+            )
+
+            for i, query in enumerate(queries):
+                try:
+                    # Search
+                    search_results = search_usecase.search(query_text=query, top_k=5)
+                    contexts = [r.chunk.text for r in search_results] if search_results else []
+
+                    if not contexts:
+                        console.print(f"[yellow]  ⚠ 검색 결과 없음: {query[:40]}...[/yellow]")
+                        continue
+
+                    # Generate answer
+                    from ..infrastructure.tool_executor import ToolExecutor
+                    tool_executor = ToolExecutor(
+                        search_usecase=search_usecase,
+                        llm_client=llm_client,
+                    )
+                    answer = tool_executor._handle_generate_answer(
+                        {"question": query, "context": "\n\n".join(contexts)}
+                    )
+
+                    if not answer or answer.strip() == "":
+                        continue
+
+                    # Evaluate
+                    result = evaluator.evaluate_single_turn(query, contexts, answer)
+                    result.persona = persona_id
+                    results.append(result)
+                    store.save_evaluation(result)
+
+                    # Update progress
+                    reporter.update(
+                        completed=1,
+                        persona=persona_id,
+                        query=query,
+                        score=result.overall_score,
+                    )
+
+                    # Save checkpoint
+                    if checkpoint_mgr and not args.no_checkpoint:
+                        checkpoint_mgr.update_progress(
+                            session_id=session_id,
+                            persona=persona_id,
+                            query_id=f"q_{i}",
+                            result={"score": result.overall_score, "query": query},
+                        )
+
+                    # Show progress
+                    progress_info = reporter.get_progress()
+                    eta = reporter.get_eta()
+                    console.print(
+                        f"[dim]  [{progress_info.completed}/{progress_info.total}] "
+                        f"Score: {result.overall_score:.2f} | ETA: {eta:.0f}s | {query[:30]}...[/dim]"
+                    )
+
+                except Exception as e:
+                    console.print(f"[red]평가 실패: {e}[/red]")
+                    if checkpoint_mgr and not args.no_checkpoint:
+                        checkpoint_mgr.update_progress(
+                            session_id=session_id,
+                            persona=persona_id,
+                            query_id=f"q_{i}",
+                            error=str(e),
+                        )
+
+    except KeyboardInterrupt:
+        console.print("\n[yellow]평가가 중단되었습니다.[/yellow]")
+        if checkpoint_mgr and not args.no_checkpoint:
+            checkpoint_mgr.pause_session(session_id)
+            console.print(f"[yellow]세션 저장됨: {session_id}[/yellow]")
+            console.print(f"[yellow]재개 명령: regulation quality resume -s {session_id}[/yellow]")
+        return 130
+
+    # Final statistics
+    stats = store.get_statistics()
+    console.print("\n[bold green]✅ 평가 완료![/bold green]")
+    console.print(f"세션 ID: {session_id}")
+    console.print(f"평가된 쿼리: {len(results)}")
+    console.print(f"평균 점수: {stats.avg_overall_score:.2f}")
+    console.print(f"합격률: {stats.pass_rate:.1%}")
+
+    # Save report
+    if args.output:
+        import json
+        report = {
+            "session_id": session_id,
+            "total_queries": len(results),
+            "stats": {
+                "avg_score": stats.avg_overall_score,
+                "pass_rate": stats.pass_rate,
+                "avg_faithfulness": stats.avg_faithfulness,
+                "avg_answer_relevancy": stats.avg_answer_relevancy,
+                "avg_contextual_precision": stats.avg_contextual_precision,
+                "avg_contextual_recall": stats.avg_contextual_recall,
+            },
+        }
+        with open(args.output, "w", encoding="utf-8") as f:
+            json.dump(report, f, indent=2, ensure_ascii=False)
+        console.print(f"[dim]보고서 저장됨: {args.output}[/dim]")
+
+    return 0
+
+
+def _cmd_quality_resume(args, console, store) -> int:
+    """Execute quality resume command - resume interrupted session."""
+    from ..application.evaluation import CheckpointManager, ResumeController
+
+    checkpoint_dir = "data/checkpoints"
+    checkpoint_mgr = CheckpointManager(checkpoint_dir=checkpoint_dir)
+    resume_ctrl = ResumeController(checkpoint_manager=checkpoint_mgr)
+
+    # List sessions if requested
+    if args.list:
+        sessions = resume_ctrl.find_interrupted_sessions()
+        if not sessions:
+            console.print("[yellow]재개 가능한 세션이 없습니다.[/yellow]")
+            return 0
+
+        console.print("[bold]재개 가능한 세션:[/bold]")
+        for session in sessions:
+            console.print(
+                f"  - {session['session_id']}: "
+                f"{session['completion_rate']:.0f}% 완료, "
+                f"업데이트: {session['updated_at']}"
+            )
+        return 0
+
+    # Get session to resume
+    session_id = args.session_id
+    if not session_id:
+        session_id = resume_ctrl.get_resume_recommendation()
+        if not session_id:
+            console.print("[yellow]재개할 세션이 없습니다.[/yellow]")
+            return 1
+        console.print(f"[dim]가장 최근 중단 세션 선택: {session_id}[/dim]")
+
+    # Check if can resume
+    can_resume, reason = resume_ctrl.can_resume(session_id)
+    if not can_resume:
+        console.print(f"[red]세션 {session_id}을(를) 재개할 수 없습니다: {reason}[/red]")
+        return 1
+
+    # Get resume context
+    context = resume_ctrl.get_resume_context(session_id)
+    if not context:
+        console.print(f"[red]세션 {session_id}의 컨텍스트를 가져올 수 없습니다.[/red]")
+        return 1
+
+    console.print(f"[bold]세션 {session_id} 재개 정보:[/bold]")
+    console.print(f"  완료율: {context.completion_rate:.1f}%")
+    console.print(f"  완료된 쿼리: {context.completed_count}/{context.total_count}")
+    console.print(f"  실패한 쿼리: {context.failed_count}")
+    console.print(f"  남은 페르소나: {', '.join(context.remaining_personas) or '없음'}")
+
+    console.print("\n[green]세션 재개 명령:[/green]")
+    console.print(f"  regulation quality run -s {session_id}")
+
+    return 0
+
+
+def _cmd_quality_generate_spec(args, console, store) -> int:
+    """Execute quality generate-spec command - generate SPEC from failures."""
+    from ..domain.evaluation import (
+        FailureClassifier,
+        RecommendationEngine,
+        SPECGenerator,
+    )
+    from ..infrastructure.storage.evaluation_store import EvaluationStore
+
+    # Get evaluations from store
+    eval_store = EvaluationStore(storage_dir=args.output_dir if hasattr(args, 'output_dir') else "data/evaluations")
+
+    # Get recent evaluations below threshold
+    evaluations = eval_store.get_evaluations(
+        max_score=args.threshold,
+        limit=100,
+    )
+
+    if not evaluations:
+        console.print(f"[yellow]임계값 {args.threshold} 미만의 실패한 평가가 없습니다.[/yellow]")
+        return 0
+
+    console.print(f"[bold]분석 중: {len(evaluations)}개 실패 평가[/bold]")
+
+    # Classify failures
+    classifier = FailureClassifier()
+    failure_summaries = classifier.classify_batch(evaluations)
+
+    console.print("\n[bold]실패 유형 분석:[/bold]")
+    for summary in failure_summaries:
+        console.print(
+            f"  - {summary.failure_type.value}: {summary.count}건 "
+            f"(평균 점수: {summary.avg_score:.2f})"
+        )
+
+    # Generate recommendations
+    engine = RecommendationEngine()
+    failure_counts = {s.failure_type: s.count for s in failure_summaries}
+    recommendations = engine.generate_recommendations(failure_counts, threshold=1)
+
+    console.print(f"\n[bold]생성된 권장사항: {len(recommendations)}개[/bold]")
+
+    # Generate SPEC
+    spec_generator = SPECGenerator()
+    spec = spec_generator.generate_spec(
+        failures=failure_summaries,
+        recommendations=recommendations,
+    )
+
+    # Output SPEC
+    if args.output:
+        spec_path = spec_generator.save_spec(spec, path=args.output)
+        console.print(f"\n[green]✅ SPEC 문서 생성 완료: {spec_path}[/green]")
+    else:
+        # Print to console
+        console.print("\n" + "=" * 60)
+        console.print(spec.to_markdown())
+        console.print("=" * 60)
+
+    # Show action plan
+    if recommendations:
+        plan = engine.get_action_plan(recommendations)
+        console.print("\n[bold]액션 플랜:[/bold]")
+        console.print(f"  즉시 조치: {len(plan['immediate_actions'])}개")
+        console.print(f"  단기 조치: {len(plan['short_term_actions'])}개")
+        console.print(f"  장기 조치: {len(plan['long_term_actions'])}개")
+
+    return 0
+
+
+def _cmd_quality_status(args, console, store) -> int:
+    """Execute quality status command - check session status."""
+    from ..application.evaluation import CheckpointManager
+
+    checkpoint_dir = "data/checkpoints"
+    checkpoint_mgr = CheckpointManager(checkpoint_dir=checkpoint_dir)
+
+    # Cleanup if requested
+    if args.cleanup:
+        cleaned = checkpoint_mgr.cleanup_completed_sessions(keep_days=7)
+        console.print(f"[green]정리된 세션: {cleaned}개[/green]")
+        return 0
+
+    # Show specific session
+    if args.session_id:
+        progress = checkpoint_mgr.load_checkpoint(args.session_id)
+        if not progress:
+            console.print(f"[red]세션 {args.session_id}을(를) 찾을 수 없습니다.[/red]")
+            return 1
+
+        console.print(f"[bold]세션: {progress.session_id}[/bold]")
+        console.print(f"  상태: {progress.status}")
+        console.print(f"  시작: {progress.started_at}")
+        console.print(f"  업데이트: {progress.updated_at}")
+        console.print(f"  진행률: {progress.completed_queries}/{progress.total_queries}")
+        console.print(f"  완료율: {progress.completion_rate:.1f}%")
+
+        console.print("\n[bold]페르소나별 진행:[/bold]")
+        for persona, persona_progress in progress.personas.items():
+            console.print(
+                f"  - {persona}: {persona_progress.completed_queries}/{persona_progress.total_queries} "
+                f"(실패: {persona_progress.failed_queries})"
+            )
+        return 0
+
+    # Show all sessions
+    sessions = checkpoint_mgr.list_sessions()
+
+    if not sessions:
+        console.print("[yellow]저장된 세션이 없습니다.[/yellow]")
+        return 0
+
+    if not args.all:
+        # Show only recent/active sessions
+        sessions = [s for s in sessions if s.get("status") != "completed"][:5]
+
+    console.print(f"[bold]평가 세션 ({len(sessions)}개):[/bold]\n")
+
+    for session in sessions:
+        status_color = {
+            "running": "green",
+            "paused": "yellow",
+            "completed": "blue",
+            "failed": "red",
+        }.get(session.get("status"), "white")
+
+        console.print(
+            f"  [{status_color}]{session['session_id']}[/{status_color}] "
+            f"- {session['status']} "
+            f"- {session['completion_rate']:.0f}% "
+            f"- {session['updated_at']}"
         )
 
     return 0

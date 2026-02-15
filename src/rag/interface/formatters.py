@@ -248,7 +248,9 @@ def strip_path_prefix(text: str, parent_path: List[str]) -> str:
             continue
         normalized_candidate = [normalize(part) for part in candidate]
         match_len = 0
-        for part, target in zip(normalized_parts, normalized_candidate, strict=True):
+        # Use zip without strict mode to handle different length paths
+        # Only count matches up to the length of the shorter list
+        for part, target in zip(normalized_parts, normalized_candidate):
             if part == target:
                 match_len += 1
             else:

@@ -382,6 +382,218 @@ uv run regulation --loop --compare <evaluation_id>
 }
 ```
 
+## P2: CLI 통합 (SPEC-RAG-EVAL-001)
+
+### 전체 평가 실행
+
+```bash
+# 기본 전체 평가
+regulation quality run
+
+# 특정 페르소나만 평가
+regulation quality run -p freshman -p professor
+
+# 설정 지정
+regulation quality run -q 50 -b 10 --output report.json
+
+# 체크포인트 비활성화
+regulation quality run --no-checkpoint
+```
+
+### 세션 재개
+
+```bash
+# 재개 가능한 세션 목록
+regulation quality resume --list
+
+# 특정 세션 재개
+regulation quality resume -s eval-abc123
+
+# 최근 중단 세션 재개
+regulation quality resume
+```
+
+### SPEC 문서 생성
+
+```bash
+# 최근 실패 패턴에서 SPEC 생성
+regulation quality generate-spec
+
+# 출력 파일 지정
+regulation quality generate-spec -o .moai/specs/SPEC-Q-001/spec.md
+
+# 임계값 조정
+regulation quality generate-spec --threshold 0.5
+```
+
+### 세션 상태 확인
+
+```bash
+# 모든 세션 상태
+regulation quality status --all
+
+# 특정 세션 상태
+regulation quality status -s eval-abc123
+
+# 오래된 세션 정리
+regulation quality status --cleanup
+```
+
+## P2: Gradio 대시보드
+
+### 품질 평가 탭
+
+Gradio 웹 UI에 "품질 평가" 탭이 추가되었습니다:
+
+**평가 설정**:
+- 페르소나 선택 (복수 선택 가능)
+- 페르소나당 쿼리 수 (5-50)
+- 배치 크기 (1-10)
+- 실패 임계값 (0.4-0.8)
+
+**실행 제어**:
+- 평가 시작/재개/중지
+- 세션 ID 입력
+
+**결과 표시**:
+- 진행률 및 ETA
+- 메트릭별 점수 (Faithfulness, Relevancy, Precision, Recall)
+- 실패 유형 분석
+- 개선 권장사항
+- SPEC 문서 생성
+
+### 대시보드 실행
+
+```bash
+# 웹 UI 실행 (품질 평가 탭 포함)
+regulation serve --web
+
+# 또는 포트 지정
+regulation serve --web --port 7860
+```
+
+## P0/P1 컴포넌트 활용
+
+### BatchEvaluationExecutor
+
+```python
+from src.rag.domain.evaluation import BatchEvaluationExecutor
+
+# 배치 실행기 초기화
+executor = BatchEvaluationExecutor(
+    batch_size=5,
+    rate_limit_rpm=60,
+)
+
+# 캐시와 함께 실행
+result = executor.execute_batch(
+    queries=queries,
+    evaluator=evaluator,
+    cache=cache,
+    rate_limiter=rate_limiter,
+)
+```
+
+### CheckpointManager
+
+```python
+from src.rag.application.evaluation import CheckpointManager
+
+# 체크포인트 관리
+checkpoint_mgr = CheckpointManager(checkpoint_dir="data/checkpoints")
+
+# 세션 생성
+checkpoint_mgr.create_session(
+    session_id="eval-001",
+    total_queries=100,
+    personas=["freshman", "professor"],
+)
+
+# 진행 상황 업데이트
+checkpoint_mgr.update_progress(
+    session_id="eval-001",
+    persona="freshman",
+    query_id="q1",
+    result={"score": 0.85},
+)
+
+# 세션 재개
+progress = checkpoint_mgr.load_checkpoint("eval-001")
+```
+
+### ResumeController
+
+```python
+from src.rag.application.evaluation import ResumeController
+
+# 재개 컨트롤러
+resume_ctrl = ResumeController(checkpoint_manager=checkpoint_mgr)
+
+# 재개 가능 여부 확인
+can_resume, reason = resume_ctrl.can_resume("eval-001")
+
+# 컨텍스트 가져오기
+context = resume_ctrl.get_resume_context("eval-001")
+
+# 결과 병합
+merged = resume_ctrl.merge_results(old_results, new_results)
+```
+
+### FailureClassifier
+
+```python
+from src.rag.domain.evaluation import FailureClassifier, FailureType
+
+# 실패 분류기
+classifier = FailureClassifier()
+
+# 개별 결과 분류
+failure_type = classifier.classify(result)
+
+# 배치 분류
+summaries = classifier.classify_batch(results)
+
+# 실패 유형별 요약
+for summary in summaries:
+    print(f"{summary.failure_type}: {summary.count}건")
+```
+
+### RecommendationEngine
+
+```python
+from src.rag.domain.evaluation import RecommendationEngine
+
+# 권장사항 엔진
+engine = RecommendationEngine()
+
+# 실패 패턴에서 권장사항 생성
+recommendations = engine.generate_recommendations(failure_counts, threshold=3)
+
+# 우선순위별 정렬
+prioritized = engine.prioritize(recommendations)
+
+# 액션 플랜 생성
+plan = engine.get_action_plan(recommendations)
+```
+
+### SPECGenerator
+
+```python
+from src.rag.domain.evaluation import SPECGenerator
+
+# SPEC 생성기
+generator = SPECGenerator()
+
+# 실패 패턴에서 SPEC 생성
+spec = generator.generate_spec(
+    failures=failure_summaries,
+    recommendations=recommendations,
+)
+
+# 파일로 저장
+spec_path = generator.save_spec(spec, path=".moai/specs/SPEC-Q-001/spec.md")
+```
+
 ## 주요 개선 사항
 
 ### v2.0 변경사항
@@ -391,6 +603,23 @@ uv run regulation --loop --compare <evaluation_id>
 3. **페르소나 시스템**: 6가지 체계적인 사용자 페르소나 정의
 4. **합성 데이터**: 문서에서 자동으로 테스트 쿼리 생성
 5. **대시보드**: Gradio 웹 인터페이스로 시각적 모니터링
+
+### v2.1 변경사항 (P0/P1)
+
+1. **BatchEvaluationExecutor**: RateLimiter, EvaluationCache, CostEstimator
+2. **RegulationQueryGenerator**: 규정 기반 쿼리 생성
+3. **CheckpointManager**: 세션 영속성 관리
+4. **ProgressReporter**: 실시간 진행률 및 ETA
+5. **ResumeController**: 중단된 세션 재개
+6. **FailureClassifier**: 실패 유형 분류 (8가지)
+7. **RecommendationEngine**: 개선 권장사항 생성
+8. **SPECGenerator**: 실패 패턴에서 SPEC 문서 자동 생성
+
+### v2.2 변경사항 (P2)
+
+1. **CLI 통합**: `regulation quality run/resume/generate-spec/status` 명령어
+2. **Gradio 평가 탭**: 웹 UI에서 품질 평가 기능 제공
+3. **실시간 진행률**: CLI와 Gradio 모두에서 진행률 표시
 
 ## 프로젝트 특수 고려사항
 
