@@ -32,6 +32,26 @@ from ..infrastructure.query_analyzer import Audience, QueryType
 
 logger = logging.getLogger(__name__)
 
+# Audience to Persona mapping for persona-aware response generation
+# Maps Audience enum values to persona names used by PersonaAwareGenerator
+AUDIENCE_TO_PERSONA: Dict[Audience, str] = {
+    Audience.STUDENT: "freshman",  # Default students to freshman persona
+    Audience.FACULTY: "professor",  # Faculty to professor persona
+    Audience.STAFF: "staff",        # Staff to staff persona
+    Audience.ALL: "freshman",       # Default to freshman persona
+}
+
+# Fallback messages for low confidence responses (TAG-001: Prevent Hallucination)
+# Used when confidence score is below threshold to prevent hallucinated content
+FALLBACK_MESSAGE_KO = (
+    "죄송합니다. 해당 질문에 대한 정보를 규정에서 찾을 수 없습니다. "
+    "다른 표현으로 다시 질문해 주시거나, 학교 관련 부서에 문의하시기 바랍니다."
+)
+FALLBACK_MESSAGE_EN = (
+    "Sorry, I could not find information about this question in the regulations. "
+    "Please try asking in different words or contact the relevant university department."
+)
+
 # Forward references for type hints
 if TYPE_CHECKING:
     from ..domain.llm.ambiguity_classifier import DisambiguationDialog
@@ -322,6 +342,12 @@ class SearchUseCase:
         else:
             self.hallucination_filter = None
 
+        # Confidence threshold for fallback response (TAG-001: Prevent Hallucination)
+        # When confidence score is below this threshold, return fallback message
+        # instead of generating potentially hallucinated content
+        self._confidence_threshold = config.confidence_threshold
+        logger.info(f"Confidence threshold set to {self._confidence_threshold}")
+
         # Period Keyword Detection (SPEC-RAG-Q-003)
         # Initialize PeriodKeywordDetector for deadline/date queries
         if period_keyword_detector is not None:
@@ -345,6 +371,10 @@ class SearchUseCase:
 
         # Phase 1 Integration: Query Expansion Service
         self._query_expansion_service = None  # Will be initialized if enabled
+
+        # Persona-Aware Response Generation (TAG-005: REQ-004)
+        # Lazy initialized PersonaAwareGenerator for persona-based prompt enhancement
+        self._persona_generator = None
 
         # Multi-hop Question Answering components
         self._enable_multi_hop = getattr(config, "enable_multi_hop", True)
@@ -1807,6 +1837,56 @@ class SearchUseCase:
 
             self._fact_checker = FactChecker(store=self.store)
 
+    def _ensure_persona_generator(self) -> None:
+        """Initialize PersonaAwareGenerator if not already initialized."""
+        if self._persona_generator is None:
+            from ..domain.personas.persona_generator import PersonaAwareGenerator
+
+            self._persona_generator = PersonaAwareGenerator()
+            logger.debug("PersonaAwareGenerator initialized")
+
+    def _enhance_prompt_with_persona(
+        self, base_prompt: str, persona: str, query: Optional[str] = None
+    ) -> str:
+        """
+        Enhance base prompt with persona-specific instructions.
+
+        Args:
+            base_prompt: Original system prompt.
+            persona: Persona ID or persona name.
+            query: Optional query for additional context.
+
+        Returns:
+            Enhanced prompt with persona-specific instructions.
+        """
+        self._ensure_persona_generator()
+        if not self._persona_generator:
+            return base_prompt
+
+        try:
+            enhanced = self._persona_generator.enhance_prompt(
+                base_prompt, persona, query
+            )
+            logger.debug(f"Prompt enhanced for persona: {persona}")
+            return enhanced
+        except Exception as e:
+            logger.warning(f"Failed to enhance prompt for persona {persona}: {e}")
+            return base_prompt
+
+    def _get_persona_from_audience(self, audience: Optional["Audience"]) -> Optional[str]:
+        """
+        Map Audience enum to persona name for prompt enhancement.
+
+        Args:
+            audience: Audience enum value from query analysis.
+
+        Returns:
+            Persona name string or None if no mapping found.
+        """
+        if audience is None:
+            return None
+        return AUDIENCE_TO_PERSONA.get(audience)
+
     def _ensure_citation_verification_service(self) -> "CitationVerificationService":
         """
         Initialize CitationVerificationService if not already initialized.
@@ -2292,6 +2372,20 @@ class SearchUseCase:
             # Normalize results before using as fallback to handle cached dicts
             filtered_results = self._normalize_search_results(results[:top_k])
 
+        # TAG-001: Check confidence threshold before generating answer
+        # If confidence is too low, return fallback message to prevent hallucination
+        confidence = self._compute_confidence(filtered_results)
+        if confidence < self._confidence_threshold:
+            logger.warning(
+                f"Low confidence ({confidence:.3f} < {self._confidence_threshold:.3f}), "
+                f"returning fallback message for query: {question[:50]}..."
+            )
+            return Answer(
+                text=FALLBACK_MESSAGE_KO,
+                sources=[],
+                confidence=confidence,
+            )
+
         # Build context from search results
         context = self._build_context(filtered_results)
 
@@ -2309,12 +2403,17 @@ class SearchUseCase:
             logger.debug("=" * 80)
 
         # Generate answer with fact-check loop
+        # TAG-005: Detect persona for persona-aware response generation
+        detected_audience = self._detect_audience(question, audience_override)
+        persona = self._get_persona_from_audience(detected_audience)
+
         answer_text = self._generate_with_fact_check(
             question=question,
             context=context,
             history_text=history_text,
             debug=debug,
             custom_prompt=custom_prompt,
+            persona=persona,
         )
 
         # Self-RAG: Start async support verification
@@ -2366,6 +2465,7 @@ class SearchUseCase:
         debug: bool = False,
         custom_prompt: Optional[str] = None,
         custom_user_message: Optional[str] = None,
+        persona: Optional[str] = None,
     ) -> str:
         """
         Generate answer with iterative fact-checking and correction.
@@ -2380,6 +2480,7 @@ class SearchUseCase:
             debug: Whether to print debug info.
             custom_prompt: Optional custom system prompt (e.g., for English).
             custom_user_message: Optional pre-built user message.
+            persona: Optional persona name for persona-aware response generation.
 
         Returns:
             Verified answer text.
@@ -2392,6 +2493,12 @@ class SearchUseCase:
 
         # Use custom prompt if provided, otherwise use default
         system_prompt = custom_prompt or REGULATION_QA_PROMPT
+
+        # TAG-005: Enhance prompt with persona-specific instructions
+        if persona and not custom_prompt:
+            system_prompt = self._enhance_prompt_with_persona(
+                system_prompt, persona, question
+            )
 
         # Initial generation
         answer_text = self.llm.generate(
@@ -3658,6 +3765,20 @@ class SearchUseCase:
         if not filtered_results:
             filtered_results = self._normalize_search_results(results[:top_k])
 
+        # TAG-001: Check confidence threshold before generating answer
+        # If confidence is too low, return fallback message to prevent hallucination
+        confidence = self._compute_confidence(filtered_results)
+        if confidence < self._confidence_threshold:
+            logger.warning(
+                f"Low confidence ({confidence:.3f} < {self._confidence_threshold:.3f}), "
+                f"returning fallback message for English query: {question[:50]}..."
+            )
+            return Answer(
+                text=FALLBACK_MESSAGE_EN,
+                sources=[],
+                confidence=confidence,
+            )
+
         # Build context from search results
         context = self._build_context(filtered_results)
 
@@ -3674,6 +3795,14 @@ class SearchUseCase:
             logger.debug("=" * 80)
 
         # Generate answer
+        # TAG-005: For English queries, use international persona or detect from audience
+        detected_audience = self._detect_audience(question, audience_override)
+        # For English queries, prefer "international" persona unless audience explicitly suggests otherwise
+        if audience_override is None:
+            persona = "international"
+        else:
+            persona = self._get_persona_from_audience(detected_audience) or "international"
+
         answer_text = self._generate_with_fact_check(
             question=question,
             context=context,
@@ -3681,6 +3810,7 @@ class SearchUseCase:
             debug=debug,
             custom_prompt=english_prompt,
             custom_user_message=user_message,
+            persona=persona,
         )
 
         # Self-RAG: Start async support verification

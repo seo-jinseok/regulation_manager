@@ -3,6 +3,8 @@ BGE Reranker for Regulation RAG System.
 
 Provides cross-encoder based reranking to improve search result quality.
 Uses BAAI/bge-reranker-v2-m3 for multilingual support (including Korean).
+
+Includes BM25 fallback for graceful degradation when cross-encoder fails.
 """
 
 import logging
@@ -28,6 +30,10 @@ if TYPE_CHECKING:
 _reranker = None
 _model_name = "BAAI/bge-reranker-v2-m3"
 
+# Track reranker status for fallback decisions
+_bge_available: Optional[bool] = None  # None = not tested, True = available, False = failed
+_last_reranker_error: Optional[str] = None
+
 
 @dataclass
 class RerankedResult:
@@ -40,17 +46,181 @@ class RerankedResult:
     metadata: dict
 
 
+class BM25FallbackReranker(IReranker):
+    """
+    BM25-based fallback reranker when cross-encoder is unavailable.
+
+    Uses rank_bm25 library for keyword-based relevance scoring.
+    Provides graceful degradation when BGE reranker fails due to:
+    - FlagEmbedding/transformers compatibility issues
+    - Memory constraints
+    - Model loading failures
+    """
+
+    def __init__(self, language: str = "korean"):
+        """
+        Initialize BM25 fallback reranker.
+
+        Args:
+            language: Language for tokenization (korean, english).
+        """
+        self._language = language
+        self._tokenizer = self._get_tokenizer()
+
+    def _get_tokenizer(self):
+        """Get appropriate tokenizer for the language."""
+        if self._language == "korean":
+            try:
+                from kiwipiepy import Kiwi
+
+                kiwi = Kiwi()
+
+                def korean_tokenize(text: str) -> List[str]:
+                    return [token.form for token in kiwi.tokenize(text)]
+
+                return korean_tokenize
+            except ImportError:
+                logger.warning("kiwipiepy not available, using simple tokenization")
+                return lambda x: x.lower().split()
+        else:
+            return lambda x: x.lower().split()
+
+    def rerank(
+        self,
+        query: str,
+        documents: List[Tuple[str, str, dict]],
+        top_k: int = 10,
+    ) -> List[tuple]:
+        """
+        Rerank documents using BM25 algorithm.
+
+        Args:
+            query: The search query.
+            documents: List of (doc_id, content, metadata) tuples.
+            top_k: Maximum number of results to return.
+
+        Returns:
+            List of (doc_id, content, score, metadata) tuples sorted by relevance.
+        """
+        if not documents:
+            return []
+
+        try:
+            from rank_bm25 import BM25Okapi
+        except ImportError:
+            logger.error("rank_bm25 not installed. Install with: uv add rank_bm25")
+            # Return documents in original order with equal scores
+            return [
+                (doc_id, content, 0.5, metadata)
+                for doc_id, content, metadata in documents[:top_k]
+            ]
+
+        # Tokenize documents
+        tokenized_docs = [self._tokenizer(doc[1]) for doc in documents]
+        tokenized_query = self._tokenizer(query)
+
+        # Create BM25 index
+        bm25 = BM25Okapi(tokenized_docs)
+
+        # Get scores
+        scores = bm25.get_scores(tokenized_query)
+
+        # Normalize scores to 0-1 range
+        if len(scores) > 0:
+            min_score = min(scores)
+            max_score = max(scores)
+            if max_score > min_score:
+                scores = [(s - min_score) / (max_score - min_score) for s in scores]
+            else:
+                scores = [0.5] * len(scores)
+
+        # Create results with scores
+        results = []
+        for i, (doc_id, content, metadata) in enumerate(documents):
+            results.append((doc_id, content, scores[i], metadata))
+
+        # Sort by score descending
+        results.sort(key=lambda x: x[2], reverse=True)
+
+        return results[:top_k]
+
+    def rerank_with_context(
+        self,
+        query: str,
+        documents: List[Tuple[str, str, dict]],
+        context: Optional[dict] = None,
+        top_k: int = 10,
+    ) -> List[tuple]:
+        """
+        Rerank with metadata context boosting (BM25 implementation).
+
+        Since BM25 doesn't support context natively, we apply post-hoc boosting.
+        """
+        if not documents:
+            return []
+
+        # Get base BM25 scores
+        results = self.rerank(query, documents, top_k=len(documents))
+
+        context = context or {}
+        target_regulation = context.get("target_regulation")
+        target_audience = context.get("target_audience")
+        regulation_boost = context.get("regulation_boost", 0.15)
+        audience_boost = context.get("audience_boost", 0.1)
+
+        boosted_results = []
+        for doc_id, content, score, metadata in results:
+            boosted_score = score
+
+            # Boost matching regulation
+            if target_regulation:
+                doc_regulation = metadata.get("regulation_title") or metadata.get(
+                    "규정명", ""
+                )
+                if target_regulation.lower() in doc_regulation.lower():
+                    boosted_score = min(1.0, boosted_score + regulation_boost)
+
+            # Boost matching audience
+            if target_audience:
+                doc_audience = metadata.get("audience", "all")
+                if doc_audience == target_audience or doc_audience == "all":
+                    boosted_score = min(1.0, boosted_score + audience_boost)
+
+            boosted_results.append((doc_id, content, boosted_score, metadata))
+
+        # Re-sort by boosted score
+        boosted_results.sort(key=lambda x: x[2], reverse=True)
+
+        return boosted_results[:top_k]
+
+
+def get_reranker_status() -> Dict[str, any]:
+    """
+    Get current reranker status for monitoring.
+
+    Returns:
+        Dict with 'bge_available', 'last_error', 'active_reranker' keys.
+    """
+    return {
+        "bge_available": _bge_available,
+        "last_error": _last_reranker_error,
+        "active_reranker": "BGE" if _reranker is not None else "None",
+    }
+
+
 def get_reranker(model_name: Optional[str] = None):
     """
     Get or initialize the BGE reranker (singleton pattern).
+
+    If BGE reranker fails, returns a BM25FallbackReranker instead of raising.
 
     Args:
         model_name: Optional model name. Defaults to bge-reranker-v2-m3.
 
     Returns:
-        FlagReranker instance.
+        FlagReranker instance or BM25FallbackReranker if BGE unavailable.
     """
-    global _reranker, _model_name
+    global _reranker, _model_name, _bge_available, _last_reranker_error
 
     if model_name:
         _model_name = model_name
@@ -63,20 +233,27 @@ def get_reranker(model_name: Optional[str] = None):
                 _model_name,
                 use_fp16=True,  # Use FP16 for faster inference on Apple Silicon
             )
+            _bge_available = True
+            _last_reranker_error = None
+            logger.info(f"BGE reranker initialized successfully: {_model_name}")
         except ImportError as e:
-            from ..exceptions import RerankerError
-
-            raise RerankerError(
-                "FlagEmbedding is required. Install with: uv add FlagEmbedding",
-                model=_model_name,
-            ) from e
+            _bge_available = False
+            _last_reranker_error = f"FlagEmbedding import failed: {e}"
+            logger.warning(
+                f"BGE reranker unavailable, using BM25 fallback. "
+                f"Error: {_last_reranker_error}"
+            )
+            # Return BM25 fallback instead of raising
+            _reranker = BM25FallbackReranker()
         except Exception as e:
-            from ..exceptions import RerankerError
-
-            raise RerankerError(
-                f"Failed to initialize reranker: {e}",
-                model=_model_name,
-            ) from e
+            _bge_available = False
+            _last_reranker_error = f"BGE initialization failed: {e}"
+            logger.warning(
+                f"BGE reranker initialization failed, using BM25 fallback. "
+                f"Error: {_last_reranker_error}"
+            )
+            # Return BM25 fallback instead of raising
+            _reranker = BM25FallbackReranker()
 
     return _reranker
 
@@ -87,7 +264,11 @@ def rerank(
     top_k: int = 10,
 ) -> List[RerankedResult]:
     """
-    Rerank documents using BGE cross-encoder.
+    Rerank documents using BGE cross-encoder with BM25 fallback.
+
+    Automatically falls back to BM25 if:
+    - BGE reranker is unavailable
+    - compute_score() raises an exception (e.g., transformers compatibility issue)
 
     Args:
         query: The search query.
@@ -97,38 +278,80 @@ def rerank(
     Returns:
         List of RerankedResult sorted by relevance score.
     """
+    global _bge_available, _last_reranker_error
+
     if not documents:
         return []
 
     reranker = get_reranker()
 
-    # Prepare query-document pairs
-    pairs = [[query, doc[1]] for doc in documents]
-
-    # Compute relevance scores
-    scores = reranker.compute_score(pairs, normalize=True)
-
-    # Handle single document case (returns float instead of list)
-    if isinstance(scores, float):
-        scores = [scores]
-
-    # Create results with scores
-    results = []
-    for i, (doc_id, content, metadata) in enumerate(documents):
-        results.append(
+    # Check if we're using BM25 fallback (no compute_score method)
+    if isinstance(reranker, BM25FallbackReranker):
+        logger.debug("Using BM25 fallback reranker")
+        results = reranker.rerank(query, documents, top_k)
+        return [
             RerankedResult(
                 doc_id=doc_id,
                 content=content,
-                score=scores[i],
+                score=score,
                 original_rank=i + 1,
                 metadata=metadata,
             )
+            for i, (doc_id, content, score, metadata) in enumerate(results)
+        ]
+
+    # Try BGE cross-encoder with error handling
+    try:
+        # Prepare query-document pairs
+        pairs = [[query, doc[1]] for doc in documents]
+
+        # Compute relevance scores
+        scores = reranker.compute_score(pairs, normalize=True)
+
+        # Handle single document case (returns float instead of list)
+        if isinstance(scores, float):
+            scores = [scores]
+
+        # Create results with scores
+        results = []
+        for i, (doc_id, content, metadata) in enumerate(documents):
+            results.append(
+                RerankedResult(
+                    doc_id=doc_id,
+                    content=content,
+                    score=scores[i],
+                    original_rank=i + 1,
+                    metadata=metadata,
+                )
+            )
+
+        # Sort by score descending
+        results.sort(key=lambda x: x.score, reverse=True)
+
+        return results[:top_k]
+
+    except Exception as e:
+        # Log error and fall back to BM25
+        _bge_available = False
+        _last_reranker_error = f"BGE compute_score failed: {e}"
+        logger.warning(
+            f"BGE reranker failed during scoring, falling back to BM25. "
+            f"Error: {_last_reranker_error}"
         )
 
-    # Sort by score descending
-    results.sort(key=lambda x: x.score, reverse=True)
-
-    return results[:top_k]
+        # Use BM25 fallback
+        bm25_reranker = BM25FallbackReranker()
+        results = bm25_reranker.rerank(query, documents, top_k)
+        return [
+            RerankedResult(
+                doc_id=doc_id,
+                content=content,
+                score=score,
+                original_rank=i + 1,
+                metadata=metadata,
+            )
+            for i, (doc_id, content, score, metadata) in enumerate(results)
+        ]
 
 
 def rerank_search_results(

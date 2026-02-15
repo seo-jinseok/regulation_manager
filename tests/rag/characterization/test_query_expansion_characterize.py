@@ -175,10 +175,11 @@ class TestQueryAnalyzerExpansionCharacterization:
         CHARACTERIZE: Current query cleaning (stopword removal).
 
         Note: STOPWORDS include "규정" which gets removed completely.
+        Updated: "은" 조사 no longer removed (TAG-004 synonym expansion enhancement)
         """
         test_cases = [
-            # Actual behavior: most stopwords removed including "규정"
-            ("휴학 방법은 무엇인가요", "휴학 방법 무엇인가요"),  # Partial removal
+            # Actual behavior: "은" 조사 preserved after TAG-004 enhancement
+            ("휴학 방법은 무엇인가요", "휴학 방법은 무엇인가요"),  # "은" preserved
             ("장학금 받는 방법", "장학금 받는 방법"),  # No stopwords
             # "규정" is in STOPWORDS so it gets removed
             ("규정이 뭐야", "뭐야"),  # "규정" removed, "이" removed
@@ -342,3 +343,91 @@ class TestCurrentBehaviorSnapshot:
         # Store snapshot data for validation (if needed)
         # This is primarily for documentation and regression detection
         assert snapshot is not None  # Snapshot created successfully
+
+
+class TestBidirectionalSynonymExpansionCharacterization:
+    """
+    Characterization tests for bidirectional synonym expansion (TAG-004).
+
+    These tests document the bidirectional synonym lookup behavior where:
+    - Forward: "복무" -> expands to "근무" (key -> value)
+    - Reverse: "근무" -> expands to "복무" (value -> key)
+    """
+
+    @pytest.fixture
+    def analyzer(self, monkeypatch) -> QueryAnalyzer:
+        """Isolate from external config files."""
+        monkeypatch.delenv("RAG_SYNONYMS_PATH", raising=False)
+        monkeypatch.delenv("RAG_INTENTS_PATH", raising=False)
+        return QueryAnalyzer(synonyms_path=None, intents_path=None)
+
+    # Characterize: Bidirectional synonym expansion (복무 <-> 근무)
+    def test_characterize_bokmu_expands_to_geunmu(self, analyzer: QueryAnalyzer):
+        """
+        CHARACTERIZE: '복무' should expand to include '근무'.
+        """
+        query = "복무 규정"
+        result = analyzer.expand_query(query)
+
+        # Forward lookup: "복무" -> ["근무", ...]
+        assert "복무" in result, f"Expected '복무' in expansion: '{result}'"
+        assert "근무" in result, f"Expected '근무' in expansion (bidirectional): '{result}'"
+        print(f"\n[CHARACTERIZATION BIDIRECTIONAL] '{query}' -> '{result}'")
+
+    def test_characterize_geunmu_expands_to_bokmu(self, analyzer: QueryAnalyzer):
+        """
+        CHARACTERIZE: '근무' should expand to include '복무' (reverse direction).
+        """
+        query = "근무 시간"
+        result = analyzer.expand_query(query)
+
+        # Reverse lookup: "근무" should find "복무" since "복무": ["근무"] exists
+        assert "근무" in result, f"Expected '근무' in expansion: '{result}'"
+        assert "복무" in result, f"Expected '복무' in expansion (bidirectional): '{result}'"
+        print(f"\n[CHARACTERIZATION BIDIRECTIONAL] '{query}' -> '{result}'")
+
+    # Characterize: Bidirectional synonym expansion (교원 <-> 교수)
+    def test_characterize_loyon_expands_to_gyoso(self, analyzer: QueryAnalyzer):
+        """
+        CHARACTERIZE: '교원' should expand to include '교수'.
+        """
+        query = "교원 인사"
+        result = analyzer.expand_query(query)
+
+        assert "교원" in result, f"Expected '교원' in expansion: '{result}'"
+        assert "교수" in result, f"Expected '교수' in expansion (bidirectional): '{result}'"
+        print(f"\n[CHARACTERIZATION BIDIRECTIONAL] '{query}' -> '{result}'")
+
+    def test_characterize_gyoso_expands_to_loyon(self, analyzer: QueryAnalyzer):
+        """
+        CHARACTERIZE: '교수' should expand to include '교원' (reverse direction).
+        """
+        query = "교수 연구"
+        result = analyzer.expand_query(query)
+
+        assert "교수" in result, f"Expected '교수' in expansion: '{result}'"
+        assert "교원" in result, f"Expected '교원' in expansion (bidirectional): '{result}'"
+        print(f"\n[CHARACTERIZATION BIDIRECTIONAL] '{query}' -> '{result}'")
+
+    # Characterize: Bidirectional synonym expansion (승진 <-> 진급)
+    def test_characterize_seungjin_expands_to_jingeup(self, analyzer: QueryAnalyzer):
+        """
+        CHARACTERIZE: '승진' should expand to include '진급'.
+        """
+        query = "승진 심사"
+        result = analyzer.expand_query(query)
+
+        assert "승진" in result, f"Expected '승진' in expansion: '{result}'"
+        assert "진급" in result, f"Expected '진급' in expansion (bidirectional): '{result}'"
+        print(f"\n[CHARACTERIZATION BIDIRECTIONAL] '{query}' -> '{result}'")
+
+    def test_characterize_jingeup_expands_to_seungjin(self, analyzer: QueryAnalyzer):
+        """
+        CHARACTERIZE: '진급' should expand to include '승진' (reverse direction).
+        """
+        query = "진급 요건"
+        result = analyzer.expand_query(query)
+
+        assert "진급" in result, f"Expected '진급' in expansion: '{result}'"
+        assert "승진" in result, f"Expected '승진' in expansion (bidirectional): '{result}'"
+        print(f"\n[CHARACTERIZATION BIDIRECTIONAL] '{query}' -> '{result}'")

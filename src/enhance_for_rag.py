@@ -84,6 +84,10 @@ CHUNK_PATTERNS = {
 # Average characters per token (Korean text approximation)
 CHARS_PER_TOKEN = 2.5
 
+# Chunk size configuration (REQ-001: Improve Contextual Recall to 0.65+)
+MAX_CHUNK_TOKENS = 512
+CHUNK_OVERLAP_TOKENS = 100
+
 # Chunk splitting patterns for HWPX Direct Parser
 PARAGRAPH_PATTERN = r"([①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳])([^①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳]*)"
 
@@ -440,6 +444,7 @@ def enhance_document_for_hwpx(doc: Dict[str, Any]) -> None:
     This function:
     1. Converts flat articles to children structure
     2. Applies RAG enhancement to all nodes
+    3. Splits large chunks for improved retrieval (REQ-001)
 
     Args:
         doc: The document to enhance.
@@ -482,6 +487,43 @@ def enhance_document_for_hwpx(doc: Dict[str, Any]) -> None:
     if last_revision:
         metadata = doc.setdefault("metadata", {})
         metadata["last_revision_date"] = last_revision
+
+    # 7. Split large chunks for improved retrieval (REQ-001)
+    doc["content"] = _split_large_chunks_recursive(doc.get("content", []))
+    doc["addenda"] = _split_large_chunks_recursive(doc.get("addenda", []))
+
+
+def _split_large_chunks_recursive(nodes: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """
+    Recursively split large chunks in a node list.
+
+    This function traverses the node tree and splits any nodes whose
+    text exceeds MAX_CHUNK_TOKENS while preserving all metadata.
+
+    Args:
+        nodes: List of nodes to process.
+
+    Returns:
+        New list with large nodes split into smaller chunks.
+    """
+    result = []
+
+    for node in nodes:
+        # Check if this node needs splitting
+        text = node.get("text", "")
+        token_count = node.get("token_count", calculate_token_count(text))
+
+        if token_count > MAX_CHUNK_TOKENS and text:
+            # Split this node
+            split_nodes = split_large_node(node)
+            result.extend(split_nodes)
+        else:
+            # Keep this node, but process children recursively
+            if "children" in node and node["children"]:
+                node["children"] = _split_large_chunks_recursive(node["children"])
+            result.append(node)
+
+    return result
 
 
 # ============================================================================
@@ -643,6 +685,215 @@ def is_node_searchable(node: Dict[str, Any]) -> bool:
     children = node.get("children", [])
     # Searchable if has text content or is a leaf
     return bool(text) or len(children) == 0
+
+
+# ============================================================================
+# Chunk Size Optimization Functions (REQ-001: Improve Contextual Recall)
+# ============================================================================
+
+
+def split_large_text(
+    text: str,
+    max_tokens: int = MAX_CHUNK_TOKENS,
+    overlap: int = CHUNK_OVERLAP_TOKENS,
+) -> List[str]:
+    """
+    Split large text into smaller chunks with overlap for context preservation.
+
+    This function splits text that exceeds max_tokens into multiple chunks,
+    ensuring each chunk (except possibly the last) stays within the limit.
+    Overlap between chunks helps maintain context across boundaries.
+
+    Args:
+        text: The text to split.
+        max_tokens: Maximum tokens per chunk (default: 512).
+        overlap: Number of tokens to overlap between chunks (default: 100).
+
+    Returns:
+        List of text chunks. Returns single-element list if text is under limit.
+
+    Example:
+        >>> long_text = "..." * 2000  # Very long text
+        >>> chunks = split_large_text(long_text, max_tokens=512, overlap=100)
+        >>> len(chunks) > 1
+        True
+    """
+    if not text:
+        return []
+
+    # Calculate character limits from token limits
+    max_chars = int(max_tokens * CHARS_PER_TOKEN)
+    overlap_chars = int(overlap * CHARS_PER_TOKEN)
+
+    # If text is small enough, return as single chunk
+    if len(text) <= max_chars:
+        return [text]
+
+    chunks = []
+    start = 0
+    text_len = len(text)
+
+    while start < text_len:
+        # Calculate end position for this chunk
+        end = start + max_chars
+
+        if end >= text_len:
+            # Last chunk - take the rest of the text
+            chunks.append(text[start:])
+            break
+
+        # Try to find a good break point (sentence boundary)
+        # Look for Korean sentence endings or punctuation
+        break_point = end
+
+        # Search for sentence boundary within last 200 chars of chunk
+        search_start = max(start, end - 200)
+        search_text = text[search_start:end]
+
+        # Try to find sentence-ending punctuation
+        for pattern in [r'[.!?。！？]\s*', r'[.\n]\s*', r'\n\n']:
+            matches = list(re.finditer(pattern, search_text))
+            if matches:
+                # Use the last match within bounds
+                last_match = matches[-1]
+                break_point = search_start + last_match.end()
+                if break_point > start + max_chars * 0.5:  # At least 50% of chunk
+                    break
+        else:
+            # No good break point found, use character limit
+            break_point = end
+
+        # Add this chunk
+        chunks.append(text[start:break_point])
+
+        # Move start position for next chunk (with overlap)
+        start = break_point - overlap_chars
+        if start < 0:
+            start = 0
+
+        # Prevent infinite loop if overlap is larger than break progress
+        if start >= break_point:
+            start = break_point
+
+    return chunks
+
+
+def split_large_node(
+    node: Dict[str, Any],
+    max_tokens: int = MAX_CHUNK_TOKENS,
+    overlap: int = CHUNK_OVERLAP_TOKENS,
+) -> List[Dict[str, Any]]:
+    """
+    Split a large node into smaller chunks while preserving all metadata.
+
+    This function splits a node whose text exceeds max_tokens into multiple
+    smaller nodes. All metadata (citation info, parent_path, rule_code, etc.)
+    is preserved in each split chunk.
+
+    Metadata preserved in all chunks:
+    - rule_code: Parent regulation identifier
+    - article_number: Citation support (e.g., "제26조")
+    - parent_path: Breadcrumb path
+    - doc_type: Document type classification
+    - level/chunk_level: Chunk level
+    - status: ACTIVE/ABOLISHED status
+    - keywords: Extracted keywords with weights
+    - amendment_history: Revision history
+    - type, display_no, title: Structural information
+
+    Unique per chunk:
+    - id: Derived from original with _partN suffix
+    - text: The split text content
+    - embedding_text: Updated with chunk's text
+    - full_text: Updated with chunk's text
+    - token_count: Recalculated for chunk's text
+
+    Args:
+        node: The node dictionary to potentially split.
+        max_tokens: Maximum tokens per chunk (default: 512).
+        overlap: Number of tokens to overlap (default: 100).
+
+    Returns:
+        List of node dictionaries. Returns single-element list with original
+        node if it doesn't need splitting.
+    """
+    text = node.get("text", "")
+
+    # Check if splitting is needed
+    if not text:
+        return [node]
+
+    token_count = calculate_token_count(text)
+    if token_count <= max_tokens:
+        return [node]
+
+    # Split the text
+    text_chunks = split_large_text(text, max_tokens, overlap)
+
+    if len(text_chunks) == 1:
+        return [node]
+
+    # Create split nodes preserving all metadata
+    split_nodes = []
+    original_id = node.get("id", "")
+
+    # Fields that must be preserved identically in all chunks
+    preserved_fields = [
+        "type", "display_no", "title", "parent_path", "rule_code",
+        "keywords", "chunk_level", "is_searchable", "status", "doc_type",
+        "article_number", "amendment_history", "effective_date",
+        # Note: embedding_text and full_text are recalculated per chunk
+    ]
+
+    for i, chunk_text in enumerate(text_chunks, start=1):
+        # Start with a copy of original node
+        new_node = {}
+
+        # Copy all preserved fields
+        for field in preserved_fields:
+            if field in node:
+                new_node[field] = node[field]
+
+        # Generate unique ID with part suffix
+        if original_id:
+            new_node["id"] = f"{original_id}_part{i}"
+        else:
+            new_node["id"] = f"split_{i}"
+
+        # Set the chunk's text
+        new_node["text"] = chunk_text
+
+        # Recalculate token count for this chunk
+        new_node["token_count"] = calculate_token_count(chunk_text)
+
+        # Update embedding_text with chunk's text
+        # Preserve the path context but update the text content
+        original_embedding = node.get("embedding_text", "")
+        if original_embedding and ":" in original_embedding:
+            # Format: "path > context: original_text"
+            # Replace original text with chunk text
+            path_context = original_embedding.split(":", 1)[0]
+            new_node["embedding_text"] = f"{path_context}: {chunk_text}"
+        else:
+            new_node["embedding_text"] = chunk_text
+
+        # Update full_text similarly
+        original_full = node.get("full_text", "")
+        if original_full and "]" in original_full:
+            # Format: "[path > context] original_text"
+            bracket_end = original_full.index("]")
+            path_context = original_full[:bracket_end + 1]
+            new_node["full_text"] = f"{path_context} {chunk_text}"
+        else:
+            new_node["full_text"] = chunk_text
+
+        # Children should not be copied to split chunks
+        # Each split chunk is a leaf node
+        new_node["children"] = []
+
+        split_nodes.append(new_node)
+
+    return split_nodes
 
 
 def extract_effective_date(text: str) -> Optional[str]:
@@ -946,6 +1197,10 @@ def enhance_document(doc: Dict[str, Any]) -> None:
     if last_revision:
         metadata = doc.setdefault("metadata", {})
         metadata["last_revision_date"] = last_revision
+
+    # 6. Split large chunks for improved retrieval (REQ-001)
+    doc["content"] = _split_large_chunks_recursive(doc.get("content", []))
+    doc["addenda"] = _split_large_chunks_recursive(doc.get("addenda", []))
 
 
 def enhance_json(data: Dict[str, Any]) -> Dict[str, Any]:
