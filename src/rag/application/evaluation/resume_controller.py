@@ -6,10 +6,10 @@ Part of SPEC-RAG-EVAL-001 Milestone 3: Automation Pipeline.
 """
 
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
-from .checkpoint_manager import CheckpointManager, EvaluationProgress, PersonaProgress
+from .checkpoint_manager import CheckpointManager, PersonaProgress
 
 logger = logging.getLogger(__name__)
 
@@ -179,7 +179,6 @@ class ResumeController:
         Raises:
             ValueError: If session cannot be resumed
         """
-        import asyncio
 
         context = self.get_resume_context(session_id)
         if context is None:
