@@ -7,8 +7,8 @@ Part of SPEC-RAG-EVAL-001 Milestone 3: Automation Pipeline.
 
 import logging
 import time
-from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from dataclasses import dataclass
+from datetime import timedelta
 from typing import Any, Callable, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
