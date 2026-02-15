@@ -239,6 +239,15 @@ class RAGConfig:
         default_factory=lambda: os.getenv("HALLUCINATION_FILTER_MODE", "sanitize")
     )  # Options: warn, sanitize, block, passthrough
 
+    # Confidence threshold settings (TAG-001: Prevent Hallucination)
+    # When confidence score is below this threshold, return fallback message
+    # instead of generating potentially hallucinated content
+    confidence_threshold: float = field(
+        default_factory=lambda: float(
+            os.getenv("RAG_CONFIDENCE_THRESHOLD", "0.3")
+        )
+    )
+
     # RAG Query Cache settings
     enable_cache: bool = field(
         default_factory=lambda: os.getenv("RAG_ENABLE_CACHE", "true").lower() == "true"

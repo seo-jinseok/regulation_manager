@@ -272,6 +272,7 @@ class QueryAnalyzer:
 
     # Synonym dictionary for query expansion (minimal seed).
     # Prefer external dictionaries via RAG_SYNONYMS_PATH for full coverage.
+    # Note: These synonyms support bidirectional lookup via _get_synonym_expansions()
     SYNONYMS: Dict[str, List[str]] = {
         "폐과": ["학과 폐지", "전공 폐지"],
         "휴학": ["휴학원", "휴학 신청"],
@@ -283,6 +284,14 @@ class QueryAnalyzer:
         "등록금": ["수업료"],
         "장학금": ["장학"],
         "교수": ["교원", "교직원"],
+        # Bidirectional synonyms for Korean academic terms (TAG-004)
+        "복무": ["근무", "복무규정", "출근", "근태"],
+        "근무": ["복무", "출근", "근태", "근무시간"],
+        "교원": ["교수", "교직원", "교육공무원"],
+        "승진": ["진급", "승급", "인사상승"],
+        "진급": ["승진", "승급"],
+        # Note: "규정" and "조례" are in STOPWORDS, so they are cleaned before expansion.
+        # We don't add them as SYNONYM keys to avoid false positives in has_synonyms().
     }
 
     # Intent patterns for natural language queries (minimal seed).
@@ -1127,7 +1136,12 @@ class QueryAnalyzer:
         return " ".join(tokens) if tokens else cleaned
 
     def _get_synonym_expansions(self, cleaned_query: str) -> List[str]:
-        """Collect synonym expansions, using LLM for unknown terms if available."""
+        """Collect synonym expansions with bidirectional lookup.
+
+        Bidirectional lookup ensures that:
+        - If "복무": ["근무"] exists, "복무" queries expand to "근무"
+        - And "근무" queries also expand to "복무" (reverse direction)
+        """
         expansions: List[str] = []
         tokens = cleaned_query.split() if cleaned_query else []
 
@@ -1136,12 +1150,19 @@ class QueryAnalyzer:
             if len(token) < 2:
                 continue
 
-            # Check if term exists in synonyms.json
+            # Check if term exists in synonyms.json (forward lookup)
             if token in self._synonyms:
                 # Add first 2 synonyms to avoid over-expansion
                 expansions.extend(self._synonyms[token][:2])
-            elif self._llm_client:
-                # Generate synonyms via LLM for unknown terms
+
+            # Bidirectional lookup: Check if token is a synonym value
+            # E.g., "근무" should expand to "복무" if "복무": ["근무"] exists
+            for key_term, synonyms in self._synonyms.items():
+                if token in synonyms and key_term not in expansions:
+                    expansions.append(key_term)
+
+            # LLM fallback for unknown terms
+            if self._llm_client and token not in self._synonyms:
                 llm_synonyms = self._generate_synonyms_cached(token)
                 expansions.extend(llm_synonyms[:2])
 

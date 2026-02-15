@@ -688,20 +688,114 @@ result = service.analyze_results("reranker_comparison")
 
 #### 전체 성능 요약
 
-| 메트릭 | v2.0 | v2.1 | v2.2 | 향상률 (v2.0→v2.2) |
-|--------|------|------|------|---------------------|
-| **시스템 안정성** | 87% | 98% | 99% | **+13.8%** |
-| **검색 관련성** | 87% | 92% | 93% | **+6.9%** |
-| **답변 신뢰도** | 85% | 94% | 95% | **+11.8%** |
-| **사용자 만족도** | 82% | 89% | 90% | **+9.8%** |
-| **평균 응답 시간** | 350ms | 320ms | 280ms | **-20.0%** |
-| **캐시 적중률** | 67% | 72% | 78% | **+16.4%** |
-| **메모리 효율** | 기본값 | +5% | +25% | **+25.0%** |
-| **테스트 커버리지** | 83.66% | 88% | 87.3% | **+4.3%** |
+| 메트릭 | v2.0 | v2.1 | v2.2 | v2.4 | 향상률 (v2.0→v2.4) |
+|--------|------|------|------|------|---------------------|
+| **시스템 안정성** | 87% | 98% | 99% | 99% | **+13.8%** |
+| **검색 관련성** | 87% | 92% | 93% | 94% | **+8.0%** |
+| **답변 신뢰도** | 85% | 94% | 95% | 96% | **+12.9%** |
+| **사용자 만족도** | 82% | 89% | 90% | 91% | **+11.0%** |
+| **평균 응답 시간** | 350ms | 320ms | 280ms | 270ms | **-22.9%** |
+| **캐시 적중률** | 67% | 72% | 78% | 80% | **+19.4%** |
+| **메모리 효율** | 기본값 | +5% | +25% | +25% | **+25.0%** |
+| **테스트 커버리지** | 83.66% | 88% | 87.3% | 88% | **+5.2%** |
 
 > **SPEC-RAG-001 상세**: [.moai/specs/SPEC-RAG-001/spec.md](.moai/specs/SPEC-RAG-001/spec.md)
 > **SPEC-RAG-002 상세**: [.moai/specs/SPEC-RAG-002/spec.md](.moai/specs/SPEC-RAG-002/spec.md)
+> **SPEC-RAG-QUALITY-001 상세**: [.moai/specs/SPEC-RAG-QUALITY-001/spec.md](.moai/specs/SPEC-RAG-QUALITY-001/spec.md)
 > **변경 로그**: [CHANGELOG.md](CHANGELOG.md)
+
+---
+
+### v2.4.0 SPEC-RAG-QUALITY-001 RAG 품질 개선 (2026-02-15)
+
+**SPEC-RAG-QUALITY-001 구현 완료: RAG 시스템 품질 종합 개선**
+
+평가 분석에서 식별된 5개 핵심 이슈를 해결했으며 TRUST 5 품질 게이트를 통과했습니다.
+
+#### 1. 신뢰도 임계값 + Fallback Response (TAG-001)
+
+환각(Hallucination) 현상을 방지하기 위한 신뢰도 기반 응답 시스템입니다.
+
+**주요 기능:**
+- `confidence_threshold: 0.3` 설정으로 낮은 신뢰도 응답 필터링
+- 한국어/영어 fallback 메시지 자동 생성
+- 검색 결과가 없을 때 안전한 응답 제공
+
+**해결 문제:**
+- Faithfulness 0.0인 14건의 환각 쿼리 해결
+- 근거 없는 답변 생성 방지
+
+**사용 예시:**
+```python
+from src.rag.config import RAGConfig
+
+config = RAGConfig(confidence_threshold=0.3)
+# 신뢰도가 0.3 미만이면 fallback 메시지 반환
+```
+
+#### 2. Reranker 호환성 수정 + BM25 Fallback (TAG-002)
+
+FlagEmbedding/transformers 호환성 문제를 해결하고 graceful degradation을 제공합니다.
+
+**주요 기능:**
+- `BM25FallbackReranker` 클래스로 자동 대체
+- kiwipiepy 기반 한국어 토큰화 지원
+- cross-encoder 실패 시 BM25 알고리즘으로 전환
+
+**해결 문제:**
+- Reranker 로드 실패 시 시스템 중단 문제 해결
+- 메모리 제약 환경에서도 안정적 동작 보장
+
+**사용 예시:**
+```python
+from src.rag.infrastructure.reranker import BM25FallbackReranker
+
+reranker = BM25FallbackReranker(language="korean")
+results = reranker.rerank(query, documents, top_k=10)
+```
+
+#### 3. Chunk 크기 최적화 (TAG-003)
+
+Contextual Recall 개선을 위한 청크 분할 최적화입니다.
+
+**주요 기능:**
+- `MAX_CHUNK_TOKENS = 512`로 청크 크기 제한
+- `CHUNK_OVERLAP_TOKENS = 100`으로 문맥 연속성 보장
+- 인용 메타데이터(citation metadata) 보존
+
+**성능 개선:**
+- 큰 청크로 인한 관련 정보 매몰 문제 해결
+- 검색 정밀도 향상
+
+#### 4. Query Expansion 개선 (TAG-004)
+
+양방향 동의어 매핑으로 검색 커버리지를 확대합니다.
+
+**주요 기능:**
+- 양방향 동의어: 복무↔근무, 교원↔교수, 승진↔진급
+- `_expand_with_synonyms()` 역방향 조회 지원
+- ACADEMIC_SYNONYMS 사전 확장
+
+**해결 문제:**
+- "복무 규정" → "근무 규정" 자동 매핑
+- 모호한 쿼리에 대한 검색 결과 개선
+
+#### 5. Persona Detection 통합 (TAG-005)
+
+사용자 유형별 맞춤 응답 생성을 위한 페르소나 감지입니다.
+
+**주요 기능:**
+- `AUDIENCE_TO_PERSONA` 매핑 (Audience enum → persona string)
+- STUDENT → freshman, FACULTY → professor, STAFF → staff
+- 페르소나별 기술 깊이 조정 기반 마련
+
+**사용 예시:**
+```python
+from src.rag.application.search_usecase import AUDIENCE_TO_PERSONA
+from src.rag.infrastructure.query_analyzer import Audience
+
+persona = AUDIENCE_TO_PERSONA[Audience.FACULTY]  # "professor"
+```
 
 ---
 

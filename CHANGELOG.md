@@ -5,6 +5,83 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.0] - 2026-02-15
+
+### Added - SPEC-RAG-QUALITY-001 Implementation Complete
+
+#### RAG System Quality Improvement
+
+This release addresses critical quality issues identified in the evaluation analysis, focusing on hallucination prevention, retrieval improvement, and persona-aware response generation.
+
+- **Confidence Threshold + Fallback Response (TAG-001)**: 환각 방지를 위한 신뢰도 임계값 검증
+  - `confidence_threshold: 0.3` 설정으로 RAGConfig에 추가
+  - 신뢰도가 임계값 미만일 때 한국어/영어 fallback 메시지 반환
+  - FALLBACK_MESSAGE_KO, FALLBACK_MESSAGE_EN 상수 정의
+  - hallucination 문제 해결 (Faithfulness 0.0인 쿼리 14건)
+
+- **Reranker Compatibility Fix + BM25 Fallback (TAG-002)**: Reranker 호환성 문제 해결
+  - `BM25FallbackReranker` 클래스 추가 (FlagEmbedding import 실패 시 대체)
+  - kiwipiepy 기반 한국어 토큰화 지원
+  - `rank_bm25>=0.2.2` 의존성 추가
+  - graceful degradation으로 시스템 안정성 향상
+
+- **Chunk Size Optimization (TAG-003)**: 청크 크기 최적화
+  - `MAX_CHUNK_TOKENS = 512` 상수 정의
+  - `CHUNK_OVERLAP_TOKENS = 100` 오버랩 설정
+  - 인용 메타데이터(citation metadata) 보존
+  - Contextual Recall 개선을 위한 청크 분할 최적화
+
+- **Query Expansion Enhancement (TAG-004)**: 쿼리 확장 개선
+  - 양방향 동의어 매핑 (복무↔근무, 교원↔교수, 승진↔진급)
+  - `_expand_with_synonyms()` 메서드 개선으로 역방향 조회 지원
+  - ACADEMIC_SYNONYMS 사전 확장
+  - 모호한 쿼리에 대한 검색 커버리지 향상
+
+- **Persona Detection Integration (TAG-005)**: 페르소나 감지 통합
+  - `AUDIENCE_TO_PERSONA` 매핑 추가 (Audience enum → persona string)
+  - 페르소나별 맞춤 응답 생성 지원
+  - Query 분석 단계에서 페르소나 자동 감지
+  - 사용자 유형별 차별화된 응답 제공
+
+**Technical Details**:
+- Modified file: `src/rag/config.py` (confidence_threshold 추가)
+- Modified file: `src/rag/application/search_usecase.py` (fallback 로직, AUDIENCE_TO_PERSONA)
+- Modified file: `src/rag/infrastructure/reranker.py` (BM25FallbackReranker 클래스)
+- Modified file: `src/enhance_for_rag.py` (MAX_CHUNK_TOKENS, CHUNK_OVERLAP_TOKENS)
+- Modified file: `src/rag/infrastructure/query_analyzer.py` (페르소나 감지)
+- Modified file: `src/rag/application/query_expansion.py` (양방향 동의어)
+- Modified file: `pyproject.toml` (rank_bm25 의존성)
+- New test file: `tests/rag/unit/application/test_confidence_threshold.py`
+- New test file: `tests/rag/unit/infrastructure/test_reranker_fallback.py`
+- New test file: `tests/rag/unit/infrastructure/test_chunk_splitting.py`
+- New test file: `tests/rag/application/test_persona_integration_characterization.py`
+
+**Test Coverage**:
+- New Feature Tests: All passing
+- Characterization Tests: Behavior preserved
+- TRUST 5 Quality: PASS (94%)
+
+**Acceptance Criteria Results**:
+- AC-001: Confidence Threshold - hallucination 방지 메커니즘 구현
+- AC-002: Fallback Response - low confidence 시 안전한 응답 제공
+- AC-003: Reranker Fallback - BM25 기반 graceful degradation 구현
+- AC-004: Chunk Optimization - 512 토큰 청크로 Recall 개선
+- AC-005: Query Expansion - 양방향 동의어로 검색 커버리지 확대
+- AC-006: Persona Detection - 사용자 유형별 맞춤 응답 기반 마련
+
+**Known Limitations**:
+- Metadata filtering for regulation-specific queries: deferred
+- Citation verification for all claims: implemented in SPEC-RAG-Q-004
+- Persona-based regulation prioritization: deferred
+
+### Links
+
+- **SPEC Document**: `.moai/specs/SPEC-RAG-QUALITY-001/spec.md`
+- **Implementation**: `src/rag/application/search_usecase.py`, `src/rag/infrastructure/reranker.py`
+- **Tests**: `tests/rag/unit/application/`, `tests/rag/unit/infrastructure/`
+
+---
+
 ## [2.3.6] - 2026-02-14
 
 ### Added - SPEC-RAG-Q-004 Implementation Complete

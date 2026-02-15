@@ -70,6 +70,7 @@ class QueryExpansionService:
     """
 
     # Academic term mappings for common university regulation concepts
+    # Note: These synonyms support bidirectional lookup via _expand_with_synonyms()
     ACADEMIC_SYNONYMS = {
         "휴학": ["휴학원", "학업 중단", "학교 쉬다", "일반휴학", "군휴학"],
         "복학": ["복학원", "복학 신청", "학업 재개"],
@@ -81,6 +82,15 @@ class QueryExpansionService:
         "제적": ["자퇴", "expulsion", "학적 제적"],
         "전공": ["major", "전공 과정", "전공 변경"],
         "교양": ["교양 과목", "general education", "liberal arts"],
+        # Bidirectional synonyms for Korean academic terms (TAG-004)
+        "복무": ["근무", "복무규정", "출근", "근태"],
+        "근무": ["복무", "출근", "근태", "근무시간"],
+        "교원": ["교수", "교직원", "교육공무원"],
+        "교수": ["교원", "교직원"],
+        "승진": ["진급", "승급", "인사상승"],
+        "진급": ["승진", "승급"],
+        # Note: "규정" and "조례" are in STOPWORDS (cleaned before expansion).
+        # Not added as keys to avoid false positives in has_synonyms().
     }
 
     # English-Korean mappings for international students
@@ -234,23 +244,49 @@ class QueryExpansionService:
         return aggregated[:top_k]
 
     def _expand_with_synonyms(self, query: str, max_variants: int) -> List[ExpandedQuery]:
-        """Expand query using synonym database."""
+        """Expand query using synonym database with bidirectional lookup.
+
+        Bidirectional lookup ensures that:
+        - If "복무": ["근무"] exists, "복무" queries expand to "근무"
+        - And "근무" queries also expand to "복무" (reverse direction)
+        """
         expanded = []
+        seen_expansions = set()  # Track unique expansions
 
         # Find terms in query that have synonyms
         for term, synonyms in self.ACADEMIC_SYNONYMS.items():
             if term in query:
                 for synonym in synonyms[:max_variants]:
                     expanded_query = query.replace(term, synonym, 1)
-                    expanded.append(
-                        ExpandedQuery(
-                            original_query=query,
-                            expanded_text=expanded_query,
-                            expansion_method="synonym",
-                            confidence=0.9,
-                            language="ko"
+                    if expanded_query not in seen_expansions:
+                        seen_expansions.add(expanded_query)
+                        expanded.append(
+                            ExpandedQuery(
+                                original_query=query,
+                                expanded_text=expanded_query,
+                                expansion_method="synonym",
+                                confidence=0.9,
+                                language="ko"
+                            )
                         )
-                    )
+
+        # Bidirectional lookup: Also expand when a SYNONYM appears in the query
+        # E.g., "근무" should expand to "복무" if "복무": ["근무"] exists
+        for key_term, synonyms in self.ACADEMIC_SYNONYMS.items():
+            for synonym in synonyms:
+                if synonym in query and key_term not in query:
+                    expanded_query = query.replace(synonym, key_term, 1)
+                    if expanded_query not in seen_expansions:
+                        seen_expansions.add(expanded_query)
+                        expanded.append(
+                            ExpandedQuery(
+                                original_query=query,
+                                expanded_text=expanded_query,
+                                expansion_method="synonym_bidirectional",
+                                confidence=0.85,  # Slightly lower confidence for bidirectional
+                                language="ko"
+                            )
+                        )
 
         return expanded
 
