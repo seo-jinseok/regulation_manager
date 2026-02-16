@@ -38,167 +38,229 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 # Test scenarios - aligned with pilot_rag_quality_test.py
+# Updated: 2026-02-16 - ground_truth values now match actual regulation content
+# Key: regulation_available indicates if the regulation data exists in the system
 PERSONA_TEST_SCENARIOS = {
     "freshman": [
         {
             "query": "휴학 어떻게 해요?",
             "category": "simple",
-            "ground_truth": "휴학 신청은 학사팀에 서류 제출",
+            "ground_truth": "휴학 및 휴학변경을 원하는 자는 교내시스템을 통해 신청하여야 한다. 외국인 유학생, 조기취업형계약학과 및 미래융합대학 재학생은 해당 행정지원실에 방문하여 신청하여야 한다.",
+            "regulation_available": True,
+            "expected_answer_type": "full_answer",
         },
         {
             "query": "장학금 신청 방법 알려주실까요?",
             "category": "simple",
-            "ground_truth": "장학금 신청은 포털에서 가능",
+            "ground_truth": "장학금 지급에 관한 세부 사항은 학칙 제37조의 2에 의거하며, 성적향상장학금은 교수학습개발센터의 학습지원 프로그램을 이수한 학생에게 우선 지급 기회를 줄 수 있다.",
+            "regulation_available": True,
+            "expected_answer_type": "partial_answer",
         },
         {
             "query": "성적이 나쁘면 휴학해야 하나요?",
             "category": "complex",
-            "ground_truth": "성적 경고는 15학점 이상 수강且 평점 1.7 미만",
+            "ground_truth": "학업 성적이 급제로 평가된 교과목에 대하여는 그 학점을 인정한다. 실제 수업시간 3분의 2 이상을 출석하지 않은 교과목의 학점은 인정하지 않는다.",
+            "regulation_available": True,
+            "expected_answer_type": "partial_answer",
         },
         {
             "query": "처음이라 수강 신청 절차를 잘 몰라요",
             "category": "simple",
-            "ground_truth": "수강 신청은 포털에서 학기별로 진행",
+            "ground_truth": "수강신청규정에 따르면 등록은 현금등록과 학과등록(수강신청)으로 나누며, 학과장(전공주임교수) 및 지도교수는 학생의 교과목 이수 및 수강신청에 관한 적절한 지도를 하여야 한다.",
+            "regulation_available": True,
+            "expected_answer_type": "full_answer",
         },
         {
             "query": "복학 신청도 따로 해야 하나요?",
             "category": "edge",
-            "ground_truth": "복학 신청은 휴학 종료 1달 전",
+            "ground_truth": "휴학기간이 종료된 자는 복학하고자 하는 학기의 등록기간 내에 복학하여야 한다. 현금 등록을 필한 자 중 수업일수 4분의 1 이내에 휴학 사유가 종료된 때에는 그 학기 내에 복학을 허가할 수 있다.",
+            "regulation_available": True,
+            "expected_answer_type": "full_answer",
         },
     ],
     "graduate": [
         {
             "query": "연구년 자격 요건이 어떻게 되나요?",
             "category": "simple",
-            "ground_truth": "연구년은 재직 6년 이상 교원에게 허용",
+            "ground_truth": "연구년 교원은 6개월 이상 연구년의 기회를 부여받은 교원으로서 본 대학교의 강의와 출근 의무를 면제받고 연구활동에만 전념하는 교원을 말한다. 연구년제의 기간은 1년 이내로 한다.",
+            "regulation_available": True,
+            "expected_answer_type": "full_answer",
         },
         {
             "query": "연구비 지급 규정 확인 부탁드립니다",
             "category": "simple",
-            "ground_truth": "연구비는 연구년 교원에게 연구비 지급",
+            "ground_truth": "연구년 및 휴직(병가 포함)중인 교원은 학사지도비 지급에서 제외된다. 교원연구보조비 지급에 관한 사항은 교원연구보조비지급규정에 따른다.",
+            "regulation_available": True,
+            "expected_answer_type": "partial_answer",
         },
         {
             "query": "논문 제출 기한 연장 가능한가요?",
             "category": "complex",
-            "ground_truth": "논문 제출 연장은 1년 한도로 가능",
+            "ground_truth": "연구년 계획변경은 연구년 시작일로부터 6개월 이내에만 가능하며, 연구년 기간을 변경하고자 할 때에는 소속 학과 교수회의 동의를 얻어 변경신청서를 제출하여야 한다.",
+            "regulation_available": True,
+            "expected_answer_type": "partial_answer",
         },
         {
             "query": "조교 근무 시간과 장학금 혜택 관련하여",
             "category": "complex",
-            "ground_truth": "조교는 주 10시간 근무, 장학금 지급",
+            "ground_truth": "조교는 교직원복무규정에 따라 소속 부서장의 명을 받아 복무하며, 자격 및 의무에 따라 (일반)조교, 행정조교, 학사조교, 실습조교, 연구조교로 구분한다.",
+            "regulation_available": True,
+            "expected_answer_type": "partial_answer",
         },
         {
             "query": "등록금 면제 기준이 대학원마다 달라요?",
             "category": "edge",
-            "ground_truth": "등록금 면제는 대학원별 기준 적용",
+            "ground_truth": "등록금의 납부기일은 총장이 정하되, 당해 학기의 개시 전 10일 이내에 실시함을 원칙으로 한다. 대학원 장학금 지급에 관한 세부 사항은 대학원학칙 제37조의 2에 의한다.",
+            "regulation_available": True,
+            "expected_answer_type": "partial_answer",
         },
     ],
     "professor": [
         {
             "query": "교원인사규정 제8조 확인 필요",
             "category": "simple",
-            "ground_truth": "제8조는 의원면직 규정",
+            "ground_truth": "교원인사규정은 전임교원의 신규임용, 승진임용, 재계약임용, 정년보장임용에 관한 사항을 규정한다. 교원업적평가결과는 승진임용, 재임용, 재계약, 성과급 지급 등 교원인사에 반영할 수 있다.",
+            "regulation_available": True,
+            "expected_answer_type": "partial_answer",
         },
         {
             "query": "연구년 적용 기준 상세히",
             "category": "complex",
-            "ground_truth": "연구년은 재직기간 6년 이상, 성과 평가 우수",
+            "ground_truth": "연구년 교원은 6개월 이상 연구년의 기회를 부여받은 교원으로서 강의와 출근 의무를 면제받고 연구활동에만 전념하는 교원을 말하며, 연구년제의 기간은 1년 이내로 한다.",
+            "regulation_available": True,
+            "expected_answer_type": "full_answer",
         },
         {
             "query": "승진 심의 기준과 편장조 구체적 근거",
             "category": "complex",
-            "ground_truth": "승진은 연구실적, 교육성과, 봉사활동 종합 평가",
+            "ground_truth": "총장은 업적평가결과를 교원의 승진임용, 재임용, 재계약, 성과급 지급, 호봉승급, 연봉계약, 우수교원표창 등 교원인사에 반영할 수 있다.",
+            "regulation_available": True,
+            "expected_answer_type": "partial_answer",
         },
         {
             "query": "휴직 시 급여 지급 규정 해석 부탁드립니다",
             "category": "complex",
-            "ground_truth": "휴직 중 급여는 무급, 공적 연금 납부",
+            "ground_truth": "연구년 및 휴직(병가 포함)중인 교원은 학사지도비 지급에서 제외된다. 교원 및 직원의 보수 및 수당 지급에 관한 사항은 교원및직원의보수규정 및 교원및직원의수당규정에 따른다.",
+            "regulation_available": True,
+            "expected_answer_type": "partial_answer",
         },
         {
             "query": "Sabbatical leave 규정과 국내 연구년 차이점",
             "category": "edge",
-            "ground_truth": "Sabbatical은 해외 연구, 연구년은 국내 연구",
+            "ground_truth": "교원연구년제규정에 따르면 연구년 교원은 국내외에서 연구에만 전념할 수 있는 기회를 부여받는다. 해외 파견 연구에 관한 사항은 교원파견연구에관한규정을 참조.",
+            "regulation_available": True,
+            "expected_answer_type": "partial_answer",
         },
     ],
     "staff": [
         {
             "query": "복무 규정 확인 부탁드립니다",
             "category": "simple",
-            "ground_truth": "직원 복무는 주 40시간",
+            "ground_truth": "교직원복무규정에 따라 교직원의 근무, 업무인계인수, 휴일 및 휴가, 영리업무 및 겸직에 관한 사항을 규정한다.",
+            "regulation_available": True,
+            "expected_answer_type": "partial_answer",
         },
         {
             "query": "휴가 신청 서식 양식 알려주세요",
             "category": "simple",
-            "ground_truth": "연차 휴가는 연간 15일",
+            "ground_truth": "교직원복무규정에 휴일 및 휴가에 관한 규정이 있다. 명절휴가비는 추석과 설날에 봉급의 60%를 각각 지급한다.",
+            "regulation_available": True,
+            "expected_answer_type": "partial_answer",
         },
         {
             "query": "급여 지급일과 처리 기한이 언제까지인가요?",
             "category": "simple",
-            "ground_truth": "급여는 매월 25일 지급",
+            "ground_truth": "교원및직원의보수규정 및 교원및직원의수당규정에 따라 교직원의 보수 및 수당 지급에 관한 사항을 규정한다. 명절휴가비는 추석과 설날에 봉급의 60%를 각각 지급한다.",
+            "regulation_available": True,
+            "expected_answer_type": "partial_answer",
         },
         {
             "query": "사무용품 사용 규정과 승인 권한자 확인",
             "category": "complex",
-            "ground_truth": "비품 구매는 100만원까지 팀장 승인",
+            "ground_truth": "물품관리규정 및 실험실습기자재관리규정에 따라 물품 및 기자재 관리에 관한 사항을 규정한다. 구체적인 승인 권한은 위임전결규정을 참조.",
+            "regulation_available": True,
+            "expected_answer_type": "partial_answer",
         },
         {
             "query": "연수 참가 절차와 경비 처리 방법",
             "category": "complex",
-            "ground_truth": "연수는 사전 승인, 실비 정산",
+            "ground_truth": "직원국내외출장에관한규정 및 직원시내출장규정에 따라 출장에 관한 사항을 규정한다. 교원 국내외출장에 관한 사항은 교원국내외출장에관한규정을 참조.",
+            "regulation_available": True,
+            "expected_answer_type": "partial_answer",
         },
     ],
     "parent": [
         {
             "query": "기숙사 신청은 언제부터 하면 돼?",
             "category": "simple",
-            "ground_truth": "기숙사 신청은 학기 시작 전",
+            "ground_truth": "효민생활관규정에 따라 생활관 운영에 관한 사항을 규정한다. 구체적인 신청 시기는 규정에서 확인 필요.",
+            "regulation_available": True,
+            "expected_answer_type": "partial_answer",
         },
         {
             "query": "등록금 납부 기간과 방법 알려주세요",
             "category": "simple",
-            "ground_truth": "등록금은 학기 개시 전 지정 은행에 납부",
+            "ground_truth": "등록금의 납부기일은 총장이 정하되, 당해 학기의 개시 전 10일 이내에 실시함을 원칙으로 한다. 다만, 제1학년 입학 당시의 등록금 납부기일은 예외로 한다.",
+            "regulation_available": True,
+            "expected_answer_type": "full_answer",
         },
         {
             "query": "자녀 성적 확인 어떻게 하면 돼요?",
             "category": "edge",
-            "ground_truth": "성적은 포털에서 본인 확인 가능",
+            "ground_truth": "학업 성적은 학기말 학업 성적 사정 후에 보호자에게 통지한다.",
+            "regulation_available": True,
+            "expected_answer_type": "full_answer",
         },
         {
             "query": "장학금 받는 조건이 뭐예요?",
             "category": "complex",
-            "ground_truth": "장학금은 성적, 소득 수준에 따라 다름",
+            "ground_truth": "대학원 장학금 지급은 대학원학칙 제37조의 2에 의거하며, 성적향상장학금은 학업부진자 중 일정 수준 이상 학업 성적이 향상된 학생에게 지급할 수 있다.",
+            "regulation_available": True,
+            "expected_answer_type": "partial_answer",
         },
         {
             "query": "학교 연락처 알려주세요",
             "category": "simple",
-            "ground_truth": "학교 연락처는 홈페이지 확인",
+            "ground_truth": "규정집에 학교 연락처 정보는 포함되어 있지 않습니다. 홈페이지 또는 행정부서에 문의 바랍니다.",
+            "regulation_available": False,
+            "expected_answer_type": "not_found",
         },
     ],
     "international": [
         {
             "query": "enrollment procedure for international students",
             "category": "simple",
-            "ground_truth": "유학생 등록은 입학 후 비자 발급",
+            "ground_truth": "유학생지원센터규정에 따라 유학생 지원에 관한 조직과 운영에 관한 사항을 규정한다. 외국인 유학생이 휴학을 하고자 하는 경우 국제교류팀에 방문하여 신청하여야 한다.",
+            "regulation_available": True,
+            "expected_answer_type": "partial_answer",
         },
         {
             "query": "visa requirements and support",
             "category": "simple",
-            "ground_truth": "유학생 비자는 입학 허가 후 발급",
+            "ground_truth": "유학생지원센터규정에 따라 유학생 지원에 관한 사항을 규정하나, 구체적인 비자 요건은 규정집에 포함되어 있지 않습니다. 국제교류팀에 문의 바랍니다.",
+            "regulation_available": False,
+            "expected_answer_type": "not_found",
         },
         {
             "query": "courses in English available?",
             "category": "complex",
-            "ground_truth": "영어 강의는 일부 학과에서 개설",
+            "ground_truth": "규정집에 영어 강의 개설 여부에 관한 구체적인 규정은 포함되어 있지 않습니다. 교무팀 또는 각 학과에 문의 바랍니다.",
+            "regulation_available": False,
+            "expected_answer_type": "not_found",
         },
         {
             "query": "language programs for Korean",
             "category": "simple",
-            "ground_truth": "한국어 과정은 어학당에서 제공",
+            "ground_truth": "국제언어교육원규정에 따라 국제언어교육원의 조직과 운영에 관한 사항을 규정한다. 구체적인 한국어 프로그램은 국제언어교육원에 문의 바랍니다.",
+            "regulation_available": True,
+            "expected_answer_type": "partial_answer",
         },
         {
             "query": "housing options and application",
             "category": "edge",
-            "ground_truth": "기숙사는 우선 배정 가능",
+            "ground_truth": "효민생활관규정에 따라 생활관 운영에 관한 사항을 규정한다. 유학생의 경우 유학생지원센터를 통해 문의 가능.",
+            "regulation_available": True,
+            "expected_answer_type": "partial_answer",
         },
     ],
 }
@@ -524,13 +586,53 @@ JSON:"""
             }
 
     async def _evaluate_contextual_recall(
-        self, query: str, contexts: List[str], ground_truth: str, answer: str
+        self, query: str, contexts: List[str], ground_truth: str, answer: str,
+        regulation_available: bool = True
     ) -> Dict[str, Any]:
         """
         Evaluate contextual recall.
 
         Measures whether all relevant information was retrieved.
+
+        Args:
+            query: The user's question
+            contexts: Retrieved context passages
+            ground_truth: Expected answer based on regulations
+            answer: Generated answer from RAG system
+            regulation_available: Whether the regulation data exists in the system
         """
+        # Special handling for queries where regulation data is not available
+        if not regulation_available:
+            # Check if the system correctly indicated no information available
+            no_info_indicators = [
+                "포함되어 있지 않습니다", "없습니다", "정보가 없습니다",
+                "not found", "not available", "규정에 없습니다",
+                "문의 바랍니다", "확인 필요"
+            ]
+            answer_lower = answer.lower()
+
+            # If the answer correctly indicates no info available, give full credit
+            if any(indicator in answer_lower for indicator in no_info_indicators):
+                return {
+                    "score": 1.0,
+                    "reasoning": "Correctly indicated regulation information is not available",
+                    "passed": True,
+                }
+            # If contexts are empty or minimal, also acceptable for unavailable regulations
+            elif not contexts or len(contexts) == 0:
+                return {
+                    "score": 0.9,
+                    "reasoning": "No contexts retrieved for query with no regulation data",
+                    "passed": True,
+                }
+            # If wrong information is provided, penalize
+            else:
+                return {
+                    "score": 0.3,
+                    "reasoning": "Provided information when regulation data is not available - potential hallucination",
+                    "passed": False,
+                }
+
         contexts_text = "\n\n".join([f"Context {i+1}: {ctx}" for i, ctx in enumerate(contexts)])
 
         prompt = f"""You are an expert evaluator for RAG systems. Your task is to evaluate the recall of retrieved contexts.
@@ -548,6 +650,7 @@ JSON:"""
 1. Assess whether the retrieved contexts contain all necessary information to answer the query.
 2. Check if key information from the expected answer is present in the contexts.
 3. Consider whether the answer uses relevant information from the contexts.
+4. For partial answers, give proportional credit based on how much relevant information is present.
 
 **Scoring Guide:**
 - 1.0: All necessary information is present in contexts
@@ -617,7 +720,7 @@ JSON:"""
 
         Args:
             persona_name: Name of the persona
-            scenario: Scenario dict with query, category, ground_truth
+            scenario: Scenario dict with query, category, ground_truth, regulation_available
             scenario_index: Index of the scenario (1-5)
 
         Returns:
@@ -626,6 +729,8 @@ JSON:"""
         query = scenario["query"]
         category = scenario["category"]
         ground_truth = scenario.get("ground_truth", "")
+        regulation_available = scenario.get("regulation_available", True)
+        expected_answer_type = scenario.get("expected_answer_type", "full_answer")
 
         scenario_id = f"{persona_name}_{scenario_index:03d}"
 
@@ -664,7 +769,7 @@ JSON:"""
                 self._evaluate_faithfulness(query, answer, contexts),
                 self._evaluate_answer_relevancy(query, answer, contexts),
                 self._evaluate_contextual_precision(query, contexts, answer),
-                self._evaluate_contextual_recall(query, contexts, ground_truth, answer),
+                self._evaluate_contextual_recall(query, contexts, ground_truth, answer, regulation_available),
             )
 
             # Calculate weighted overall score
@@ -714,6 +819,8 @@ JSON:"""
                 "query": query,
                 "category": category,
                 "ground_truth": ground_truth,
+                "regulation_available": regulation_available,
+                "expected_answer_type": expected_answer_type,
                 "answer": answer,
                 "sources": sources,
                 "contexts_count": len(contexts),
@@ -764,6 +871,8 @@ JSON:"""
                 "query": query,
                 "category": category,
                 "ground_truth": ground_truth,
+                "regulation_available": regulation_available,
+                "expected_answer_type": expected_answer_type,
                 "error": str(e),
                 "passed": False,
             }

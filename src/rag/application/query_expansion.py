@@ -93,6 +93,40 @@ class QueryExpansionService:
         # Not added as keys to avoid false positives in has_synonyms().
     }
 
+    # SPEC-RAG-QUALITY-004 Phase 2: Colloquial pattern mappings
+    # Maps common colloquial expressions to formal regulation terms
+    COLLOQUIAL_PATTERNS = {
+        # School-related colloquial expressions
+        "쉬고 싶어": "휴학",
+        "학교 쉬고 싶어": "휴학",
+        "학교 안 가고 싶어": "휴학",
+        "공부하기 싫어": "휴학",
+        "학교 싫어": "휴학",
+        "돌아가고 싶어": "복학",
+        "학교 돌아가고 싶어": "복학",
+        # Money-related colloquial expressions
+        "돈 아껴": "장학금",
+        "돈 타고 싶어": "장학금",
+        "돈 받고 싶어": "장학금",
+        "학비 아껴": "장학금",
+        "등록금 깎아": "장학금",
+        "등록금 감면": "장학금",
+        # Performance-related colloquial expressions
+        "성적 나쁘면": "학사경고",
+        "학점 낮으면": "학사경고",
+        "F 받으면": "학사경고",
+        "낙제하면": "학사경고",
+        "과 망하면": "학사경고",
+        # Research-related colloquial expressions
+        "논문 늦게 내면": "논문 제출 기한",
+        "논문 못 내면": "논문 제출",
+        "논문 연장": "논문 제출 기한 연장",
+        # Work-related colloquial expressions
+        "조교 하면": "조교 근무",
+        "조교 월급": "조교 급여",
+        "조교 혜택": "조교 장학금",
+    }
+
     # English-Korean mappings for international students
     ENGLISH_KOREAN_MAPPINGS = {
         "leave of absence": "휴학",
@@ -249,9 +283,28 @@ class QueryExpansionService:
         Bidirectional lookup ensures that:
         - If "복무": ["근무"] exists, "복무" queries expand to "근무"
         - And "근무" queries also expand to "복무" (reverse direction)
+
+        SPEC-RAG-QUALITY-004 Phase 2: Also handles colloquial patterns.
         """
         expanded = []
         seen_expansions = set()  # Track unique expansions
+
+        # SPEC-RAG-QUALITY-004 Phase 2: Check colloquial patterns first
+        # E.g., "쉬고 싶어" -> "휴학"
+        for colloquial, formal in self.COLLOQUIAL_PATTERNS.items():
+            if colloquial in query:
+                expanded_query = query.replace(colloquial, formal, 1)
+                if expanded_query not in seen_expansions:
+                    seen_expansions.add(expanded_query)
+                    expanded.append(
+                        ExpandedQuery(
+                            original_query=query,
+                            expanded_text=expanded_query,
+                            expansion_method="colloquial_mapping",
+                            confidence=0.95,  # High confidence for direct mapping
+                            language="ko"
+                        )
+                    )
 
         # Find terms in query that have synonyms
         for term, synonyms in self.ACADEMIC_SYNONYMS.items():

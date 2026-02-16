@@ -8,6 +8,7 @@ Key features:
 - Contact information validation (phone, email) - REQ-001
 - Department name validation - REQ-002
 - Citation grounding validation - REQ-003
+- Faithfulness score calculation - SPEC-RAG-QUALITY-004
 - Multiple filter modes (warn, sanitize, block, passthrough)
 """
 
@@ -16,6 +17,9 @@ import re
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import List, Optional, Tuple
+
+# Faithfulness threshold for blocking low-quality answers (SPEC-RAG-QUALITY-004)
+FAITHFULNESS_BLOCK_THRESHOLD = 0.3
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +44,18 @@ class FilterResult:
     block_reason: Optional[str]
     issues: List[str] = field(default_factory=list)
     warnings: List[str] = field(default_factory=list)
+
+
+@dataclass
+class FaithfulnessResult:
+    """Result of faithfulness calculation (SPEC-RAG-QUALITY-004)."""
+
+    score: float  # 0.0 to 1.0
+    should_block: bool  # True if score < FAITHFULNESS_BLOCK_THRESHOLD
+    reason: str
+    verified_claims: int
+    total_claims: int
+    context_overlap_ratio: float
 
 
 class HallucinationFilter:
@@ -376,3 +392,143 @@ class HallucinationFilter:
         Removes spaces and converts to lowercase.
         """
         return dept.replace(" ", "").lower()
+
+    def calculate_faithfulness(
+        self, response: str, context: List[str]
+    ) -> FaithfulnessResult:
+        """
+        Calculate faithfulness score based on answer-context alignment.
+
+        SPEC-RAG-QUALITY-004: Faithfulness Improvement
+
+        Faithfulness measures how well the answer is grounded in the retrieved context.
+        A low faithfulness score (< 0.3) indicates the answer may contain hallucinations.
+
+        Args:
+            response: The LLM response to evaluate
+            context: List of context documents from retrieval
+
+        Returns:
+            FaithfulnessResult with score and blocking decision
+        """
+        if not response or not response.strip():
+            return FaithfulnessResult(
+                score=0.0,
+                should_block=True,
+                reason="Empty response",
+                verified_claims=0,
+                total_claims=0,
+                context_overlap_ratio=0.0,
+            )
+
+        if not context or all(not c.strip() for c in context):
+            return FaithfulnessResult(
+                score=0.0,
+                should_block=True,
+                reason="No context available",
+                verified_claims=0,
+                total_claims=0,
+                context_overlap_ratio=0.0,
+            )
+
+        context_text = " ".join(context)
+
+        # Calculate verified claims from existing validation methods
+        _, contact_issues = self.validate_contacts(response, context)
+        _, dept_issues = self.validate_departments(response, context)
+        _, citation_issues = self.validate_citations(response, context)
+
+        total_issues = len(contact_issues) + len(dept_issues) + len(citation_issues)
+
+        # Count total claims (contacts, departments, citations found in response)
+        total_claims = 0
+        verified_claims = 0
+
+        # Count contacts in response
+        for pattern in self.PHONE_PATTERNS:
+            total_claims += len(pattern.findall(response))
+        total_claims += len(self.EMAIL_PATTERN.findall(response))
+
+        # Count departments in response
+        total_claims += len(self.DEPARTMENT_PATTERN.findall(response))
+        total_claims += len(self.DEPARTMENT_WITH_GWA_PATTERN.findall(response))
+
+        # Count citations in response
+        for pattern in self.CITATION_PATTERNS:
+            total_claims += len(pattern.findall(response))
+
+        # Verified claims = total claims - issues
+        verified_claims = max(0, total_claims - total_issues)
+
+        # Calculate context overlap ratio (keyword-based)
+        # Extract meaningful Korean keywords from response
+        response_keywords = self._extract_keywords(response)
+        context_keywords = self._extract_keywords(context_text)
+
+        if response_keywords:
+            overlap = len(response_keywords & context_keywords)
+            context_overlap_ratio = overlap / len(response_keywords)
+        else:
+            context_overlap_ratio = 1.0  # No keywords = neutral
+
+        # Calculate faithfulness score
+        # Weight: 40% claim verification + 60% context overlap
+        if total_claims > 0:
+            claim_score = verified_claims / total_claims
+        else:
+            claim_score = 1.0  # No claims = neutral
+
+        faithfulness_score = (claim_score * 0.4) + (context_overlap_ratio * 0.6)
+
+        # Determine if should block
+        should_block = faithfulness_score < FAITHFULNESS_BLOCK_THRESHOLD
+
+        reason = ""
+        if should_block:
+            if total_claims > 0 and claim_score < 0.5:
+                reason = f"Low claim verification rate ({verified_claims}/{total_claims})"
+            elif context_overlap_ratio < 0.3:
+                reason = f"Low context overlap ({context_overlap_ratio:.2%})"
+            else:
+                reason = f"Faithfulness score below threshold ({faithfulness_score:.3f} < {FAITHFULNESS_BLOCK_THRESHOLD})"
+        else:
+            reason = f"Faithfulness acceptable ({faithfulness_score:.3f})"
+
+        return FaithfulnessResult(
+            score=round(faithfulness_score, 3),
+            should_block=should_block,
+            reason=reason,
+            verified_claims=verified_claims,
+            total_claims=total_claims,
+            context_overlap_ratio=round(context_overlap_ratio, 3),
+        )
+
+    def _extract_keywords(self, text: str) -> set:
+        """
+        Extract meaningful keywords from Korean text.
+
+        Focus on nouns and important terms for faithfulness calculation.
+        """
+        keywords = set()
+
+        # Extract Korean word patterns (2+ consecutive Korean characters)
+        korean_pattern = re.compile(r"[가-힣]{2,}")
+        for match in korean_pattern.finditer(text):
+            word = match.group(0)
+            # Filter out common stop words
+            if word not in {"합니다", "합니다요", "하시기", "바랍니다", "있습니다", "없습니다"}:
+                keywords.add(word)
+
+        # Extract important patterns: citations, articles, regulations
+        important_patterns = [
+            re.compile(r"(학칙|규정|지침|령)"),  # Regulation types
+            re.compile(r"제\d+조"),  # Article numbers
+            re.compile(r"\d+일"),  # Days (e.g., 30일)
+            re.compile(r"\d+개월"),  # Months (e.g., 6개월)
+            re.compile(r"\d+%"),  # Percentages
+        ]
+
+        for pattern in important_patterns:
+            keywords.update(pattern.findall(text))
+
+        return keywords

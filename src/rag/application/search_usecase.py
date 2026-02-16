@@ -15,7 +15,12 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from ..domain.entities import Answer, Chunk, ChunkLevel, SearchResult
 from ..domain.repositories import IHybridSearcher, ILLMClient, IReranker, IVectorStore
-from .hallucination_filter import FilterMode, HallucinationFilter
+from .hallucination_filter import (
+    FAITHFULNESS_BLOCK_THRESHOLD,
+    FaithfulnessResult,
+    FilterMode,
+    HallucinationFilter,
+)
 from ..domain.value_objects import Query, SearchFilter
 from ..infrastructure.cache import CacheType, RAGQueryCache
 from ..infrastructure.hybrid_search import ScoredDocument
@@ -1585,7 +1590,10 @@ class SearchUseCase:
         self._ensure_reranker()
 
         if candidate_k is None:
-            candidate_k = top_k * 2
+            # SPEC-RAG-QUALITY-004 Phase 2: Increase candidate pool for better recall
+            # Previous: top_k * 2 (only 20 candidates for top_k=10)
+            # Updated: top_k * 5 (50 candidates for top_k=10)
+            candidate_k = top_k * 5
 
         candidates = results[:candidate_k]
 
@@ -2448,6 +2456,38 @@ class SearchUseCase:
                     f"Hallucination filter blocked response: {filter_result.block_reason}"
                 )
 
+        # SPEC-RAG-QUALITY-004: Faithfulness check
+        # Block answers with low faithfulness score (< 0.3)
+        faithfulness_result: Optional[FaithfulnessResult] = None
+        if self.hallucination_filter:
+            context_texts = [
+                r.chunk.text for r in filtered_results if hasattr(r, "chunk")
+            ]
+            faithfulness_result = self.hallucination_filter.calculate_faithfulness(
+                response=answer_text, context=context_texts
+            )
+            logger.info(
+                f"Faithfulness score: {faithfulness_result.score:.3f} "
+                f"(block_threshold={FAITHFULNESS_BLOCK_THRESHOLD})"
+            )
+
+            if faithfulness_result.should_block:
+                logger.warning(
+                    f"Low faithfulness detected ({faithfulness_result.score:.3f} < "
+                    f"{FAITHFULNESS_BLOCK_THRESHOLD}): {faithfulness_result.reason}"
+                )
+                # Generate safe response instead
+                safe_response = self._generate_safe_response(
+                    question=question,
+                    sources=filtered_results,
+                    faithfulness_score=faithfulness_result.score,
+                )
+                return Answer(
+                    text=safe_response,
+                    sources=filtered_results,
+                    confidence=faithfulness_result.score,  # Use faithfulness as confidence
+                )
+
         # SPEC-RAG-Q-004: Verify citations against source chunks
         answer_text = self._verify_citations(answer_text, filtered_results)
 
@@ -2703,6 +2743,36 @@ class SearchUseCase:
                 logger.info(
                     f"Hallucination filter applied: {len(filter_result.issues)} issues fixed"
                 )
+
+        # SPEC-RAG-QUALITY-004: Faithfulness check for streaming response
+        faithfulness_result: Optional[FaithfulnessResult] = None
+        if self.hallucination_filter:
+            context_texts = [
+                r.chunk.text for r in filtered_results if hasattr(r, "chunk")
+            ]
+            faithfulness_result = self.hallucination_filter.calculate_faithfulness(
+                response=answer_text, context=context_texts
+            )
+            logger.info(
+                f"Faithfulness score: {faithfulness_result.score:.3f} "
+                f"(block_threshold={FAITHFULNESS_BLOCK_THRESHOLD})"
+            )
+
+            if faithfulness_result.should_block:
+                logger.warning(
+                    f"Low faithfulness in streaming response "
+                    f"({faithfulness_result.score:.3f} < {FAITHFULNESS_BLOCK_THRESHOLD}): "
+                    f"{faithfulness_result.reason}"
+                )
+                # Generate safe response instead
+                safe_response = self._generate_safe_response(
+                    question=question,
+                    sources=filtered_results,
+                    faithfulness_score=faithfulness_result.score,
+                )
+                # Yield safe response and return early
+                yield {"type": "safe_response", "content": safe_response}
+                return
 
         # SPEC-RAG-Q-004: Verify citations against source chunks
         answer_text = self._verify_citations(answer_text, filtered_results)
@@ -3166,6 +3236,77 @@ class SearchUseCase:
         combined = (abs_confidence * 0.7) + (spread_confidence * 0.3)
 
         return max(0.0, min(1.0, combined))
+
+    def _generate_safe_response(
+        self,
+        question: str,
+        sources: List[SearchResult],
+        faithfulness_score: float = 0.0,
+    ) -> str:
+        """
+        Generate a safe response when faithfulness is too low.
+
+        SPEC-RAG-QUALITY-004: Faithfulness Improvement - Safe Response Generator
+
+        When the answer cannot be trusted (faithfulness < 0.3), this method
+        generates a context-based safe response that:
+        1. Acknowledges the limitation
+        2. Suggests related regulations that might be helpful
+        3. Guides user to appropriate resources
+
+        Args:
+            question: Original user question
+            sources: Available search results
+            faithfulness_score: The faithfulness score that triggered the block
+
+        Returns:
+            Safe response string in Korean
+        """
+        # Base safe response message
+        safe_response = (
+            "죄송합니다. 해당 질문에 대한 정보를 제공된 규정에서 찾을 수 없습니다.\n\n"
+        )
+
+        # Extract regulation names from sources to suggest related content
+        regulation_names = set()
+        article_refs = []
+
+        for source in sources[:5]:  # Top 5 sources
+            if hasattr(source, "chunk") and source.chunk:
+                chunk = source.chunk
+                # Extract regulation name from rule_code (e.g., "학칙" from rule_code)
+                if hasattr(chunk, "rule_code") and chunk.rule_code:
+                    regulation_names.add(chunk.rule_code)
+                # Also check for regulation_name attribute (alternative)
+                if hasattr(chunk, "regulation_name") and chunk.regulation_name:
+                    regulation_names.add(chunk.regulation_name)
+                # Extract article number if available
+                if hasattr(chunk, "article_number") and chunk.article_number:
+                    article_refs.append(f"제{chunk.article_number}조")
+                # Also check for article_reference attribute (alternative)
+                if hasattr(chunk, "article_reference") and chunk.article_reference:
+                    article_refs.append(chunk.article_reference)
+
+        # Add helpful suggestions if we found related content
+        if regulation_names:
+            reg_list = ", ".join(sorted(regulation_names)[:3])
+            safe_response += f"**관련 규정:** {reg_list}\n\n"
+
+        if article_refs:
+            unique_articles = list(dict.fromkeys(article_refs[:3]))
+            article_list = ", ".join(unique_articles)
+            safe_response += f"**참고할 수 있는 조항:** {article_list}\n\n"
+
+        # Add guidance for further assistance
+        safe_response += (
+            "**도움을 받을 수 있는 방법:**\n"
+            "1. 다른 표현으로 질문을 다시 해보세요\n"
+            "2. 구체적인 규정명이나 조항을 포함해서 질문해 보세요\n"
+            "3. 학교 관련 부서(학적팀, 교무처 등)에 직접 문의하시기 바랍니다\n\n"
+            f"* 신뢰도 점수: {faithfulness_score:.2f} (기준: 0.30 이상 필요)"
+        )
+
+        return safe_response
 
     def _enhance_answer_citations(
         self, answer_text: str, sources: List[SearchResult]
@@ -3839,6 +3980,38 @@ class SearchUseCase:
             if filter_result.issues:
                 logger.info(
                     f"Hallucination filter applied: {len(filter_result.issues)} issues fixed"
+                )
+
+        # SPEC-RAG-QUALITY-004: Faithfulness check
+        # Block answers with low faithfulness score (< 0.3)
+        faithfulness_result: Optional[FaithfulnessResult] = None
+        if self.hallucination_filter:
+            context_texts = [
+                r.chunk.text for r in filtered_results if hasattr(r, "chunk")
+            ]
+            faithfulness_result = self.hallucination_filter.calculate_faithfulness(
+                response=answer_text, context=context_texts
+            )
+            logger.info(
+                f"Faithfulness score: {faithfulness_result.score:.3f} "
+                f"(block_threshold={FAITHFULNESS_BLOCK_THRESHOLD})"
+            )
+
+            if faithfulness_result.should_block:
+                logger.warning(
+                    f"Low faithfulness detected ({faithfulness_result.score:.3f} < "
+                    f"{FAITHFULNESS_BLOCK_THRESHOLD}): {faithfulness_result.reason}"
+                )
+                # Generate safe response instead
+                safe_response = self._generate_safe_response(
+                    question=question,
+                    sources=filtered_results,
+                    faithfulness_score=faithfulness_result.score,
+                )
+                return Answer(
+                    text=safe_response,
+                    sources=filtered_results,
+                    confidence=faithfulness_result.score,
                 )
 
         # SPEC-RAG-Q-004: Verify citations against source chunks
