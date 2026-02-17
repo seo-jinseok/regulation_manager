@@ -5,6 +5,7 @@ Detects ambiguous or insufficient queries and generates clarification requests.
 Reduces hallucinations by asking for more specific information when needed.
 """
 
+import logging
 import re
 from dataclasses import dataclass
 from typing import List
@@ -29,9 +30,13 @@ class QueryAnalysis:
     is_short: bool
     is_single_word: bool
     is_ambiguous: bool
+    is_vague: bool
+    is_multi_topic: bool
     word_count: int
     char_count: int
     key_terms: List[str]
+    confidence: float
+    edge_case_type: str  # "none", "typo", "vague", "ambiguous", "multi_topic"
 
 
 class ClarificationDetector:
@@ -64,9 +69,30 @@ class ClarificationDetector:
         re.compile(r"^(규정|학칙|시행세칙)$"),
     ]
 
+    # Vague query patterns (indirect expressions)
+    VAGUE_PATTERNS = [
+        re.compile(r"^(쉬고\s*싶|휴식|잠깐\s*쉬)"),  # Taking a break
+        re.compile(r"^(돈|금액|돈관련)"),  # Money related
+        re.compile(r"^(학교\s*생활|학교\s*다니)"),  # School life
+        re.compile(r"^(궁금|질문|도와)"),  # Meta expressions
+        re.compile(r"^(서류요|성적이요|학점요)$"),  # Single word + 요
+        re.compile(r"^(신청\s*관련|규정\s*관련)"),  # Category + related
+        re.compile(r"^(학기\s*말|다음\s*학기)"),  # Temporal only
+        re.compile(r"^(졸업반|신입학|재학중)"),  # Situation only
+        re.compile(r"^(학점\s*부족|성적\s*낮)"),  # Problem statement only
+    ]
+
+    # Multi-topic indicators
+    MULTI_TOPIC_PATTERNS = [
+        re.compile(r".*(하고|며|그리고|또|같이).*"),  # Connectors
+        re.compile(r".*(후|다음|뒤).*"),  # Sequential
+        re.compile(r".*(면|으면|라면).*"),  # Conditional
+        re.compile(r".*(둘\s*다|모두|전부).*"),  # All/both
+    ]
+
     def __init__(self):
         """Initialize ClarificationDetector."""
-        pass
+        self._logger = logging.getLogger(__name__)
 
     def analyze_query(self, query: str) -> QueryAnalysis:
         """
@@ -100,16 +126,40 @@ class ClarificationDetector:
             any(pattern.match(query) for pattern in self.AMBIGUOUS_PATTERNS)
         )
 
+        # Check if vague (indirect expressions)
+        is_vague = bool(
+            any(pattern.search(query) for pattern in self.VAGUE_PATTERNS)
+        )
+
+        # Check if multi-topic
+        is_multi_topic = bool(
+            any(pattern.search(query) for pattern in self.MULTI_TOPIC_PATTERNS)
+        )
+
         # Extract key terms (remove common particles)
         key_terms = self._extract_key_terms(query)
+
+        # Calculate confidence score
+        confidence = self._calculate_confidence(
+            is_short, is_single_word, is_ambiguous, is_vague, is_multi_topic, word_count
+        )
+
+        # Determine edge case type
+        edge_case_type = self._determine_edge_case_type(
+            is_short, is_single_word, is_ambiguous, is_vague, is_multi_topic
+        )
 
         return QueryAnalysis(
             is_short=is_short,
             is_single_word=is_single_word,
             is_ambiguous=is_ambiguous,
+            is_vague=is_vague,
+            is_multi_topic=is_multi_topic,
             word_count=word_count,
             char_count=char_count,
             key_terms=key_terms,
+            confidence=confidence,
+            edge_case_type=edge_case_type,
         )
 
     def is_clarification_needed(self, query: str, results: List[SearchResult]) -> bool:
@@ -358,3 +408,108 @@ class ClarificationDetector:
             options = ["구체적인 질문을 입력해 주세요"]
 
         return options
+
+    def _calculate_confidence(
+        self,
+        is_short: bool,
+        is_single_word: bool,
+        is_ambiguous: bool,
+        is_vague: bool,
+        is_multi_topic: bool,
+        word_count: int,
+    ) -> float:
+        """
+        Calculate confidence score for the query.
+
+        Args:
+            is_short: Whether query is short
+            is_single_word: Whether query is single word
+            is_ambiguous: Whether query is ambiguous
+            is_vague: Whether query is vague
+            is_multi_topic: Whether query has multiple topics
+            word_count: Number of words in query
+
+        Returns:
+            Confidence score (0.0 to 1.0)
+        """
+        # Start with base confidence
+        confidence = 1.0
+
+        # Reduce confidence for edge cases
+        if is_single_word:
+            confidence *= 0.3
+        elif is_short:
+            confidence *= 0.5
+
+        if is_ambiguous:
+            confidence *= 0.4
+
+        if is_vague:
+            confidence *= 0.5
+
+        if is_multi_topic:
+            confidence *= 0.7
+
+        # Slightly increase confidence for longer queries
+        if word_count > 5:
+            confidence *= 1.1
+        elif word_count > 3:
+            confidence *= 1.05
+
+        return min(1.0, max(0.1, confidence))
+
+    def _determine_edge_case_type(
+        self,
+        is_short: bool,
+        is_single_word: bool,
+        is_ambiguous: bool,
+        is_vague: bool,
+        is_multi_topic: bool,
+    ) -> str:
+        """
+        Determine the primary edge case type.
+
+        Args:
+            is_short: Whether query is short
+            is_single_word: Whether query is single word
+            is_ambiguous: Whether query is ambiguous
+            is_vague: Whether query is vague
+            is_multi_topic: Whether query has multiple topics
+
+        Returns:
+            Edge case type string
+        """
+        if is_multi_topic:
+            return "multi_topic"
+        if is_vague:
+            return "vague"
+        if is_ambiguous:
+            return "ambiguous"
+        if is_single_word or is_short:
+            return "typo"  # Often typos in short queries
+        return "none"
+
+    def get_fallback_message(self, edge_case_type: str) -> str:
+        """
+        Get appropriate fallback message for edge case type.
+
+        Args:
+            edge_case_type: Type of edge case
+
+        Returns:
+            Fallback message string
+        """
+        fallback_messages = {
+            "typo": "죄송합니다. 입력하신 내용을 명확히 이해하지 못했습니다. "
+            "오타가 있는지 확인하시고 다시 질문해 주세요.",
+            "vague": "질문이 명확하지 않습니다. "
+            "구체적으로 어떤 내용을 알고 싶으신지 말씀해 주시면 "
+            "정확한 답변을 드릴 수 있습니다.",
+            "ambiguous": "여러 가지 의미로 해석될 수 있는 질문입니다. "
+            "구체적인 규정명이나 절차를 말씀해 주세요.",
+            "multi_topic": "여러 주제에 대해 질문하셨습니다. "
+            "가장 궁금한 항목을 먼저 선택해 주시면 "
+            "순서대로 안내해 드리겠습니다.",
+            "none": "",
+        }
+        return fallback_messages.get(edge_case_type, "")

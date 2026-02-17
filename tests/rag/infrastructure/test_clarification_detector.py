@@ -192,14 +192,20 @@ class TestClarificationDetector:
             is_short=True,
             is_single_word=False,
             is_ambiguous=False,
+            is_vague=False,
+            is_multi_topic=False,
             word_count=2,
             char_count=4,
             key_terms=["term1", "term2"],
+            confidence=0.8,
+            edge_case_type="none",
         )
 
         assert analysis.is_short is True
         assert analysis.is_single_word is False
         assert analysis.word_count == 2
+        assert analysis.confidence == 0.8
+        assert analysis.edge_case_type == "none"
 
 
 @pytest.mark.integration

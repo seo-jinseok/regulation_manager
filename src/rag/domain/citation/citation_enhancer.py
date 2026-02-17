@@ -77,6 +77,7 @@ class CitationEnhancer:
     - Support for 별표, 서식 references
     - Regulation title extraction for enhanced formatting
     - Rule code validation for accuracy
+    - Confidence scoring based on pattern match quality
     """
 
     # Regulation suffixes for name extraction and validation
@@ -90,11 +91,142 @@ class CitationEnhancer:
         "학칙",
     ]
 
+    # Minimum confidence threshold for valid citations
+    MIN_CONFIDENCE_THRESHOLD = 0.5
+
     def __init__(self):
         """Initialize citation enhancer."""
         from .article_number_extractor import ArticleNumberExtractor
 
         self._extractor = ArticleNumberExtractor()
+
+    def calculate_confidence(
+        self, chunk: "Chunk", article_number: str
+    ) -> float:
+        """
+        Calculate confidence score for a citation based on multiple factors.
+
+        Confidence is based on:
+        - Pattern match quality (0.4): Is article in title/text?
+        - Metadata presence (0.3): Is article_number field set?
+        - Source validation (0.3): Does article exist in chunk text?
+
+        Args:
+            chunk: Source chunk
+            article_number: Article number to validate
+
+        Returns:
+            Confidence score between 0.0 and 1.0
+        """
+        confidence = 0.0
+
+        # Factor 1: Article in title (0.2)
+        if chunk.title and article_number in chunk.title:
+            confidence += 0.2
+
+        # Factor 2: Article in text (0.2)
+        if chunk.text and article_number in chunk.text:
+            confidence += 0.2
+
+        # Factor 3: Metadata field set (0.3)
+        if chunk.article_number and chunk.article_number == article_number:
+            confidence += 0.3
+
+        # Factor 4: Valid rule_code pattern (0.15)
+        if chunk.rule_code and self.validate_rule_code(chunk):
+            confidence += 0.15
+
+        # Factor 5: Regulation name present (0.15)
+        if chunk.parent_path and len(chunk.parent_path) > 0:
+            confidence += 0.15
+
+        return min(confidence, 1.0)
+
+    def calculate_confidence_with_context(
+        self, chunk: "Chunk", article_number: str, query: str
+    ) -> float:
+        """
+        Calculate confidence score with query context relevance.
+
+        Extends base confidence by considering query-chunk relevance.
+
+        Args:
+            chunk: Source chunk
+            article_number: Article number to validate
+            query: User query for context relevance
+
+        Returns:
+            Context-aware confidence score between 0.0 and 1.0
+        """
+        base_confidence = self.calculate_confidence(chunk, article_number)
+
+        # Boost confidence if query terms appear in chunk
+        if query and chunk.text:
+            # Simple keyword overlap check
+            query_words = set(query.split())
+            chunk_words = set(chunk.text.split())
+            overlap = len(query_words & chunk_words)
+
+            # Boost by up to 0.1 based on overlap (max 3 significant words)
+            boost = min(overlap / 30.0, 0.1)
+            base_confidence = min(base_confidence + boost, 1.0)
+
+        return base_confidence
+
+    def validate_citation_in_source(self, citation: EnhancedCitation) -> bool:
+        """
+        Validate that citation exists in source text.
+
+        Args:
+            citation: Enhanced citation to validate
+
+        Returns:
+            True if citation article_number found in text, False otherwise
+        """
+        if not citation.text:
+            return False
+
+        # Check if article number appears in text
+        article_number = citation.article_number
+
+        # Handle combined citations (제26조제1항 -> check for 제26조 and ①)
+        if "제" in article_number and "항" in article_number:
+            # Extract base article and paragraph
+            import re
+            match = re.match(r"제(\d+)조제(\d+)항", article_number)
+            if match:
+                base_article = f"제{match.group(1)}조"
+                para_num = match.group(2)
+                # Check for base article and paragraph marker (①, ②, etc.)
+                para_markers = ["①", "②", "③", "④", "⑤", "⑥", "⑦", "⑧", "⑨", "⑩"]
+                para_idx = int(para_num) - 1 if int(para_num) <= 10 else -1
+
+                has_article = base_article in citation.text
+                has_para = (
+                    para_idx >= 0
+                    and para_idx < len(para_markers)
+                    and para_markers[para_idx] in citation.text
+                )
+                return has_article and has_para
+
+        # Simple check: article number in text
+        return article_number in citation.text
+
+    def filter_low_confidence(
+        self, citations: List[EnhancedCitation]
+    ) -> List[EnhancedCitation]:
+        """
+        Filter out citations with confidence below threshold.
+
+        Args:
+            citations: List of enhanced citations
+
+        Returns:
+            Filtered list with only high-confidence citations
+        """
+        return [
+            c for c in citations if c.confidence >= self.MIN_CONFIDENCE_THRESHOLD
+        ]
 
     def enhance_citation(
         self, chunk: "Chunk", confidence: float = 1.0

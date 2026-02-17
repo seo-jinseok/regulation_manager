@@ -111,6 +111,45 @@ class TypoCorrector:
         (re.compile(r"부터는"), "부터"),
         (re.compile(r"에게는"), "에게"),
         (re.compile(r"한테는"), "한테"),
+        # Informal ending patterns (common in student queries)
+        (re.compile(r"나여\??$"), "나요?"),
+        (re.compile(r"인가여\??$"), "인가요?"),
+        (re.compile(r"되나여\??$"), "되나요?"),
+        (re.compile(r"하세여"), "하세요"),
+        (re.compile(r"주세여"), "주세요"),
+        (re.compile(r"가세여"), "가세요"),
+        (re.compile(r"오세여"), "오세요"),
+        (re.compile(r"이에여"), "이에요"),
+        (re.compile(r"아니에여"), "아니에요"),
+        # Vowel confusion patterns (common Korean typos)
+        (re.compile(r"어덯게"), "어떻게"),
+        (re.compile(r"어떵게"), "어떻게"),
+        (re.compile(r"휘학"), "휴학"),
+        (re.compile(r"휴핵"), "휴학"),
+        (re.compile(r"복핵"), "복학"),
+        (re.compile(r"졸업필"), "졸업"),
+        (re.compile(r"성적급"), "성적"),
+        # Spacing error patterns
+        (re.compile(r"하는법"), "하는 법"),
+        (re.compile(r"내는곳"), "내는 곳"),
+        (re.compile(r"할때"), "할 때"),
+        (re.compile(r"언제 까지"), "언제까지"),
+        (re.compile(r"어디 서"), "어디서"),
+        (re.compile(r"몇학점"), "몇 학점"),
+        (re.compile(r"몇점"), "몇 점"),
+        (re.compile(r"수강 신청"), "수강신청"),
+        # Consonant confusion patterns (받침 errors)
+        (re.compile(r"슬인"), "습인"),
+        (re.compile(r"슬니다"), "습니다"),
+        (re.compile(r"인사극정"), "인사규정"),
+        (re.compile(r"등록급"), "등록금"),
+        (re.compile(r"장학급"), "장학금"),
+        # Academic term spacing corrections
+        (re.compile(r"이의 신청"), "이의신청"),
+        (re.compile(r"선발 되나"), "선발되나"),
+        (re.compile(r"확인 해"), "확인해"),
+        (re.compile(r"통계 되"), "통과되"),
+        (re.compile(r"이어야"), "이어야"),
     ]
 
     # Common particle/ending normalization patterns

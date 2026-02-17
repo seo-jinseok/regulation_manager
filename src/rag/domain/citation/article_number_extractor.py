@@ -19,6 +19,8 @@ class ArticleType(Enum):
     CHAPTER = "chapter"  # 제N장
     TABLE = "table"  # 별표N
     FORM = "form"  # 서식N
+    PARAGRAPH = "paragraph"  # 제N항 (standalone)
+    ITEM = "item"  # 제N호 (standalone)
     NONE = "none"  # No article number
 
 
@@ -31,14 +33,18 @@ class ArticleNumber:
         type: Type of article (article, sub_article, table, form, etc.)
         number: Primary number (e.g., 26 from "제26조")
         sub_number: Sub-number for 제N조의M format (e.g., 2 from "제10조의2")
+        paragraph_number: Paragraph number for 제N항 format (e.g., 1 from "제1항")
+        item_number: Item number for 제N호 format (e.g., 2 from "제2호")
         prefix: Korean prefix (제, 별표, 서식)
         suffix: Korean suffix (조, 장, 항, 호)
-        full_text: Full matched text (e.g., "제26조", "별표1")
+        full_text: Full matched text (e.g., "제26조", "별표1", "제26조제1항")
     """
 
     type: ArticleType
     number: int
     sub_number: Optional[int] = None
+    paragraph_number: Optional[int] = None
+    item_number: Optional[int] = None
     prefix: str = ""
     suffix: str = ""
     full_text: str = ""
@@ -46,8 +52,19 @@ class ArticleNumber:
     def __str__(self) -> str:
         """Return formatted article number string."""
         if self.type == ArticleType.SUB_ARTICLE and self.sub_number:
-            return f"{self.prefix}{self.number}조의{self.sub_number}"
-        return f"{self.prefix}{self.number}{self.suffix}"
+            base = f"{self.prefix}{self.number}조의{self.sub_number}"
+        else:
+            base = f"{self.prefix}{self.number}{self.suffix}"
+
+        # Append paragraph if present
+        if self.paragraph_number is not None:
+            base = f"{base}제{self.paragraph_number}항"
+
+        # Append item if present
+        if self.item_number is not None:
+            base = f"{base}제{self.item_number}호"
+
+        return base
 
     def to_citation_format(self) -> str:
         """
@@ -58,6 +75,8 @@ class ArticleNumber:
             - "제10조의2"
             - "별표1"
             - "서식1"
+            - "제26조제1항"
+            - "제26조제1항제2호"
         """
         return self.full_text if self.full_text else str(self)
 
@@ -72,35 +91,38 @@ class ArticleNumberExtractor:
     - 제N장 (chapter)
     - 별표N (table)
     - 서식N (form)
+    - 제N항 (paragraph) - standalone
+    - 제N호 (item) - standalone
+    - Combined: 제N조제M항, 제N조제M항제P호, 제N조의M제P항
     """
 
-    # Patterns for article number extraction
+    # Patterns for article number extraction (ordered by specificity)
     PATTERNS = [
+        # Combined patterns (most specific first)
+        # 제N조의M제P항제Q호 (sub-article with paragraph and item)
+        (ArticleType.SUB_ARTICLE, r"제(\d+)조의(\d+)제(\d+)항제(\d+)호"),
+        # 제N조의M제P항 (sub-article with paragraph)
+        (ArticleType.SUB_ARTICLE, r"제(\d+)조의(\d+)제(\d+)항"),
+        # 제N조제M항제P호 (article with paragraph and item)
+        (ArticleType.ARTICLE, r"제(\d+)조제(\d+)항제(\d+)호"),
+        # 제N조제M항 (article with paragraph)
+        (ArticleType.ARTICLE, r"제(\d+)조제(\d+)항"),
+        # 제N조제M호 (article with item)
+        (ArticleType.ARTICLE, r"제(\d+)조제(\d+)호"),
         # 제N조의M (sub-article) - must come before 제N조
-        (
-            ArticleType.SUB_ARTICLE,
-            r"제(\d+)조의(\d+)",
-        ),
+        (ArticleType.SUB_ARTICLE, r"제(\d+)조의(\d+)"),
         # 제N장 (chapter)
-        (
-            ArticleType.CHAPTER,
-            r"제(\d+)장",
-        ),
+        (ArticleType.CHAPTER, r"제(\d+)장"),
         # 별표N (table/appendix)
-        (
-            ArticleType.TABLE,
-            r"별표(\d+)",
-        ),
+        (ArticleType.TABLE, r"별표(\d+)"),
         # 서식N (form)
-        (
-            ArticleType.FORM,
-            r"서식(\d+)",
-        ),
+        (ArticleType.FORM, r"서식(\d+)"),
+        # 제N항 (paragraph) - standalone
+        (ArticleType.PARAGRAPH, r"제(\d+)항"),
+        # 제N호 (item) - standalone
+        (ArticleType.ITEM, r"제(\d+)호"),
         # 제N조 (article) - most common, check last
-        (
-            ArticleType.ARTICLE,
-            r"제(\d+)조",
-        ),
+        (ArticleType.ARTICLE, r"제(\d+)조"),
     ]
 
     def __init__(self):
@@ -137,38 +159,129 @@ class ArticleNumberExtractor:
     ) -> ArticleNumber:
         """Parse regex match into ArticleNumber."""
         groups = match.groups()
+        num_groups = len(groups)
 
         if art_type == ArticleType.SUB_ARTICLE:
-            # 제N조의M format
             number = int(groups[0])
             sub_number = int(groups[1])
             prefix = "제"
             suffix = "조"
-            full_text = f"제{number}조의{sub_number}"
 
-            return ArticleNumber(
-                type=art_type,
-                number=number,
-                sub_number=sub_number,
-                prefix=prefix,
-                suffix=suffix,
-                full_text=full_text,
-            )
+            # Build full text based on captured groups
+            if num_groups == 4:
+                # 제N조의M제P항제Q호
+                paragraph_number = int(groups[2])
+                item_number = int(groups[3])
+                full_text = f"제{number}조의{sub_number}제{paragraph_number}항제{item_number}호"
+                return ArticleNumber(
+                    type=art_type,
+                    number=number,
+                    sub_number=sub_number,
+                    paragraph_number=paragraph_number,
+                    item_number=item_number,
+                    prefix=prefix,
+                    suffix=suffix,
+                    full_text=full_text,
+                )
+            elif num_groups == 3:
+                # 제N조의M제P항
+                paragraph_number = int(groups[2])
+                full_text = f"제{number}조의{sub_number}제{paragraph_number}항"
+                return ArticleNumber(
+                    type=art_type,
+                    number=number,
+                    sub_number=sub_number,
+                    paragraph_number=paragraph_number,
+                    prefix=prefix,
+                    suffix=suffix,
+                    full_text=full_text,
+                )
+            else:
+                # 제N조의M
+                full_text = f"제{number}조의{sub_number}"
+                return ArticleNumber(
+                    type=art_type,
+                    number=number,
+                    sub_number=sub_number,
+                    prefix=prefix,
+                    suffix=suffix,
+                    full_text=full_text,
+                )
 
         elif art_type == ArticleType.ARTICLE:
-            # 제N조 format
             number = int(groups[0])
             prefix = "제"
             suffix = "조"
-            full_text = f"제{number}조"
 
-            return ArticleNumber(
-                type=art_type,
-                number=number,
-                prefix=prefix,
-                suffix=suffix,
-                full_text=full_text,
-            )
+            # Build full text based on captured groups
+            if num_groups == 3:
+                # 제N조제M항제P호 or 제N조제M호
+                # Check which pattern matched based on the actual matched text
+                matched_text = match.group(0)
+                if "항" in matched_text and "호" in matched_text:
+                    # 제N조제M항제P호
+                    paragraph_number = int(groups[1])
+                    item_number = int(groups[2])
+                    full_text = f"제{number}조제{paragraph_number}항제{item_number}호"
+                    return ArticleNumber(
+                        type=art_type,
+                        number=number,
+                        paragraph_number=paragraph_number,
+                        item_number=item_number,
+                        prefix=prefix,
+                        suffix=suffix,
+                        full_text=full_text,
+                    )
+                else:
+                    # 제N조제M호
+                    item_number = int(groups[1])
+                    full_text = f"제{number}조제{item_number}호"
+                    return ArticleNumber(
+                        type=art_type,
+                        number=number,
+                        item_number=item_number,
+                        prefix=prefix,
+                        suffix=suffix,
+                        full_text=full_text,
+                    )
+            elif num_groups == 2:
+                # Could be 제N조제M항 or 제N조제M호
+                # Check the actual matched text to determine type
+                matched_text = match.group(0)
+                if "호" in matched_text:
+                    # 제N조제M호
+                    item_number = int(groups[1])
+                    full_text = f"제{number}조제{item_number}호"
+                    return ArticleNumber(
+                        type=art_type,
+                        number=number,
+                        item_number=item_number,
+                        prefix=prefix,
+                        suffix=suffix,
+                        full_text=full_text,
+                    )
+                else:
+                    # 제N조제M항
+                    paragraph_number = int(groups[1])
+                    full_text = f"제{number}조제{paragraph_number}항"
+                    return ArticleNumber(
+                        type=art_type,
+                        number=number,
+                        paragraph_number=paragraph_number,
+                        prefix=prefix,
+                        suffix=suffix,
+                        full_text=full_text,
+                    )
+            else:
+                # 제N조
+                full_text = f"제{number}조"
+                return ArticleNumber(
+                    type=art_type,
+                    number=number,
+                    prefix=prefix,
+                    suffix=suffix,
+                    full_text=full_text,
+                )
 
         elif art_type == ArticleType.CHAPTER:
             # 제N장 format
@@ -206,6 +319,36 @@ class ArticleNumberExtractor:
             prefix = "서식"
             suffix = ""
             full_text = f"서식{number}"
+
+            return ArticleNumber(
+                type=art_type,
+                number=number,
+                prefix=prefix,
+                suffix=suffix,
+                full_text=full_text,
+            )
+
+        elif art_type == ArticleType.PARAGRAPH:
+            # 제N항 format (standalone paragraph)
+            number = int(groups[0])
+            prefix = "제"
+            suffix = "항"
+            full_text = f"제{number}항"
+
+            return ArticleNumber(
+                type=art_type,
+                number=number,
+                prefix=prefix,
+                suffix=suffix,
+                full_text=full_text,
+            )
+
+        elif art_type == ArticleType.ITEM:
+            # 제N호 format (standalone item)
+            number = int(groups[0])
+            prefix = "제"
+            suffix = "호"
+            full_text = f"제{number}호"
 
             return ArticleNumber(
                 type=art_type,

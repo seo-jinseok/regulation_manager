@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- Staff vocabulary expansion for 6 administrative topics (SPEC-RAG-QUALITY-005)
+  - 복무, 연차, 급여, 연수, 사무용품, 입찰 synonym mappings
+- Citation extraction with paragraph/item level patterns (SPEC-RAG-QUALITY-005)
+  - Enhanced citation confidence scoring for specific article references
+- Edge case handling with 52 test scenarios (SPEC-RAG-QUALITY-005)
+  - 15 typo correction patterns (spacing, informal speech, vowel/consonant confusion)
+  - 15 vague query detection patterns (indirect expressions, single keywords)
+  - 10 ambiguous query patterns (multi-target actions, attributes)
+  - 12 multi-topic detection patterns (conditional, sequential, parallel)
+- Confidence scoring for citation validation (SPEC-RAG-QUALITY-005)
+- Fallback messages for edge case queries (SPEC-RAG-QUALITY-005)
+
+### Changed
+- Enhanced typo correction with 30+ new patterns (SPEC-RAG-QUALITY-005)
+- Improved clarification detection for vague/ambiguous queries (SPEC-RAG-QUALITY-005)
+- Extended staff persona topics to include 입찰 (SPEC-RAG-QUALITY-005)
+
 ## [2.6.0] - 2026-02-15
 
 ### Added - SPEC-RAG-QUALITY-003 Phase 4-5 Implementation

@@ -462,3 +462,90 @@ class TestGetExpandedQuery:
 
         # Default is use_expansion=True
         assert isinstance(result, str)
+
+
+class TestStaffVocabularyExpansion:
+    """Test staff-specific vocabulary expansion (SPEC-RAG-QUALITY-005 Phase 2)."""
+
+    @pytest.fixture
+    def expander(self):
+        """Create expander for testing."""
+        entity_recognizer = RegulationEntityRecognizer()
+        return MultiStageQueryExpander(entity_recognizer)
+
+    def test_bokmu_expansion(self, expander):
+        """Test expansion for 복무 (work service) staff vocabulary."""
+        # Use non-formal query to avoid formal_skip
+        result = expander.expand("복무 관련 질문")
+
+        # Should include related terms: 근무, 재직, 출근
+        assert result.has_expansions
+        expanded_terms = " ".join(result.stage1_synonyms)
+        assert any(
+            term in expanded_terms for term in ["근무", "재직", "출근"]
+        )
+
+    def test_yeoncha_expansion(self, expander):
+        """Test expansion for 연차 (annual leave) staff vocabulary."""
+        result = expander.expand("연차 신청")
+
+        # Should include related terms: 휴가, 휴직, 휴무
+        assert result.has_expansions
+        expanded_terms = " ".join(result.stage1_synonyms)
+        assert any(
+            term in expanded_terms for term in ["휴가", "휴직", "휴무"]
+        )
+
+    def test_geupyeo_expansion(self, expander):
+        """Test expansion for 급여 (salary) staff vocabulary."""
+        result = expander.expand("급여 지급")
+
+        # Should include related terms: 봉급, 월급, 보수
+        assert result.has_expansions
+        expanded_terms = " ".join(result.stage1_synonyms)
+        assert any(
+            term in expanded_terms for term in ["봉급", "월급", "보수"]
+        )
+
+    def test_yeonsu_expansion(self, expander):
+        """Test expansion for 연수 (training) staff vocabulary."""
+        result = expander.expand("연수 프로그램")
+
+        # Should include related terms: 교육, 훈련, 연교육
+        assert result.has_expansions
+        expanded_terms = " ".join(result.stage1_synonyms)
+        assert any(
+            term in expanded_terms for term in ["교육", "훈련", "연교육"]
+        )
+
+    def test_samuyongpum_expansion(self, expander):
+        """Test expansion for 사무용품 (office supplies) staff vocabulary."""
+        result = expander.expand("사무용품 구매")
+
+        # Should include related terms: 비품, 물품, 용품
+        assert result.has_expansions
+        expanded_terms = " ".join(result.stage1_synonyms)
+        assert any(
+            term in expanded_terms for term in ["비품", "물품", "용품"]
+        )
+
+    def test_ipchal_expansion(self, expander):
+        """Test expansion for 입찰 (bidding) staff vocabulary."""
+        result = expander.expand("입찰 공고")
+
+        # Should include related terms: 계약, 발주, 조달
+        assert result.has_expansions
+        expanded_terms = " ".join(result.stage1_synonyms)
+        assert any(
+            term in expanded_terms for term in ["계약", "발주", "조달"]
+        )
+
+    def test_staff_vocabulary_in_mappings(self):
+        """Verify staff vocabulary entries exist in SYNONYM_MAPPINGS."""
+        mappings = MultiStageQueryExpander.SYNONYM_MAPPINGS
+
+        # Check all 6 staff vocabulary entries exist
+        staff_vocab = ["복무", "연차", "급여", "연수", "사무용품", "입찰"]
+        for term in staff_vocab:
+            assert term in mappings, f"Missing staff vocabulary: {term}"
+            assert len(mappings[term]) >= 3, f"Insufficient synonyms for {term}"

@@ -204,3 +204,42 @@ class TestPersonaProfile:
 
         assert "휴학" in query
         assert query in ["휴학 어떻게 해요?", "휴학 알려주세요"]
+
+
+class TestStaffPersonaTopics:
+    """Test staff persona topic coverage (SPEC-RAG-QUALITY-005 Phase 2)."""
+
+    def test_staff_persona_has_required_topics(self):
+        """WHEN checking staff persona, THEN should have all required topics."""
+        staff = PERSONAS["staff"]
+
+        # Required topics per SPEC-RAG-QUALITY-005 Phase 2
+        required_topics = ["복무", "휴가", "급여", "연수", "사무용품", "시설사용", "입찰"]
+
+        for topic in required_topics:
+            assert topic in staff.common_topics, f"Missing staff topic: {topic}"
+
+    def test_staff_persona_topic_count(self):
+        """WHEN checking staff persona, THEN should have at least 7 topics."""
+        staff = PERSONAS["staff"]
+
+        # Should have at least 7 topics (original 6 + 입찰)
+        assert len(staff.common_topics) >= 7
+
+    def test_staff_persona_vocabulary_style(self):
+        """WHEN checking staff persona, THEN should have administrative vocabulary."""
+        staff = PERSONAS["staff"]
+
+        assert staff.vocabulary_style == "administrative"
+        assert staff.expertise_level == "intermediate"
+
+    def test_staff_persona_query_templates_use_topics(self):
+        """WHEN generating staff queries, THEN should use staff-specific topics."""
+        manager = PersonaManager()
+        queries = manager.generate_queries("staff", count=20)
+
+        # All queries should be strings
+        assert len(queries) == 20
+        for query in queries:
+            assert isinstance(query, str)
+            assert len(query) > 0

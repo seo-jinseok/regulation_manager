@@ -1,0 +1,518 @@
+{
+  "metadata": {
+    "dataset_id": "edge_cases_v1.0",
+    "description": "Edge case scenarios for RAG system robustness testing",
+    "created_at": "2026-02-17",
+    "total_scenarios": 52,
+    "categories": {
+      "typos": 15,
+      "vague": 15,
+      "ambiguous": 10,
+      "multi_topic": 12
+    }
+  },
+  "edge_cases": {
+    "typos": [
+      {
+        "id": "typo_001",
+        "query": "휴학 신청하는법",
+        "expected_intent": "휴학",
+        "expected_correction": "휴학 신청하는 법",
+        "difficulty": "easy",
+        "typo_type": "spacing",
+        "description": "Spacing error - should split verb and noun"
+      },
+      {
+        "id": "typo_002",
+        "query": "등록금 내는곳",
+        "expected_intent": "등록금",
+        "expected_correction": "등록금 내는 곳",
+        "difficulty": "easy",
+        "typo_type": "spacing",
+        "description": "Spacing error in location query"
+      },
+      {
+        "id": "typo_003",
+        "query": "장학금 승인되나여",
+        "expected_intent": "장학금",
+        "expected_correction": "장학금 승인되나요",
+        "difficulty": "medium",
+        "typo_type": "informal_speech",
+        "description": "Informal ending '여' instead of '요'"
+      },
+      {
+        "id": "typo_004",
+        "query": "성적 이의신청 하려는데여",
+        "expected_intent": "성적",
+        "expected_correction": "성적 이의신청 하려는데요",
+        "difficulty": "medium",
+        "typo_type": "informal_speech",
+        "description": "Informal ending '여' pattern"
+      },
+      {
+        "id": "typo_005",
+        "query": "졸업 요건 몇학점 이에여",
+        "expected_intent": "졸업",
+        "expected_correction": "졸업 요건 몇 학점이에요",
+        "difficulty": "medium",
+        "typo_type": "informal_speech",
+        "description": "Informal speech and spacing"
+      },
+      {
+        "id": "typo_006",
+        "query": "복학 할때 서류",
+        "expected_intent": "복학",
+        "expected_correction": "복학할 때 서류",
+        "difficulty": "easy",
+        "typo_type": "spacing",
+        "description": "Spacing error with '할때' -> '할 때'"
+      },
+      {
+        "id": "typo_007",
+        "query": "교원인사극정",
+        "expected_intent": "교원인사규정",
+        "expected_correction": "교원인사규정",
+        "difficulty": "medium",
+        "typo_type": "consonant",
+        "description": "Consonant error: 극정 -> 규정"
+      },
+      {
+        "id": "typo_008",
+        "query": "학칙을 알고 시퍼",
+        "expected_intent": "학칙",
+        "expected_correction": "학칙을 알고 싶어",
+        "difficulty": "easy",
+        "typo_type": "vowel",
+        "description": "Desire expression typo: 시퍼 -> 싶어"
+      },
+      {
+        "id": "typo_009",
+        "query": "휴학원 냈는데 확인 해주세여",
+        "expected_intent": "휴학",
+        "expected_correction": "휴학원 냈는데 확인해 주세요",
+        "difficulty": "medium",
+        "typo_type": "multiple",
+        "description": "Multiple typos: 휴학원, 해주세여"
+      },
+      {
+        "id": "typo_010",
+        "query": "장학금 금액이 어케 되나요",
+        "expected_intent": "장학금",
+        "expected_correction": "장학금 금액이 어떻게 되나요",
+        "difficulty": "easy",
+        "typo_type": "slang",
+        "description": "Slang abbreviation: 어케 -> 어떻게"
+      },
+      {
+        "id": "typo_011",
+        "query": "등록금 납부 기간 언제 까지",
+        "expected_intent": "등록금",
+        "expected_correction": "등록금 납부 기간 언제까지",
+        "difficulty": "easy",
+        "typo_type": "spacing",
+        "description": "Spacing: 언제 까지 -> 언제까지"
+      },
+      {
+        "id": "typo_012",
+        "query": "성적 평점 몇점 이상 이여야",
+        "expected_intent": "성적",
+        "expected_correction": "성적 평점 몇 점 이상이어야",
+        "difficulty": "medium",
+        "typo_type": "multiple",
+        "description": "Multiple spacing errors"
+      },
+      {
+        "id": "typo_013",
+        "query": "교환학생 선발 되나여",
+        "expected_intent": "교환학생",
+        "expected_correction": "교환학생 선발되나요",
+        "difficulty": "medium",
+        "typo_type": "multiple",
+        "description": "Spacing and informal ending"
+      },
+      {
+        "id": "typo_014",
+        "query": "졸업 논문 심사 통계 되요",
+        "expected_intent": "졸업",
+        "expected_correction": "졸업 논문 심사 통과돼요",
+        "difficulty": "hard",
+        "typo_type": "vowel",
+        "description": "Multiple issues: 통계 vs 통과, 되요"
+      },
+      {
+        "id": "typo_015",
+        "query": "복학 후 수강 신청 어덯게",
+        "expected_intent": "복학",
+        "expected_correction": "복학 후 수강신청 어떻게",
+        "difficulty": "medium",
+        "typo_type": "vowel",
+        "description": "Vowel error: 어덯게 -> 어떻게"
+      }
+    ],
+    "vague": [
+      {
+        "id": "vague_001",
+        "query": "학교 쉬고 싶은데요",
+        "expected_intent": "휴학",
+        "difficulty": "hard",
+        "vague_type": "indirect_expression",
+        "expected_clarification": "Should ask about type of break (휴학, 병가, etc.)",
+        "description": "Indirect expression for taking a break"
+      },
+      {
+        "id": "vague_002",
+        "query": "성적이요",
+        "expected_intent": "성적",
+        "difficulty": "hard",
+        "vague_type": "single_keyword",
+        "expected_clarification": "Should ask about specific aspect (조회, 이의신청, 평점, etc.)",
+        "description": "Single keyword without context"
+      },
+      {
+        "id": "vague_003",
+        "query": "돈 관련된 거",
+        "expected_intent": "장학금,등록금",
+        "difficulty": "hard",
+        "vague_type": "category_only",
+        "expected_clarification": "Should ask about specific financial matter",
+        "description": "Very vague category reference"
+      },
+      {
+        "id": "vague_004",
+        "query": "학교 생활 궁금한 게 있어요",
+        "expected_intent": "unknown",
+        "difficulty": "hard",
+        "vague_type": "too_general",
+        "expected_clarification": "Should ask for specific topic",
+        "description": "Extremely general query"
+      },
+      {
+        "id": "vague_005",
+        "query": "서류요",
+        "expected_intent": "unknown",
+        "difficulty": "hard",
+        "vague_type": "single_keyword",
+        "expected_clarification": "Should ask which document/service",
+        "description": "Single word referring to documents"
+      },
+      {
+        "id": "vague_006",
+        "query": "신청 관련해서",
+        "expected_intent": "unknown",
+        "difficulty": "hard",
+        "vague_type": "action_only",
+        "expected_clarification": "Should ask what to apply for",
+        "description": "Action verb without object"
+      },
+      {
+        "id": "vague_007",
+        "query": "규정이 어떻게 되나요",
+        "expected_intent": "unknown",
+        "difficulty": "hard",
+        "vague_type": "category_only",
+        "expected_clarification": "Should ask which regulation",
+        "description": "Category without specific regulation"
+      },
+      {
+        "id": "vague_008",
+        "query": "기간이요",
+        "expected_intent": "unknown",
+        "difficulty": "hard",
+        "vague_type": "attribute_only",
+        "expected_clarification": "Should ask about which deadline/period",
+        "description": "Attribute without context"
+      },
+      {
+        "id": "vague_009",
+        "query": "학점 부족한데",
+        "expected_intent": "졸업,수강",
+        "difficulty": "medium",
+        "vague_type": "situation_only",
+        "expected_clarification": "Should ask about goal (졸업요건, 추가수강, etc.)",
+        "description": "Situation without question"
+      },
+      {
+        "id": "vague_010",
+        "query": "도와주세요",
+        "expected_intent": "unknown",
+        "difficulty": "hard",
+        "vague_type": "no_context",
+        "expected_clarification": "Should ask what kind of help",
+        "description": "Request without any context"
+      },
+      {
+        "id": "vague_011",
+        "query": "질문 있어요",
+        "expected_intent": "unknown",
+        "difficulty": "hard",
+        "vague_type": "meta",
+        "expected_clarification": "Should ask for the actual question",
+        "description": "Meta statement without content"
+      },
+      {
+        "id": "vague_012",
+        "query": "학기 말이라",
+        "expected_intent": "성적,졸업",
+        "difficulty": "medium",
+        "vague_type": "temporal_only",
+        "expected_clarification": "Should ask about end-of-semester concerns",
+        "description": "Temporal context without question"
+      },
+      {
+        "id": "vague_013",
+        "query": "다음 학기에",
+        "expected_intent": "수강,복학,휴학",
+        "difficulty": "medium",
+        "vague_type": "temporal_only",
+        "expected_clarification": "Should ask about next semester plans",
+        "description": "Future temporal reference"
+      },
+      {
+        "id": "vague_014",
+        "query": "졸업반인데요",
+        "expected_intent": "졸업",
+        "difficulty": "medium",
+        "vague_type": "situation_only",
+        "expected_clarification": "Should ask about graduation-related concerns",
+        "description": "Situation without specific question"
+      },
+      {
+        "id": "vague_015",
+        "query": "신입학인데",
+        "expected_intent": "등록금,수강",
+        "difficulty": "medium",
+        "vague_type": "situation_only",
+        "expected_clarification": "Should ask about freshman concerns",
+        "description": "Situation without question"
+      }
+    ],
+    "ambiguous": [
+      {
+        "id": "ambig_001",
+        "query": "신청",
+        "expected_intent": "unknown",
+        "difficulty": "hard",
+        "ambiguity_type": "action_multiple_targets",
+        "possible_intents": ["휴학신청", "장학금신청", "복학신청", "교환학생신청"],
+        "expected_clarification": "Should list major application types",
+        "description": "Single action with multiple possible targets"
+      },
+      {
+        "id": "ambig_002",
+        "query": "기간",
+        "expected_intent": "unknown",
+        "difficulty": "hard",
+        "ambiguity_type": "attribute_multiple_targets",
+        "possible_intents": ["휴학기간", "신청기간", "등록기간", "복학기간"],
+        "expected_clarification": "Should ask which period",
+        "description": "Attribute applicable to many topics"
+      },
+      {
+        "id": "ambig_003",
+        "query": "자격 요건",
+        "expected_intent": "unknown",
+        "difficulty": "hard",
+        "ambiguity_type": "attribute_multiple_targets",
+        "possible_intents": ["장학금자격", "휴학자격", "교환학생자격", "복학자격"],
+        "expected_clarification": "Should ask which eligibility",
+        "description": "Eligibility criteria for multiple items"
+      },
+      {
+        "id": "ambig_004",
+        "query": "서류",
+        "expected_intent": "unknown",
+        "difficulty": "hard",
+        "ambiguity_type": "object_multiple_contexts",
+        "possible_intents": ["휴학서류", "장학금서류", "졸업서류", "복학서류"],
+        "expected_clarification": "Should ask which documents",
+        "description": "Document type without context"
+      },
+      {
+        "id": "ambig_005",
+        "query": "규정",
+        "expected_intent": "unknown",
+        "difficulty": "hard",
+        "ambiguity_type": "category_multiple_members",
+        "possible_intents": ["학칙", "교원인사규정", "장학금규정", "등록금규정"],
+        "expected_clarification": "Should list major regulations",
+        "description": "Category referring to multiple regulations"
+      },
+      {
+        "id": "ambig_006",
+        "query": "절차",
+        "expected_intent": "unknown",
+        "difficulty": "hard",
+        "ambiguity_type": "action_multiple_targets",
+        "possible_intents": ["휴학절차", "복학절차", "졸업절차", "장학금절차"],
+        "expected_clarification": "Should ask which procedure",
+        "description": "Procedure without target"
+      },
+      {
+        "id": "ambig_007",
+        "query": "학점",
+        "expected_intent": "unknown",
+        "difficulty": "medium",
+        "ambiguity_type": "attribute_multiple_contexts",
+        "possible_intents": ["졸업학점", "이수학점", "학점교류", "성적학점"],
+        "expected_clarification": "Should ask about credit context",
+        "description": "Credit without specific context"
+      },
+      {
+        "id": "ambig_008",
+        "query": "등록",
+        "expected_intent": "unknown",
+        "difficulty": "medium",
+        "ambiguity_type": "action_multiple_targets",
+        "possible_intents": ["등록금", "수강등록", "복학등록"],
+        "expected_clarification": "Should ask which registration",
+        "description": "Registration without type"
+      },
+      {
+        "id": "ambig_009",
+        "query": "장학",
+        "expected_intent": "장학금",
+        "difficulty": "medium",
+        "ambiguity_type": "abbreviation",
+        "possible_intents": ["장학금신청", "장학금자격", "장학금종류", "장학금금액"],
+        "expected_clarification": "Should ask about scholarship aspect",
+        "description": "Abbreviated form"
+      },
+      {
+        "id": "ambig_010",
+        "query": "방법",
+        "expected_intent": "unknown",
+        "difficulty": "hard",
+        "ambiguity_type": "meta_action",
+        "possible_intents": ["휴학방법", "복학방법", "신청방법", "조회방법"],
+        "expected_clarification": "Should ask which method",
+        "description": "Method without target"
+      }
+    ],
+    "multi_topic": [
+      {
+        "id": "multi_001",
+        "query": "휴학하고 장학금 받을 수 있나요?",
+        "expected_intents": ["휴학", "장학금"],
+        "difficulty": "hard",
+        "conflict_type": "potentially_conflicting",
+        "description": "Two topics that may have conditional relationship"
+      },
+      {
+        "id": "multi_002",
+        "query": "복학 후 수강신청 어떻게 하나요?",
+        "expected_intents": ["복학", "수강신청"],
+        "difficulty": "medium",
+        "conflict_type": "sequential",
+        "description": "Sequential process - reinstatement then course registration"
+      },
+      {
+        "id": "multi_003",
+        "query": "등록금 납부하고 장학금 신청도 하고 싶어요",
+        "expected_intents": ["등록금", "장학금"],
+        "difficulty": "medium",
+        "conflict_type": "parallel",
+        "description": "Two parallel processes"
+      },
+      {
+        "id": "multi_004",
+        "query": "졸업 요건과 성적 이의신청 둘 다 궁금해요",
+        "expected_intents": ["졸업", "성적"],
+        "difficulty": "medium",
+        "conflict_type": "independent",
+        "description": "Two independent topics"
+      },
+      {
+        "id": "multi_005",
+        "query": "교환학생 가면 졸업 학점은 어떻게 되나요?",
+        "expected_intents": ["교환학생", "졸업"],
+        "difficulty": "hard",
+        "conflict_type": "conditional",
+        "description": "Conditional relationship between topics"
+      },
+      {
+        "id": "multi_006",
+        "query": "휴학 기간 중 군입대 하려면 어떻게 하나요?",
+        "expected_intents": ["휴학", "군입대"],
+        "difficulty": "hard",
+        "conflict_type": "nested",
+        "description": "Nested situation within leave of absence"
+      },
+      {
+        "id": "multi_007",
+        "query": "장학금 받으면 등록금 얼마나 깎이나요?",
+        "expected_intents": ["장학금", "등록금"],
+        "difficulty": "medium",
+        "conflict_type": "financial_relationship",
+        "description": "Financial relationship between topics"
+      },
+      {
+        "id": "multi_008",
+        "query": "성적 낮으면 장학금 못 받나요?",
+        "expected_intents": ["성적", "장학금"],
+        "difficulty": "medium",
+        "conflict_type": "conditional",
+        "description": "Conditional relationship"
+      },
+      {
+        "id": "multi_009",
+        "query": "학점 교류로 졸업 요건 채울 수 있나요?",
+        "expected_intents": ["학점교류", "졸업"],
+        "difficulty": "medium",
+        "conflict_type": "alternative_path",
+        "description": "Alternative path to graduation requirement"
+      },
+      {
+        "id": "multi_010",
+        "query": "복학 때 성적 평점 초기화 되나요?",
+        "expected_intents": ["복학", "성적"],
+        "difficulty": "medium",
+        "conflict_type": "temporal",
+        "description": "Temporal relationship"
+      },
+      {
+        "id": "multi_011",
+        "query": "교원이 되려면 어떤 규정을 봐야 하나요?",
+        "expected_intents": ["교원인사규정", "채용"],
+        "difficulty": "hard",
+        "conflict_type": "career_path",
+        "description": "Career-related query spanning regulations"
+      },
+      {
+        "id": "multi_012",
+        "query": "휴학했다가 복학하면 등록금 다시 내나요?",
+        "expected_intents": ["휴학", "복학", "등록금"],
+        "difficulty": "hard",
+        "conflict_type": "three_way",
+        "description": "Three related topics"
+      }
+    ]
+  },
+  "evaluation_criteria": {
+    "typo_tolerance": {
+      "description": "System should correct typos and retrieve relevant results",
+      "success_threshold": 0.80,
+      "metrics": ["correction_accuracy", "retrieval_success_rate"]
+    },
+    "vague_query_handling": {
+      "description": "System should detect vagueness and ask clarifying questions",
+      "success_threshold": 0.80,
+      "metrics": ["clarification_triggered", "question_quality"]
+    },
+    "ambiguous_query_handling": {
+      "description": "System should provide multiple options or ask for clarification",
+      "success_threshold": 0.75,
+      "metrics": ["option_diversity", "clarification_appropriateness"]
+    },
+    "multi_topic_handling": {
+      "description": "System should address all topics or indicate need for focus",
+      "success_threshold": 0.70,
+      "metrics": ["topic_coverage", "relationship_identification"]
+    }
+  },
+  "confidence_thresholds": {
+    "high": 0.8,
+    "medium": 0.5,
+    "low": 0.3,
+    "fallback": 0.2
+  }
+}

@@ -88,7 +88,7 @@ PERSONAS: Dict[str, PersonaProfile] = {
             "{topic} 관련 비품/시설 사용 규정",
             "{topic} 처리 기한이 언제까지인가요?",
         ],
-        common_topics=["복무", "휴가", "급여", "연수", "사무용품", "시설사용"],
+        common_topics=["복무", "휴가", "급여", "연수", "사무용품", "시설사용", "입찰"],
         answer_preferences={
             "detail_level": "moderate",
             "citation_style": "standard",
