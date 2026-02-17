@@ -1,0 +1,22 @@
+{
+  "evaluation_id": "eval_20260215_150218",
+  "timestamp": "2026-02-15T15:02:18.586461",
+  "evaluation_type": "persona_based_rag_evaluation",
+  "personas_tested": [
+    "undergraduate",
+    "graduate",
+    "professor",
+    "staff",
+    "parent",
+    "international"
+  ],
+  "total_queries": 30,
+  "queries_per_persona": {
+    "undergraduate": 5,
+    "graduate": 5,
+    "professor": 5,
+    "staff": 5,
+    "parent": 5,
+    "international": 5
+  }
+}

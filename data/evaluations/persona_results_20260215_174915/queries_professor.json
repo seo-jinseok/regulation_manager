@@ -1,0 +1,30 @@
+{
+  "persona": "professor",
+  "queries": [
+    {"query": "연구년제도 신청 자격이 어떻게 되나요?", "category": "research", "difficulty": "medium"},
+    {"query": "교원 승진 심사 기준이 무엇인가요?", "category": "personnel", "difficulty": "hard"},
+    {"query": "휴직 신청 절차가 어떻게 되나요?", "category": "personnel", "difficulty": "medium"},
+    {"query": "연구비 집행 규정에 대해 알고 싶습니다.", "category": "research", "difficulty": "medium"},
+    {"query": "강의 시수 기준이 어떻게 되나요?", "category": "teaching", "difficulty": "easy"},
+    {"query": "재계약 심사 항목이 무엇인가요?", "category": "personnel", "difficulty": "hard"},
+    {"query": "학생 지도비 지급 기준이 어떻게 되나요?", "category": "financial", "difficulty": "medium"},
+    {"query": "국제학술대회 참가 지원 범위가 어떻게 되나요?", "category": "research", "difficulty": "medium"},
+    {"query": "정년보장 심사 절차가 어떻게 되나요?", "category": "personnel", "difficulty": "hard"},
+    {"query": "교원 연수 참여 의무가 있나요?", "category": "personnel", "difficulty": "easy"},
+    {"query": "연구실 안전 관리 책임 범위가 어떻게 되나요?", "category": "research", "difficulty": "medium"},
+    {"query": "성희롱 예방 교육 이수 기한이 언제까지인가요?", "category": "personnel", "difficulty": "easy"},
+    {"query": "겸직 허가 기준이 어떻게 되나요?", "category": "personnel", "difficulty": "medium"},
+    {"query": "연구업적 평가 지표가 무엇인가요?", "category": "research", "difficulty": "hard"},
+    {"query": "계약교원 재계약 불발 사유가 무엇인가요?", "category": "personnel", "difficulty": "hard"},
+    {"query": "대학원 지도교수 최대 지도 인원이 어떻게 되나요?", "category": "teaching", "difficulty": "medium"},
+    {"query": "사이버 강의 개설 기준이 어떻게 되나요?", "category": "teaching", "difficulty": "medium"},
+    {"query": "산학협력 연구 계약 체결 절차가 어떻게 되나요?", "category": "research", "difficulty": "hard"},
+    {"query": "교원 복무 규정 핵심 사항이 무엇인가요?", "category": "personnel", "difficulty": "easy"},
+    {"query": "특별승진 신청 자격이 어떻게 되나요?", "category": "personnel", "difficulty": "hard"},
+    {"query": "연구년 급여 지급 기준이 어떻게 되나요?", "category": "financial", "difficulty": "medium"},
+    {"query": "학생 연구원 채용 규정이 어떻게 되나요?", "category": "research", "difficulty": "medium"},
+    {"query": "교수 회의 의결권 범위가 어떻게 되나요?", "category": "personnel", "difficulty": "medium"},
+    {"query": "외부 강의 허가 기준이 어떻게 되나요?", "category": "personnel", "difficulty": "medium"},
+    {"query": "연구윤리 위반 시 처분 기준이 어떻게 되나요?", "category": "research", "difficulty": "hard"}
+  ]
+}

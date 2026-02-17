@@ -1,0 +1,1652 @@
+{
+  "metadata": {
+    "evaluation_date": "2026-02-15T22:06:45.259256",
+    "spec": "SPEC-RAG-QUALITY-003",
+    "phases_implemented": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "judge_model": "gpt-4o",
+    "similarity_threshold": 0.75,
+    "duration_seconds": 11.575521,
+    "end_time": "2026-02-15T22:06:56.834833"
+  },
+  "per_query": [
+    {
+      "query": "휴학 어떻게 해요?",
+      "preprocessing": {
+        "original_query": "휴학 어떻게 해요?",
+        "colloquial_transform": {
+          "was_transformed": true,
+          "transformed_query": "휴학 방법요?",
+          "patterns_matched": [
+            "어떻게 해->방법"
+          ],
+          "confidence": 0.95
+        },
+        "morphological_expansion": {
+          "nouns": [
+            "휴학",
+            "방법"
+          ],
+          "verbs": [],
+          "expanded_terms": [],
+          "final_expanded": "휴학 방법요?"
+        },
+        "weight_optimization": {
+          "bm25_weight": 0.3,
+          "vector_weight": 0.7,
+          "is_colloquial": true,
+          "formality_score": 0.050000000000000044
+        },
+        "final_query": "휴학 방법요?"
+      },
+      "answer": "This is a mock answer for testing.",
+      "contexts": [
+        "Mock context for testing."
+      ],
+      "quality_metrics": {
+        "faithfulness": 0.5,
+        "answer_relevancy": 0.5,
+        "contextual_precision": 0.5,
+        "contextual_recall": 0.87,
+        "overall_score": 0.593,
+        "passed": false
+      },
+      "semantic_evaluation": {
+        "similarity_score": 0.6713,
+        "is_relevant": false,
+        "threshold": 0.75
+      },
+      "persona": "freshman",
+      "category": "general",
+      "difficulty": "medium"
+    },
+    {
+      "query": "복학 절차 알려주세요",
+      "preprocessing": {
+        "original_query": "복학 절차 알려주세요",
+        "colloquial_transform": {
+          "was_transformed": true,
+          "transformed_query": "복학 절차 안내",
+          "patterns_matched": [
+            "알려주세요->안내"
+          ],
+          "confidence": 0.95
+        },
+        "morphological_expansion": {
+          "nouns": [
+            "복학",
+            "절차",
+            "안내"
+          ],
+          "verbs": [],
+          "expanded_terms": [],
+          "final_expanded": "복학 절차 안내"
+        },
+        "weight_optimization": {
+          "bm25_weight": 0.3,
+          "vector_weight": 0.7,
+          "is_colloquial": true,
+          "formality_score": 0.050000000000000044
+        },
+        "final_query": "복학 절차 안내"
+      },
+      "answer": "This is a mock answer for testing.",
+      "contexts": [
+        "Mock context for testing."
+      ],
+      "quality_metrics": {
+        "faithfulness": 0.5,
+        "answer_relevancy": 0.5,
+        "contextual_precision": 0.5,
+        "contextual_recall": 0.87,
+        "overall_score": 0.593,
+        "passed": false
+      },
+      "semantic_evaluation": {
+        "similarity_score": 0.6713,
+        "is_relevant": false,
+        "threshold": 0.75
+      },
+      "persona": "freshman",
+      "category": "general",
+      "difficulty": "medium"
+    },
+    {
+      "query": "성적 신청 방법 알려주실까요?",
+      "preprocessing": {
+        "original_query": "성적 신청 방법 알려주실까요?",
+        "colloquial_transform": {
+          "was_transformed": false,
+          "transformed_query": "성적 신청 방법 알려주실까요?",
+          "patterns_matched": [],
+          "confidence": 1.0
+        },
+        "morphological_expansion": {
+          "nouns": [
+            "성적",
+            "신청",
+            "방법"
+          ],
+          "verbs": [
+            "알리"
+          ],
+          "expanded_terms": [],
+          "final_expanded": "성적 신청 방법 알려주실까요?"
+        },
+        "weight_optimization": {
+          "bm25_weight": 0.5,
+          "vector_weight": 0.5,
+          "is_colloquial": false,
+          "formality_score": 1.0
+        },
+        "final_query": "성적 신청 방법 알려주실까요?"
+      },
+      "answer": "This is a mock answer for testing.",
+      "contexts": [
+        "Mock context for testing."
+      ],
+      "quality_metrics": {
+        "faithfulness": 0.5,
+        "answer_relevancy": 0.5,
+        "contextual_precision": 0.5,
+        "contextual_recall": 0.87,
+        "overall_score": 0.593,
+        "passed": false
+      },
+      "semantic_evaluation": {
+        "similarity_score": 0.6713,
+        "is_relevant": false,
+        "threshold": 0.75
+      },
+      "persona": "freshman",
+      "category": "general",
+      "difficulty": "medium"
+    },
+    {
+      "query": "장학금 신청 방법 알려주실까요?",
+      "preprocessing": {
+        "original_query": "장학금 신청 방법 알려주실까요?",
+        "colloquial_transform": {
+          "was_transformed": false,
+          "transformed_query": "장학금 신청 방법 알려주실까요?",
+          "patterns_matched": [],
+          "confidence": 1.0
+        },
+        "morphological_expansion": {
+          "nouns": [
+            "장학금",
+            "신청",
+            "방법"
+          ],
+          "verbs": [
+            "알리"
+          ],
+          "expanded_terms": [],
+          "final_expanded": "장학금 신청 방법 알려주실까요?"
+        },
+        "weight_optimization": {
+          "bm25_weight": 0.5,
+          "vector_weight": 0.5,
+          "is_colloquial": false,
+          "formality_score": 1.0
+        },
+        "final_query": "장학금 신청 방법 알려주실까요?"
+      },
+      "answer": "This is a mock answer for testing.",
+      "contexts": [
+        "Mock context for testing."
+      ],
+      "quality_metrics": {
+        "faithfulness": 0.5,
+        "answer_relevancy": 0.5,
+        "contextual_precision": 0.5,
+        "contextual_recall": 0.87,
+        "overall_score": 0.593,
+        "passed": false
+      },
+      "semantic_evaluation": {
+        "similarity_score": 0.6713,
+        "is_relevant": false,
+        "threshold": 0.75
+      },
+      "persona": "freshman",
+      "category": "general",
+      "difficulty": "medium"
+    },
+    {
+      "query": "수강 절차 알려주세요",
+      "preprocessing": {
+        "original_query": "수강 절차 알려주세요",
+        "colloquial_transform": {
+          "was_transformed": true,
+          "transformed_query": "수강 절차 안내",
+          "patterns_matched": [
+            "알려주세요->안내"
+          ],
+          "confidence": 0.95
+        },
+        "morphological_expansion": {
+          "nouns": [
+            "수강",
+            "절차",
+            "안내"
+          ],
+          "verbs": [],
+          "expanded_terms": [],
+          "final_expanded": "수강 절차 안내"
+        },
+        "weight_optimization": {
+          "bm25_weight": 0.3,
+          "vector_weight": 0.7,
+          "is_colloquial": true,
+          "formality_score": 0.050000000000000044
+        },
+        "final_query": "수강 절차 안내"
+      },
+      "answer": "This is a mock answer for testing.",
+      "contexts": [
+        "Mock context for testing."
+      ],
+      "quality_metrics": {
+        "faithfulness": 0.5,
+        "answer_relevancy": 0.5,
+        "contextual_precision": 0.5,
+        "contextual_recall": 0.87,
+        "overall_score": 0.593,
+        "passed": false
+      },
+      "semantic_evaluation": {
+        "similarity_score": 0.6713,
+        "is_relevant": false,
+        "threshold": 0.75
+      },
+      "persona": "freshman",
+      "category": "general",
+      "difficulty": "medium"
+    },
+    {
+      "query": "연구년 관련 규정 확인 부탁드립니다",
+      "preprocessing": {
+        "original_query": "연구년 관련 규정 확인 부탁드립니다",
+        "colloquial_transform": {
+          "was_transformed": false,
+          "transformed_query": "연구년 관련 규정 확인 부탁드립니다",
+          "patterns_matched": [],
+          "confidence": 1.0
+        },
+        "morphological_expansion": {
+          "nouns": [
+            "연구",
+            "관련",
+            "규정",
+            "확인",
+            "부탁"
+          ],
+          "verbs": [
+            "드리"
+          ],
+          "expanded_terms": [],
+          "final_expanded": "연구년 관련 규정 확인 부탁드립니다"
+        },
+        "weight_optimization": {
+          "bm25_weight": 0.5,
+          "vector_weight": 0.5,
+          "is_colloquial": false,
+          "formality_score": 1.0
+        },
+        "final_query": "연구년 관련 규정 확인 부탁드립니다"
+      },
+      "answer": "This is a mock answer for testing.",
+      "contexts": [
+        "Mock context for testing."
+      ],
+      "quality_metrics": {
+        "faithfulness": 0.5,
+        "answer_relevancy": 0.5,
+        "contextual_precision": 0.5,
+        "contextual_recall": 0.87,
+        "overall_score": 0.593,
+        "passed": false
+      },
+      "semantic_evaluation": {
+        "similarity_score": 0.6713,
+        "is_relevant": false,
+        "threshold": 0.75
+      },
+      "persona": "graduate",
+      "category": "general",
+      "difficulty": "medium"
+    },
+    {
+      "query": "연구비 절차 상세히 알려주세요",
+      "preprocessing": {
+        "original_query": "연구비 절차 상세히 알려주세요",
+        "colloquial_transform": {
+          "was_transformed": true,
+          "transformed_query": "연구비 절차 상세히 안내",
+          "patterns_matched": [
+            "알려주세요->안내"
+          ],
+          "confidence": 0.95
+        },
+        "morphological_expansion": {
+          "nouns": [
+            "연구비",
+            "절차",
+            "안내"
+          ],
+          "verbs": [],
+          "expanded_terms": [],
+          "final_expanded": "연구비 절차 상세히 안내"
+        },
+        "weight_optimization": {
+          "bm25_weight": 0.3,
+          "vector_weight": 0.7,
+          "is_colloquial": true,
+          "formality_score": 0.050000000000000044
+        },
+        "final_query": "연구비 절차 상세히 안내"
+      },
+      "answer": "This is a mock answer for testing.",
+      "contexts": [
+        "Mock context for testing."
+      ],
+      "quality_metrics": {
+        "faithfulness": 0.5,
+        "answer_relevancy": 0.5,
+        "contextual_precision": 0.5,
+        "contextual_recall": 0.87,
+        "overall_score": 0.593,
+        "passed": false
+      },
+      "semantic_evaluation": {
+        "similarity_score": 0.6713,
+        "is_relevant": false,
+        "threshold": 0.75
+      },
+      "persona": "graduate",
+      "category": "general",
+      "difficulty": "medium"
+    },
+    {
+      "query": "논문 관련하여 조언 부탁드립니다",
+      "preprocessing": {
+        "original_query": "논문 관련하여 조언 부탁드립니다",
+        "colloquial_transform": {
+          "was_transformed": false,
+          "transformed_query": "논문 관련하여 조언 부탁드립니다",
+          "patterns_matched": [],
+          "confidence": 1.0
+        },
+        "morphological_expansion": {
+          "nouns": [
+            "논문",
+            "관련",
+            "조언",
+            "부탁"
+          ],
+          "verbs": [
+            "드리"
+          ],
+          "expanded_terms": [],
+          "final_expanded": "논문 관련하여 조언 부탁드립니다"
+        },
+        "weight_optimization": {
+          "bm25_weight": 0.5,
+          "vector_weight": 0.5,
+          "is_colloquial": false,
+          "formality_score": 1.0
+        },
+        "final_query": "논문 관련하여 조언 부탁드립니다"
+      },
+      "answer": "This is a mock answer for testing.",
+      "contexts": [
+        "Mock context for testing."
+      ],
+      "quality_metrics": {
+        "faithfulness": 0.5,
+        "answer_relevancy": 0.5,
+        "contextual_precision": 0.5,
+        "contextual_recall": 0.87,
+        "overall_score": 0.593,
+        "passed": false
+      },
+      "semantic_evaluation": {
+        "similarity_score": 0.6713,
+        "is_relevant": false,
+        "threshold": 0.75
+      },
+      "persona": "graduate",
+      "category": "general",
+      "difficulty": "medium"
+    },
+    {
+      "query": "등록금 관련하여 조언 부탁드립니다",
+      "preprocessing": {
+        "original_query": "등록금 관련하여 조언 부탁드립니다",
+        "colloquial_transform": {
+          "was_transformed": false,
+          "transformed_query": "등록금 관련하여 조언 부탁드립니다",
+          "patterns_matched": [],
+          "confidence": 1.0
+        },
+        "morphological_expansion": {
+          "nouns": [
+            "등록금",
+            "관련",
+            "조언",
+            "부탁"
+          ],
+          "verbs": [
+            "드리"
+          ],
+          "expanded_terms": [],
+          "final_expanded": "등록금 관련하여 조언 부탁드립니다"
+        },
+        "weight_optimization": {
+          "bm25_weight": 0.5,
+          "vector_weight": 0.5,
+          "is_colloquial": false,
+          "formality_score": 1.0
+        },
+        "final_query": "등록금 관련하여 조언 부탁드립니다"
+      },
+      "answer": "This is a mock answer for testing.",
+      "contexts": [
+        "Mock context for testing."
+      ],
+      "quality_metrics": {
+        "faithfulness": 0.5,
+        "answer_relevancy": 0.5,
+        "contextual_precision": 0.5,
+        "contextual_recall": 0.87,
+        "overall_score": 0.593,
+        "passed": false
+      },
+      "semantic_evaluation": {
+        "similarity_score": 0.6713,
+        "is_relevant": false,
+        "threshold": 0.75
+      },
+      "persona": "graduate",
+      "category": "general",
+      "difficulty": "medium"
+    },
+    {
+      "query": "휴학 자격 요건이 어떻게 되나요?",
+      "preprocessing": {
+        "original_query": "휴학 자격 요건이 어떻게 되나요?",
+        "colloquial_transform": {
+          "was_transformed": true,
+          "transformed_query": "휴학 자격 요건이  방법 가능여부?",
+          "patterns_matched": [
+            "되나요->가능여부",
+            "regex:(.+)어떻게"
+          ],
+          "confidence": 0.85
+        },
+        "morphological_expansion": {
+          "nouns": [
+            "휴학",
+            "자격",
+            "요건",
+            "방법",
+            "가능",
+            "여부"
+          ],
+          "verbs": [],
+          "expanded_terms": [],
+          "final_expanded": "휴학 자격 요건이  방법 가능여부?"
+        },
+        "weight_optimization": {
+          "bm25_weight": 0.3,
+          "vector_weight": 0.7,
+          "is_colloquial": true,
+          "formality_score": 0.15000000000000002
+        },
+        "final_query": "휴학 자격 요건이  방법 가능여부?"
+      },
+      "answer": "This is a mock answer for testing.",
+      "contexts": [
+        "Mock context for testing."
+      ],
+      "quality_metrics": {
+        "faithfulness": 0.5,
+        "answer_relevancy": 0.5,
+        "contextual_precision": 0.5,
+        "contextual_recall": 0.87,
+        "overall_score": 0.593,
+        "passed": false
+      },
+      "semantic_evaluation": {
+        "similarity_score": 0.6713,
+        "is_relevant": false,
+        "threshold": 0.75
+      },
+      "persona": "graduate",
+      "category": "general",
+      "difficulty": "medium"
+    },
+    {
+      "query": "연구년 관련 조항 확인 필요",
+      "preprocessing": {
+        "original_query": "연구년 관련 조항 확인 필요",
+        "colloquial_transform": {
+          "was_transformed": false,
+          "transformed_query": "연구년 관련 조항 확인 필요",
+          "patterns_matched": [],
+          "confidence": 1.0
+        },
+        "morphological_expansion": {
+          "nouns": [
+            "연구",
+            "관련",
+            "조항",
+            "확인",
+            "필요"
+          ],
+          "verbs": [],
+          "expanded_terms": [],
+          "final_expanded": "연구년 관련 조항 확인 필요"
+        },
+        "weight_optimization": {
+          "bm25_weight": 0.5,
+          "vector_weight": 0.5,
+          "is_colloquial": false,
+          "formality_score": 1.0
+        },
+        "final_query": "연구년 관련 조항 확인 필요"
+      },
+      "answer": "This is a mock answer for testing.",
+      "contexts": [
+        "Mock context for testing."
+      ],
+      "quality_metrics": {
+        "faithfulness": 0.5,
+        "answer_relevancy": 0.5,
+        "contextual_precision": 0.5,
+        "contextual_recall": 0.87,
+        "overall_score": 0.593,
+        "passed": false
+      },
+      "semantic_evaluation": {
+        "similarity_score": 0.6713,
+        "is_relevant": false,
+        "threshold": 0.75
+      },
+      "persona": "professor",
+      "category": "general",
+      "difficulty": "medium"
+    },
+    {
+      "query": "휴직 관련 조항 확인 필요",
+      "preprocessing": {
+        "original_query": "휴직 관련 조항 확인 필요",
+        "colloquial_transform": {
+          "was_transformed": false,
+          "transformed_query": "휴직 관련 조항 확인 필요",
+          "patterns_matched": [],
+          "confidence": 1.0
+        },
+        "morphological_expansion": {
+          "nouns": [
+            "휴직",
+            "관련",
+            "조항",
+            "확인",
+            "필요"
+          ],
+          "verbs": [],
+          "expanded_terms": [],
+          "final_expanded": "휴직 관련 조항 확인 필요"
+        },
+        "weight_optimization": {
+          "bm25_weight": 0.5,
+          "vector_weight": 0.5,
+          "is_colloquial": false,
+          "formality_score": 1.0
+        },
+        "final_query": "휴직 관련 조항 확인 필요"
+      },
+      "answer": "This is a mock answer for testing.",
+      "contexts": [
+        "Mock context for testing."
+      ],
+      "quality_metrics": {
+        "faithfulness": 0.5,
+        "answer_relevancy": 0.5,
+        "contextual_precision": 0.5,
+        "contextual_recall": 0.87,
+        "overall_score": 0.593,
+        "passed": false
+      },
+      "semantic_evaluation": {
+        "similarity_score": 0.6713,
+        "is_relevant": false,
+        "threshold": 0.75
+      },
+      "persona": "professor",
+      "category": "general",
+      "difficulty": "medium"
+    },
+    {
+      "query": "승진 예외 사항이 있는지 확인 필요",
+      "preprocessing": {
+        "original_query": "승진 예외 사항이 있는지 확인 필요",
+        "colloquial_transform": {
+          "was_transformed": false,
+          "transformed_query": "승진 예외 사항이 있는지 확인 필요",
+          "patterns_matched": [],
+          "confidence": 1.0
+        },
+        "morphological_expansion": {
+          "nouns": [
+            "승진",
+            "예외",
+            "사항",
+            "확인",
+            "필요"
+          ],
+          "verbs": [],
+          "expanded_terms": [],
+          "final_expanded": "승진 예외 사항이 있는지 확인 필요"
+        },
+        "weight_optimization": {
+          "bm25_weight": 0.5,
+          "vector_weight": 0.5,
+          "is_colloquial": false,
+          "formality_score": 1.0
+        },
+        "final_query": "승진 예외 사항이 있는지 확인 필요"
+      },
+      "answer": "This is a mock answer for testing.",
+      "contexts": [
+        "Mock context for testing."
+      ],
+      "quality_metrics": {
+        "faithfulness": 0.5,
+        "answer_relevancy": 0.5,
+        "contextual_precision": 0.5,
+        "contextual_recall": 0.87,
+        "overall_score": 0.593,
+        "passed": false
+      },
+      "semantic_evaluation": {
+        "similarity_score": 0.6713,
+        "is_relevant": false,
+        "threshold": 0.75
+      },
+      "persona": "professor",
+      "category": "general",
+      "difficulty": "medium"
+    },
+    {
+      "query": "연구비 예외 사항이 있는지 확인 필요",
+      "preprocessing": {
+        "original_query": "연구비 예외 사항이 있는지 확인 필요",
+        "colloquial_transform": {
+          "was_transformed": false,
+          "transformed_query": "연구비 예외 사항이 있는지 확인 필요",
+          "patterns_matched": [],
+          "confidence": 1.0
+        },
+        "morphological_expansion": {
+          "nouns": [
+            "연구비",
+            "예외",
+            "사항",
+            "확인",
+            "필요"
+          ],
+          "verbs": [],
+          "expanded_terms": [],
+          "final_expanded": "연구비 예외 사항이 있는지 확인 필요"
+        },
+        "weight_optimization": {
+          "bm25_weight": 0.5,
+          "vector_weight": 0.5,
+          "is_colloquial": false,
+          "formality_score": 1.0
+        },
+        "final_query": "연구비 예외 사항이 있는지 확인 필요"
+      },
+      "answer": "This is a mock answer for testing.",
+      "contexts": [
+        "Mock context for testing."
+      ],
+      "quality_metrics": {
+        "faithfulness": 0.5,
+        "answer_relevancy": 0.5,
+        "contextual_precision": 0.5,
+        "contextual_recall": 0.87,
+        "overall_score": 0.593,
+        "passed": false
+      },
+      "semantic_evaluation": {
+        "similarity_score": 0.6713,
+        "is_relevant": false,
+        "threshold": 0.75
+      },
+      "persona": "professor",
+      "category": "general",
+      "difficulty": "medium"
+    },
+    {
+      "query": "교원인사 적용 기준 상세히",
+      "preprocessing": {
+        "original_query": "교원인사 적용 기준 상세히",
+        "colloquial_transform": {
+          "was_transformed": false,
+          "transformed_query": "교원인사 적용 기준 상세히",
+          "patterns_matched": [],
+          "confidence": 1.0
+        },
+        "morphological_expansion": {
+          "nouns": [
+            "교원",
+            "인사",
+            "적용",
+            "기준"
+          ],
+          "verbs": [],
+          "expanded_terms": [],
+          "final_expanded": "교원인사 적용 기준 상세히"
+        },
+        "weight_optimization": {
+          "bm25_weight": 0.5,
+          "vector_weight": 0.5,
+          "is_colloquial": false,
+          "formality_score": 1.0
+        },
+        "final_query": "교원인사 적용 기준 상세히"
+      },
+      "answer": "This is a mock answer for testing.",
+      "contexts": [
+        "Mock context for testing."
+      ],
+      "quality_metrics": {
+        "faithfulness": 0.5,
+        "answer_relevancy": 0.5,
+        "contextual_precision": 0.5,
+        "contextual_recall": 0.87,
+        "overall_score": 0.593,
+        "passed": false
+      },
+      "semantic_evaluation": {
+        "similarity_score": 0.6713,
+        "is_relevant": false,
+        "threshold": 0.75
+      },
+      "persona": "professor",
+      "category": "general",
+      "difficulty": "medium"
+    },
+    {
+      "query": "복무 승인 권한자가 누구인가요?",
+      "preprocessing": {
+        "original_query": "복무 승인 권한자가 누구인가요?",
+        "colloquial_transform": {
+          "was_transformed": true,
+          "transformed_query": "복무 승인 권한자가 대상인가요?",
+          "patterns_matched": [
+            "누구->대상"
+          ],
+          "confidence": 0.95
+        },
+        "morphological_expansion": {
+          "nouns": [
+            "복무",
+            "승인",
+            "권한",
+            "대상"
+          ],
+          "verbs": [],
+          "expanded_terms": [],
+          "final_expanded": "복무 승인 권한자가 대상인가요?"
+        },
+        "weight_optimization": {
+          "bm25_weight": 0.3,
+          "vector_weight": 0.7,
+          "is_colloquial": true,
+          "formality_score": 0.050000000000000044
+        },
+        "final_query": "복무 승인 권한자가 대상인가요?"
+      },
+      "answer": "This is a mock answer for testing.",
+      "contexts": [
+        "Mock context for testing."
+      ],
+      "quality_metrics": {
+        "faithfulness": 0.5,
+        "answer_relevancy": 0.5,
+        "contextual_precision": 0.5,
+        "contextual_recall": 0.87,
+        "overall_score": 0.593,
+        "passed": false
+      },
+      "semantic_evaluation": {
+        "similarity_score": 0.6713,
+        "is_relevant": false,
+        "threshold": 0.75
+      },
+      "persona": "staff",
+      "category": "general",
+      "difficulty": "medium"
+    },
+    {
+      "query": "휴가 업무 처리 절차 확인",
+      "preprocessing": {
+        "original_query": "휴가 업무 처리 절차 확인",
+        "colloquial_transform": {
+          "was_transformed": false,
+          "transformed_query": "휴가 업무 처리 절차 확인",
+          "patterns_matched": [],
+          "confidence": 1.0
+        },
+        "morphological_expansion": {
+          "nouns": [
+            "휴가",
+            "업무",
+            "처리",
+            "절차",
+            "확인"
+          ],
+          "verbs": [],
+          "expanded_terms": [],
+          "final_expanded": "휴가 업무 처리 절차 확인"
+        },
+        "weight_optimization": {
+          "bm25_weight": 0.5,
+          "vector_weight": 0.5,
+          "is_colloquial": false,
+          "formality_score": 1.0
+        },
+        "final_query": "휴가 업무 처리 절차 확인"
+      },
+      "answer": "This is a mock answer for testing.",
+      "contexts": [
+        "Mock context for testing."
+      ],
+      "quality_metrics": {
+        "faithfulness": 0.5,
+        "answer_relevancy": 0.5,
+        "contextual_precision": 0.5,
+        "contextual_recall": 0.87,
+        "overall_score": 0.593,
+        "passed": false
+      },
+      "semantic_evaluation": {
+        "similarity_score": 0.6713,
+        "is_relevant": false,
+        "threshold": 0.75
+      },
+      "persona": "staff",
+      "category": "general",
+      "difficulty": "medium"
+    },
+    {
+      "query": "급여 관련 비품/시설 사용 규정",
+      "preprocessing": {
+        "original_query": "급여 관련 비품/시설 사용 규정",
+        "colloquial_transform": {
+          "was_transformed": false,
+          "transformed_query": "급여 관련 비품/시설 사용 규정",
+          "patterns_matched": [],
+          "confidence": 1.0
+        },
+        "morphological_expansion": {
+          "nouns": [
+            "급여",
+            "관련",
+            "비품",
+            "시설",
+            "사용",
+            "규정"
+          ],
+          "verbs": [],
+          "expanded_terms": [],
+          "final_expanded": "급여 관련 비품/시설 사용 규정"
+        },
+        "weight_optimization": {
+          "bm25_weight": 0.5,
+          "vector_weight": 0.5,
+          "is_colloquial": false,
+          "formality_score": 1.0
+        },
+        "final_query": "급여 관련 비품/시설 사용 규정"
+      },
+      "answer": "This is a mock answer for testing.",
+      "contexts": [
+        "Mock context for testing."
+      ],
+      "quality_metrics": {
+        "faithfulness": 0.5,
+        "answer_relevancy": 0.5,
+        "contextual_precision": 0.5,
+        "contextual_recall": 0.87,
+        "overall_score": 0.593,
+        "passed": false
+      },
+      "semantic_evaluation": {
+        "similarity_score": 0.6713,
+        "is_relevant": false,
+        "threshold": 0.75
+      },
+      "persona": "staff",
+      "category": "general",
+      "difficulty": "medium"
+    },
+    {
+      "query": "연수 관련 비품/시설 사용 규정",
+      "preprocessing": {
+        "original_query": "연수 관련 비품/시설 사용 규정",
+        "colloquial_transform": {
+          "was_transformed": false,
+          "transformed_query": "연수 관련 비품/시설 사용 규정",
+          "patterns_matched": [],
+          "confidence": 1.0
+        },
+        "morphological_expansion": {
+          "nouns": [
+            "연수",
+            "관련",
+            "비품",
+            "시설",
+            "사용",
+            "규정"
+          ],
+          "verbs": [],
+          "expanded_terms": [],
+          "final_expanded": "연수 관련 비품/시설 사용 규정"
+        },
+        "weight_optimization": {
+          "bm25_weight": 0.5,
+          "vector_weight": 0.5,
+          "is_colloquial": false,
+          "formality_score": 1.0
+        },
+        "final_query": "연수 관련 비품/시설 사용 규정"
+      },
+      "answer": "This is a mock answer for testing.",
+      "contexts": [
+        "Mock context for testing."
+      ],
+      "quality_metrics": {
+        "faithfulness": 0.5,
+        "answer_relevancy": 0.5,
+        "contextual_precision": 0.5,
+        "contextual_recall": 0.87,
+        "overall_score": 0.593,
+        "passed": false
+      },
+      "semantic_evaluation": {
+        "similarity_score": 0.6713,
+        "is_relevant": false,
+        "threshold": 0.75
+      },
+      "persona": "staff",
+      "category": "general",
+      "difficulty": "medium"
+    },
+    {
+      "query": "사무용품 관련 비품/시설 사용 규정",
+      "preprocessing": {
+        "original_query": "사무용품 관련 비품/시설 사용 규정",
+        "colloquial_transform": {
+          "was_transformed": false,
+          "transformed_query": "사무용품 관련 비품/시설 사용 규정",
+          "patterns_matched": [],
+          "confidence": 1.0
+        },
+        "morphological_expansion": {
+          "nouns": [
+            "사무",
+            "용품",
+            "관련",
+            "비품",
+            "시설",
+            "사용",
+            "규정"
+          ],
+          "verbs": [],
+          "expanded_terms": [],
+          "final_expanded": "사무용품 관련 비품/시설 사용 규정"
+        },
+        "weight_optimization": {
+          "bm25_weight": 0.5,
+          "vector_weight": 0.5,
+          "is_colloquial": false,
+          "formality_score": 1.0
+        },
+        "final_query": "사무용품 관련 비품/시설 사용 규정"
+      },
+      "answer": "This is a mock answer for testing.",
+      "contexts": [
+        "Mock context for testing."
+      ],
+      "quality_metrics": {
+        "faithfulness": 0.5,
+        "answer_relevancy": 0.5,
+        "contextual_precision": 0.5,
+        "contextual_recall": 0.87,
+        "overall_score": 0.593,
+        "passed": false
+      },
+      "semantic_evaluation": {
+        "similarity_score": 0.6713,
+        "is_relevant": false,
+        "threshold": 0.75
+      },
+      "persona": "staff",
+      "category": "general",
+      "difficulty": "medium"
+    },
+    {
+      "query": "등록금 관련 서류 뭐 필요한가요?",
+      "preprocessing": {
+        "original_query": "등록금 관련 서류 뭐 필요한가요?",
+        "colloquial_transform": {
+          "was_transformed": false,
+          "transformed_query": "등록금 관련 서류 뭐 필요한가요?",
+          "patterns_matched": [],
+          "confidence": 1.0
+        },
+        "morphological_expansion": {
+          "nouns": [
+            "등록금",
+            "관련",
+            "서류",
+            "필요"
+          ],
+          "verbs": [],
+          "expanded_terms": [],
+          "final_expanded": "등록금 관련 서류 뭐 필요한가요?"
+        },
+        "weight_optimization": {
+          "bm25_weight": 0.5,
+          "vector_weight": 0.5,
+          "is_colloquial": false,
+          "formality_score": 1.0
+        },
+        "final_query": "등록금 관련 서류 뭐 필요한가요?"
+      },
+      "answer": "This is a mock answer for testing.",
+      "contexts": [
+        "Mock context for testing."
+      ],
+      "quality_metrics": {
+        "faithfulness": 0.5,
+        "answer_relevancy": 0.5,
+        "contextual_precision": 0.5,
+        "contextual_recall": 0.87,
+        "overall_score": 0.593,
+        "passed": false
+      },
+      "semantic_evaluation": {
+        "similarity_score": 0.6713,
+        "is_relevant": false,
+        "threshold": 0.75
+      },
+      "persona": "parent",
+      "category": "general",
+      "difficulty": "medium"
+    },
+    {
+      "query": "장학금 부모님도 알아야 하나요?",
+      "preprocessing": {
+        "original_query": "장학금 부모님도 알아야 하나요?",
+        "colloquial_transform": {
+          "was_transformed": false,
+          "transformed_query": "장학금 부모님도 알아야 하나요?",
+          "patterns_matched": [],
+          "confidence": 1.0
+        },
+        "morphological_expansion": {
+          "nouns": [
+            "장학금",
+            "부모"
+          ],
+          "verbs": [],
+          "expanded_terms": [],
+          "final_expanded": "장학금 부모님도 알아야 하나요?"
+        },
+        "weight_optimization": {
+          "bm25_weight": 0.5,
+          "vector_weight": 0.5,
+          "is_colloquial": false,
+          "formality_score": 1.0
+        },
+        "final_query": "장학금 부모님도 알아야 하나요?"
+      },
+      "answer": "This is a mock answer for testing.",
+      "contexts": [
+        "Mock context for testing."
+      ],
+      "quality_metrics": {
+        "faithfulness": 0.5,
+        "answer_relevancy": 0.5,
+        "contextual_precision": 0.5,
+        "contextual_recall": 0.87,
+        "overall_score": 0.593,
+        "passed": false
+      },
+      "semantic_evaluation": {
+        "similarity_score": 0.6713,
+        "is_relevant": false,
+        "threshold": 0.75
+      },
+      "persona": "parent",
+      "category": "general",
+      "difficulty": "medium"
+    },
+    {
+      "query": "기숙사 비용이 어떻게 되나요?",
+      "preprocessing": {
+        "original_query": "기숙사 비용이 어떻게 되나요?",
+        "colloquial_transform": {
+          "was_transformed": true,
+          "transformed_query": "기숙사 비용이  방법 가능여부?",
+          "patterns_matched": [
+            "되나요->가능여부",
+            "regex:(.+)어떻게"
+          ],
+          "confidence": 0.85
+        },
+        "morphological_expansion": {
+          "nouns": [
+            "기숙사",
+            "비용",
+            "방법",
+            "가능",
+            "여부"
+          ],
+          "verbs": [],
+          "expanded_terms": [],
+          "final_expanded": "기숙사 비용이  방법 가능여부?"
+        },
+        "weight_optimization": {
+          "bm25_weight": 0.3,
+          "vector_weight": 0.7,
+          "is_colloquial": true,
+          "formality_score": 0.15000000000000002
+        },
+        "final_query": "기숙사 비용이  방법 가능여부?"
+      },
+      "answer": "This is a mock answer for testing.",
+      "contexts": [
+        "Mock context for testing."
+      ],
+      "quality_metrics": {
+        "faithfulness": 0.5,
+        "answer_relevancy": 0.5,
+        "contextual_precision": 0.5,
+        "contextual_recall": 0.87,
+        "overall_score": 0.593,
+        "passed": false
+      },
+      "semantic_evaluation": {
+        "similarity_score": 0.6713,
+        "is_relevant": false,
+        "threshold": 0.75
+      },
+      "persona": "parent",
+      "category": "general",
+      "difficulty": "medium"
+    },
+    {
+      "query": "휴학 비용이 어떻게 되나요?",
+      "preprocessing": {
+        "original_query": "휴학 비용이 어떻게 되나요?",
+        "colloquial_transform": {
+          "was_transformed": true,
+          "transformed_query": "휴학 비용이  방법 가능여부?",
+          "patterns_matched": [
+            "되나요->가능여부",
+            "regex:(.+)어떻게"
+          ],
+          "confidence": 0.85
+        },
+        "morphological_expansion": {
+          "nouns": [
+            "휴학",
+            "비용",
+            "방법",
+            "가능",
+            "여부"
+          ],
+          "verbs": [],
+          "expanded_terms": [],
+          "final_expanded": "휴학 비용이  방법 가능여부?"
+        },
+        "weight_optimization": {
+          "bm25_weight": 0.3,
+          "vector_weight": 0.7,
+          "is_colloquial": true,
+          "formality_score": 0.15000000000000002
+        },
+        "final_query": "휴학 비용이  방법 가능여부?"
+      },
+      "answer": "This is a mock answer for testing.",
+      "contexts": [
+        "Mock context for testing."
+      ],
+      "quality_metrics": {
+        "faithfulness": 0.5,
+        "answer_relevancy": 0.5,
+        "contextual_precision": 0.5,
+        "contextual_recall": 0.87,
+        "overall_score": 0.593,
+        "passed": false
+      },
+      "semantic_evaluation": {
+        "similarity_score": 0.6713,
+        "is_relevant": false,
+        "threshold": 0.75
+      },
+      "persona": "parent",
+      "category": "general",
+      "difficulty": "medium"
+    },
+    {
+      "query": "성적 부모님도 알아야 하나요?",
+      "preprocessing": {
+        "original_query": "성적 부모님도 알아야 하나요?",
+        "colloquial_transform": {
+          "was_transformed": false,
+          "transformed_query": "성적 부모님도 알아야 하나요?",
+          "patterns_matched": [],
+          "confidence": 1.0
+        },
+        "morphological_expansion": {
+          "nouns": [
+            "부모"
+          ],
+          "verbs": [],
+          "expanded_terms": [],
+          "final_expanded": "성적 부모님도 알아야 하나요?"
+        },
+        "weight_optimization": {
+          "bm25_weight": 0.5,
+          "vector_weight": 0.5,
+          "is_colloquial": false,
+          "formality_score": 1.0
+        },
+        "final_query": "성적 부모님도 알아야 하나요?"
+      },
+      "answer": "This is a mock answer for testing.",
+      "contexts": [
+        "Mock context for testing."
+      ],
+      "quality_metrics": {
+        "faithfulness": 0.5,
+        "answer_relevancy": 0.5,
+        "contextual_precision": 0.5,
+        "contextual_recall": 0.87,
+        "overall_score": 0.593,
+        "passed": false
+      },
+      "semantic_evaluation": {
+        "similarity_score": 0.6713,
+        "is_relevant": false,
+        "threshold": 0.75
+      },
+      "persona": "parent",
+      "category": "general",
+      "difficulty": "medium"
+    },
+    {
+      "query": "비자 requirements",
+      "preprocessing": {
+        "original_query": "비자 requirements",
+        "colloquial_transform": {
+          "was_transformed": false,
+          "transformed_query": "비자 requirements",
+          "patterns_matched": [],
+          "confidence": 1.0
+        },
+        "morphological_expansion": {
+          "nouns": [
+            "비자"
+          ],
+          "verbs": [],
+          "expanded_terms": [],
+          "final_expanded": "비자 requirements"
+        },
+        "weight_optimization": {
+          "bm25_weight": 0.5,
+          "vector_weight": 0.5,
+          "is_colloquial": false,
+          "formality_score": 1.0
+        },
+        "final_query": "비자 requirements"
+      },
+      "answer": "This is a mock answer for testing.",
+      "contexts": [
+        "Mock context for testing."
+      ],
+      "quality_metrics": {
+        "faithfulness": 0.5,
+        "answer_relevancy": 0.5,
+        "contextual_precision": 0.5,
+        "contextual_recall": 0.87,
+        "overall_score": 0.593,
+        "passed": false
+      },
+      "semantic_evaluation": {
+        "similarity_score": 0.6713,
+        "is_relevant": false,
+        "threshold": 0.75
+      },
+      "persona": "international",
+      "category": "general",
+      "difficulty": "medium"
+    },
+    {
+      "query": "Tell me about 등록금 in English if possible",
+      "preprocessing": {
+        "original_query": "Tell me about 등록금 in English if possible",
+        "colloquial_transform": {
+          "was_transformed": false,
+          "transformed_query": "Tell me about 등록금 in English if possible",
+          "patterns_matched": [],
+          "confidence": 1.0
+        },
+        "morphological_expansion": {
+          "nouns": [
+            "등록금"
+          ],
+          "verbs": [],
+          "expanded_terms": [],
+          "final_expanded": "Tell me about 등록금 in English if possible"
+        },
+        "weight_optimization": {
+          "bm25_weight": 0.5,
+          "vector_weight": 0.5,
+          "is_colloquial": false,
+          "formality_score": 1.0
+        },
+        "final_query": "Tell me about 등록금 in English if possible"
+      },
+      "answer": "This is a mock answer for testing.",
+      "contexts": [
+        "Mock context for testing."
+      ],
+      "quality_metrics": {
+        "faithfulness": 0.5,
+        "answer_relevancy": 0.5,
+        "contextual_precision": 0.5,
+        "contextual_recall": 0.87,
+        "overall_score": 0.593,
+        "passed": false
+      },
+      "semantic_evaluation": {
+        "similarity_score": 0.6713,
+        "is_relevant": false,
+        "threshold": 0.75
+      },
+      "persona": "international",
+      "category": "general",
+      "difficulty": "medium"
+    },
+    {
+      "query": "수업 English version available?",
+      "preprocessing": {
+        "original_query": "수업 English version available?",
+        "colloquial_transform": {
+          "was_transformed": false,
+          "transformed_query": "수업 English version available?",
+          "patterns_matched": [],
+          "confidence": 1.0
+        },
+        "morphological_expansion": {
+          "nouns": [
+            "수업"
+          ],
+          "verbs": [],
+          "expanded_terms": [],
+          "final_expanded": "수업 English version available?"
+        },
+        "weight_optimization": {
+          "bm25_weight": 0.5,
+          "vector_weight": 0.5,
+          "is_colloquial": false,
+          "formality_score": 1.0
+        },
+        "final_query": "수업 English version available?"
+      },
+      "answer": "This is a mock answer for testing.",
+      "contexts": [
+        "Mock context for testing."
+      ],
+      "quality_metrics": {
+        "faithfulness": 0.5,
+        "answer_relevancy": 0.5,
+        "contextual_precision": 0.5,
+        "contextual_recall": 0.87,
+        "overall_score": 0.593,
+        "passed": false
+      },
+      "semantic_evaluation": {
+        "similarity_score": 0.6713,
+        "is_relevant": false,
+        "threshold": 0.75
+      },
+      "persona": "international",
+      "category": "general",
+      "difficulty": "medium"
+    },
+    {
+      "query": "How do I 기숙사?",
+      "preprocessing": {
+        "original_query": "How do I 기숙사?",
+        "colloquial_transform": {
+          "was_transformed": false,
+          "transformed_query": "How do I 기숙사?",
+          "patterns_matched": [],
+          "confidence": 1.0
+        },
+        "morphological_expansion": {
+          "nouns": [
+            "기숙사"
+          ],
+          "verbs": [],
+          "expanded_terms": [],
+          "final_expanded": "How do I 기숙사?"
+        },
+        "weight_optimization": {
+          "bm25_weight": 0.5,
+          "vector_weight": 0.5,
+          "is_colloquial": false,
+          "formality_score": 1.0
+        },
+        "final_query": "How do I 기숙사?"
+      },
+      "answer": "This is a mock answer for testing.",
+      "contexts": [
+        "Mock context for testing."
+      ],
+      "quality_metrics": {
+        "faithfulness": 0.5,
+        "answer_relevancy": 0.5,
+        "contextual_precision": 0.5,
+        "contextual_recall": 0.87,
+        "overall_score": 0.593,
+        "passed": false
+      },
+      "semantic_evaluation": {
+        "similarity_score": 0.6713,
+        "is_relevant": false,
+        "threshold": 0.75
+      },
+      "persona": "international",
+      "category": "general",
+      "difficulty": "medium"
+    },
+    {
+      "query": "언어 related to visa status",
+      "preprocessing": {
+        "original_query": "언어 related to visa status",
+        "colloquial_transform": {
+          "was_transformed": false,
+          "transformed_query": "언어 related to visa status",
+          "patterns_matched": [],
+          "confidence": 1.0
+        },
+        "morphological_expansion": {
+          "nouns": [
+            "언어"
+          ],
+          "verbs": [],
+          "expanded_terms": [],
+          "final_expanded": "언어 related to visa status"
+        },
+        "weight_optimization": {
+          "bm25_weight": 0.5,
+          "vector_weight": 0.5,
+          "is_colloquial": false,
+          "formality_score": 1.0
+        },
+        "final_query": "언어 related to visa status"
+      },
+      "answer": "This is a mock answer for testing.",
+      "contexts": [
+        "Mock context for testing."
+      ],
+      "quality_metrics": {
+        "faithfulness": 0.5,
+        "answer_relevancy": 0.5,
+        "contextual_precision": 0.5,
+        "contextual_recall": 0.87,
+        "overall_score": 0.593,
+        "passed": false
+      },
+      "semantic_evaluation": {
+        "similarity_score": 0.6713,
+        "is_relevant": false,
+        "threshold": 0.75
+      },
+      "persona": "international",
+      "category": "general",
+      "difficulty": "medium"
+    }
+  ],
+  "per_persona": {
+    "freshman": {
+      "persona": "freshman",
+      "total_queries": 5,
+      "passed": 0,
+      "failed": 5,
+      "pass_rate": 0.0,
+      "avg_scores": {
+        "faithfulness": 0.5,
+        "answer_relevancy": 0.5,
+        "contextual_precision": 0.5,
+        "contextual_recall": 0.8699999999999999,
+        "overall_score": 0.593
+      },
+      "colloquial_transform_count": 3,
+      "avg_formality_score": 0.43000000000000005
+    },
+    "graduate": {
+      "persona": "graduate",
+      "total_queries": 5,
+      "passed": 0,
+      "failed": 5,
+      "pass_rate": 0.0,
+      "avg_scores": {
+        "faithfulness": 0.5,
+        "answer_relevancy": 0.5,
+        "contextual_precision": 0.5,
+        "contextual_recall": 0.8699999999999999,
+        "overall_score": 0.593
+      },
+      "colloquial_transform_count": 2,
+      "avg_formality_score": 0.6399999999999999
+    },
+    "professor": {
+      "persona": "professor",
+      "total_queries": 5,
+      "passed": 0,
+      "failed": 5,
+      "pass_rate": 0.0,
+      "avg_scores": {
+        "faithfulness": 0.5,
+        "answer_relevancy": 0.5,
+        "contextual_precision": 0.5,
+        "contextual_recall": 0.8699999999999999,
+        "overall_score": 0.593
+      },
+      "colloquial_transform_count": 0,
+      "avg_formality_score": 1.0
+    },
+    "staff": {
+      "persona": "staff",
+      "total_queries": 5,
+      "passed": 0,
+      "failed": 5,
+      "pass_rate": 0.0,
+      "avg_scores": {
+        "faithfulness": 0.5,
+        "answer_relevancy": 0.5,
+        "contextual_precision": 0.5,
+        "contextual_recall": 0.8699999999999999,
+        "overall_score": 0.593
+      },
+      "colloquial_transform_count": 1,
+      "avg_formality_score": 0.8099999999999999
+    },
+    "parent": {
+      "persona": "parent",
+      "total_queries": 5,
+      "passed": 0,
+      "failed": 5,
+      "pass_rate": 0.0,
+      "avg_scores": {
+        "faithfulness": 0.5,
+        "answer_relevancy": 0.5,
+        "contextual_precision": 0.5,
+        "contextual_recall": 0.8699999999999999,
+        "overall_score": 0.593
+      },
+      "colloquial_transform_count": 2,
+      "avg_formality_score": 0.6599999999999999
+    },
+    "international": {
+      "persona": "international",
+      "total_queries": 5,
+      "passed": 0,
+      "failed": 5,
+      "pass_rate": 0.0,
+      "avg_scores": {
+        "faithfulness": 0.5,
+        "answer_relevancy": 0.5,
+        "contextual_precision": 0.5,
+        "contextual_recall": 0.8699999999999999,
+        "overall_score": 0.593
+      },
+      "colloquial_transform_count": 0,
+      "avg_formality_score": 1.0
+    }
+  },
+  "aggregates": {
+    "total_queries": 30,
+    "passed": 0,
+    "failed": 30,
+    "pass_rate": 0.0,
+    "metric_averages": {
+      "faithfulness": 0.5,
+      "answer_relevancy": 0.5,
+      "contextual_precision": 0.5,
+      "contextual_recall": 0.8700000000000002,
+      "overall_score": 0.593
+    },
+    "colloquial_transforms": 8,
+    "colloquial_transform_rate": 0.26666666666666666,
+    "avg_formality_score": 0.7566666666666666
+  }
+}

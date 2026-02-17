@@ -1,0 +1,57 @@
+{
+  "evaluation_id": "SPEC-RAG-QUALITY-005_20260217",
+  "timestamp": "2026-02-17T09:30:00Z",
+  "spec_id": "SPEC-RAG-QUALITY-005",
+  "source_evaluation": "rag_quality_local_20260215",
+  "summary": {
+    "overall_pass_rate": 0.833,
+    "avg_score": 0.863,
+    "total_queries": 30,
+    "passed": 25,
+    "failed": 5,
+    "quality_gates_met": true
+  },
+  "persona_metrics": {
+    "student-undergraduate": {"avg_score": 0.860, "pass_rate": 0.8},
+    "student-graduate": {"avg_score": 0.840, "pass_rate": 0.8},
+    "professor": {"avg_score": 0.900, "pass_rate": 1.0},
+    "staff-admin": {"avg_score": 0.820, "pass_rate": 0.6},
+    "parent": {"avg_score": 0.895, "pass_rate": 1.0},
+    "student-international": {"avg_score": 0.860, "pass_rate": 0.8}
+  },
+  "critical_issues": [
+    {
+      "id": "ISSUE-001",
+      "type": "staff_coverage",
+      "severity": "medium",
+      "description": "Staff-related queries showed lower completeness",
+      "target_improvement": "Staff pass rate from 60% to 80%+"
+    },
+    {
+      "id": "ISSUE-002",
+      "type": "citation_quality",
+      "severity": "low",
+      "description": "Some responses lack specific article citations",
+      "target_improvement": "Citation score from 0.850 to 0.90+"
+    }
+  ],
+  "generated_spec": {
+    "spec_id": "SPEC-RAG-QUALITY-005",
+    "title": "Staff Coverage & Citation Enhancement",
+    "requirements": [
+      "REQ-001: Staff Regulation Coverage Enhancement",
+      "REQ-002: Citation Extraction Improvement",
+      "REQ-003: Edge Case Test Expansion"
+    ],
+    "target_metrics": {
+      "overall_pass_rate": 0.90,
+      "staff_pass_rate": 0.80,
+      "staff_completeness": 0.85,
+      "citation_score": 0.90
+    }
+  },
+  "outputs": [
+    "data/evaluations/rag_quality_full_report_20260217.md",
+    ".moai/specs/SPEC-RAG-QUALITY-005/spec.md"
+  ]
+}

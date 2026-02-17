@@ -1,0 +1,30 @@
+{
+  "persona": "international",
+  "queries": [
+    {"query": "비자 연장 방법이 어떻게 되나요?", "category": "visa", "difficulty": "medium"},
+    {"query": "유학생 장학금 신청 자격이 어떻게 되나요?", "category": "financial", "difficulty": "medium"},
+    {"query": "한국어 수업 시간표 어디서 확인해요?", "category": "academic", "difficulty": "easy"},
+    {"query": "기숙사 신청 마감일 언제예요?", "category": "campus_life", "difficulty": "easy"},
+    {"query": "외국인 등록증 발급 방법 알려주세요", "category": "admin", "difficulty": "medium"},
+    {"query": "아르바이트 허가 신청 어떻게 해요?", "category": "visa", "difficulty": "medium"},
+    {"query": "한국어 능력 시험 면제 조건 있어요?", "category": "academic", "difficulty": "hard"},
+    {"query": "졸업 후 취업 비자 변경 어떻게 해요?", "category": "visa", "difficulty": "hard"},
+    {"query": "유학생 건강보험 가입 필수인가요?", "category": "admin", "difficulty": "medium"},
+    {"query": "영어로 된 수업 목록 어디서 봐요?", "category": "academic", "difficulty": "easy"},
+    {"query": "유학생 휴학 가능한가요?", "category": "procedural", "difficulty": "medium"},
+    {"query": "등록금 납부 마감일 언제까지인가요?", "category": "financial", "difficulty": "easy"},
+    {"query": "한국어 교육 프로그램 신청 방법 알려주세요", "category": "academic", "difficulty": "easy"},
+    {"query": "유학생 동아리 있어요?", "category": "campus_life", "difficulty": "easy"},
+    {"query": "재학 증명서 영문 발급 가능해요?", "category": "admin", "difficulty": "easy"},
+    {"query": "유학생 병역 의무 어떻게 되나요?", "category": "visa", "difficulty": "hard"},
+    {"query": "계절학기 수강 신청 어떻게 해요?", "category": "academic", "difficulty": "medium"},
+    {"query": "유학생 상담 센터 연락처 알려주세요", "category": "support", "difficulty": "easy"},
+    {"query": "공항 픽업 서비스 있어요?", "category": "support", "difficulty": "easy"},
+    {"query": "입학 서류 번역본 제출 필요한가요?", "category": "admin", "difficulty": "medium"},
+    {"query": "유학생 교환학생 프로그램 신청 가능해요?", "category": "academic", "difficulty": "medium"},
+    {"query": "성적표 영문 발급 방법 알려주세요", "category": "academic", "difficulty": "easy"},
+    {"query": "유학생 전용 스칼라십 어떤 게 있어요?", "category": "financial", "difficulty": "hard"},
+    {"query": "체류 기간 연장 언제 신청해야 해요?", "category": "visa", "difficulty": "medium"},
+    {"query": "유학생 졸업 요건 다른 점 있어요?", "category": "academic", "difficulty": "hard"}
+  ]
+}

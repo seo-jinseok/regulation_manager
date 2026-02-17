@@ -1,0 +1,752 @@
+[
+  {
+    "persona": "staff",
+    "query": "연차 휴가 신청 절차가 어떻게 되나요?",
+    "category": "leave",
+    "difficulty": "easy",
+    "answer": "Error: SearchUseCase.ask() got an unexpected keyword argument 'use_rerank'",
+    "contexts": [],
+    "evaluation": {
+      "faithfulness": 0.5,
+      "answer_relevancy": 0.5,
+      "contextual_precision": 0.5,
+      "contextual_recall": 0.87,
+      "overall_score": 0.593,
+      "passed": false,
+      "failure_reasons": [
+        "Faithfulness below threshold: 0.500 < 0.6",
+        "Answer Relevancy below threshold: 0.500 < 0.7",
+        "Contextual Precision below threshold: 0.500 < 0.65",
+        "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+      ]
+    },
+    "metadata": {
+      "framework": "ragas",
+      "judge_model": "gpt-4o",
+      "evaluation_method": "mock"
+    },
+    "execution_metadata": {
+      "error": "SearchUseCase.ask() got an unexpected keyword argument 'use_rerank'"
+    }
+  },
+  {
+    "persona": "staff",
+    "query": "복무 규정 핵심 사항이 무엇인가요?",
+    "category": "service",
+    "difficulty": "easy",
+    "answer": "Error: SearchUseCase.ask() got an unexpected keyword argument 'use_rerank'",
+    "contexts": [],
+    "evaluation": {
+      "faithfulness": 0.5,
+      "answer_relevancy": 0.5,
+      "contextual_precision": 0.5,
+      "contextual_recall": 0.87,
+      "overall_score": 0.593,
+      "passed": false,
+      "failure_reasons": [
+        "Faithfulness below threshold: 0.500 < 0.6",
+        "Answer Relevancy below threshold: 0.500 < 0.7",
+        "Contextual Precision below threshold: 0.500 < 0.65",
+        "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+      ]
+    },
+    "metadata": {
+      "framework": "ragas",
+      "judge_model": "gpt-4o",
+      "evaluation_method": "mock"
+    },
+    "execution_metadata": {
+      "error": "SearchUseCase.ask() got an unexpected keyword argument 'use_rerank'"
+    }
+  },
+  {
+    "persona": "staff",
+    "query": "급여 지급 일자가 언제인가요?",
+    "category": "salary",
+    "difficulty": "easy",
+    "answer": "Error: SearchUseCase.ask() got an unexpected keyword argument 'use_rerank'",
+    "contexts": [],
+    "evaluation": {
+      "faithfulness": 0.5,
+      "answer_relevancy": 0.5,
+      "contextual_precision": 0.5,
+      "contextual_recall": 0.87,
+      "overall_score": 0.593,
+      "passed": false,
+      "failure_reasons": [
+        "Faithfulness below threshold: 0.500 < 0.6",
+        "Answer Relevancy below threshold: 0.500 < 0.7",
+        "Contextual Precision below threshold: 0.500 < 0.65",
+        "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+      ]
+    },
+    "metadata": {
+      "framework": "ragas",
+      "judge_model": "gpt-4o",
+      "evaluation_method": "mock"
+    },
+    "execution_metadata": {
+      "error": "SearchUseCase.ask() got an unexpected keyword argument 'use_rerank'"
+    }
+  },
+  {
+    "persona": "staff",
+    "query": "연수 참여 신청 방법이 어떻게 되나요?",
+    "category": "training",
+    "difficulty": "easy",
+    "answer": "Error: SearchUseCase.ask() got an unexpected keyword argument 'use_rerank'",
+    "contexts": [],
+    "evaluation": {
+      "faithfulness": 0.5,
+      "answer_relevancy": 0.5,
+      "contextual_precision": 0.5,
+      "contextual_recall": 0.87,
+      "overall_score": 0.593,
+      "passed": false,
+      "failure_reasons": [
+        "Faithfulness below threshold: 0.500 < 0.6",
+        "Answer Relevancy below threshold: 0.500 < 0.7",
+        "Contextual Precision below threshold: 0.500 < 0.65",
+        "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+      ]
+    },
+    "metadata": {
+      "framework": "ragas",
+      "judge_model": "gpt-4o",
+      "evaluation_method": "mock"
+    },
+    "execution_metadata": {
+      "error": "SearchUseCase.ask() got an unexpected keyword argument 'use_rerank'"
+    }
+  },
+  {
+    "persona": "staff",
+    "query": "병가 사용 기준이 어떻게 되나요?",
+    "category": "leave",
+    "difficulty": "medium",
+    "answer": "Error: SearchUseCase.ask() got an unexpected keyword argument 'use_rerank'",
+    "contexts": [],
+    "evaluation": {
+      "faithfulness": 0.5,
+      "answer_relevancy": 0.5,
+      "contextual_precision": 0.5,
+      "contextual_recall": 0.87,
+      "overall_score": 0.593,
+      "passed": false,
+      "failure_reasons": [
+        "Faithfulness below threshold: 0.500 < 0.6",
+        "Answer Relevancy below threshold: 0.500 < 0.7",
+        "Contextual Precision below threshold: 0.500 < 0.65",
+        "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+      ]
+    },
+    "metadata": {
+      "framework": "ragas",
+      "judge_model": "gpt-4o",
+      "evaluation_method": "mock"
+    },
+    "execution_metadata": {
+      "error": "SearchUseCase.ask() got an unexpected keyword argument 'use_rerank'"
+    }
+  },
+  {
+    "persona": "staff",
+    "query": "성과상여금 지급 기준이 무엇인가요?",
+    "category": "salary",
+    "difficulty": "hard",
+    "answer": "Error: SearchUseCase.ask() got an unexpected keyword argument 'use_rerank'",
+    "contexts": [],
+    "evaluation": {
+      "faithfulness": 0.5,
+      "answer_relevancy": 0.5,
+      "contextual_precision": 0.5,
+      "contextual_recall": 0.87,
+      "overall_score": 0.593,
+      "passed": false,
+      "failure_reasons": [
+        "Faithfulness below threshold: 0.500 < 0.6",
+        "Answer Relevancy below threshold: 0.500 < 0.7",
+        "Contextual Precision below threshold: 0.500 < 0.65",
+        "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+      ]
+    },
+    "metadata": {
+      "framework": "ragas",
+      "judge_model": "gpt-4o",
+      "evaluation_method": "mock"
+    },
+    "execution_metadata": {
+      "error": "SearchUseCase.ask() got an unexpected keyword argument 'use_rerank'"
+    }
+  },
+  {
+    "persona": "staff",
+    "query": "전보 발령 기준이 어떻게 되나요?",
+    "category": "personnel",
+    "difficulty": "medium",
+    "answer": "Error: SearchUseCase.ask() got an unexpected keyword argument 'use_rerank'",
+    "contexts": [],
+    "evaluation": {
+      "faithfulness": 0.5,
+      "answer_relevancy": 0.5,
+      "contextual_precision": 0.5,
+      "contextual_recall": 0.87,
+      "overall_score": 0.593,
+      "passed": false,
+      "failure_reasons": [
+        "Faithfulness below threshold: 0.500 < 0.6",
+        "Answer Relevancy below threshold: 0.500 < 0.7",
+        "Contextual Precision below threshold: 0.500 < 0.65",
+        "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+      ]
+    },
+    "metadata": {
+      "framework": "ragas",
+      "judge_model": "gpt-4o",
+      "evaluation_method": "mock"
+    },
+    "execution_metadata": {
+      "error": "SearchUseCase.ask() got an unexpected keyword argument 'use_rerank'"
+    }
+  },
+  {
+    "persona": "staff",
+    "query": "승진 심사 항목이 무엇인가요?",
+    "category": "personnel",
+    "difficulty": "hard",
+    "answer": "Error: SearchUseCase.ask() got an unexpected keyword argument 'use_rerank'",
+    "contexts": [],
+    "evaluation": {
+      "faithfulness": 0.5,
+      "answer_relevancy": 0.5,
+      "contextual_precision": 0.5,
+      "contextual_recall": 0.87,
+      "overall_score": 0.593,
+      "passed": false,
+      "failure_reasons": [
+        "Faithfulness below threshold: 0.500 < 0.6",
+        "Answer Relevancy below threshold: 0.500 < 0.7",
+        "Contextual Precision below threshold: 0.500 < 0.65",
+        "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+      ]
+    },
+    "metadata": {
+      "framework": "ragas",
+      "judge_model": "gpt-4o",
+      "evaluation_method": "mock"
+    },
+    "execution_metadata": {
+      "error": "SearchUseCase.ask() got an unexpected keyword argument 'use_rerank'"
+    }
+  },
+  {
+    "persona": "staff",
+    "query": "사무용품 구매 절차가 어떻게 되나요?",
+    "category": "admin",
+    "difficulty": "easy",
+    "answer": "Error: SearchUseCase.ask() got an unexpected keyword argument 'use_rerank'",
+    "contexts": [],
+    "evaluation": {
+      "faithfulness": 0.5,
+      "answer_relevancy": 0.5,
+      "contextual_precision": 0.5,
+      "contextual_recall": 0.87,
+      "overall_score": 0.593,
+      "passed": false,
+      "failure_reasons": [
+        "Faithfulness below threshold: 0.500 < 0.6",
+        "Answer Relevancy below threshold: 0.500 < 0.7",
+        "Contextual Precision below threshold: 0.500 < 0.65",
+        "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+      ]
+    },
+    "metadata": {
+      "framework": "ragas",
+      "judge_model": "gpt-4o",
+      "evaluation_method": "mock"
+    },
+    "execution_metadata": {
+      "error": "SearchUseCase.ask() got an unexpected keyword argument 'use_rerank'"
+    }
+  },
+  {
+    "persona": "staff",
+    "query": "시설 사용 신청 방법이 어떻게 되나요?",
+    "category": "admin",
+    "difficulty": "easy",
+    "answer": "Error: SearchUseCase.ask() got an unexpected keyword argument 'use_rerank'",
+    "contexts": [],
+    "evaluation": {
+      "faithfulness": 0.5,
+      "answer_relevancy": 0.5,
+      "contextual_precision": 0.5,
+      "contextual_recall": 0.87,
+      "overall_score": 0.593,
+      "passed": false,
+      "failure_reasons": [
+        "Faithfulness below threshold: 0.500 < 0.6",
+        "Answer Relevancy below threshold: 0.500 < 0.7",
+        "Contextual Precision below threshold: 0.500 < 0.65",
+        "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+      ]
+    },
+    "metadata": {
+      "framework": "ragas",
+      "judge_model": "gpt-4o",
+      "evaluation_method": "mock"
+    },
+    "execution_metadata": {
+      "error": "SearchUseCase.ask() got an unexpected keyword argument 'use_rerank'"
+    }
+  },
+  {
+    "persona": "staff",
+    "query": "재직증명서 발급 방법이 어떻게 되나요?",
+    "category": "admin",
+    "difficulty": "easy",
+    "answer": "Error: SearchUseCase.ask() got an unexpected keyword argument 'use_rerank'",
+    "contexts": [],
+    "evaluation": {
+      "faithfulness": 0.5,
+      "answer_relevancy": 0.5,
+      "contextual_precision": 0.5,
+      "contextual_recall": 0.87,
+      "overall_score": 0.593,
+      "passed": false,
+      "failure_reasons": [
+        "Faithfulness below threshold: 0.500 < 0.6",
+        "Answer Relevancy below threshold: 0.500 < 0.7",
+        "Contextual Precision below threshold: 0.500 < 0.65",
+        "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+      ]
+    },
+    "metadata": {
+      "framework": "ragas",
+      "judge_model": "gpt-4o",
+      "evaluation_method": "mock"
+    },
+    "execution_metadata": {
+      "error": "SearchUseCase.ask() got an unexpected keyword argument 'use_rerank'"
+    }
+  },
+  {
+    "persona": "staff",
+    "query": "초과근무 수당 지급 기준이 어떻게 되나요?",
+    "category": "salary",
+    "difficulty": "medium",
+    "answer": "Error: SearchUseCase.ask() got an unexpected keyword argument 'use_rerank'",
+    "contexts": [],
+    "evaluation": {
+      "faithfulness": 0.5,
+      "answer_relevancy": 0.5,
+      "contextual_precision": 0.5,
+      "contextual_recall": 0.87,
+      "overall_score": 0.593,
+      "passed": false,
+      "failure_reasons": [
+        "Faithfulness below threshold: 0.500 < 0.6",
+        "Answer Relevancy below threshold: 0.500 < 0.7",
+        "Contextual Precision below threshold: 0.500 < 0.65",
+        "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+      ]
+    },
+    "metadata": {
+      "framework": "ragas",
+      "judge_model": "gpt-4o",
+      "evaluation_method": "mock"
+    },
+    "execution_metadata": {
+      "error": "SearchUseCase.ask() got an unexpected keyword argument 'use_rerank'"
+    }
+  },
+  {
+    "persona": "staff",
+    "query": "출장비 정산 절차가 어떻게 되나요?",
+    "category": "admin",
+    "difficulty": "medium",
+    "answer": "Error: SearchUseCase.ask() got an unexpected keyword argument 'use_rerank'",
+    "contexts": [],
+    "evaluation": {
+      "faithfulness": 0.5,
+      "answer_relevancy": 0.5,
+      "contextual_precision": 0.5,
+      "contextual_recall": 0.87,
+      "overall_score": 0.593,
+      "passed": false,
+      "failure_reasons": [
+        "Faithfulness below threshold: 0.500 < 0.6",
+        "Answer Relevancy below threshold: 0.500 < 0.7",
+        "Contextual Precision below threshold: 0.500 < 0.65",
+        "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+      ]
+    },
+    "metadata": {
+      "framework": "ragas",
+      "judge_model": "gpt-4o",
+      "evaluation_method": "mock"
+    },
+    "execution_metadata": {
+      "error": "SearchUseCase.ask() got an unexpected keyword argument 'use_rerank'"
+    }
+  },
+  {
+    "persona": "staff",
+    "query": "경조사 휴가 기간이 어떻게 되나요?",
+    "category": "leave",
+    "difficulty": "medium",
+    "answer": "Error: SearchUseCase.ask() got an unexpected keyword argument 'use_rerank'",
+    "contexts": [],
+    "evaluation": {
+      "faithfulness": 0.5,
+      "answer_relevancy": 0.5,
+      "contextual_precision": 0.5,
+      "contextual_recall": 0.87,
+      "overall_score": 0.593,
+      "passed": false,
+      "failure_reasons": [
+        "Faithfulness below threshold: 0.500 < 0.6",
+        "Answer Relevancy below threshold: 0.500 < 0.7",
+        "Contextual Precision below threshold: 0.500 < 0.65",
+        "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+      ]
+    },
+    "metadata": {
+      "framework": "ragas",
+      "judge_model": "gpt-4o",
+      "evaluation_method": "mock"
+    },
+    "execution_metadata": {
+      "error": "SearchUseCase.ask() got an unexpected keyword argument 'use_rerank'"
+    }
+  },
+  {
+    "persona": "staff",
+    "query": "보안 교육 이수 의무가 있나요?",
+    "category": "training",
+    "difficulty": "easy",
+    "answer": "Error: SearchUseCase.ask() got an unexpected keyword argument 'use_rerank'",
+    "contexts": [],
+    "evaluation": {
+      "faithfulness": 0.5,
+      "answer_relevancy": 0.5,
+      "contextual_precision": 0.5,
+      "contextual_recall": 0.87,
+      "overall_score": 0.593,
+      "passed": false,
+      "failure_reasons": [
+        "Faithfulness below threshold: 0.500 < 0.6",
+        "Answer Relevancy below threshold: 0.500 < 0.7",
+        "Contextual Precision below threshold: 0.500 < 0.65",
+        "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+      ]
+    },
+    "metadata": {
+      "framework": "ragas",
+      "judge_model": "gpt-4o",
+      "evaluation_method": "mock"
+    },
+    "execution_metadata": {
+      "error": "SearchUseCase.ask() got an unexpected keyword argument 'use_rerank'"
+    }
+  },
+  {
+    "persona": "staff",
+    "query": "근무성적 평가 기준이 무엇인가요?",
+    "category": "personnel",
+    "difficulty": "hard",
+    "answer": "Error: SearchUseCase.ask() got an unexpected keyword argument 'use_rerank'",
+    "contexts": [],
+    "evaluation": {
+      "faithfulness": 0.5,
+      "answer_relevancy": 0.5,
+      "contextual_precision": 0.5,
+      "contextual_recall": 0.87,
+      "overall_score": 0.593,
+      "passed": false,
+      "failure_reasons": [
+        "Faithfulness below threshold: 0.500 < 0.6",
+        "Answer Relevancy below threshold: 0.500 < 0.7",
+        "Contextual Precision below threshold: 0.500 < 0.65",
+        "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+      ]
+    },
+    "metadata": {
+      "framework": "ragas",
+      "judge_model": "gpt-4o",
+      "evaluation_method": "mock"
+    },
+    "execution_metadata": {
+      "error": "SearchUseCase.ask() got an unexpected keyword argument 'use_rerank'"
+    }
+  },
+  {
+    "persona": "staff",
+    "query": "직급 호봉제 적용 기준이 어떻게 되나요?",
+    "category": "salary",
+    "difficulty": "medium",
+    "answer": "Error: SearchUseCase.ask() got an unexpected keyword argument 'use_rerank'",
+    "contexts": [],
+    "evaluation": {
+      "faithfulness": 0.5,
+      "answer_relevancy": 0.5,
+      "contextual_precision": 0.5,
+      "contextual_recall": 0.87,
+      "overall_score": 0.593,
+      "passed": false,
+      "failure_reasons": [
+        "Faithfulness below threshold: 0.500 < 0.6",
+        "Answer Relevancy below threshold: 0.500 < 0.7",
+        "Contextual Precision below threshold: 0.500 < 0.65",
+        "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+      ]
+    },
+    "metadata": {
+      "framework": "ragas",
+      "judge_model": "gpt-4o",
+      "evaluation_method": "mock"
+    },
+    "execution_metadata": {
+      "error": "SearchUseCase.ask() got an unexpected keyword argument 'use_rerank'"
+    }
+  },
+  {
+    "persona": "staff",
+    "query": "휴직 신청 사유가 무엇인가요?",
+    "category": "leave",
+    "difficulty": "medium",
+    "answer": "Error: SearchUseCase.ask() got an unexpected keyword argument 'use_rerank'",
+    "contexts": [],
+    "evaluation": {
+      "faithfulness": 0.5,
+      "answer_relevancy": 0.5,
+      "contextual_precision": 0.5,
+      "contextual_recall": 0.87,
+      "overall_score": 0.593,
+      "passed": false,
+      "failure_reasons": [
+        "Faithfulness below threshold: 0.500 < 0.6",
+        "Answer Relevancy below threshold: 0.500 < 0.7",
+        "Contextual Precision below threshold: 0.500 < 0.65",
+        "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+      ]
+    },
+    "metadata": {
+      "framework": "ragas",
+      "judge_model": "gpt-4o",
+      "evaluation_method": "mock"
+    },
+    "execution_metadata": {
+      "error": "SearchUseCase.ask() got an unexpected keyword argument 'use_rerank'"
+    }
+  },
+  {
+    "persona": "staff",
+    "query": "복직 절차가 어떻게 되나요?",
+    "category": "personnel",
+    "difficulty": "medium",
+    "answer": "Error: SearchUseCase.ask() got an unexpected keyword argument 'use_rerank'",
+    "contexts": [],
+    "evaluation": {
+      "faithfulness": 0.5,
+      "answer_relevancy": 0.5,
+      "contextual_precision": 0.5,
+      "contextual_recall": 0.87,
+      "overall_score": 0.593,
+      "passed": false,
+      "failure_reasons": [
+        "Faithfulness below threshold: 0.500 < 0.6",
+        "Answer Relevancy below threshold: 0.500 < 0.7",
+        "Contextual Precision below threshold: 0.500 < 0.65",
+        "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+      ]
+    },
+    "metadata": {
+      "framework": "ragas",
+      "judge_model": "gpt-4o",
+      "evaluation_method": "mock"
+    },
+    "execution_metadata": {
+      "error": "SearchUseCase.ask() got an unexpected keyword argument 'use_rerank'"
+    }
+  },
+  {
+    "persona": "staff",
+    "query": "퇴직금 지급 기준이 어떻게 되나요?",
+    "category": "salary",
+    "difficulty": "hard",
+    "answer": "Error: SearchUseCase.ask() got an unexpected keyword argument 'use_rerank'",
+    "contexts": [],
+    "evaluation": {
+      "faithfulness": 0.5,
+      "answer_relevancy": 0.5,
+      "contextual_precision": 0.5,
+      "contextual_recall": 0.87,
+      "overall_score": 0.593,
+      "passed": false,
+      "failure_reasons": [
+        "Faithfulness below threshold: 0.500 < 0.6",
+        "Answer Relevancy below threshold: 0.500 < 0.7",
+        "Contextual Precision below threshold: 0.500 < 0.65",
+        "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+      ]
+    },
+    "metadata": {
+      "framework": "ragas",
+      "judge_model": "gpt-4o",
+      "evaluation_method": "mock"
+    },
+    "execution_metadata": {
+      "error": "SearchUseCase.ask() got an unexpected keyword argument 'use_rerank'"
+    }
+  },
+  {
+    "persona": "staff",
+    "query": "장기근속자 포상 기준이 무엇인가요?",
+    "category": "personnel",
+    "difficulty": "medium",
+    "answer": "Error: SearchUseCase.ask() got an unexpected keyword argument 'use_rerank'",
+    "contexts": [],
+    "evaluation": {
+      "faithfulness": 0.5,
+      "answer_relevancy": 0.5,
+      "contextual_precision": 0.5,
+      "contextual_recall": 0.87,
+      "overall_score": 0.593,
+      "passed": false,
+      "failure_reasons": [
+        "Faithfulness below threshold: 0.500 < 0.6",
+        "Answer Relevancy below threshold: 0.500 < 0.7",
+        "Contextual Precision below threshold: 0.500 < 0.65",
+        "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+      ]
+    },
+    "metadata": {
+      "framework": "ragas",
+      "judge_model": "gpt-4o",
+      "evaluation_method": "mock"
+    },
+    "execution_metadata": {
+      "error": "SearchUseCase.ask() got an unexpected keyword argument 'use_rerank'"
+    }
+  },
+  {
+    "persona": "staff",
+    "query": "성희롱 예방 교육 일정이 어떻게 되나요?",
+    "category": "training",
+    "difficulty": "easy",
+    "answer": "Error: SearchUseCase.ask() got an unexpected keyword argument 'use_rerank'",
+    "contexts": [],
+    "evaluation": {
+      "faithfulness": 0.5,
+      "answer_relevancy": 0.5,
+      "contextual_precision": 0.5,
+      "contextual_recall": 0.87,
+      "overall_score": 0.593,
+      "passed": false,
+      "failure_reasons": [
+        "Faithfulness below threshold: 0.500 < 0.6",
+        "Answer Relevancy below threshold: 0.500 < 0.7",
+        "Contextual Precision below threshold: 0.500 < 0.65",
+        "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+      ]
+    },
+    "metadata": {
+      "framework": "ragas",
+      "judge_model": "gpt-4o",
+      "evaluation_method": "mock"
+    },
+    "execution_metadata": {
+      "error": "SearchUseCase.ask() got an unexpected keyword argument 'use_rerank'"
+    }
+  },
+  {
+    "persona": "staff",
+    "query": "차량 등록 절차가 어떻게 되나요?",
+    "category": "admin",
+    "difficulty": "easy",
+    "answer": "Error: SearchUseCase.ask() got an unexpected keyword argument 'use_rerank'",
+    "contexts": [],
+    "evaluation": {
+      "faithfulness": 0.5,
+      "answer_relevancy": 0.5,
+      "contextual_precision": 0.5,
+      "contextual_recall": 0.87,
+      "overall_score": 0.593,
+      "passed": false,
+      "failure_reasons": [
+        "Faithfulness below threshold: 0.500 < 0.6",
+        "Answer Relevancy below threshold: 0.500 < 0.7",
+        "Contextual Precision below threshold: 0.500 < 0.65",
+        "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+      ]
+    },
+    "metadata": {
+      "framework": "ragas",
+      "judge_model": "gpt-4o",
+      "evaluation_method": "mock"
+    },
+    "execution_metadata": {
+      "error": "SearchUseCase.ask() got an unexpected keyword argument 'use_rerank'"
+    }
+  },
+  {
+    "persona": "staff",
+    "query": "명절 근무 수당 기준이 어떻게 되나요?",
+    "category": "salary",
+    "difficulty": "medium",
+    "answer": "Error: SearchUseCase.ask() got an unexpected keyword argument 'use_rerank'",
+    "contexts": [],
+    "evaluation": {
+      "faithfulness": 0.5,
+      "answer_relevancy": 0.5,
+      "contextual_precision": 0.5,
+      "contextual_recall": 0.87,
+      "overall_score": 0.593,
+      "passed": false,
+      "failure_reasons": [
+        "Faithfulness below threshold: 0.500 < 0.6",
+        "Answer Relevancy below threshold: 0.500 < 0.7",
+        "Contextual Precision below threshold: 0.500 < 0.65",
+        "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+      ]
+    },
+    "metadata": {
+      "framework": "ragas",
+      "judge_model": "gpt-4o",
+      "evaluation_method": "mock"
+    },
+    "execution_metadata": {
+      "error": "SearchUseCase.ask() got an unexpected keyword argument 'use_rerank'"
+    }
+  },
+  {
+    "persona": "staff",
+    "query": "징계 처분 종류가 무엇인가요?",
+    "category": "personnel",
+    "difficulty": "hard",
+    "answer": "Error: SearchUseCase.ask() got an unexpected keyword argument 'use_rerank'",
+    "contexts": [],
+    "evaluation": {
+      "faithfulness": 0.5,
+      "answer_relevancy": 0.5,
+      "contextual_precision": 0.5,
+      "contextual_recall": 0.87,
+      "overall_score": 0.593,
+      "passed": false,
+      "failure_reasons": [
+        "Faithfulness below threshold: 0.500 < 0.6",
+        "Answer Relevancy below threshold: 0.500 < 0.7",
+        "Contextual Precision below threshold: 0.500 < 0.65",
+        "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+      ]
+    },
+    "metadata": {
+      "framework": "ragas",
+      "judge_model": "gpt-4o",
+      "evaluation_method": "mock"
+    },
+    "execution_metadata": {
+      "error": "SearchUseCase.ask() got an unexpected keyword argument 'use_rerank'"
+    }
+  }
+]

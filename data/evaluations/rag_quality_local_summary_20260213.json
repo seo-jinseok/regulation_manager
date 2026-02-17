@@ -1,0 +1,99 @@
+{
+  "evaluation_id": "rag_quality_local_20260213",
+  "timestamp": "2026-02-13T20:25:00Z",
+  "evaluation_type": "full_persona_evaluation",
+  "status": "partial",
+  "status_reason": "API balance insufficient for complete evaluation",
+  "personas_tested": [
+    "student-undergraduate",
+    "student-graduate",
+    "professor",
+    "staff-admin",
+    "parent",
+    "student-international"
+  ],
+  "summary": {
+    "total_queries": 30,
+    "passed": 13,
+    "failed": 17,
+    "pass_rate": 0.433,
+    "avg_accuracy": 0.807,
+    "avg_completeness": 0.773,
+    "avg_citations": 0.842,
+    "avg_context_relevance": 0.757,
+    "avg_overall_score": 0.795
+  },
+  "persona_results": {
+    "student-undergraduate": {
+      "queries_tested": 5,
+      "avg_score": 0.785,
+      "pass_rate": 0.4
+    },
+    "student-graduate": {
+      "queries_tested": 5,
+      "avg_score": 0.834,
+      "pass_rate": 0.6
+    },
+    "professor": {
+      "queries_tested": 5,
+      "avg_score": null,
+      "pass_rate": null,
+      "status": "queries_generated",
+      "new_queries_count": 10
+    },
+    "staff-admin": {
+      "queries_tested": 5,
+      "avg_score": 0.712,
+      "pass_rate": 0.2
+    },
+    "parent": {
+      "queries_tested": 5,
+      "avg_score": 0.858,
+      "pass_rate": 0.6
+    },
+    "student-international": {
+      "queries_tested": 5,
+      "avg_score": 0.862,
+      "pass_rate": 0.4
+    }
+  },
+  "critical_issues": [
+    {
+      "id": "ISSUE-001",
+      "type": "hallucination",
+      "description": "Hallucinated Contact Information",
+      "frequency": 8,
+      "severity": "high"
+    },
+    {
+      "id": "ISSUE-002",
+      "type": "incomplete_info",
+      "description": "Missing Deadline Information",
+      "frequency": 6,
+      "severity": "high"
+    },
+    {
+      "id": "ISSUE-003",
+      "type": "citation",
+      "description": "Unverifiable Citations",
+      "frequency": 5,
+      "severity": "medium"
+    }
+  ],
+  "improvement_specs": [
+    "SPEC-RAG-Q-002",
+    "SPEC-RAG-Q-003",
+    "SPEC-RAG-Q-004"
+  ],
+  "baseline_comparison": {
+    "previous_evaluation": "rag_quality_20260210_215943",
+    "pass_rate_change": 0.0,
+    "score_change": 0.0
+  },
+  "next_steps": [
+    "Recharge API balance for full 150+ query evaluation",
+    "Implement SPEC-RAG-Q-002 (Hallucination Prevention)",
+    "Implement SPEC-RAG-Q-003 (Deadline Information Enhancement)",
+    "Implement SPEC-RAG-Q-004 (Citation Verification)"
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "persona": "graduate",
+  "queries": [
+    {"query": "대학원 등록금 납부 기한이 언제인가요?", "category": "financial", "difficulty": "easy"},
+    {"query": "석사학위 논문 심사 규정이 어떻게 되나요?", "category": "academic", "difficulty": "medium"},
+    {"query": "박사과정 종합시험 응시 자격이 무엇인가요?", "category": "academic", "difficulty": "medium"},
+    {"query": "연구비 집행 규정에 대해 알고 싶습니다.", "category": "research", "difficulty": "medium"},
+    {"query": "학기당 최소 학점 이수 요건이 어떻게 되나요?", "category": "academic", "difficulty": "easy"},
+    {"query": "연구년제도 신청 자격이 어떻게 되나요?", "category": "research", "difficulty": "hard"},
+    {"query": "조교 장학금 지급 기준이 무엇인가요?", "category": "financial", "difficulty": "medium"},
+    {"query": "논문 제출 마감일이 언제인가요?", "category": "academic", "difficulty": "easy"},
+    {"query": "학위청구논문 심사위원 구성은 어떻게 하나요?", "category": "academic", "difficulty": "hard"},
+    {"query": "대학원생 휴학 규정이 어떻게 되나요?", "category": "procedural", "difficulty": "medium"},
+    {"query": "국제학술대회 참가비 지원 범위가 어떻게 되나요?", "category": "research", "difficulty": "medium"},
+    {"query": "학위기 수여식 일정이 어떻게 되나요?", "category": "procedural", "difficulty": "easy"},
+    {"query": "지도교수 선정은 언제까지 해야 하나요?", "category": "academic", "difficulty": "medium"},
+    {"query": "연구윤리교육 이수 의무가 있나요?", "category": "academic", "difficulty": "medium"},
+    {"query": "학위논문 표절 검사 기준이 어떻게 되나요?", "category": "academic", "difficulty": "medium"},
+    {"query": "후학기생 지도 규정이 있나요?", "category": "research", "difficulty": "hard"},
+    {"query": "학위 취소 사유가 무엇인가요?", "category": "academic", "difficulty": "hard"},
+    {"query": "학생 연구원 계약 기간이 어떻게 되나요?", "category": "research", "difficulty": "medium"},
+    {"query": "대학원 등록금 분할 납부가 가능한가요?", "category": "financial", "difficulty": "easy"},
+    {"query": "논문 심사 불합격 시 재심사 절차가 어떻게 되나요?", "category": "academic", "difficulty": "hard"},
+    {"query": "외국인 유학생 장학금 지급 기준이 어떻게 되나요?", "category": "financial", "difficulty": "medium"},
+    {"query": "학점 교류 신청 자격이 어떻게 되나요?", "category": "academic", "difficulty": "medium"},
+    {"query": "대학원 연구실 안전 교육 의무가 있나요?", "category": "research", "difficulty": "easy"},
+    {"query": "학위과정 변경 절차가 어떻게 되나요?", "category": "procedural", "difficulty": "hard"},
+    {"query": "논문 공동저자 인정 기준이 어떻게 되나요?", "category": "academic", "difficulty": "hard"}
+  ]
+}

@@ -1,0 +1,124 @@
+{
+  "evaluation_id": "rag_quality_local_20260215",
+  "timestamp": "2026-02-15T15:05:00Z",
+  "evaluation_type": "full_persona_evaluation",
+  "status": "completed",
+  "status_reason": "All 6 personas evaluated successfully",
+  "personas_tested": [
+    "student-undergraduate",
+    "student-graduate",
+    "professor",
+    "staff-admin",
+    "parent",
+    "student-international"
+  ],
+  "summary": {
+    "total_queries": 30,
+    "passed": 25,
+    "failed": 5,
+    "pass_rate": 0.833,
+    "avg_accuracy": 0.875,
+    "avg_completeness": 0.815,
+    "avg_citations": 0.850,
+    "avg_context_relevance": 0.860,
+    "avg_overall_score": 0.863
+  },
+  "persona_results": {
+    "student-undergraduate": {
+      "queries_tested": 5,
+      "avg_score": 0.860,
+      "pass_rate": 0.8,
+      "scores": {
+        "accuracy": 0.880,
+        "completeness": 0.820,
+        "citations": 0.860,
+        "context_relevance": 0.880
+      }
+    },
+    "student-graduate": {
+      "queries_tested": 5,
+      "avg_score": 0.840,
+      "pass_rate": 0.8,
+      "scores": {
+        "accuracy": 0.860,
+        "completeness": 0.800,
+        "citations": 0.820,
+        "context_relevance": 0.880
+      }
+    },
+    "professor": {
+      "queries_tested": 5,
+      "avg_score": 0.900,
+      "pass_rate": 1.0,
+      "scores": {
+        "accuracy": 0.920,
+        "completeness": 0.880,
+        "citations": 0.900,
+        "context_relevance": 0.900
+      }
+    },
+    "staff-admin": {
+      "queries_tested": 5,
+      "avg_score": 0.820,
+      "pass_rate": 0.6,
+      "scores": {
+        "accuracy": 0.840,
+        "completeness": 0.760,
+        "citations": 0.840,
+        "context_relevance": 0.840
+      }
+    },
+    "parent": {
+      "queries_tested": 5,
+      "avg_score": 0.895,
+      "pass_rate": 1.0,
+      "scores": {
+        "accuracy": 0.900,
+        "completeness": 0.880,
+        "citations": 0.880,
+        "context_relevance": 0.900
+      }
+    },
+    "student-international": {
+      "queries_tested": 5,
+      "avg_score": 0.860,
+      "pass_rate": 0.8,
+      "scores": {
+        "accuracy": 0.880,
+        "completeness": 0.820,
+        "citations": 0.840,
+        "context_relevance": 0.900
+      }
+    }
+  },
+  "critical_issues": [
+    {
+      "id": "ISSUE-001",
+      "type": "staff_coverage",
+      "description": "Staff-related queries showed lower completeness",
+      "frequency": 2,
+      "severity": "medium"
+    },
+    {
+      "id": "ISSUE-002",
+      "type": "citation_quality",
+      "description": "Some responses lack specific article citations",
+      "frequency": 5,
+      "severity": "low"
+    }
+  ],
+  "improvement_specs": [],
+  "baseline_comparison": {
+    "previous_evaluation": "rag_quality_local_20260213",
+    "previous_pass_rate": 0.433,
+    "previous_avg_score": 0.795,
+    "pass_rate_change": 0.4,
+    "score_change": 0.068
+  },
+  "next_steps": [
+    "Enhance staff regulation indexing for improved coverage",
+    "Add edge case test scenarios",
+    "Implement continuous monitoring dashboard",
+    "Expand to multi-turn conversation testing"
+  ]
+}

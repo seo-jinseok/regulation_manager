@@ -1,0 +1,717 @@
+{
+  "evaluation_id": "eval_20260215_142015",
+  "timestamp": "2026-02-15T15:05:00Z",
+  "evaluation_type": "persona_based_rag_evaluation",
+  "status": "completed",
+  "summary": {
+    "total_queries": 30,
+    "total_passed": 25,
+    "pass_rate": 0.833,
+    "avg_accuracy": 0.95,
+    "avg_completeness": 0.833,
+    "avg_citations": 0.867,
+    "avg_context_relevance": 0.8,
+    "avg_overall_score": 0.863
+  },
+  "persona_results": {
+    "undergraduate": {
+      "queries_tested": 5,
+      "pass_rate": 0.8,
+      "avg_scores": {
+        "accuracy": 0.95,
+        "completeness": 0.83,
+        "citations": 0.86,
+        "context_relevance": 0.8,
+        "overall": 0.86
+      }
+    },
+    "graduate": {
+      "queries_tested": 5,
+      "pass_rate": 0.8,
+      "avg_scores": {
+        "accuracy": 0.95,
+        "completeness": 0.83,
+        "citations": 0.78,
+        "context_relevance": 0.8,
+        "overall": 0.84
+      }
+    },
+    "professor": {
+      "queries_tested": 5,
+      "pass_rate": 1.0,
+      "avg_scores": {
+        "accuracy": 0.95,
+        "completeness": 0.85,
+        "citations": 1.0,
+        "context_relevance": 0.8,
+        "overall": 0.9
+      }
+    },
+    "staff": {
+      "queries_tested": 5,
+      "pass_rate": 0.6,
+      "avg_scores": {
+        "accuracy": 0.95,
+        "completeness": 0.81,
+        "citations": 0.72,
+        "context_relevance": 0.8,
+        "overall": 0.82
+      }
+    },
+    "parent": {
+      "queries_tested": 5,
+      "pass_rate": 1.0,
+      "avg_scores": {
+        "accuracy": 0.95,
+        "completeness": 0.85,
+        "citations": 0.98,
+        "context_relevance": 0.8,
+        "overall": 0.895
+      }
+    },
+    "international": {
+      "queries_tested": 5,
+      "pass_rate": 0.8,
+      "avg_scores": {
+        "accuracy": 0.95,
+        "completeness": 0.83,
+        "citations": 0.86,
+        "context_relevance": 0.8,
+        "overall": 0.86
+      }
+    }
+  },
+  "critical_issues": [
+    {
+      "id": "ISSUE-002",
+      "type": "missing_citations",
+      "description": "Responses without regulation citations",
+      "frequency": 5,
+      "severity": "medium"
+    }
+  ],
+  "detailed_evaluations": [
+    {
+      "query": "휴학 어떻게 해?\n",
+      "persona": "undergraduate",
+      "answer_length": 2046,
+      "citations_found": [
+        "제14조",
+        "제8조",
+        "제10조",
+        "제5조",
+        "규정"
+      ],
+      "hallucination_issues": [],
+      "scores": {
+        "accuracy": 0.95,
+        "completeness": 0.85,
+        "citations": 1.0,
+        "context_relevance": 0.8,
+        "overall": 0.9
+      },
+      "passed": true,
+      "query_id": 1
+    },
+    {
+      "query": "성적 평균 어떻게 계산돼?\n",
+      "persona": "undergraduate",
+      "answer_length": 2025,
+      "citations_found": [
+        "제24조",
+        "제24조",
+        "제24조",
+        "학칙",
+        "학칙"
+      ],
+      "hallucination_issues": [],
+      "scores": {
+        "accuracy": 0.95,
+        "completeness": 0.85,
+        "citations": 1.0,
+        "context_relevance": 0.8,
+        "overall": 0.9
+      },
+      "passed": true,
+      "query_id": 2
+    },
+    {
+      "query": "졸업 요건 뭐야?\n",
+      "persona": "undergraduate",
+      "answer_length": 2158,
+      "citations_found": [
+        "제19조",
+        "제3조",
+        "제14조",
+        "규정",
+        "규정"
+      ],
+      "hallucination_issues": [],
+      "scores": {
+        "accuracy": 0.95,
+        "completeness": 0.85,
+        "citations": 1.0,
+        "context_relevance": 0.8,
+        "overall": 0.9
+      },
+      "passed": true,
+      "query_id": 3
+    },
+    {
+      "query": "기숙사 신청 방법 알려줘\n",
+      "persona": "undergraduate",
+      "answer_length": 1302,
+      "citations_found": [],
+      "hallucination_issues": [],
+      "scores": {
+        "accuracy": 0.95,
+        "completeness": 0.75,
+        "citations": 0.3,
+        "context_relevance": 0.8,
+        "overall": 0.7
+      },
+      "passed": false,
+      "query_id": 4
+    },
+    {
+      "query": "장학금 종류 알려줘\n",
+      "persona": "undergraduate",
+      "answer_length": 2029,
+      "citations_found": [
+        "제4조",
+        "제3조",
+        "제3조",
+        "제6조",
+        "규정"
+      ],
+      "hallucination_issues": [],
+      "scores": {
+        "accuracy": 0.95,
+        "completeness": 0.85,
+        "citations": 1.0,
+        "context_relevance": 0.8,
+        "overall": 0.9
+      },
+      "passed": true,
+      "query_id": 5
+    },
+    {
+      "query": "대학원 등록금 납부 기간을 알려주세요\n",
+      "persona": "graduate",
+      "answer_length": 1459,
+      "citations_found": [
+        "규정",
+        "규정"
+      ],
+      "hallucination_issues": [],
+      "scores": {
+        "accuracy": 0.95,
+        "completeness": 0.85,
+        "citations": 0.6,
+        "context_relevance": 0.8,
+        "overall": 0.8
+      },
+      "passed": true,
+      "query_id": 1
+    },
+    {
+      "query": "석박사 통합과정 전환 요건이 무엇입니까\n",
+      "persona": "graduate",
+      "answer_length": 1736,
+      "citations_found": [
+        "학칙",
+        "규정",
+        "규정",
+        "규정",
+        "규정"
+      ],
+      "hallucination_issues": [],
+      "scores": {
+        "accuracy": 0.95,
+        "completeness": 0.85,
+        "citations": 1.0,
+        "context_relevance": 0.8,
+        "overall": 0.9
+      },
+      "passed": true,
+      "query_id": 2
+    },
+    {
+      "query": "학위논문 심사 위원 구성 기준을 알려주세요\n",
+      "persona": "graduate",
+      "answer_length": 2307,
+      "citations_found": [
+        "제9조",
+        "제29조",
+        "제9조",
+        "제9조",
+        "제29조"
+      ],
+      "hallucination_issues": [],
+      "scores": {
+        "accuracy": 0.95,
+        "completeness": 0.85,
+        "citations": 1.0,
+        "context_relevance": 0.8,
+        "overall": 0.9
+      },
+      "passed": true,
+      "query_id": 3
+    },
+    {
+      "query": "대학원생 휴학 신청 방법을 알려주세요\n",
+      "persona": "graduate",
+      "answer_length": 2051,
+      "citations_found": [
+        "제10조",
+        "제10조",
+        "규정",
+        "규정",
+        "규정"
+      ],
+      "hallucination_issues": [],
+      "scores": {
+        "accuracy": 0.95,
+        "completeness": 0.85,
+        "citations": 1.0,
+        "context_relevance": 0.8,
+        "overall": 0.9
+      },
+      "passed": true,
+      "query_id": 4
+    },
+    {
+      "query": "학위 청구논문 제출 마감일을 알려주세요\n",
+      "persona": "graduate",
+      "answer_length": 1302,
+      "citations_found": [],
+      "hallucination_issues": [],
+      "scores": {
+        "accuracy": 0.95,
+        "completeness": 0.75,
+        "citations": 0.3,
+        "context_relevance": 0.8,
+        "overall": 0.7
+      },
+      "passed": false,
+      "query_id": 5
+    },
+    {
+      "query": "교원 연구년 승인 절차와 교원회 의결 사항은 무엇입니까\n",
+      "persona": "professor",
+      "answer_length": 1545,
+      "citations_found": [
+        "제3조",
+        "제30조",
+        "제4조",
+        "규정",
+        "규정"
+      ],
+      "hallucination_issues": [],
+      "scores": {
+        "accuracy": 0.95,
+        "completeness": 0.85,
+        "citations": 1.0,
+        "context_relevance": 0.8,
+        "overall": 0.9
+      },
+      "passed": true,
+      "query_id": 1
+    },
+    {
+      "query": "정년 보장 심사 기준과 제출 서류를 알려주세요\n",
+      "persona": "professor",
+      "answer_length": 1635,
+      "citations_found": [
+        "제24조",
+        "제28조",
+        "규정",
+        "규정",
+        "규정"
+      ],
+      "hallucination_issues": [],
+      "scores": {
+        "accuracy": 0.95,
+        "completeness": 0.85,
+        "citations": 1.0,
+        "context_relevance": 0.8,
+        "overall": 0.9
+      },
+      "passed": true,
+      "query_id": 2
+    },
+    {
+      "query": "교원 승진 심사 정족수를 확인하고 싶습니다\n",
+      "persona": "professor",
+      "answer_length": 1833,
+      "citations_found": [
+        "제43조",
+        "규정",
+        "규정",
+        "규정"
+      ],
+      "hallucination_issues": [],
+      "scores": {
+        "accuracy": 0.95,
+        "completeness": 0.85,
+        "citations": 1.0,
+        "context_relevance": 0.8,
+        "overall": 0.9
+      },
+      "passed": true,
+      "query_id": 3
+    },
+    {
+      "query": "교원 휴직 신청 절차를 알려주세요\n",
+      "persona": "professor",
+      "answer_length": 1956,
+      "citations_found": [
+        "제3조",
+        "제26조",
+        "제8조",
+        "제6조",
+        "규정"
+      ],
+      "hallucination_issues": [],
+      "scores": {
+        "accuracy": 0.95,
+        "completeness": 0.85,
+        "citations": 1.0,
+        "context_relevance": 0.8,
+        "overall": 0.9
+      },
+      "passed": true,
+      "query_id": 4
+    },
+    {
+      "query": "교과과정 개편 절차를 알려주세요\n",
+      "persona": "professor",
+      "answer_length": 2015,
+      "citations_found": [
+        "제2조",
+        "제6조",
+        "규정",
+        "규정",
+        "규정"
+      ],
+      "hallucination_issues": [],
+      "scores": {
+        "accuracy": 0.95,
+        "completeness": 0.85,
+        "citations": 1.0,
+        "context_relevance": 0.8,
+        "overall": 0.9
+      },
+      "passed": true,
+      "query_id": 5
+    },
+    {
+      "query": "직원 연차 휴가 신청 절차를 알려주세요\n",
+      "persona": "staff",
+      "answer_length": 2054,
+      "citations_found": [
+        "제28조",
+        "제28조",
+        "규정",
+        "규정",
+        "규정"
+      ],
+      "hallucination_issues": [],
+      "scores": {
+        "accuracy": 0.95,
+        "completeness": 0.85,
+        "citations": 1.0,
+        "context_relevance": 0.8,
+        "overall": 0.9
+      },
+      "passed": true,
+      "query_id": 1
+    },
+    {
+      "query": "직원 복무 규정을 확인하고 싶습니다\n",
+      "persona": "staff",
+      "answer_length": 1228,
+      "citations_found": [],
+      "hallucination_issues": [],
+      "scores": {
+        "accuracy": 0.95,
+        "completeness": 0.75,
+        "citations": 0.3,
+        "context_relevance": 0.8,
+        "overall": 0.7
+      },
+      "passed": false,
+      "query_id": 2
+    },
+    {
+      "query": "직원 급여 지급 기준을 알려주세요\n",
+      "persona": "staff",
+      "answer_length": 1228,
+      "citations_found": [],
+      "hallucination_issues": [],
+      "scores": {
+        "accuracy": 0.95,
+        "completeness": 0.75,
+        "citations": 0.3,
+        "context_relevance": 0.8,
+        "overall": 0.7
+      },
+      "passed": false,
+      "query_id": 3
+    },
+    {
+      "query": "직원 휴직 신청 사유와 복직 절차를 알려주세요\n",
+      "persona": "staff",
+      "answer_length": 2056,
+      "citations_found": [
+        "제44조",
+        "제44조",
+        "제45조",
+        "제6조",
+        "규정"
+      ],
+      "hallucination_issues": [],
+      "scores": {
+        "accuracy": 0.95,
+        "completeness": 0.85,
+        "citations": 1.0,
+        "context_relevance": 0.8,
+        "overall": 0.9
+      },
+      "passed": true,
+      "query_id": 4
+    },
+    {
+      "query": "직원 퇴직금 지급 기준을 확인하고 싶습니다\n",
+      "persona": "staff",
+      "answer_length": 2033,
+      "citations_found": [
+        "제2조",
+        "제8조",
+        "규정",
+        "규정",
+        "규정"
+      ],
+      "hallucination_issues": [],
+      "scores": {
+        "accuracy": 0.95,
+        "completeness": 0.85,
+        "citations": 1.0,
+        "context_relevance": 0.8,
+        "overall": 0.9
+      },
+      "passed": true,
+      "query_id": 5
+    },
+    {
+      "query": "등록금 납부 기간이 언제까지인가요\n",
+      "persona": "parent",
+      "answer_length": 1593,
+      "citations_found": [
+        "규정",
+        "규정",
+        "규정",
+        "규정"
+      ],
+      "hallucination_issues": [],
+      "scores": {
+        "accuracy": 0.95,
+        "completeness": 0.85,
+        "citations": 1.0,
+        "context_relevance": 0.8,
+        "overall": 0.9
+      },
+      "passed": true,
+      "query_id": 1
+    },
+    {
+      "query": "장학금 신청 방법과 자격 요건을 알려주세요\n",
+      "persona": "parent",
+      "answer_length": 1945,
+      "citations_found": [
+        "제4조",
+        "제4조",
+        "제6조",
+        "규정",
+        "규정"
+      ],
+      "hallucination_issues": [],
+      "scores": {
+        "accuracy": 0.95,
+        "completeness": 0.85,
+        "citations": 1.0,
+        "context_relevance": 0.8,
+        "overall": 0.9
+      },
+      "passed": true,
+      "query_id": 2
+    },
+    {
+      "query": "기숙사 비용과 신청 방법이 어떻게 되나요\n",
+      "persona": "parent",
+      "answer_length": 1285,
+      "citations_found": [
+        "학칙",
+        "학칙",
+        "학칙",
+        "규정",
+        "규정"
+      ],
+      "hallucination_issues": [],
+      "scores": {
+        "accuracy": 0.95,
+        "completeness": 0.85,
+        "citations": 1.0,
+        "context_relevance": 0.8,
+        "overall": 0.9
+      },
+      "passed": true,
+      "query_id": 3
+    },
+    {
+      "query": "자녀 휴학 시 등록금 환불이 되나요\n",
+      "persona": "parent",
+      "answer_length": 2217,
+      "citations_found": [
+        "제5조",
+        "규정",
+        "규정"
+      ],
+      "hallucination_issues": [],
+      "scores": {
+        "accuracy": 0.95,
+        "completeness": 0.85,
+        "citations": 0.9,
+        "context_relevance": 0.8,
+        "overall": 0.875
+      },
+      "passed": true,
+      "query_id": 4
+    },
+    {
+      "query": "학자금 대출 신청 방법이 무엇인가요\n",
+      "persona": "parent",
+      "answer_length": 3351,
+      "citations_found": [
+        "제4조",
+        "제4조",
+        "제8조",
+        "제8조",
+        "제4조"
+      ],
+      "hallucination_issues": [],
+      "scores": {
+        "accuracy": 0.95,
+        "completeness": 0.85,
+        "citations": 1.0,
+        "context_relevance": 0.8,
+        "overall": 0.9
+      },
+      "passed": true,
+      "query_id": 5
+    },
+    {
+      "query": "비자 연장 신청 방법 알려주세요\n",
+      "persona": "international",
+      "answer_length": 1987,
+      "citations_found": [
+        "제6조",
+        "규정",
+        "규정",
+        "규정",
+        "규정"
+      ],
+      "hallucination_issues": [],
+      "scores": {
+        "accuracy": 0.95,
+        "completeness": 0.85,
+        "citations": 1.0,
+        "context_relevance": 0.8,
+        "overall": 0.9
+      },
+      "passed": true,
+      "query_id": 1
+    },
+    {
+      "query": "유학생 등록금 납부 기간이 언제까지인가요\n",
+      "persona": "international",
+      "answer_length": 1728,
+      "citations_found": [
+        "규정",
+        "규정",
+        "규정",
+        "규정"
+      ],
+      "hallucination_issues": [],
+      "scores": {
+        "accuracy": 0.95,
+        "completeness": 0.85,
+        "citations": 1.0,
+        "context_relevance": 0.8,
+        "overall": 0.9
+      },
+      "passed": true,
+      "query_id": 2
+    },
+    {
+      "query": "유학생 장학금 신청 자격을 알려주세요\n",
+      "persona": "international",
+      "answer_length": 2286,
+      "citations_found": [
+        "제4조",
+        "제4조",
+        "제4조",
+        "제4조",
+        "규정"
+      ],
+      "hallucination_issues": [],
+      "scores": {
+        "accuracy": 0.95,
+        "completeness": 0.85,
+        "citations": 1.0,
+        "context_relevance": 0.8,
+        "overall": 0.9
+      },
+      "passed": true,
+      "query_id": 3
+    },
+    {
+      "query": "아르바이트 허가 신청 방법을 알려주세요\n",
+      "persona": "international",
+      "answer_length": 3354,
+      "citations_found": [
+        "제4조",
+        "제4조",
+        "제5조",
+        "제5조",
+        "제4조"
+      ],
+      "hallucination_issues": [],
+      "scores": {
+        "accuracy": 0.95,
+        "completeness": 0.85,
+        "citations": 1.0,
+        "context_relevance": 0.8,
+        "overall": 0.9
+      },
+      "passed": true,
+      "query_id": 4
+    },
+    {
+      "query": "졸업 후 취업 비자 변경 절차가 어떻게 되나요\n",
+      "persona": "international",
+      "answer_length": 1454,
+      "citations_found": [],
+      "hallucination_issues": [],
+      "scores": {
+        "accuracy": 0.95,
+        "completeness": 0.75,
+        "citations": 0.3,
+        "context_relevance": 0.8,
+        "overall": 0.7
+      },
+      "passed": false,
+      "query_id": 5
+    }
+  ]
+}

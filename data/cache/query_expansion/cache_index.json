@@ -1,0 +1,424 @@
+{
+  "f1f4506beec4ec2e68cca05ad63eb2f7": {
+    "cache_type": "query_expansion",
+    "query_hash": "f1f4506beec4ec2e68cca05ad63eb2f7",
+    "data": {
+      "keywords": [
+        "연구비",
+        "지원요건",
+        "연구비규정",
+        "연구비지급기준",
+        "연구개발비"
+      ],
+      "intent": "연구비 지원 요건 문의",
+      "confidence": 0.95,
+      "expanded_query": "연구비 지원 요건이 어떻게 되나요? 지원요건 연구비규정 연구비지급기준",
+      "method": "llm"
+    },
+    "timestamp": 1770722903.686015,
+    "ttl_hours": 168
+  },
+  "cb5a9619cf5bdf47b1ed0b6bd1d4940b": {
+    "cache_type": "query_expansion",
+    "query_hash": "cb5a9619cf5bdf47b1ed0b6bd1d4940b",
+    "data": {
+      "keywords": [
+        "논문 심사",
+        "심사 절차",
+        "학술 논문 평가",
+        "논문 심사 규정",
+        "연구 윤리"
+      ],
+      "intent": "논문 심사 절차 문의",
+      "confidence": 0.95,
+      "expanded_query": "논문 심사 절차 상세히 알려주세요 논문 심사 심사 절차 학술 논문 평가",
+      "method": "llm"
+    },
+    "timestamp": 1770723140.296572,
+    "ttl_hours": 168
+  },
+  "7e4372f377d7880e9be921e10d69476c": {
+    "cache_type": "query_expansion",
+    "query_hash": "7e4372f377d7880e9be921e10d69476c",
+    "data": {
+      "keywords": [
+        "연구년",
+        "연구년 규정",
+        "연구년 적용 기준",
+        "연구년 신청 절차",
+        "연구활동 지원"
+      ],
+      "intent": "연구년 적용 기준 및 절차 문의",
+      "confidence": 0.95,
+      "expanded_query": "연구년 적용 기준 상세히 연구년 규정 연구년 적용 기준 연구년 신청 절차",
+      "method": "llm"
+    },
+    "timestamp": 1770724951.666684,
+    "ttl_hours": 168
+  },
+  "1f27f9449db2fd1c61944c7872153bea": {
+    "cache_type": "query_expansion",
+    "query_hash": "1f27f9449db2fd1c61944c7872153bea",
+    "data": {
+      "keywords": [
+        "휴가",
+        "휴가신청",
+        "휴가절차",
+        "휴가규정",
+        "휴가인가"
+      ],
+      "intent": "휴가 신청 및 처리 절차 문의",
+      "confidence": 0.95,
+      "expanded_query": "휴가 업무 처리 절차 확인 휴가신청 휴가절차 휴가규정",
+      "method": "llm"
+    },
+    "timestamp": 1770725598.809979,
+    "ttl_hours": 168
+  },
+  "83d6e2ba1141cb829762e3eb8d7eb37e": {
+    "cache_type": "query_expansion",
+    "query_hash": "83d6e2ba1141cb829762e3eb8d7eb37e",
+    "data": {
+      "keywords": [
+        "급여",
+        "서식",
+        "양식",
+        "급여명세서",
+        "급여지급규정"
+      ],
+      "intent": "급여 관련 서식 양식 문의",
+      "confidence": 0.95,
+      "expanded_query": "급여 관련 서식 양식 알려주세요 급여명세서 급여지급규정",
+      "method": "llm"
+    },
+    "timestamp": 1770725806.037316,
+    "ttl_hours": 168
+  },
+  "406d434e30be2cd4b5d446f771228610": {
+    "cache_type": "query_expansion",
+    "query_hash": "406d434e30be2cd4b5d446f771228610",
+    "data": {
+      "keywords": [
+        "연수승인",
+        "권한자",
+        "승인권자",
+        "교육훈련규정",
+        "인사규정"
+      ],
+      "intent": "연수 승인 권한자 문의",
+      "confidence": 0.95,
+      "expanded_query": "연수 승인 권한자가 누구인가요? 연수승인 권한자 승인권자",
+      "method": "llm"
+    },
+    "timestamp": 1770726016.3157818,
+    "ttl_hours": 168
+  },
+  "751e5f10188db4f5d739484b3405fc0e": {
+    "cache_type": "query_expansion",
+    "query_hash": "751e5f10188db4f5d739484b3405fc0e",
+    "data": {
+      "keywords": [
+        "복무",
+        "기한",
+        "처리기한",
+        "의무복무",
+        "병역법"
+      ],
+      "intent": "복무 처리 기한 문의",
+      "confidence": 0.95,
+      "expanded_query": "복무 처리 기한이 언제까지인가요? 기한 처리기한 의무복무",
+      "method": "llm"
+    },
+    "timestamp": 1770726379.393037,
+    "ttl_hours": 168
+  },
+  "11ca85d335a2a98007e613dd15d37a26": {
+    "cache_type": "query_expansion",
+    "query_hash": "11ca85d335a2a98007e613dd15d37a26",
+    "data": {
+      "keywords": [
+        "기숙사",
+        "비용",
+        "숙사",
+        "주거비",
+        "기숙사 규정"
+      ],
+      "intent": "기숙사 비용 문의",
+      "confidence": 0.95,
+      "expanded_query": "기숙사 비용이 어떻게 되나요? 비용 숙사 주거비",
+      "method": "llm"
+    },
+    "timestamp": 1770726968.205933,
+    "ttl_hours": 168
+  },
+  "cf671c57772c72a53613da65736d2174": {
+    "cache_type": "query_expansion",
+    "query_hash": "cf671c57772c72a53613da65736d2174",
+    "data": {
+      "keywords": [
+        "기숙사",
+        "주거비",
+        "비용",
+        "숙사",
+        "생활비"
+      ],
+      "intent": "기숙사 비용 문의",
+      "confidence": 0.95,
+      "expanded_query": "기숙사 비용이 어떻게 되나요? 비용 숙사 주거비 생활비",
+      "method": "llm"
+    },
+    "timestamp": 1770726989.77039,
+    "ttl_hours": 168
+  },
+  "23992a0c7f52b6cce95a799ec2145692": {
+    "cache_type": "query_expansion",
+    "query_hash": "23992a0c7f52b6cce95a799ec2145692",
+    "data": {
+      "keywords": [
+        "키워드1",
+        "키워드2",
+        "키워드3"
+      ],
+      "intent": "test_intent",
+      "confidence": 0.9,
+      "expanded_query": "영구 캐시 테스트 키워드1 키워드2 키워드3",
+      "method": "llm"
+    },
+    "timestamp": 1771058778.585357,
+    "ttl_hours": 168
+  },
+  "1f00721f52d81b26e8a307d2e3dc4bb1": {
+    "cache_type": "query_expansion",
+    "query_hash": "1f00721f52d81b26e8a307d2e3dc4bb1",
+    "data": {
+      "keywords": [
+        "장학금",
+        "신청 방법",
+        "신청서 제출",
+        "등록금",
+        "학비 지원",
+        "국가장학금",
+        "교내장학금"
+      ],
+      "intent": "장학금 신청 방법 문의",
+      "confidence": 0.95,
+      "expanded_query": "장학금 신청 방법 알려주실까요 관심 장학 장학생 등록금 수업료 학비지원 등록금감면 국가장학금 교내장학금 학자금 싶어 신청서 제출 요청 어떻게 절차 방식 안내해 드리겠습니다 정보를 제공하겠습니다 신청 방법 신청서 제출 학비 지원",
+      "method": "llm"
+    },
+    "timestamp": 1771163063.8066921,
+    "ttl_hours": 168
+  },
+  "c2a37ddcbd961a88b83f07290d500411": {
+    "cache_type": "query_expansion",
+    "query_hash": "c2a37ddcbd961a88b83f07290d500411",
+    "data": {
+      "keywords": [
+        "복학",
+        "복학 신청",
+        "복학원",
+        "신청서",
+        "신청서류",
+        "의무",
+        "단일 절차"
+      ],
+      "intent": "복학 신청 절차 문의",
+      "confidence": 0.85,
+      "expanded_query": "복학 신청도 따로 해야 하나요 복학원 복학 신청 신청서 신청서류 별도로 개별적으로 해야 할 의무 수행해야 하나의 방법 단일 절차 복학 신청 단일 절차",
+      "method": "llm"
+    },
+    "timestamp": 1771163211.448155,
+    "ttl_hours": 168
+  },
+  "8656b7038d1416fc14f157396cb988d4": {
+    "cache_type": "query_expansion",
+    "query_hash": "8656b7038d1416fc14f157396cb988d4",
+    "data": {
+      "keywords": [
+        "연구년",
+        "자격 요건",
+        "신청 기준",
+        "연구년 규정",
+        "교원 인사 규정"
+      ],
+      "intent": "연구년 자격 요건 문의",
+      "confidence": 0.9,
+      "expanded_query": "연구년 자격 요건이 어떻게 되나요? 자격 요건 신청 기준 연구년 규정",
+      "method": "llm"
+    },
+    "timestamp": 1771163228.415752,
+    "ttl_hours": 168
+  },
+  "fa059c79e2041a33bb4b93b601e32029": {
+    "cache_type": "query_expansion",
+    "query_hash": "fa059c79e2041a33bb4b93b601e32029",
+    "data": {
+      "keywords": [
+        "논문 제출 기한",
+        "기한 연장",
+        "제출 규정",
+        "연장 신청",
+        "학위논문"
+      ],
+      "intent": "논문 제출 기한 연장 문의",
+      "confidence": 0.9,
+      "expanded_query": "논문 제출 기한 연장 가능한가요? 논문 제출 기한 기한 연장 제출 규정",
+      "method": "llm"
+    },
+    "timestamp": 1771163306.950686,
+    "ttl_hours": 168
+  },
+  "0e5573470cb064bce16d80bbe480f1dd": {
+    "cache_type": "query_expansion",
+    "query_hash": "0e5573470cb064bce16d80bbe480f1dd",
+    "data": {
+      "keywords": [
+        "휴가 신청",
+        "서식",
+        "양식",
+        "휴가 규정",
+        "신청 절차"
+      ],
+      "intent": "휴가 신청 서식 문의",
+      "confidence": 0.85,
+      "expanded_query": "휴가 신청 서식 양식 알려주세요 휴가 신청 휴가 규정 신청 절차",
+      "method": "llm"
+    },
+    "timestamp": 1771163611.6980631,
+    "ttl_hours": 168
+  },
+  "3124b604d5aea64e62698b12b271a20e": {
+    "cache_type": "query_expansion",
+    "query_hash": "3124b604d5aea64e62698b12b271a20e",
+    "data": {
+      "keywords": [
+        "휴가 신청",
+        "연차",
+        "연가",
+        "신청서",
+        "제출 서류",
+        "신청 절차",
+        "양식"
+      ],
+      "intent": "휴가 신청 절차 문의",
+      "confidence": 0.95,
+      "expanded_query": "휴가 신청 서식 양식 휴가 신청 휴가 신청 절차 연차 연가 싶어 신청서 제출 요청 서류 양식지 어떻게 과정 절차적 방법 휴가 신청 제출 서류 신청 절차",
+      "method": "llm"
+    },
+    "timestamp": 1771163620.401344,
+    "ttl_hours": 168
+  },
+  "ce19c3be3dcd99ba1990cc2067f1e5f6": {
+    "cache_type": "query_expansion",
+    "query_hash": "ce19c3be3dcd99ba1990cc2067f1e5f6",
+    "data": {
+      "keywords": [
+        "연수 참가 절차",
+        "경비 처리",
+        "연수 규정",
+        "경비 지원",
+        "참가 신청"
+      ],
+      "intent": "연수 참가 절차 및 경비 처리 문의",
+      "confidence": 0.85,
+      "expanded_query": "연수 참가 절차와 경비 처리 방법 연수 참가 절차 경비 처리 연수 규정",
+      "method": "llm"
+    },
+    "timestamp": 1771163713.754009,
+    "ttl_hours": 168
+  },
+  "69cb6ed38114cf7d324ec8a3f7a62e9d": {
+    "cache_type": "query_expansion",
+    "query_hash": "69cb6ed38114cf7d324ec8a3f7a62e9d",
+    "data": {
+      "keywords": [
+        "기숙사 신청",
+        "신청 일정",
+        "기숙사 규정",
+        "입주 절차",
+        "신청 기간"
+      ],
+      "intent": "기숙사 신청 일정 문의",
+      "confidence": 0.9,
+      "expanded_query": "기숙사 신청은 언제부터 하면 돼? 기숙사 신청 신청 일정 기숙사 규정",
+      "method": "llm"
+    },
+    "timestamp": 1771163743.047037,
+    "ttl_hours": 168
+  },
+  "22e63a7c6ed2b1c93a2b574774bee0cb": {
+    "cache_type": "query_expansion",
+    "query_hash": "22e63a7c6ed2b1c93a2b574774bee0cb",
+    "data": {
+      "keywords": [
+        "학교 연락처",
+        "연락처 정보",
+        "학교 정보",
+        "문의처",
+        "행정실 연락처"
+      ],
+      "intent": "학교 연락처 문의",
+      "confidence": 0.85,
+      "expanded_query": "학교 연락처 알려주세요 학교 연락처 연락처 정보 학교 정보",
+      "method": "llm"
+    },
+    "timestamp": 1771163874.198466,
+    "ttl_hours": 168
+  },
+  "a8b37b4c5335ca544dee1781e0544a18": {
+    "cache_type": "query_expansion",
+    "query_hash": "a8b37b4c5335ca544dee1781e0544a18",
+    "data": {
+      "keywords": [
+        "영어 강좌",
+        "수업",
+        "교과목",
+        "이용 가능",
+        "접근 가능"
+      ],
+      "intent": "영어 강좌 이용 가능 문의",
+      "confidence": 0.85,
+      "expanded_query": "courses in English available 강좌 수업 내부 안 영어 영어과목 이용 가능 접근 가능 영어 강좌 교과목 이용 가능",
+      "method": "llm"
+    },
+    "timestamp": 1771163991.364299,
+    "ttl_hours": 168
+  },
+  "7cee92abd8d86966d6ea0f539cb8092d": {
+    "cache_type": "query_expansion",
+    "query_hash": "7cee92abd8d86966d6ea0f539cb8092d",
+    "data": {
+      "keywords": [
+        "복학",
+        "복학원",
+        "복학신청",
+        "복학절차",
+        "학적관리"
+      ],
+      "intent": "복학 절차 및 신청 방법 문의",
+      "confidence": 0.95,
+      "expanded_query": "복학 방법 복학원 복학 신청 어떻게 절차 방식 복학신청 복학절차 학적관리",
+      "method": "llm"
+    },
+    "timestamp": 1771292598.425209,
+    "ttl_hours": 168
+  },
+  "26d1b2ee87072628b22c97a36ba9c7da": {
+    "cache_type": "query_expansion",
+    "query_hash": "26d1b2ee87072628b22c97a36ba9c7da",
+    "data": {
+      "keywords": [
+        "복학",
+        "복학원",
+        "복학신청",
+        "휴학생 복귀",
+        "학적 회복"
+      ],
+      "intent": "복학 신청 절차 문의",
+      "confidence": 0.95,
+      "expanded_query": "복학 복학원 복학 신청 복학신청 휴학생 복귀 학적 회복",
+      "method": "llm"
+    },
+    "timestamp": 1771293068.327849,
+    "ttl_hours": 168
+  }
+}

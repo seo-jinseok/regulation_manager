@@ -1,0 +1,30 @@
+{
+  "persona": "staff",
+  "queries": [
+    {"query": "연차 휴가 신청 절차가 어떻게 되나요?", "category": "leave", "difficulty": "easy"},
+    {"query": "복무 규정 핵심 사항이 무엇인가요?", "category": "service", "difficulty": "easy"},
+    {"query": "급여 지급 일자가 언제인가요?", "category": "salary", "difficulty": "easy"},
+    {"query": "연수 참여 신청 방법이 어떻게 되나요?", "category": "training", "difficulty": "easy"},
+    {"query": "병가 사용 기준이 어떻게 되나요?", "category": "leave", "difficulty": "medium"},
+    {"query": "성과상여금 지급 기준이 무엇인가요?", "category": "salary", "difficulty": "hard"},
+    {"query": "전보 발령 기준이 어떻게 되나요?", "category": "personnel", "difficulty": "medium"},
+    {"query": "승진 심사 항목이 무엇인가요?", "category": "personnel", "difficulty": "hard"},
+    {"query": "사무용품 구매 절차가 어떻게 되나요?", "category": "admin", "difficulty": "easy"},
+    {"query": "시설 사용 신청 방법이 어떻게 되나요?", "category": "admin", "difficulty": "easy"},
+    {"query": "재직증명서 발급 방법이 어떻게 되나요?", "category": "admin", "difficulty": "easy"},
+    {"query": "초과근무 수당 지급 기준이 어떻게 되나요?", "category": "salary", "difficulty": "medium"},
+    {"query": "출장비 정산 절차가 어떻게 되나요?", "category": "admin", "difficulty": "medium"},
+    {"query": "경조사 휴가 기간이 어떻게 되나요?", "category": "leave", "difficulty": "medium"},
+    {"query": "보안 교육 이수 의무가 있나요?", "category": "training", "difficulty": "easy"},
+    {"query": "근무성적 평가 기준이 무엇인가요?", "category": "personnel", "difficulty": "hard"},
+    {"query": "직급 호봉제 적용 기준이 어떻게 되나요?", "category": "salary", "difficulty": "medium"},
+    {"query": "휴직 신청 사유가 무엇인가요?", "category": "leave", "difficulty": "medium"},
+    {"query": "복직 절차가 어떻게 되나요?", "category": "personnel", "difficulty": "medium"},
+    {"query": "퇴직금 지급 기준이 어떻게 되나요?", "category": "salary", "difficulty": "hard"},
+    {"query": "장기근속자 포상 기준이 무엇인가요?", "category": "personnel", "difficulty": "medium"},
+    {"query": "성희롱 예방 교육 일정이 어떻게 되나요?", "category": "training", "difficulty": "easy"},
+    {"query": "차량 등록 절차가 어떻게 되나요?", "category": "admin", "difficulty": "easy"},
+    {"query": "명절 근무 수당 기준이 어떻게 되나요?", "category": "salary", "difficulty": "medium"},
+    {"query": "징계 처분 종류가 무엇인가요?", "category": "personnel", "difficulty": "hard"}
+  ]
+}

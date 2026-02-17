@@ -1,0 +1,752 @@
+[
+  {
+    "persona": "graduate",
+    "query": "대학원 등록금 납부 기한이 언제인가요?",
+    "category": "financial",
+    "difficulty": "easy",
+    "answer": "Error: All LLM providers failed after 4 attempts",
+    "contexts": [],
+    "evaluation": {
+      "faithfulness": 0.5,
+      "answer_relevancy": 0.5,
+      "contextual_precision": 0.5,
+      "contextual_recall": 0.87,
+      "overall_score": 0.593,
+      "passed": false,
+      "failure_reasons": [
+        "Faithfulness below threshold: 0.500 < 0.6",
+        "Answer Relevancy below threshold: 0.500 < 0.7",
+        "Contextual Precision below threshold: 0.500 < 0.65",
+        "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+      ]
+    },
+    "metadata": {
+      "framework": "ragas",
+      "judge_model": "gpt-4o",
+      "evaluation_method": "mock"
+    },
+    "execution_metadata": {
+      "error": "All LLM providers failed after 4 attempts"
+    }
+  },
+  {
+    "persona": "graduate",
+    "query": "석사학위 논문 심사 규정이 어떻게 되나요?",
+    "category": "academic",
+    "difficulty": "medium",
+    "answer": "Error: All LLM providers failed after 4 attempts",
+    "contexts": [],
+    "evaluation": {
+      "faithfulness": 0.5,
+      "answer_relevancy": 0.5,
+      "contextual_precision": 0.5,
+      "contextual_recall": 0.87,
+      "overall_score": 0.593,
+      "passed": false,
+      "failure_reasons": [
+        "Faithfulness below threshold: 0.500 < 0.6",
+        "Answer Relevancy below threshold: 0.500 < 0.7",
+        "Contextual Precision below threshold: 0.500 < 0.65",
+        "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+      ]
+    },
+    "metadata": {
+      "framework": "ragas",
+      "judge_model": "gpt-4o",
+      "evaluation_method": "mock"
+    },
+    "execution_metadata": {
+      "error": "All LLM providers failed after 4 attempts"
+    }
+  },
+  {
+    "persona": "graduate",
+    "query": "박사과정 종합시험 응시 자격이 무엇인가요?",
+    "category": "academic",
+    "difficulty": "medium",
+    "answer": "Error: All LLM providers failed after 4 attempts",
+    "contexts": [],
+    "evaluation": {
+      "faithfulness": 0.5,
+      "answer_relevancy": 0.5,
+      "contextual_precision": 0.5,
+      "contextual_recall": 0.87,
+      "overall_score": 0.593,
+      "passed": false,
+      "failure_reasons": [
+        "Faithfulness below threshold: 0.500 < 0.6",
+        "Answer Relevancy below threshold: 0.500 < 0.7",
+        "Contextual Precision below threshold: 0.500 < 0.65",
+        "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+      ]
+    },
+    "metadata": {
+      "framework": "ragas",
+      "judge_model": "gpt-4o",
+      "evaluation_method": "mock"
+    },
+    "execution_metadata": {
+      "error": "All LLM providers failed after 4 attempts"
+    }
+  },
+  {
+    "persona": "graduate",
+    "query": "연구비 집행 규정에 대해 알고 싶습니다.",
+    "category": "research",
+    "difficulty": "medium",
+    "answer": "Error: All LLM providers failed after 4 attempts",
+    "contexts": [],
+    "evaluation": {
+      "faithfulness": 0.5,
+      "answer_relevancy": 0.5,
+      "contextual_precision": 0.5,
+      "contextual_recall": 0.87,
+      "overall_score": 0.593,
+      "passed": false,
+      "failure_reasons": [
+        "Faithfulness below threshold: 0.500 < 0.6",
+        "Answer Relevancy below threshold: 0.500 < 0.7",
+        "Contextual Precision below threshold: 0.500 < 0.65",
+        "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+      ]
+    },
+    "metadata": {
+      "framework": "ragas",
+      "judge_model": "gpt-4o",
+      "evaluation_method": "mock"
+    },
+    "execution_metadata": {
+      "error": "All LLM providers failed after 4 attempts"
+    }
+  },
+  {
+    "persona": "graduate",
+    "query": "학기당 최소 학점 이수 요건이 어떻게 되나요?",
+    "category": "academic",
+    "difficulty": "easy",
+    "answer": "Error: All LLM providers failed after 4 attempts",
+    "contexts": [],
+    "evaluation": {
+      "faithfulness": 0.5,
+      "answer_relevancy": 0.5,
+      "contextual_precision": 0.5,
+      "contextual_recall": 0.87,
+      "overall_score": 0.593,
+      "passed": false,
+      "failure_reasons": [
+        "Faithfulness below threshold: 0.500 < 0.6",
+        "Answer Relevancy below threshold: 0.500 < 0.7",
+        "Contextual Precision below threshold: 0.500 < 0.65",
+        "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+      ]
+    },
+    "metadata": {
+      "framework": "ragas",
+      "judge_model": "gpt-4o",
+      "evaluation_method": "mock"
+    },
+    "execution_metadata": {
+      "error": "All LLM providers failed after 4 attempts"
+    }
+  },
+  {
+    "persona": "graduate",
+    "query": "연구년제도 신청 자격이 어떻게 되나요?",
+    "category": "research",
+    "difficulty": "hard",
+    "answer": "Error: All LLM providers failed after 4 attempts",
+    "contexts": [],
+    "evaluation": {
+      "faithfulness": 0.5,
+      "answer_relevancy": 0.5,
+      "contextual_precision": 0.5,
+      "contextual_recall": 0.87,
+      "overall_score": 0.593,
+      "passed": false,
+      "failure_reasons": [
+        "Faithfulness below threshold: 0.500 < 0.6",
+        "Answer Relevancy below threshold: 0.500 < 0.7",
+        "Contextual Precision below threshold: 0.500 < 0.65",
+        "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+      ]
+    },
+    "metadata": {
+      "framework": "ragas",
+      "judge_model": "gpt-4o",
+      "evaluation_method": "mock"
+    },
+    "execution_metadata": {
+      "error": "All LLM providers failed after 4 attempts"
+    }
+  },
+  {
+    "persona": "graduate",
+    "query": "조교 장학금 지급 기준이 무엇인가요?",
+    "category": "financial",
+    "difficulty": "medium",
+    "answer": "Error: All LLM providers failed after 4 attempts",
+    "contexts": [],
+    "evaluation": {
+      "faithfulness": 0.5,
+      "answer_relevancy": 0.5,
+      "contextual_precision": 0.5,
+      "contextual_recall": 0.87,
+      "overall_score": 0.593,
+      "passed": false,
+      "failure_reasons": [
+        "Faithfulness below threshold: 0.500 < 0.6",
+        "Answer Relevancy below threshold: 0.500 < 0.7",
+        "Contextual Precision below threshold: 0.500 < 0.65",
+        "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+      ]
+    },
+    "metadata": {
+      "framework": "ragas",
+      "judge_model": "gpt-4o",
+      "evaluation_method": "mock"
+    },
+    "execution_metadata": {
+      "error": "All LLM providers failed after 4 attempts"
+    }
+  },
+  {
+    "persona": "graduate",
+    "query": "논문 제출 마감일이 언제인가요?",
+    "category": "academic",
+    "difficulty": "easy",
+    "answer": "Error: All LLM providers failed after 4 attempts",
+    "contexts": [],
+    "evaluation": {
+      "faithfulness": 0.5,
+      "answer_relevancy": 0.5,
+      "contextual_precision": 0.5,
+      "contextual_recall": 0.87,
+      "overall_score": 0.593,
+      "passed": false,
+      "failure_reasons": [
+        "Faithfulness below threshold: 0.500 < 0.6",
+        "Answer Relevancy below threshold: 0.500 < 0.7",
+        "Contextual Precision below threshold: 0.500 < 0.65",
+        "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+      ]
+    },
+    "metadata": {
+      "framework": "ragas",
+      "judge_model": "gpt-4o",
+      "evaluation_method": "mock"
+    },
+    "execution_metadata": {
+      "error": "All LLM providers failed after 4 attempts"
+    }
+  },
+  {
+    "persona": "graduate",
+    "query": "학위청구논문 심사위원 구성은 어떻게 하나요?",
+    "category": "academic",
+    "difficulty": "hard",
+    "answer": "Error: All LLM providers failed after 4 attempts",
+    "contexts": [],
+    "evaluation": {
+      "faithfulness": 0.5,
+      "answer_relevancy": 0.5,
+      "contextual_precision": 0.5,
+      "contextual_recall": 0.87,
+      "overall_score": 0.593,
+      "passed": false,
+      "failure_reasons": [
+        "Faithfulness below threshold: 0.500 < 0.6",
+        "Answer Relevancy below threshold: 0.500 < 0.7",
+        "Contextual Precision below threshold: 0.500 < 0.65",
+        "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+      ]
+    },
+    "metadata": {
+      "framework": "ragas",
+      "judge_model": "gpt-4o",
+      "evaluation_method": "mock"
+    },
+    "execution_metadata": {
+      "error": "All LLM providers failed after 4 attempts"
+    }
+  },
+  {
+    "persona": "graduate",
+    "query": "대학원생 휴학 규정이 어떻게 되나요?",
+    "category": "procedural",
+    "difficulty": "medium",
+    "answer": "Error: All LLM providers failed after 4 attempts",
+    "contexts": [],
+    "evaluation": {
+      "faithfulness": 0.5,
+      "answer_relevancy": 0.5,
+      "contextual_precision": 0.5,
+      "contextual_recall": 0.87,
+      "overall_score": 0.593,
+      "passed": false,
+      "failure_reasons": [
+        "Faithfulness below threshold: 0.500 < 0.6",
+        "Answer Relevancy below threshold: 0.500 < 0.7",
+        "Contextual Precision below threshold: 0.500 < 0.65",
+        "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+      ]
+    },
+    "metadata": {
+      "framework": "ragas",
+      "judge_model": "gpt-4o",
+      "evaluation_method": "mock"
+    },
+    "execution_metadata": {
+      "error": "All LLM providers failed after 4 attempts"
+    }
+  },
+  {
+    "persona": "graduate",
+    "query": "국제학술대회 참가비 지원 범위가 어떻게 되나요?",
+    "category": "research",
+    "difficulty": "medium",
+    "answer": "Error: All LLM providers failed after 4 attempts",
+    "contexts": [],
+    "evaluation": {
+      "faithfulness": 0.5,
+      "answer_relevancy": 0.5,
+      "contextual_precision": 0.5,
+      "contextual_recall": 0.87,
+      "overall_score": 0.593,
+      "passed": false,
+      "failure_reasons": [
+        "Faithfulness below threshold: 0.500 < 0.6",
+        "Answer Relevancy below threshold: 0.500 < 0.7",
+        "Contextual Precision below threshold: 0.500 < 0.65",
+        "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+      ]
+    },
+    "metadata": {
+      "framework": "ragas",
+      "judge_model": "gpt-4o",
+      "evaluation_method": "mock"
+    },
+    "execution_metadata": {
+      "error": "All LLM providers failed after 4 attempts"
+    }
+  },
+  {
+    "persona": "graduate",
+    "query": "학위기 수여식 일정이 어떻게 되나요?",
+    "category": "procedural",
+    "difficulty": "easy",
+    "answer": "Error: All LLM providers failed after 4 attempts",
+    "contexts": [],
+    "evaluation": {
+      "faithfulness": 0.5,
+      "answer_relevancy": 0.5,
+      "contextual_precision": 0.5,
+      "contextual_recall": 0.87,
+      "overall_score": 0.593,
+      "passed": false,
+      "failure_reasons": [
+        "Faithfulness below threshold: 0.500 < 0.6",
+        "Answer Relevancy below threshold: 0.500 < 0.7",
+        "Contextual Precision below threshold: 0.500 < 0.65",
+        "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+      ]
+    },
+    "metadata": {
+      "framework": "ragas",
+      "judge_model": "gpt-4o",
+      "evaluation_method": "mock"
+    },
+    "execution_metadata": {
+      "error": "All LLM providers failed after 4 attempts"
+    }
+  },
+  {
+    "persona": "graduate",
+    "query": "지도교수 선정은 언제까지 해야 하나요?",
+    "category": "academic",
+    "difficulty": "medium",
+    "answer": "Error: All LLM providers failed after 4 attempts",
+    "contexts": [],
+    "evaluation": {
+      "faithfulness": 0.5,
+      "answer_relevancy": 0.5,
+      "contextual_precision": 0.5,
+      "contextual_recall": 0.87,
+      "overall_score": 0.593,
+      "passed": false,
+      "failure_reasons": [
+        "Faithfulness below threshold: 0.500 < 0.6",
+        "Answer Relevancy below threshold: 0.500 < 0.7",
+        "Contextual Precision below threshold: 0.500 < 0.65",
+        "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+      ]
+    },
+    "metadata": {
+      "framework": "ragas",
+      "judge_model": "gpt-4o",
+      "evaluation_method": "mock"
+    },
+    "execution_metadata": {
+      "error": "All LLM providers failed after 4 attempts"
+    }
+  },
+  {
+    "persona": "graduate",
+    "query": "연구윤리교육 이수 의무가 있나요?",
+    "category": "academic",
+    "difficulty": "medium",
+    "answer": "Error: All LLM providers failed after 4 attempts",
+    "contexts": [],
+    "evaluation": {
+      "faithfulness": 0.5,
+      "answer_relevancy": 0.5,
+      "contextual_precision": 0.5,
+      "contextual_recall": 0.87,
+      "overall_score": 0.593,
+      "passed": false,
+      "failure_reasons": [
+        "Faithfulness below threshold: 0.500 < 0.6",
+        "Answer Relevancy below threshold: 0.500 < 0.7",
+        "Contextual Precision below threshold: 0.500 < 0.65",
+        "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+      ]
+    },
+    "metadata": {
+      "framework": "ragas",
+      "judge_model": "gpt-4o",
+      "evaluation_method": "mock"
+    },
+    "execution_metadata": {
+      "error": "All LLM providers failed after 4 attempts"
+    }
+  },
+  {
+    "persona": "graduate",
+    "query": "학위논문 표절 검사 기준이 어떻게 되나요?",
+    "category": "academic",
+    "difficulty": "medium",
+    "answer": "Error: All LLM providers failed after 4 attempts",
+    "contexts": [],
+    "evaluation": {
+      "faithfulness": 0.5,
+      "answer_relevancy": 0.5,
+      "contextual_precision": 0.5,
+      "contextual_recall": 0.87,
+      "overall_score": 0.593,
+      "passed": false,
+      "failure_reasons": [
+        "Faithfulness below threshold: 0.500 < 0.6",
+        "Answer Relevancy below threshold: 0.500 < 0.7",
+        "Contextual Precision below threshold: 0.500 < 0.65",
+        "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+      ]
+    },
+    "metadata": {
+      "framework": "ragas",
+      "judge_model": "gpt-4o",
+      "evaluation_method": "mock"
+    },
+    "execution_metadata": {
+      "error": "All LLM providers failed after 4 attempts"
+    }
+  },
+  {
+    "persona": "graduate",
+    "query": "후학기생 지도 규정이 있나요?",
+    "category": "research",
+    "difficulty": "hard",
+    "answer": "Error: All LLM providers failed after 4 attempts",
+    "contexts": [],
+    "evaluation": {
+      "faithfulness": 0.5,
+      "answer_relevancy": 0.5,
+      "contextual_precision": 0.5,
+      "contextual_recall": 0.87,
+      "overall_score": 0.593,
+      "passed": false,
+      "failure_reasons": [
+        "Faithfulness below threshold: 0.500 < 0.6",
+        "Answer Relevancy below threshold: 0.500 < 0.7",
+        "Contextual Precision below threshold: 0.500 < 0.65",
+        "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+      ]
+    },
+    "metadata": {
+      "framework": "ragas",
+      "judge_model": "gpt-4o",
+      "evaluation_method": "mock"
+    },
+    "execution_metadata": {
+      "error": "All LLM providers failed after 4 attempts"
+    }
+  },
+  {
+    "persona": "graduate",
+    "query": "학위 취소 사유가 무엇인가요?",
+    "category": "academic",
+    "difficulty": "hard",
+    "answer": "Error: All LLM providers failed after 4 attempts",
+    "contexts": [],
+    "evaluation": {
+      "faithfulness": 0.5,
+      "answer_relevancy": 0.5,
+      "contextual_precision": 0.5,
+      "contextual_recall": 0.87,
+      "overall_score": 0.593,
+      "passed": false,
+      "failure_reasons": [
+        "Faithfulness below threshold: 0.500 < 0.6",
+        "Answer Relevancy below threshold: 0.500 < 0.7",
+        "Contextual Precision below threshold: 0.500 < 0.65",
+        "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+      ]
+    },
+    "metadata": {
+      "framework": "ragas",
+      "judge_model": "gpt-4o",
+      "evaluation_method": "mock"
+    },
+    "execution_metadata": {
+      "error": "All LLM providers failed after 4 attempts"
+    }
+  },
+  {
+    "persona": "graduate",
+    "query": "학생 연구원 계약 기간이 어떻게 되나요?",
+    "category": "research",
+    "difficulty": "medium",
+    "answer": "Error: All LLM providers failed after 4 attempts",
+    "contexts": [],
+    "evaluation": {
+      "faithfulness": 0.5,
+      "answer_relevancy": 0.5,
+      "contextual_precision": 0.5,
+      "contextual_recall": 0.87,
+      "overall_score": 0.593,
+      "passed": false,
+      "failure_reasons": [
+        "Faithfulness below threshold: 0.500 < 0.6",
+        "Answer Relevancy below threshold: 0.500 < 0.7",
+        "Contextual Precision below threshold: 0.500 < 0.65",
+        "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+      ]
+    },
+    "metadata": {
+      "framework": "ragas",
+      "judge_model": "gpt-4o",
+      "evaluation_method": "mock"
+    },
+    "execution_metadata": {
+      "error": "All LLM providers failed after 4 attempts"
+    }
+  },
+  {
+    "persona": "graduate",
+    "query": "대학원 등록금 분할 납부가 가능한가요?",
+    "category": "financial",
+    "difficulty": "easy",
+    "answer": "Error: All LLM providers failed after 4 attempts",
+    "contexts": [],
+    "evaluation": {
+      "faithfulness": 0.5,
+      "answer_relevancy": 0.5,
+      "contextual_precision": 0.5,
+      "contextual_recall": 0.87,
+      "overall_score": 0.593,
+      "passed": false,
+      "failure_reasons": [
+        "Faithfulness below threshold: 0.500 < 0.6",
+        "Answer Relevancy below threshold: 0.500 < 0.7",
+        "Contextual Precision below threshold: 0.500 < 0.65",
+        "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+      ]
+    },
+    "metadata": {
+      "framework": "ragas",
+      "judge_model": "gpt-4o",
+      "evaluation_method": "mock"
+    },
+    "execution_metadata": {
+      "error": "All LLM providers failed after 4 attempts"
+    }
+  },
+  {
+    "persona": "graduate",
+    "query": "논문 심사 불합격 시 재심사 절차가 어떻게 되나요?",
+    "category": "academic",
+    "difficulty": "hard",
+    "answer": "Error: All LLM providers failed after 4 attempts",
+    "contexts": [],
+    "evaluation": {
+      "faithfulness": 0.5,
+      "answer_relevancy": 0.5,
+      "contextual_precision": 0.5,
+      "contextual_recall": 0.87,
+      "overall_score": 0.593,
+      "passed": false,
+      "failure_reasons": [
+        "Faithfulness below threshold: 0.500 < 0.6",
+        "Answer Relevancy below threshold: 0.500 < 0.7",
+        "Contextual Precision below threshold: 0.500 < 0.65",
+        "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+      ]
+    },
+    "metadata": {
+      "framework": "ragas",
+      "judge_model": "gpt-4o",
+      "evaluation_method": "mock"
+    },
+    "execution_metadata": {
+      "error": "All LLM providers failed after 4 attempts"
+    }
+  },
+  {
+    "persona": "graduate",
+    "query": "외국인 유학생 장학금 지급 기준이 어떻게 되나요?",
+    "category": "financial",
+    "difficulty": "medium",
+    "answer": "Error: All LLM providers failed after 4 attempts",
+    "contexts": [],
+    "evaluation": {
+      "faithfulness": 0.5,
+      "answer_relevancy": 0.5,
+      "contextual_precision": 0.5,
+      "contextual_recall": 0.87,
+      "overall_score": 0.593,
+      "passed": false,
+      "failure_reasons": [
+        "Faithfulness below threshold: 0.500 < 0.6",
+        "Answer Relevancy below threshold: 0.500 < 0.7",
+        "Contextual Precision below threshold: 0.500 < 0.65",
+        "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+      ]
+    },
+    "metadata": {
+      "framework": "ragas",
+      "judge_model": "gpt-4o",
+      "evaluation_method": "mock"
+    },
+    "execution_metadata": {
+      "error": "All LLM providers failed after 4 attempts"
+    }
+  },
+  {
+    "persona": "graduate",
+    "query": "학점 교류 신청 자격이 어떻게 되나요?",
+    "category": "academic",
+    "difficulty": "medium",
+    "answer": "Error: All LLM providers failed after 4 attempts",
+    "contexts": [],
+    "evaluation": {
+      "faithfulness": 0.5,
+      "answer_relevancy": 0.5,
+      "contextual_precision": 0.5,
+      "contextual_recall": 0.87,
+      "overall_score": 0.593,
+      "passed": false,
+      "failure_reasons": [
+        "Faithfulness below threshold: 0.500 < 0.6",
+        "Answer Relevancy below threshold: 0.500 < 0.7",
+        "Contextual Precision below threshold: 0.500 < 0.65",
+        "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+      ]
+    },
+    "metadata": {
+      "framework": "ragas",
+      "judge_model": "gpt-4o",
+      "evaluation_method": "mock"
+    },
+    "execution_metadata": {
+      "error": "All LLM providers failed after 4 attempts"
+    }
+  },
+  {
+    "persona": "graduate",
+    "query": "대학원 연구실 안전 교육 의무가 있나요?",
+    "category": "research",
+    "difficulty": "easy",
+    "answer": "Error: All LLM providers failed after 4 attempts",
+    "contexts": [],
+    "evaluation": {
+      "faithfulness": 0.5,
+      "answer_relevancy": 0.5,
+      "contextual_precision": 0.5,
+      "contextual_recall": 0.87,
+      "overall_score": 0.593,
+      "passed": false,
+      "failure_reasons": [
+        "Faithfulness below threshold: 0.500 < 0.6",
+        "Answer Relevancy below threshold: 0.500 < 0.7",
+        "Contextual Precision below threshold: 0.500 < 0.65",
+        "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+      ]
+    },
+    "metadata": {
+      "framework": "ragas",
+      "judge_model": "gpt-4o",
+      "evaluation_method": "mock"
+    },
+    "execution_metadata": {
+      "error": "All LLM providers failed after 4 attempts"
+    }
+  },
+  {
+    "persona": "graduate",
+    "query": "학위과정 변경 절차가 어떻게 되나요?",
+    "category": "procedural",
+    "difficulty": "hard",
+    "answer": "Error: All LLM providers failed after 4 attempts",
+    "contexts": [],
+    "evaluation": {
+      "faithfulness": 0.5,
+      "answer_relevancy": 0.5,
+      "contextual_precision": 0.5,
+      "contextual_recall": 0.87,
+      "overall_score": 0.593,
+      "passed": false,
+      "failure_reasons": [
+        "Faithfulness below threshold: 0.500 < 0.6",
+        "Answer Relevancy below threshold: 0.500 < 0.7",
+        "Contextual Precision below threshold: 0.500 < 0.65",
+        "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+      ]
+    },
+    "metadata": {
+      "framework": "ragas",
+      "judge_model": "gpt-4o",
+      "evaluation_method": "mock"
+    },
+    "execution_metadata": {
+      "error": "All LLM providers failed after 4 attempts"
+    }
+  },
+  {
+    "persona": "graduate",
+    "query": "논문 공동저자 인정 기준이 어떻게 되나요?",
+    "category": "academic",
+    "difficulty": "hard",
+    "answer": "Error: All LLM providers failed after 4 attempts",
+    "contexts": [],
+    "evaluation": {
+      "faithfulness": 0.5,
+      "answer_relevancy": 0.5,
+      "contextual_precision": 0.5,
+      "contextual_recall": 0.87,
+      "overall_score": 0.593,
+      "passed": false,
+      "failure_reasons": [
+        "Faithfulness below threshold: 0.500 < 0.6",
+        "Answer Relevancy below threshold: 0.500 < 0.7",
+        "Contextual Precision below threshold: 0.500 < 0.65",
+        "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+      ]
+    },
+    "metadata": {
+      "framework": "ragas",
+      "judge_model": "gpt-4o",
+      "evaluation_method": "mock"
+    },
+    "execution_metadata": {
+      "error": "All LLM providers failed after 4 attempts"
+    }
+  }
+]

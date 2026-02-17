@@ -1,0 +1,30 @@
+{
+  "persona": "parent",
+  "queries": [
+    {"query": "등록금 납부 기한이 언제까지인가요?", "category": "financial", "difficulty": "easy"},
+    {"query": "장학금 종류가 어떻게 되나요?", "category": "financial", "difficulty": "easy"},
+    {"query": "기숙사 비용이 얼마인가요?", "category": "campus_life", "difficulty": "easy"},
+    {"query": "성적 확인 방법이 어떻게 되나요?", "category": "academic", "difficulty": "medium"},
+    {"query": "휴학 신청 방법이 어떻게 되나요?", "category": "procedural", "difficulty": "easy"},
+    {"query": "등록금 분할 납부가 가능한가요?", "category": "financial", "difficulty": "easy"},
+    {"query": "국가장학금 신청 방법이 어떻게 되나요?", "category": "financial", "difficulty": "medium"},
+    {"query": "기숙사 입주 기간이 어떻게 되나요?", "category": "campus_life", "difficulty": "easy"},
+    {"query": "자녀 성적이 좋지 않을 때 상담 가능한가요?", "category": "academic", "difficulty": "medium"},
+    {"query": "졸업 요건이 무엇인가요?", "category": "academic", "difficulty": "medium"},
+    {"query": "학자금 대출 신청 방법이 어떻게 되나요?", "category": "financial", "difficulty": "medium"},
+    {"query": "교내 아르바이트 정보는 어디서 확인하나요?", "category": "financial", "difficulty": "medium"},
+    {"query": "복학 시기가 언제인가요?", "category": "procedural", "difficulty": "easy"},
+    {"query": "교환학생 프로그램 비용이 어떻게 되나요?", "category": "academic", "difficulty": "medium"},
+    {"query": "동계/하계 방학 기간이 언제인가요?", "category": "campus_life", "difficulty": "easy"},
+    {"query": "교내 식당 이용 시간이 어떻게 되나요?", "category": "campus_life", "difficulty": "easy"},
+    {"query": "학생 건강보험 가입 방법이 어떻게 되나요?", "category": "admin", "difficulty": "medium"},
+    {"query": "군 입대 휴학 처리 방법이 어떻게 되나요?", "category": "procedural", "difficulty": "medium"},
+    {"query": "재학 중 취업 지원 프로그램이 있나요?", "category": "career", "difficulty": "medium"},
+    {"query": "장애학생 지원 서비스가 어떻게 되나요?", "category": "support", "difficulty": "medium"},
+    {"query": "유학생 자녀 비자 문제 상담이 가능한가요?", "category": "admin", "difficulty": "hard"},
+    {"query": "학기 중 결석 처리 규정이 어떻게 되나요?", "category": "academic", "difficulty": "medium"},
+    {"query": "심리 상담 센터 이용 방법이 어떻게 되나요?", "category": "support", "difficulty": "easy"},
+    {"query": "학생회비 납부 의무가 있나요?", "category": "financial", "difficulty": "easy"},
+    {"query": "교내 주차 가능한가요?", "category": "campus_life", "difficulty": "easy"}
+  ]
+}
