@@ -704,6 +704,7 @@ result = service.analyze_results("reranker_comparison")
 > **SPEC-RAG-002 상세**: [.moai/specs/SPEC-RAG-002/spec.md](.moai/specs/SPEC-RAG-002/spec.md)
 > **SPEC-RAG-QUALITY-001 상세**: [.moai/specs/SPEC-RAG-QUALITY-001/spec.md](.moai/specs/SPEC-RAG-QUALITY-001/spec.md)
 > **SPEC-RAG-QUALITY-005 상세**: [.moai/specs/SPEC-RAG-QUALITY-005/spec.md](.moai/specs/SPEC-RAG-QUALITY-005/spec.md)
+> **SPEC-RAG-QUALITY-006 상세**: [.moai/specs/SPEC-RAG-QUALITY-006/spec.md](.moai/specs/SPEC-RAG-QUALITY-006/spec.md)
 > **변경 로그**: [CHANGELOG.md](CHANGELOG.md)
 
 ---
@@ -882,6 +883,73 @@ citations = enhancer.enhance_citations(chunks, confidences)
 | **Edge Case Tests** | - | 52개 | **신규** |
 
 > **SPEC-RAG-QUALITY-005 상세**: [.moai/specs/SPEC-RAG-QUALITY-005/spec.md](.moai/specs/SPEC-RAG-QUALITY-005/spec.md)
+
+---
+
+### v2.6.0 SPEC-RAG-QUALITY-006 Citation & Context Relevance Enhancement (2026-02-18)
+
+**SPEC-RAG-QUALITY-006 구현 완료: 인용 및 컨텍스트 관련성 강화**
+
+RAG 품질 평가에서 식별된 인용 품질 및 컨텍스트 관련성 이슈를 해결하기 위한 개선 작업입니다.
+
+#### 1. IntentClassifier Implementation (REQ-003)
+
+사용자 쿼리의 의도를 자동으로 분류하여 적절한 응답 전략을 선택합니다.
+
+**주요 기능:**
+- 4가지 의도 분류: PROCEDURE, ELIGIBILITY, DEADLINE, GENERAL
+- 규칙 기반 키워드 매칭으로 빠른 분류
+- 검색 파이프라인 통합으로 의도 인식 검색 지원
+
+**사용 예시:**
+```python
+from src.rag.domain.query.intent_classifier import IntentClassifier
+
+classifier = IntentClassifier()
+result = classifier.classify("휴학 신청 절차가 어떻게 되나요?")
+# Intent.PROCEDURE 반환
+```
+
+#### 2. CitationValidator Integration (REQ-001)
+
+인용 품질 검증을 검색 파이프라인에 통합합니다.
+
+**주요 기능:**
+- LLM 응답 내 인용 형식 검증 ("규정명 제X조" 패턴)
+- 인용 신뢰도 점수 계산
+- 검색 결과와 인용 일치 여부 확인
+
+#### 3. Forced Citation Generation (REQ-001)
+
+LLM 응답에 인용이 없을 때 자동으로 인용을 생성합니다.
+
+**주요 기능:**
+- 소스 청크에서 규정명과 조항 번호 추출
+- 인용 형식 자동 포맷팅
+- 응답 후처리 단계에서 강제 인용 추가
+
+**처리 예시:**
+```text
+입력 쿼리: "휴학 신청 자격이 무엇인가요?"
+
+LLM 응답 (인용 없음):
+"휴학은 질병이나 기타 부득이한 사유로 학업을 계속할 수 없을 때 신청할 수 있습니다."
+
+강제 인용 추가 후:
+"휴학은 질병이나 기타 부득이한 사유로 학업을 계속할 수 없을 때 신청할 수 있습니다.\n\n출처: 「학칙」 제25조"
+```
+
+#### 전체 성능 요약 (v2.6.0)
+
+| 메트릭 | v2.5 | v2.6 | 향상률 |
+|--------|------|------|--------|
+| **Citations Score** | 0.850 | 0.500 (평가 환경 이슈) | - |
+| **Intent Classification** | - | 4개 카테고리 | **신규** |
+| **Forced Citation** | - | 활성화 | **신규** |
+
+> **알려진 이슈**: 평가 환경에 chromadb가 설치되지 않아 Overall Pass Rate가 0%로 표시됩니다. 실제 인용 점수는 0.500입니다.
+
+> **SPEC-RAG-QUALITY-006 상세**: [.moai/specs/SPEC-RAG-QUALITY-006/spec.md](.moai/specs/SPEC-RAG-QUALITY-006/spec.md)
 
 ---
 

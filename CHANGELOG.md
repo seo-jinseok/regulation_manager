@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- IntentClassifier for query intent classification (PROCEDURE, ELIGIBILITY, DEADLINE, GENERAL) (SPEC-RAG-QUALITY-006)
+- CitationValidator integration in search_usecase.py for enhanced citation quality (SPEC-RAG-QUALITY-006)
+- Forced citation generation when LLM response lacks citations (SPEC-RAG-QUALITY-006)
 - Staff vocabulary expansion for 6 administrative topics (SPEC-RAG-QUALITY-005)
   - 복무, 연차, 급여, 연수, 사무용품, 입찰 synonym mappings
 - Citation extraction with paragraph/item level patterns (SPEC-RAG-QUALITY-005)
