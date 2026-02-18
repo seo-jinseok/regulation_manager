@@ -34,6 +34,11 @@ _model_name = "BAAI/bge-reranker-v2-m3"
 _bge_available: Optional[bool] = None  # None = not tested, True = available, False = failed
 _last_reranker_error: Optional[str] = None
 
+# SPEC-RAG-QUALITY-006: Context Relevance threshold
+# Filter out documents with low relevance scores to improve context quality
+# Default threshold: 0.15 (documents below this are likely irrelevant)
+MIN_RELEVANCE_THRESHOLD = 0.15
+
 
 @dataclass
 class RerankedResult:
@@ -262,6 +267,7 @@ def rerank(
     query: str,
     documents: List[Tuple[str, str, dict]],
     top_k: int = 10,
+    min_relevance: float = MIN_RELEVANCE_THRESHOLD,
 ) -> List[RerankedResult]:
     """
     Rerank documents using BGE cross-encoder with BM25 fallback.
@@ -270,13 +276,18 @@ def rerank(
     - BGE reranker is unavailable
     - compute_score() raises an exception (e.g., transformers compatibility issue)
 
+    SPEC-RAG-QUALITY-006: Filters out documents below min_relevance threshold
+    to improve context relevance score.
+
     Args:
         query: The search query.
         documents: List of (doc_id, content, metadata) tuples.
         top_k: Maximum number of results to return.
+        min_relevance: Minimum relevance score (default: 0.15). Documents below
+                       this threshold are filtered out to improve context quality.
 
     Returns:
-        List of RerankedResult sorted by relevance score.
+        List of RerankedResult sorted by relevance score, filtered by min_relevance.
     """
     global _bge_available, _last_reranker_error
 
@@ -328,7 +339,15 @@ def rerank(
         # Sort by score descending
         results.sort(key=lambda x: x.score, reverse=True)
 
-        return results[:top_k]
+        # SPEC-RAG-QUALITY-006: Filter by minimum relevance threshold
+        # This improves context relevance by removing low-quality documents
+        filtered_results = [r for r in results if r.score >= min_relevance]
+        if len(filtered_results) < len(results):
+            logger.debug(
+                f"Filtered {len(results) - len(filtered_results)} documents below relevance threshold {min_relevance}"
+            )
+
+        return filtered_results[:top_k]
 
     except Exception as e:
         # Log error and fall back to BM25

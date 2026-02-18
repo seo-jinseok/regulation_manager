@@ -420,5 +420,120 @@
     },
     "timestamp": 1771293068.327849,
     "ttl_hours": 168
+  },
+  "99c1a6015d92599e329d2c9c9f53202f": {
+    "cache_type": "query_expansion",
+    "query_hash": "99c1a6015d92599e329d2c9c9f53202f",
+    "data": {
+      "keywords": [
+        "연구년제",
+        "신청자격",
+        "심사기준",
+        "연구활동",
+        "학칙",
+        "교원인사규정"
+      ],
+      "intent": "연구년제 신청 자격 및 심사 기준 문의",
+      "confidence": 0.95,
+      "expanded_query": "연구년제 신청 자격과 심사 기준이 어떻게 되나요? 신청자격 심사기준 연구활동",
+      "method": "llm"
+    },
+    "timestamp": 1771331449.175471,
+    "ttl_hours": 168
+  },
+  "58fd8344dea6138d2060ef08884de6cc": {
+    "cache_type": "query_expansion",
+    "query_hash": "58fd8344dea6138d2060ef08884de6cc",
+    "data": {
+      "keywords": [
+        "휴학",
+        "휴직",
+        "연구년",
+        "안식년",
+        "절차"
+      ],
+      "intent": "휴학 절차 문의",
+      "confidence": 0.95,
+      "expanded_query": "학교를 잠깐 쉬고 싶은데 절차가 어떻게 되나요? 휴학 휴직 연구년",
+      "method": "llm"
+    },
+    "timestamp": 1771331933.521775,
+    "ttl_hours": 168
+  },
+  "2e93799f5bf00a467fe3ea19a3ec223a": {
+    "cache_type": "query_expansion",
+    "query_hash": "2e93799f5bf00a467fe3ea19a3ec223a",
+    "data": {
+      "keywords": [
+        "기숙사",
+        "신입생",
+        "신청절차",
+        "입주자격",
+        "기숙사규정"
+      ],
+      "intent": "기숙사 신청 절차 문의",
+      "confidence": 0.95,
+      "expanded_query": "신입생인데 기숙사 신청 어떻게 하나요? 신입생 신청절차 입주자격",
+      "method": "llm"
+    },
+    "timestamp": 1771332245.562232,
+    "ttl_hours": 168
+  },
+  "f13144fc4f971acf506782661a4ad512": {
+    "cache_type": "query_expansion",
+    "query_hash": "f13144fc4f971acf506782661a4ad512",
+    "data": {
+      "keywords": [
+        "기숙사 신청",
+        "신입생 입주자격",
+        "기숙사 입주 절차",
+        "기숙사 규정",
+        "기숙사 지원"
+      ],
+      "intent": "신입생 기숙사 신청 절차 및 입주자격 문의",
+      "confidence": 0.95,
+      "expanded_query": "신입생인데 기숙사 신청 어떻게 하나요? 신입생 신청절차 입주자격 기숙사 신청 신입생 입주자격 기숙사 입주 절차",
+      "method": "llm"
+    },
+    "timestamp": 1771332256.692435,
+    "ttl_hours": 168
+  },
+  "e1a905a8d815cf998144e2aef57661ab": {
+    "cache_type": "query_expansion",
+    "query_hash": "e1a905a8d815cf998144e2aef57661ab",
+    "data": {
+      "keywords": [
+        "석사 논문",
+        "논문 심사 기준",
+        "학위 논문",
+        "심사 규정",
+        "연구 윤리"
+      ],
+      "intent": "석사 과정 논문 심사 기준 문의",
+      "confidence": 0.95,
+      "expanded_query": "석사 과정 논문 심사 기준이 어떻게 됩니까? 석사 논문 논문 심사 기준 학위 논문",
+      "method": "llm"
+    },
+    "timestamp": 1771332464.422194,
+    "ttl_hours": 168
+  },
+  "f69c4561771d2283fce76d3629a27d73": {
+    "cache_type": "query_expansion",
+    "query_hash": "f69c4561771d2283fce76d3629a27d73",
+    "data": {
+      "keywords": [
+        "석사 논문",
+        "논문 심사 기준",
+        "학위 논문",
+        "심사 규정",
+        "연구 윤리"
+      ],
+      "intent": "석사 논문 심사 기준 문의",
+      "confidence": 0.95,
+      "expanded_query": "석사 과정 논문 심사 기준이 어떻게 됩니까? 석사 논문 논문 심사 기준 학위 논문 석사 논문 논문 심사 기준 학위 논문",
+      "method": "llm"
+    },
+    "timestamp": 1771332474.260108,
+    "ttl_hours": 168
   }
 }

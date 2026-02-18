@@ -262,12 +262,16 @@ class QueryAnalyzer:
     # Hybrid search with Korean-optimized Dense retrieval (jhgan/ko-sbert-multinli)
     # BM25 excels at exact matching (article references, regulation names)
     # Dense excels at semantic understanding (natural questions, intent queries)
+    #
+    # SPEC-RAG-QUALITY-006: Adjusted weights for better context relevance
+    # - Natural questions benefit from more semantic (Dense) matching
+    # - Intent queries benefit from balanced semantic understanding
     WEIGHT_PRESETS: Dict[QueryType, Tuple[float, float]] = {
         QueryType.ARTICLE_REFERENCE: (0.9, 0.1),  # BM25 강화 + Dense (정확한 조호 참조)
         QueryType.REGULATION_NAME: (0.85, 0.15),  # BM25 강화 + Dense (규정명 검색)
-        QueryType.NATURAL_QUESTION: (0.75, 0.25),  # BM25 강화 + Dense (자연어 질문)
-        QueryType.INTENT: (0.85, 0.15),  # BM25 강화 + Dense (의도 기반 검색)
-        QueryType.GENERAL: (0.85, 0.15),  # BM25 강화 + Dense (기본 검색)
+        QueryType.NATURAL_QUESTION: (0.65, 0.35),  # Dense 강화 (자연어 질문 - 의미적 이해)
+        QueryType.INTENT: (0.70, 0.30),  # Dense 강화 (의도 기반 검색 - 맥락 이해)
+        QueryType.GENERAL: (0.75, 0.25),  # 균형 잡힌 기본 검색
     }
 
     # Synonym dictionary for query expansion (minimal seed).

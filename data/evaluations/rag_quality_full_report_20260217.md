@@ -1,126 +1,122 @@
 # RAG Quality Evaluation Report
 
-**Evaluation ID**: rag_quality_local_20260215
-**Generated**: 2026-02-17
-**Evaluation Type**: Full Persona Evaluation
-
----
+**Evaluation ID:** eval_20260217_164221
+**Timestamp:** 2026-02-17T16:42:21.092142
+**Duration:** 46 seconds
 
 ## Executive Summary
 
-| Metric | Value | Target | Status |
-|--------|-------|--------|--------|
-| **Overall Pass Rate** | 83.3% | 80%+ | PASS |
-| **Average Score** | 0.863 | 0.80+ | PASS |
-| **Total Queries** | 30 | - | - |
-| **Passed** | 25 | - | - |
-| **Failed** | 5 | - | - |
+| Metric | Value | Threshold | Status |
+|--------|-------|-----------|--------|
+| **Overall Pass Rate** | 0.0% | 80% | FAIL |
+| **Total Queries** | 150 | 150+ | PASS |
+| **Queries Passed** | 0 | - | - |
 
-### Quality Gate Results
+## Metric Scores
 
 | Metric | Score | Threshold | Status |
 |--------|-------|-----------|--------|
-| Accuracy | 0.875 | 0.85+ | PASS |
-| Completeness | 0.815 | 0.75+ | PASS |
-| Citations | 0.850 | 0.70+ | PASS |
-| Context Relevance | 0.860 | 0.75+ | PASS |
+| Accuracy (Faithfulness) | 0.919 | 0.85 | PASS |
+| Completeness (Recall) | 0.870 | 0.75 | PASS |
+| Citations (Precision) | 0.500 | 0.7 | FAIL |
+| Context Relevance | 0.500 | 0.75 | FAIL |
+| **Overall Score** | **0.697** | **0.75** | **FAIL** |
 
----
+## Per-Persona Results
 
-## Persona Breakdown
+| Persona | Total | Passed | Pass Rate | Avg Score |
+|---------|-------|--------|-----------|-----------|
+| student-undergraduate | 25 | 0 | 0.0% | 0.698 |
+| student-graduate | 25 | 0 | 0.0% | 0.692 |
+| professor | 25 | 0 | 0.0% | 0.700 |
+| staff-admin | 25 | 0 | 0.0% | 0.700 |
+| parent | 25 | 0 | 0.0% | 0.698 |
+| student-international | 25 | 0 | 0.0% | 0.694 |
 
-### Performance by User Type
+## Per-Category Results
 
-| Persona | Queries | Avg Score | Pass Rate | Status |
-|---------|---------|-----------|-----------|--------|
-| Professor | 5 | 0.900 | 100% | BEST |
-| Parent | 5 | 0.895 | 100% | EXCELLENT |
-| Student (Undergrad) | 5 | 0.860 | 80% | GOOD |
-| Student (Intl) | 5 | 0.860 | 80% | GOOD |
-| Student (Grad) | 5 | 0.840 | 80% | GOOD |
-| Staff Admin | 5 | 0.820 | 60% | NEEDS IMPROVEMENT |
+| Category | Total | Passed | Pass Rate | Avg Score |
+|----------|-------|--------|-----------|-----------|
+| academic | 29 | 0 | 0.0% | 0.698 |
+| admin | 15 | 0 | 0.0% | 0.697 |
+| campus_life | 7 | 0 | 0.0% | 0.691 |
+| financial | 27 | 0 | 0.0% | 0.694 |
+| leave | 3 | 0 | 0.0% | 0.703 |
+| personnel | 15 | 0 | 0.0% | 0.701 |
+| procedural | 7 | 0 | 0.0% | 0.700 |
+| research | 24 | 0 | 0.0% | 0.695 |
+| salary | 7 | 0 | 0.0% | 0.702 |
+| support | 1 | 0 | 0.0% | 0.693 |
+| teaching | 2 | 0 | 0.0% | 0.702 |
+| training | 2 | 0 | 0.0% | 0.703 |
+| visa | 11 | 0 | 0.0% | 0.699 |
 
-### Score Breakdown by Persona
+## Per-Difficulty Results
 
-```
-                    Accuracy  Completeness  Citations  Context
-Professor           0.920     0.880         0.900      0.900
-Parent              0.900     0.880         0.880      0.900
-Student (Intl)      0.880     0.820         0.840      0.900
-Student (Undergrad) 0.880     0.820         0.860      0.880
-Student (Grad)      0.860     0.800         0.820      0.880
-Staff Admin         0.840     0.760         0.840      0.840
-```
+| Difficulty | Total | Passed | Pass Rate | Avg Score |
+|------------|-------|--------|-----------|-----------|
+| easy | 60 | 0 | 0.0% | 0.697 |
+| hard | 30 | 0 | 0.0% | 0.697 |
+| medium | 60 | 0 | 0.0% | 0.698 |
 
----
+## Sample Failures (First 10)
 
-## Critical Issues Identified
+### Failure 1: student-undergraduate - procedural
+- **Query:** 휴학 어떻게 해?
+- **Difficulty:** easy
+- **Score:** 0.705
+- **Reasons:** Answer Relevancy below threshold: 0.500 < 0.7; Contextual Precision below threshold: 0.500 < 0.65
 
-### Issue #1: Staff Coverage Gap
-- **ID**: ISSUE-001
-- **Type**: Staff Coverage
-- **Severity**: Medium
-- **Frequency**: 2 occurrences
-- **Description**: Staff-related queries showed lower completeness (0.760) compared to other personas
-- **Impact**: Staff admin persona has lowest pass rate (60%)
-- **Recommendation**: Enhance indexing of staff/administrative regulations
+### Failure 2: student-undergraduate - academic
+- **Query:** 성적 평균 어떻게 계산돼?
+- **Difficulty:** easy
+- **Score:** 0.701
+- **Reasons:** Answer Relevancy below threshold: 0.500 < 0.7; Contextual Precision below threshold: 0.500 < 0.65
 
-### Issue #2: Citation Quality
-- **ID**: ISSUE-002
-- **Type**: Citation Quality
-- **Severity**: Low
-- **Frequency**: 5 occurrences
-- **Description**: Some responses lack specific article citations (제X조)
-- **Impact**: Graduate student persona showed lower citation scores (0.820)
-- **Recommendation**: Improve citation extraction in response generation
+### Failure 3: student-undergraduate - academic
+- **Query:** 졸업 요건 뭐야?
+- **Difficulty:** easy
+- **Score:** 0.705
+- **Reasons:** Answer Relevancy below threshold: 0.500 < 0.7; Contextual Precision below threshold: 0.500 < 0.65
 
----
+### Failure 4: student-undergraduate - financial
+- **Query:** 장학금 종류 알려줘
+- **Difficulty:** easy
+- **Score:** 0.700
+- **Reasons:** Answer Relevancy below threshold: 0.500 < 0.7; Contextual Precision below threshold: 0.500 < 0.65
 
-## Baseline Comparison
+### Failure 5: student-undergraduate - campus_life
+- **Query:** 기숙사 신청 방법 알려줘
+- **Difficulty:** easy
+- **Score:** 0.673
+- **Reasons:** Answer Relevancy below threshold: 0.500 < 0.7; Contextual Precision below threshold: 0.500 < 0.65
 
-| Metric | Current | Previous | Change |
-|--------|---------|----------|--------|
-| Pass Rate | 83.3% | 43.3% | +40.0% |
-| Avg Score | 0.863 | 0.795 | +0.068 |
+### Failure 6: student-undergraduate - procedural
+- **Query:** 복학하려면 뭐 해야돼?
+- **Difficulty:** easy
+- **Score:** 0.696
+- **Reasons:** Answer Relevancy below threshold: 0.500 < 0.7; Contextual Precision below threshold: 0.500 < 0.65
 
-**Improvement**: Significant improvement from previous evaluation (rag_quality_local_20260213)
+### Failure 7: student-undergraduate - academic
+- **Query:** 수강 신청 언제부터야?
+- **Difficulty:** easy
+- **Score:** 0.704
+- **Reasons:** Answer Relevancy below threshold: 0.500 < 0.7; Contextual Precision below threshold: 0.500 < 0.65
 
----
+### Failure 8: student-undergraduate - campus_life
+- **Query:** 도서관 이용 시간이 어떻게 돼?
+- **Difficulty:** easy
+- **Score:** 0.698
+- **Reasons:** Answer Relevancy below threshold: 0.500 < 0.7; Contextual Precision below threshold: 0.500 < 0.65
 
-## Recommendations
+### Failure 9: student-undergraduate - admin
+- **Query:** 학생증 재발급 어떻게 해?
+- **Difficulty:** easy
+- **Score:** 0.693
+- **Reasons:** Answer Relevancy below threshold: 0.500 < 0.7; Contextual Precision below threshold: 0.500 < 0.65
 
-### High Priority
-1. **Staff Regulation Enhancement**: Add more staff-specific regulations to the knowledge base
-2. **Citation Extraction**: Improve citation extraction logic to include more specific article references
-
-### Medium Priority
-3. **Edge Case Testing**: Add more edge case scenarios (typos, vague queries)
-4. **Multi-turn Testing**: Expand to multi-turn conversation testing
-
-### Low Priority
-5. **Continuous Monitoring**: Implement continuous monitoring dashboard
-6. **Performance Optimization**: Reduce response latency
-
----
-
-## Next Steps
-
-1. Run SPEC-RAG-QUALITY-005 for staff coverage improvement
-2. Implement citation extraction enhancement
-3. Add 50+ edge case test scenarios
-4. Deploy continuous evaluation pipeline
-
----
-
-## Appendix: Evaluation Configuration
-
-- **Framework**: LLM-as-Judge (RAGAS-inspired)
-- **Personas Tested**: 6 (student-undergraduate, student-graduate, professor, staff-admin, parent, student-international)
-- **Queries per Persona**: 5
-- **Scenario Categories**: simple, complex, edge_cases
-- **Judge Model**: GPT-4o (via LMStudio fallback)
-
----
-
-**Report Generated by**: RAG Quality Local Evaluation System
-**SPEC Reference**: SPEC-RAG-QUALITY-004
+### Failure 10: student-undergraduate - admin
+- **Query:** 성적증명서 발급받고 싶어
+- **Difficulty:** easy
+- **Score:** 0.693
+- **Reasons:** Answer Relevancy below threshold: 0.500 < 0.7; Contextual Precision below threshold: 0.500 < 0.65

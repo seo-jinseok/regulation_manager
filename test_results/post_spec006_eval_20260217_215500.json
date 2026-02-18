@@ -1,0 +1,603 @@
+{
+  "evaluation_id": "eval_post_spec006_20260217_215500",
+  "evaluated_at": "2026-02-17T21:55:00.620695",
+  "total_queries": 20,
+  "baseline": {
+    "citation": 0.5,
+    "context_relevance": 0.5,
+    "answer_relevancy": 0.5,
+    "overall": 0.697
+  },
+  "current": {
+    "citation": 0.51,
+    "context_relevance": 0.0,
+    "answer_relevancy": 0.582,
+    "overall": 0.364
+  },
+  "improvement": {
+    "citation": "+0.010",
+    "context_relevance": "-0.500",
+    "answer_relevancy": "+0.082",
+    "overall": "-0.333"
+  },
+  "targets_met": {
+    "citation": false,
+    "context_relevance": false,
+    "answer_relevancy": false
+  },
+  "all_targets_met": false,
+  "detailed_results": [
+    {
+      "query_id": "cit-001",
+      "query": "휴학 신청은 학칙 제15조에 따라 어떻게 하나요?",
+      "category": "citation",
+      "answer_preview": "### 핵심 답변  \n동의대학교 휴학 신청은 **관련 규정에 따르면** 및 **관련 규정에 따르면**에 따라 교내시스템을 통해 진행하며, 학사지원팀에서 접수 및 처리합니다.  \n\n### 상세 내용  \n1. **신청 방법**:  \n   - 휴학 신청서는 교내시스템에서 작성 후 제출합니다(관련 규정에 따르면).  \n   - 창업휴학의 경우, 추가로 **창업교육",
+      "citation": {
+        "has_citation": true,
+        "has_expected_article": false,
+        "has_regulation_name": true,
+        "found_articles": [
+          "제41조",
+          "제10조"
+        ],
+        "expected_found": [],
+        "citation_score": 0.6000000000000001
+      },
+      "context_relevance": {
+        "relevance_score": 0.0,
+        "context_count": 5,
+        "relevant_count": 0,
+        "avg_context_score": 0.0
+      },
+      "answer_relevancy": {
+        "relevancy_score": 0.9571428571428571,
+        "keyword_overlap": 3,
+        "has_procedure": true,
+        "has_specific_info": true,
+        "answer_length": 1129
+      },
+      "execution_time_ms": 216147
+    },
+    {
+      "query_id": "cit-002",
+      "query": "학칙 제23조에 따른 성적 이의신청 절차는?",
+      "category": "citation",
+      "answer_preview": "### 1. 핵심 답변  \n동의대학교 담당 부서 학칙 제23조에 따른 성적 이의신청 절차는 담당 부서 같습니다(관련 규정에 따르면).  \n\n### 2. 상세 내용  \n1. **성적 공고 확인**: 성적이 공고된 후 이의신청 기간 내에 신청해야 합니다(관련 규정에 따르면).  \n   - 성적 공고 및 이의신청 종료 후 담당교수가 최종확정 처리를 진행합니다(관",
+      "citation": {
+        "has_citation": true,
+        "has_expected_article": true,
+        "has_regulation_name": true,
+        "found_articles": [
+          "제23조",
+          "제7조"
+        ],
+        "expected_found": [
+          "제23조"
+        ],
+        "citation_score": 0.8999999999999999
+      },
+      "context_relevance": {
+        "relevance_score": 0.0,
+        "context_count": 5,
+        "relevant_count": 0,
+        "avg_context_score": 0.0
+      },
+      "answer_relevancy": {
+        "relevancy_score": 1.0,
+        "keyword_overlap": 5,
+        "has_procedure": true,
+        "has_specific_info": true,
+        "answer_length": 1073
+      },
+      "execution_time_ms": 234643
+    },
+    {
+      "query_id": "cit-003",
+      "query": "규정 제10조에 따른 장학금 지급 기준이 어떻게 되나요?",
+      "category": "citation",
+      "answer_preview": "동의대학교 규정 제10조에 따른 장학금 지급 기준은 제공된 검색 담당 부서에서 확인되지 않습니다. 다만, 관련 정보를 얻기 위해 담당 부서 같은 방법을 안내해 드립니다:\n\n1. **담당 부서 문의**  \n   - 장학금 지급 기준 및 절차에 대한 상세한 내용은 담당 부서에서 담당 부서 수 있습니다.  \n   - 담당 부서: 담당 부서 (학생회관 내 위치) ",
+      "citation": {
+        "has_citation": true,
+        "has_expected_article": true,
+        "has_regulation_name": true,
+        "found_articles": [
+          "제10조",
+          "제334조"
+        ],
+        "expected_found": [
+          "제10조"
+        ],
+        "citation_score": 0.8999999999999999
+      },
+      "context_relevance": {
+        "relevance_score": 0.0,
+        "context_count": 5,
+        "relevant_count": 0,
+        "avg_context_score": 0.0
+      },
+      "answer_relevancy": {
+        "relevancy_score": 1.0,
+        "keyword_overlap": 5,
+        "has_procedure": true,
+        "has_specific_info": true,
+        "answer_length": 935
+      },
+      "execution_time_ms": 111562
+    },
+    {
+      "query_id": "cit-004",
+      "query": "학사규정 제5조의 등록 관련 조항을 알려주세요",
+      "category": "citation",
+      "answer_preview": "관련 규정을 찾을 수 없습니다. 다른 검색어로 시도해주세요.",
+      "citation": {
+        "has_citation": false,
+        "has_expected_article": false,
+        "has_regulation_name": true,
+        "found_articles": [],
+        "expected_found": [],
+        "citation_score": 0.2
+      },
+      "context_relevance": {
+        "relevance_score": 0.0,
+        "context_count": 0,
+        "reason": "No contexts"
+      },
+      "answer_relevancy": {
+        "relevancy_score": 0.55,
+        "keyword_overlap": 1,
+        "has_procedure": false,
+        "has_specific_info": true,
+        "answer_length": 33
+      },
+      "execution_time_ms": 7611
+    },
+    {
+      "query_id": "cit-005",
+      "query": "교원인사규정 제12조 휴직 규정이 궁금합니다",
+      "category": "citation",
+      "answer_preview": "관련 규정에 따르면(수당 및 여비)는 담당 부서 관련된 수당 및 여비 규정을 다루고 있습니다. 다만, 휴직에 대한 구체적인 내용은 해당 조항에서 확인되지 않습니다.  \n\n휴직 관련 규정을 확인하시려면 다음 사항을 참고하시기 바랍니다:  \n1. **담당 부서**: 교원인사규정은 주로 **담당 부서 담당 부서**에서 관리합니다.  \n2. **추가 확인 방법**",
+      "citation": {
+        "has_citation": true,
+        "has_expected_article": true,
+        "has_regulation_name": true,
+        "found_articles": [
+          "제12조"
+        ],
+        "expected_found": [
+          "제12조"
+        ],
+        "citation_score": 0.8999999999999999
+      },
+      "context_relevance": {
+        "relevance_score": 0.0,
+        "context_count": 1,
+        "relevant_count": 0,
+        "avg_context_score": 0.0
+      },
+      "answer_relevancy": {
+        "relevancy_score": 1.0,
+        "keyword_overlap": 3,
+        "has_procedure": true,
+        "has_specific_info": true,
+        "answer_length": 514
+      },
+      "execution_time_ms": 34462
+    },
+    {
+      "query_id": "ctx-001",
+      "query": "휴학 종류에는 일반휴학, 질병휴학, 군입대휴학이 있다고 들었는데 각각 어떻게 다른가요?",
+      "category": "context_relevance",
+      "answer_preview": "동의대학교의 휴학 종류와 각각의 차이점에 대해 안내해 드리겠습니다.  \n\n### 1. **일반휴학**  \n- **적용 시기**: 매 학기 개시 전까지 신청 가능(관련 규정에 따르면).  \n- **기간 제한**: 통산 2년(4학기)을 담당 부서할 수 없음.  \n- **성적 처리**: 3분의 2가 경과한 일반 휴학자는 당해 학기 성적이 무효 처리됨(관련 규정에",
+      "citation": {
+        "has_citation": true,
+        "has_expected_article": true,
+        "has_regulation_name": true,
+        "found_articles": [
+          "제8조"
+        ],
+        "expected_found": [],
+        "citation_score": 0.8999999999999999
+      },
+      "context_relevance": {
+        "relevance_score": 0.0,
+        "context_count": 5,
+        "relevant_count": 0,
+        "avg_context_score": 0.0
+      },
+      "answer_relevancy": {
+        "relevancy_score": 0.76,
+        "keyword_overlap": 1,
+        "has_procedure": true,
+        "has_specific_info": true,
+        "answer_length": 1078
+      },
+      "execution_time_ms": 456680
+    },
+    {
+      "query_id": "ctx-002",
+      "query": "성적 평점 평균 2.0 미만인 경우 학사 경고를 받나요?",
+      "category": "context_relevance",
+      "answer_preview": "답변 생성 실패: All LLM providers failed after 4 attempts",
+      "citation": {
+        "has_citation": false,
+        "has_expected_article": true,
+        "has_regulation_name": false,
+        "found_articles": [],
+        "expected_found": [],
+        "citation_score": 0.3
+      },
+      "context_relevance": {
+        "relevance_score": 0.0,
+        "context_count": 0,
+        "reason": "No contexts"
+      },
+      "answer_relevancy": {
+        "relevancy_score": 0.3,
+        "keyword_overlap": 0,
+        "has_procedure": false,
+        "has_specific_info": false,
+        "answer_length": 51
+      },
+      "execution_time_ms": 71707
+    },
+    {
+      "query_id": "ctx-003",
+      "query": "교환학생 파견을 위한 어학 성적 기준은 무엇인가요?",
+      "category": "context_relevance",
+      "answer_preview": "답변 생성 실패: All LLM providers failed after 4 attempts",
+      "citation": {
+        "has_citation": false,
+        "has_expected_article": true,
+        "has_regulation_name": false,
+        "found_articles": [],
+        "expected_found": [],
+        "citation_score": 0.3
+      },
+      "context_relevance": {
+        "relevance_score": 0.0,
+        "context_count": 0,
+        "reason": "No contexts"
+      },
+      "answer_relevancy": {
+        "relevancy_score": 0.3,
+        "keyword_overlap": 0,
+        "has_procedure": false,
+        "has_specific_info": false,
+        "answer_length": 51
+      },
+      "execution_time_ms": 102966
+    },
+    {
+      "query_id": "ctx-004",
+      "query": "등록금 분납 제도가 있나요? 있다면 어떤 조건인가요?",
+      "category": "context_relevance",
+      "answer_preview": "동의대학교에는 등록금 분납 제도가 있습니다. 다만, 제공된 규정 내용에서는 등록금 분납에 대한 구체적인 조건이 명시되어 있지 않습니다.  \n\n### 등록금 분납 관련 안내:\n1. **담당 부서 문의**: 정확한 분납 조건 및 절차는 담당 부서에 문의하시기 바랍니다.  \n2. **확인 방법**: 학교 홈페이지 또는 학생정보시스템에서 관련 규정을 확인할 수 있",
+      "citation": {
+        "has_citation": false,
+        "has_expected_article": true,
+        "has_regulation_name": true,
+        "found_articles": [],
+        "expected_found": [],
+        "citation_score": 0.5
+      },
+      "context_relevance": {
+        "relevance_score": 0.0,
+        "context_count": 5,
+        "relevant_count": 0,
+        "avg_context_score": 0.0
+      },
+      "answer_relevancy": {
+        "relevancy_score": 0.907142857142857,
+        "keyword_overlap": 3,
+        "has_procedure": true,
+        "has_specific_info": true,
+        "answer_length": 586
+      },
+      "execution_time_ms": 80159
+    },
+    {
+      "query_id": "ctx-005",
+      "query": "연구년제 신청 자격과 심사 기준이 어떻게 되나요?",
+      "category": "context_relevance",
+      "answer_preview": "### 연구년제 신청 담당 부서 심사 기준에 대한 안내  \n\n#### 1. **연구년제 신청 자격** (관련 규정에 따르면)  \n- **산학협력 연구 목적**: 산학관련 공동 연구를 위한 교수파견제 신청 시 우선 선정될 수 있습니다.  \n- **연구실적 요건**: 연구실적물(논문, 프로젝트 등)을 제출하지 않은 교원은 연구년 신청이 제한될 수 있습니다.  ",
+      "citation": {
+        "has_citation": true,
+        "has_expected_article": true,
+        "has_regulation_name": true,
+        "found_articles": [
+          "제1조",
+          "제8조"
+        ],
+        "expected_found": [],
+        "citation_score": 0.8999999999999999
+      },
+      "context_relevance": {
+        "relevance_score": 0.0,
+        "context_count": 5,
+        "relevant_count": 0,
+        "avg_context_score": 0.0
+      },
+      "answer_relevancy": {
+        "relevancy_score": 0.9571428571428571,
+        "keyword_overlap": 3,
+        "has_procedure": true,
+        "has_specific_info": true,
+        "answer_length": 1343
+      },
+      "execution_time_ms": 482267
+    },
+    {
+      "query_id": "rel-001",
+      "query": "학교를 잠깐 쉬고 싶은데 절차가 어떻게 되나요?",
+      "category": "answer_relevancy",
+      "answer_preview": "답변 생성 실패: All LLM providers failed after 4 attempts",
+      "citation": {
+        "has_citation": false,
+        "has_expected_article": true,
+        "has_regulation_name": false,
+        "found_articles": [],
+        "expected_found": [],
+        "citation_score": 0.3
+      },
+      "context_relevance": {
+        "relevance_score": 0.0,
+        "context_count": 0,
+        "reason": "No contexts"
+      },
+      "answer_relevancy": {
+        "relevancy_score": 0.3,
+        "keyword_overlap": 0,
+        "has_procedure": false,
+        "has_specific_info": false,
+        "answer_length": 51
+      },
+      "execution_time_ms": 127252
+    },
+    {
+      "query_id": "rel-002",
+      "query": "장학금 받을 수 있을까요? 어떤 종류가 있나요?",
+      "category": "answer_relevancy",
+      "answer_preview": "답변 생성 실패: All LLM providers failed after 4 attempts",
+      "citation": {
+        "has_citation": false,
+        "has_expected_article": true,
+        "has_regulation_name": false,
+        "found_articles": [],
+        "expected_found": [],
+        "citation_score": 0.3
+      },
+      "context_relevance": {
+        "relevance_score": 0.0,
+        "context_count": 0,
+        "reason": "No contexts"
+      },
+      "answer_relevancy": {
+        "relevancy_score": 0.3,
+        "keyword_overlap": 0,
+        "has_procedure": false,
+        "has_specific_info": false,
+        "answer_length": 51
+      },
+      "execution_time_ms": 78167
+    },
+    {
+      "query_id": "rel-003",
+      "query": "졸업하려면 몇 학점 필요한가요?",
+      "category": "answer_relevancy",
+      "answer_preview": "답변 생성 실패: All LLM providers failed after 4 attempts",
+      "citation": {
+        "has_citation": false,
+        "has_expected_article": true,
+        "has_regulation_name": false,
+        "found_articles": [],
+        "expected_found": [],
+        "citation_score": 0.3
+      },
+      "context_relevance": {
+        "relevance_score": 0.0,
+        "context_count": 0,
+        "reason": "No contexts"
+      },
+      "answer_relevancy": {
+        "relevancy_score": 0.3,
+        "keyword_overlap": 0,
+        "has_procedure": false,
+        "has_specific_info": false,
+        "answer_length": 51
+      },
+      "execution_time_ms": 30280
+    },
+    {
+      "query_id": "rel-004",
+      "query": "성적이 마음에 안 드는데 다시 확인해줄 수 있나요?",
+      "category": "answer_relevancy",
+      "answer_preview": "이 질문은 규정 검색이 필요하지 않습니다. 구체적인 규정 관련 질문을 해주세요.\n\n\n💡 연관 질문:\n  [1] 성적 이의신청 기간은?\n  [2] F학점 재수강은?",
+      "citation": {
+        "has_citation": false,
+        "has_expected_article": true,
+        "has_regulation_name": true,
+        "found_articles": [],
+        "expected_found": [],
+        "citation_score": 0.5
+      },
+      "context_relevance": {
+        "relevance_score": 0.0,
+        "context_count": 0,
+        "reason": "No contexts"
+      },
+      "answer_relevancy": {
+        "relevancy_score": 0.5,
+        "keyword_overlap": 0,
+        "has_procedure": false,
+        "has_specific_info": true,
+        "answer_length": 90
+      },
+      "execution_time_ms": 1833
+    },
+    {
+      "query_id": "rel-005",
+      "query": "외국인인데 수강 신청 어떻게 하나요?",
+      "category": "answer_relevancy",
+      "answer_preview": "답변 생성 실패: All LLM providers failed after 4 attempts",
+      "citation": {
+        "has_citation": false,
+        "has_expected_article": true,
+        "has_regulation_name": false,
+        "found_articles": [],
+        "expected_found": [],
+        "citation_score": 0.3
+      },
+      "context_relevance": {
+        "relevance_score": 0.0,
+        "context_count": 0,
+        "reason": "No contexts"
+      },
+      "answer_relevancy": {
+        "relevancy_score": 0.3,
+        "keyword_overlap": 0,
+        "has_procedure": false,
+        "has_specific_info": false,
+        "answer_length": 51
+      },
+      "execution_time_ms": 82870
+    },
+    {
+      "query_id": "per-fr-001",
+      "query": "신입생인데 기숙사 신청 어떻게 하나요?",
+      "category": "persona_freshman",
+      "answer_preview": "답변 생성 실패: All LLM providers failed after 4 attempts",
+      "citation": {
+        "has_citation": false,
+        "has_expected_article": true,
+        "has_regulation_name": false,
+        "found_articles": [],
+        "expected_found": [],
+        "citation_score": 0.3
+      },
+      "context_relevance": {
+        "relevance_score": 0.0,
+        "context_count": 0,
+        "reason": "No contexts"
+      },
+      "answer_relevancy": {
+        "relevancy_score": 0.3,
+        "keyword_overlap": 0,
+        "has_procedure": false,
+        "has_specific_info": false,
+        "answer_length": 51
+      },
+      "execution_time_ms": 141621
+    },
+    {
+      "query_id": "per-fr-002",
+      "query": "수강신청 처음 해보는데 팁 있나요?",
+      "category": "persona_freshman",
+      "answer_preview": "답변 생성 실패: All LLM providers failed after 4 attempts",
+      "citation": {
+        "has_citation": false,
+        "has_expected_article": true,
+        "has_regulation_name": false,
+        "found_articles": [],
+        "expected_found": [],
+        "citation_score": 0.3
+      },
+      "context_relevance": {
+        "relevance_score": 0.0,
+        "context_count": 0,
+        "reason": "No contexts"
+      },
+      "answer_relevancy": {
+        "relevancy_score": 0.3,
+        "keyword_overlap": 0,
+        "has_procedure": false,
+        "has_specific_info": false,
+        "answer_length": 51
+      },
+      "execution_time_ms": 77001
+    },
+    {
+      "query_id": "per-gr-001",
+      "query": "석사 과정 논문 심사 기준이 어떻게 됩니까?",
+      "category": "persona_graduate",
+      "answer_preview": "답변 생성 실패: All LLM providers failed after 4 attempts",
+      "citation": {
+        "has_citation": false,
+        "has_expected_article": true,
+        "has_regulation_name": false,
+        "found_articles": [],
+        "expected_found": [],
+        "citation_score": 0.3
+      },
+      "context_relevance": {
+        "relevance_score": 0.0,
+        "context_count": 0,
+        "reason": "No contexts"
+      },
+      "answer_relevancy": {
+        "relevancy_score": 0.3,
+        "keyword_overlap": 0,
+        "has_procedure": false,
+        "has_specific_info": false,
+        "answer_length": 51
+      },
+      "execution_time_ms": 129707
+    },
+    {
+      "query_id": "per-pr-001",
+      "query": "교수님, 연구년 신청 기간이 언제인가요?",
+      "category": "persona_professor",
+      "answer_preview": "답변 생성 실패: All LLM providers failed after 4 attempts",
+      "citation": {
+        "has_citation": false,
+        "has_expected_article": true,
+        "has_regulation_name": false,
+        "found_articles": [],
+        "expected_found": [],
+        "citation_score": 0.3
+      },
+      "context_relevance": {
+        "relevance_score": 0.0,
+        "context_count": 0,
+        "reason": "No contexts"
+      },
+      "answer_relevancy": {
+        "relevancy_score": 0.3,
+        "keyword_overlap": 0,
+        "has_procedure": false,
+        "has_specific_info": false,
+        "answer_length": 51
+      },
+      "execution_time_ms": 135545
+    },
+    {
+      "query_id": "per-st-001",
+      "query": "직원 연차 휴가 사용 규정을 알고 싶습니다",
+      "category": "persona_staff",
+      "answer_preview": "동의대학교 직원 연차 휴가 사용 규정에 대해 안내해 드리겠습니다.  \n\n### 1. **특별휴가 관련 규정**  \n- 명예퇴직 또는 조기퇴직 예정 직원은 퇴직 예정일 전 1개월의 **퇴직준비 휴가**를 사용할 수 있습니다(관련 규정에 따르면).  \n- 정년 보장 직원은 **안식휴가**를 사용할 수 있으며, 휴가 기간 및 조건은 별도의 지침에 따릅니다. 단,",
+      "citation": {
+        "has_citation": true,
+        "has_expected_article": true,
+        "has_regulation_name": true,
+        "found_articles": [
+          "제28조"
+        ],
+        "expected_found": [],
+        "citation_score": 0.8999999999999999
+      },
+      "context_relevance": {
+        "relevance_score": 0.0,
+        "context_count": 5,
+        "relevant_count": 0,
+        "avg_context_score": 0.0
+      },
+      "answer_relevancy": {
+        "relevancy_score": 1.0,
+        "keyword_overlap": 5,
+        "has_procedure": true,
+        "has_specific_info": true,
+        "answer_length": 1021
+      },
+      "execution_time_ms": 178359
+    }
+  ]
+}
