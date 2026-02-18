@@ -3499,6 +3499,7 @@ class SearchUseCase:
         1. Validates citation format (규정명 제X조)
         2. Checks citation density
         3. Enriches missing regulation names from context sources
+        4. Forces citation generation if LLM response has no citations
 
         Args:
             answer: LLM-generated answer text.
@@ -3517,11 +3518,20 @@ class SearchUseCase:
 
             # Extract regulation names from source chunks
             context_sources = []
+            # Extract (regulation_name, article_number) for forced citation
+            citations_data: List[tuple] = []
             for result in sources:
-                if hasattr(result, "chunk") and result.chunk.parent_path:
-                    reg_name = result.chunk.parent_path[0]
-                    if reg_name and reg_name not in context_sources:
-                        context_sources.append(reg_name)
+                if hasattr(result, "chunk"):
+                    reg_name = None
+                    if result.chunk.parent_path:
+                        reg_name = result.chunk.parent_path[0]
+                        if reg_name and reg_name not in context_sources:
+                            context_sources.append(reg_name)
+                    # Collect article number for forced citation generation
+                    if reg_name and result.chunk.article_number:
+                        citations_data.append(
+                            (reg_name, result.chunk.article_number)
+                        )
 
             # Validate citation format
             validation_result = validator.validate_citation(answer, context_sources)
@@ -3538,14 +3548,33 @@ class SearchUseCase:
                 for issue in validation_result.issues:
                     logger.debug(f"Citation issue: {issue}")
 
+            # SPEC-RAG-QUALITY-006: Force citation generation if no citations
+            if validation_result.citation_count == 0 and citations_data:
+                # Deduplicate citations
+                unique_citations = list(set(citations_data))
+                # Format citations: "「규정명」 제X조"
+                formatted = [
+                    f"「{reg}」 {art}"
+                    for reg, art in unique_citations[:5]  # Max 5 citations
+                ]
+                citation_section = "\n\n**출처**: " + ", ".join(formatted)
+                logger.info(
+                    f"Forced citation generation: {len(formatted)} citations added"
+                )
+                return answer + citation_section
+
             # If citations are missing or invalid, try to enrich
-            if not validation_result.is_valid or validation_result.missing_regulation_names:
+            has_issues = (
+                not validation_result.is_valid
+                or validation_result.missing_regulation_names
+            )
+            if has_issues:
                 enrichment = validator.enrich_citation(answer, context_sources)
 
                 if enrichment.added_citations:
                     logger.info(
-                        f"Citation enrichment applied: {len(enrichment.added_citations)} "
-                        f"citations enriched"
+                        f"Citation enrichment: {len(enrichment.added_citations)} "
+                        "citations enriched"
                     )
                     return enrichment.enriched_answer
 
