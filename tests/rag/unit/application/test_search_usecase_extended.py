@@ -478,7 +478,8 @@ class TestSearchUseCaseAsk:
         answer = usecase.ask("교원 연구년 자격은?")
 
         assert isinstance(answer, Answer)
-        assert answer.text == "답변입니다."
+        # Answer text starts with LLM response (may have citations appended)
+        assert answer.text.startswith("답변입니다.")
         assert len(answer.sources) > 0
 
     def test_ask_uses_search_query_for_retrieval(self):

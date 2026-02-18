@@ -2499,8 +2499,14 @@ class SearchUseCase:
             answer_text, filtered_results
         )
 
+        # SPEC-RAG-QUALITY-006: Validate and enrich citations
+        # Ensure all citations have proper format (규정명 제X조)
+        validated_answer_text = self._validate_and_enrich_citations(
+            enhanced_answer_text, filtered_results
+        )
+
         return Answer(
-            text=enhanced_answer_text,
+            text=validated_answer_text,
             sources=filtered_results,
             confidence=confidence,
         )
@@ -3481,6 +3487,75 @@ class SearchUseCase:
             return answer
         except Exception as e:
             logger.warning(f"Citation verification failed: {e}")
+            return answer
+
+    def _validate_and_enrich_citations(
+        self, answer: str, sources: List[SearchResult]
+    ) -> str:
+        """
+        Validate citation format and enrich with regulation names (SPEC-RAG-QUALITY-006).
+
+        Post-processing step that:
+        1. Validates citation format (규정명 제X조)
+        2. Checks citation density
+        3. Enriches missing regulation names from context sources
+
+        Args:
+            answer: LLM-generated answer text.
+            sources: Search results used as context for the answer.
+
+        Returns:
+            Answer with validated and enriched citations.
+        """
+        if not answer:
+            return answer
+
+        try:
+            from ..infrastructure.citation_validator import CitationValidator
+
+            validator = CitationValidator(strict_mode=False)
+
+            # Extract regulation names from source chunks
+            context_sources = []
+            for result in sources:
+                if hasattr(result, "chunk") and result.chunk.parent_path:
+                    reg_name = result.chunk.parent_path[0]
+                    if reg_name and reg_name not in context_sources:
+                        context_sources.append(reg_name)
+
+            # Validate citation format
+            validation_result = validator.validate_citation(answer, context_sources)
+
+            logger.info(
+                f"Citation validation: "
+                f"count={validation_result.citation_count}, "
+                f"density={validation_result.citation_density:.3f}, "
+                f"valid={validation_result.is_valid}"
+            )
+
+            # Log issues if any
+            if validation_result.issues:
+                for issue in validation_result.issues:
+                    logger.debug(f"Citation issue: {issue}")
+
+            # If citations are missing or invalid, try to enrich
+            if not validation_result.is_valid or validation_result.missing_regulation_names:
+                enrichment = validator.enrich_citation(answer, context_sources)
+
+                if enrichment.added_citations:
+                    logger.info(
+                        f"Citation enrichment applied: {len(enrichment.added_citations)} "
+                        f"citations enriched"
+                    )
+                    return enrichment.enriched_answer
+
+            return answer
+
+        except ImportError:
+            logger.debug("CitationValidator not available, skipping validation")
+            return answer
+        except Exception as e:
+            logger.warning(f"Citation validation failed: {e}")
             return answer
 
     def _is_period_related_query(self, query: str) -> bool:
