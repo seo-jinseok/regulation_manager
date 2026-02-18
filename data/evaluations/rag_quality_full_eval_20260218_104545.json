@@ -1,0 +1,3908 @@
+{
+  "evaluation_id": "eval_20260218_104503",
+  "timestamp": "2026-02-18T10:45:03.769696",
+  "duration_seconds": 41,
+  "overall": {
+    "total_queries": 150,
+    "passed": 0,
+    "pass_rate": 0.0,
+    "avg_accuracy": 0.918,
+    "avg_completeness": 0.87,
+    "avg_citations": 0.5,
+    "avg_context_relevance": 0.5,
+    "avg_score": 0.697
+  },
+  "thresholds": {
+    "accuracy": 0.85,
+    "completeness": 0.75,
+    "citations": 0.7,
+    "context_relevance": 0.75
+  },
+  "persona_metrics": {
+    "student-undergraduate": {
+      "total": 25,
+      "passed": 0,
+      "pass_rate": 0.0,
+      "avg_score": 0.698
+    },
+    "student-graduate": {
+      "total": 25,
+      "passed": 0,
+      "pass_rate": 0.0,
+      "avg_score": 0.692
+    },
+    "professor": {
+      "total": 25,
+      "passed": 0,
+      "pass_rate": 0.0,
+      "avg_score": 0.7
+    },
+    "staff-admin": {
+      "total": 25,
+      "passed": 0,
+      "pass_rate": 0.0,
+      "avg_score": 0.7
+    },
+    "parent": {
+      "total": 25,
+      "passed": 0,
+      "pass_rate": 0.0,
+      "avg_score": 0.698
+    },
+    "student-international": {
+      "total": 25,
+      "passed": 0,
+      "pass_rate": 0.0,
+      "avg_score": 0.694
+    }
+  },
+  "category_summary": {
+    "procedural": {
+      "total": 7,
+      "passed": 0,
+      "pass_rate": 0.0,
+      "avg_score": 0.7
+    },
+    "academic": {
+      "total": 29,
+      "passed": 0,
+      "pass_rate": 0.0,
+      "avg_score": 0.698
+    },
+    "financial": {
+      "total": 27,
+      "passed": 0,
+      "pass_rate": 0.0,
+      "avg_score": 0.694
+    },
+    "campus_life": {
+      "total": 7,
+      "passed": 0,
+      "pass_rate": 0.0,
+      "avg_score": 0.691
+    },
+    "admin": {
+      "total": 15,
+      "passed": 0,
+      "pass_rate": 0.0,
+      "avg_score": 0.697
+    },
+    "research": {
+      "total": 24,
+      "passed": 0,
+      "pass_rate": 0.0,
+      "avg_score": 0.695
+    },
+    "salary": {
+      "total": 7,
+      "passed": 0,
+      "pass_rate": 0.0,
+      "avg_score": 0.702
+    },
+    "teaching": {
+      "total": 2,
+      "passed": 0,
+      "pass_rate": 0.0,
+      "avg_score": 0.702
+    },
+    "personnel": {
+      "total": 15,
+      "passed": 0,
+      "pass_rate": 0.0,
+      "avg_score": 0.701
+    },
+    "training": {
+      "total": 2,
+      "passed": 0,
+      "pass_rate": 0.0,
+      "avg_score": 0.703
+    },
+    "leave": {
+      "total": 3,
+      "passed": 0,
+      "pass_rate": 0.0,
+      "avg_score": 0.703
+    },
+    "support": {
+      "total": 1,
+      "passed": 0,
+      "pass_rate": 0.0,
+      "avg_score": 0.693
+    },
+    "visa": {
+      "total": 11,
+      "passed": 0,
+      "pass_rate": 0.0,
+      "avg_score": 0.699
+    }
+  },
+  "difficulty_summary": {
+    "easy": {
+      "total": 60,
+      "passed": 0,
+      "pass_rate": 0.0,
+      "avg_score": 0.697
+    },
+    "medium": {
+      "total": 60,
+      "passed": 0,
+      "pass_rate": 0.0,
+      "avg_score": 0.698
+    },
+    "hard": {
+      "total": 30,
+      "passed": 0,
+      "pass_rate": 0.0,
+      "avg_score": 0.697
+    }
+  },
+  "results": [
+    {
+      "persona": "student-undergraduate",
+      "query": "휴학 어떻게 해?",
+      "category": "procedural",
+      "difficulty": "easy",
+      "answer": "규정에 따르면: 등록금에관한규정 > 제8조 준용 > 8. (휴학생: (휴학생의 등록금에 관한 경과조치) 이 규정의 시행전 휴학자의 등록금 유효시기는 제3조의 변경규정에 불구하고 종전의 규정을 적용한다. 다만, 등록금을 납부하고 시행일 이전 매학기 수업일수의 1/2이 경과되기 전에 일반 휴학을 한 자가 시행일 이후 복학을 하는 경우에 납입금액이 휴학 전에 납부한 금액보다 증액된 경우에 그 차액을 징수하지 아니한다.\n\n휴학규정 > 제7조 구비서류 및 절차 > 5. 창업휴학자: 창업휴학자는 제1호 휴학원서 및 관련 증빙서류를 학기 개시일 1개월 이전에 ...",
+      "contexts": [
+        "등록금에관한규정 > 제8조 준용 > 8. (휴학생: (휴학생의 등록금에 관한 경과조치) 이 규정의 시행전 휴학자의 등록금 유효시기는 제3조의 변경규정에 불구하고 종전의 규정을 적용한다. 다만, 등록금을 납부하고 시행일 이전 매학기 수업일수의 1/2이 경과되기 전에 일반 휴학을 한 자가 시행일 이후 복학을 하는 경우에 납입금액이 휴학 전에 납부한 금액보다 증액된 경우에 그 차액을 징수하지 아니한다.",
+        "휴학규정 > 제7조 구비서류 및 절차 > 5. 창업휴학자: 창업휴학자는 제1호 휴학원서 및 관련 증빙서류를 학기 개시일 1개월 이전에 신청하여야 하며 창업교육 학사제도 운영위원회의 사전 심의를 받아야 한다. 이에 관한 세부사항은 별도로 정한다. <신설 2014. 3. 1.>"
+      ],
+      "evaluation": {
+        "accuracy": 0.95,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.705,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.5950685181453664,
+      "timestamp": "2026-02-18T10:45:21.976971"
+    },
+    {
+      "persona": "student-undergraduate",
+      "query": "성적 평균 어떻게 계산돼?",
+      "category": "academic",
+      "difficulty": "easy",
+      "answer": "규정에 따르면: 학습‧연구‧실습 및 근무 경험 인정 기준 > 제7조 준용 > ④ 현장경험 학점: 현장경험 학점의 성적은 평가 및 인정기준을 충족할 경우 전공과목의 이수구분을 부여하고, 성적표에 PASS로 표기한다.\n\n국내대학간학점교류규정 > 제13조 이수학점의 인정: 교류대학에서 이수한 교과목(명)이 이미 본교에서 취득한 교과목(명)과 일치하는 경우 이중성적취득으로 간주하여 교류대학의 해당과목 학점을 인정하지 않는다....",
+      "contexts": [
+        "학습‧연구‧실습 및 근무 경험 인정 기준 > 제7조 준용 > ④ 현장경험 학점: 현장경험 학점의 성적은 평가 및 인정기준을 충족할 경우 전공과목의 이수구분을 부여하고, 성적표에 PASS로 표기한다.",
+        "국내대학간학점교류규정 > 제13조 이수학점의 인정: 교류대학에서 이수한 교과목(명)이 이미 본교에서 취득한 교과목(명)과 일치하는 경우 이중성적취득으로 간주하여 교류대학의 해당과목 학점을 인정하지 않는다."
+      ],
+      "evaluation": {
+        "accuracy": 0.933,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.701,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.475833420392617,
+      "timestamp": "2026-02-18T10:45:22.138801"
+    },
+    {
+      "persona": "student-undergraduate",
+      "query": "졸업 요건 뭐야?",
+      "category": "academic",
+      "difficulty": "easy",
+      "answer": "규정에 따르면: 학점은행제운영에관한규정 > 제19조 학위수여 요건 > 1: 1. 총 취득학점이 140학점 이상일 것\n2. 총 취득학점 중 교양과목의 학점이 30학점 이상일 것\n3. 총 취득학점 중 전공과목의 학점이 60학점 이상일 것\n4. 총 취득학점 중 본 대학교에서 취득한 학점이 84학점 이상일 것\n단, 전공 18학점 이상이 포함되어야 한다. <개정 2011. 7. 1>\n5. 표준교육과정에 편성된 해당 전공필수 과목의 학점을 모두 취득할 것\n단, 음악학전공만 해당한다.\n6. 졸업논문 또는 그와 동등한 실적 심사에 통과한 자\n\n교육과정편성및이수규...",
+      "contexts": [
+        "학점은행제운영에관한규정 > 제19조 학위수여 요건 > 1: 1. 총 취득학점이 140학점 이상일 것\n2. 총 취득학점 중 교양과목의 학점이 30학점 이상일 것\n3. 총 취득학점 중 전공과목의 학점이 60학점 이상일 것\n4. 총 취득학점 중 본 대학교에서 취득한 학점이 84학점 이상일 것\n단, 전공 18학점 이상이 포함되어야 한다. <개정 2011. 7. 1>\n5. 표준교육과정에 편성된 해당 전공필수 과목의 학점을 모두 취득할 것\n단, 음악학전공만 해당한다.\n6. 졸업논문 또는 그와 동등한 실적 심사에 통과한 자",
+        "교육과정편성및이수규정 > 제9조 졸업학점 > 48. (경과조치) 공학교육인증제 폐지로 인한 전자공: (경과조치) 공학교육인증제 폐지로 인한 전자공학 및 응용소프트웨어공학의 총 졸업 요구학점 및 영역별 요구학점은 2021학년도 후기 졸업대상자(정규학기 이내 기준)까지는 종전 기준을 적용하고, 2022학년도 전기 이후 졸업대상자(정규학기 이내 기준)부터는 [별표 1]의 사항을 적용한다."
+      ],
+      "evaluation": {
+        "accuracy": 0.949,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.705,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.7112066240797289,
+      "timestamp": "2026-02-18T10:45:22.246758"
+    },
+    {
+      "persona": "student-undergraduate",
+      "query": "장학금 종류 알려줘",
+      "category": "financial",
+      "difficulty": "easy",
+      "answer": "규정에 따르면: 대학원장학금지급에관한세칙 > 제4조 장학생의 종류 및 자격 > 2. 학・군협정장학생 : 육군본부와: 학・군협정장학생 : 육군본부와의 학・군 제휴협정에 따라 입학한 학생에 대하여 등록금의 일부를 장학금으로 지급할 수 있다. <신설 2012. 2. 1., 개정 2023. 10. 1.>\n\n대학원장학금지급에관한세칙 > 제5조 자격규제 > 6. 기타 장학생으로서 부적격한 행위를 한자: 기타 장학생으로서 부적격한 행위를 한자...",
+      "contexts": [
+        "대학원장학금지급에관한세칙 > 제4조 장학생의 종류 및 자격 > 2. 학・군협정장학생 : 육군본부와: 학・군협정장학생 : 육군본부와의 학・군 제휴협정에 따라 입학한 학생에 대하여 등록금의 일부를 장학금으로 지급할 수 있다. <신설 2012. 2. 1., 개정 2023. 10. 1.>",
+        "대학원장학금지급에관한세칙 > 제5조 자격규제 > 6. 기타 장학생으로서 부적격한 행위를 한자: 기타 장학생으로서 부적격한 행위를 한자"
+      ],
+      "evaluation": {
+        "accuracy": 0.929,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.7,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.43431239876353256,
+      "timestamp": "2026-02-18T10:45:22.302638"
+    },
+    {
+      "persona": "student-undergraduate",
+      "query": "기숙사 신청 방법 알려줘",
+      "category": "campus_life",
+      "difficulty": "easy",
+      "answer": "규정에 따르면: 효민생활관규정: 후마니타스브랜드연구소규정【폐지】\n\n구매업무규정 > 제4조 담당부서 > ② > 4. 생활관에서 구매하: 생활관에서 구매하는 물품 및 용역의 계약...",
+      "contexts": [
+        "효민생활관규정: 후마니타스브랜드연구소규정【폐지】",
+        "구매업무규정 > 제4조 담당부서 > ② > 4. 생활관에서 구매하: 생활관에서 구매하는 물품 및 용역의 계약"
+      ],
+      "evaluation": {
+        "accuracy": 0.824,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.673,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.3239036551148117,
+      "timestamp": "2026-02-18T10:45:22.531365"
+    },
+    {
+      "persona": "student-undergraduate",
+      "query": "복학하려면 뭐 해야돼?",
+      "category": "procedural",
+      "difficulty": "easy",
+      "answer": "규정에 따르면: 휴학규정 > 제6조 통산기간 및 연장 > ⑦ 유급휴학 이후 복학하: 유급휴학 이후 복학하는 학기에는 휴학연장을 할 수 없다. <신설 2019. 2. 1.>\n\n복학규정 > 제2조 복학의 구분: 휴학규정 제3조제1항제2호를 제외한 사유로 휴학하였던 자의 복학 <개정 2019. 2. 1.>...",
+      "contexts": [
+        "휴학규정 > 제6조 통산기간 및 연장 > ⑦ 유급휴학 이후 복학하: 유급휴학 이후 복학하는 학기에는 휴학연장을 할 수 없다. <신설 2019. 2. 1.>",
+        "복학규정 > 제2조 복학의 구분: 휴학규정 제3조제1항제2호를 제외한 사유로 휴학하였던 자의 복학 <개정 2019. 2. 1.>"
+      ],
+      "evaluation": {
+        "accuracy": 0.912,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.696,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.5291671953227568,
+      "timestamp": "2026-02-18T10:45:23.121091"
+    },
+    {
+      "persona": "student-undergraduate",
+      "query": "수강 신청 언제부터야?",
+      "category": "academic",
+      "difficulty": "easy",
+      "answer": "규정에 따르면: 학습‧연구‧실습 및 근무 경험 인정 기준 > 제4조 이수대상 및 학점인정 > ② 전력반도체융합전공 마이크로디그리를 이수하고자 하: 전력반도체융합전공 마이크로디그리를 이수하고자 하는 학생은 매 학기 수강신청 및 수강정정 기간 내 신청하여야 한다. 신청 이전에 이수한 과목(이하 “선수과목”이라 한다)은 이수 학점으로 인정한다.\n\n대학원수업․이수학점․학점인정에관한세칙 > 제2조 수강신청: 포함, 노인전문간호사과정은 예외)을, 박사학위과정의 경우 매학기 12학점(논문지도학점 포함)을 초과할 수 없으며, 다만, 선수과목 또는 대학원장이 지정...",
+      "contexts": [
+        "학습‧연구‧실습 및 근무 경험 인정 기준 > 제4조 이수대상 및 학점인정 > ② 전력반도체융합전공 마이크로디그리를 이수하고자 하: 전력반도체융합전공 마이크로디그리를 이수하고자 하는 학생은 매 학기 수강신청 및 수강정정 기간 내 신청하여야 한다. 신청 이전에 이수한 과목(이하 “선수과목”이라 한다)은 이수 학점으로 인정한다.",
+        "대학원수업․이수학점․학점인정에관한세칙 > 제2조 수강신청: 포함, 노인전문간호사과정은 예외)을, 박사학위과정의 경우 매학기 12학점(논문지도학점 포함)을 초과할 수 없으며, 다만, 선수과목 또는 대학원장이 지정하는 교과목에 대해서는 별도로 한 학기에 6학점 이내로 신청할 수 있다. 단, 특수대학원의 수강신청 학점은 매학기 6학점(실기과목 학점은 제외)을 초과할 수 없으나, 최종학기(5학기)에 한하여 9학점까지 신청할 수 있다. 다만, 행정복지대학원, 산업문화대학원, 부동산대학원은 매학기 9학점까지, 교육대학원은 8학점까지 신청할 수 있다. <개정 2006. 3. 1, 2010. 3. 1, 2012. 5. 1, 2013. 3. 1, 2016. 5. 1, 2017. 10. 1, 2019. 10. 1, 2022. 7. 1, 2023. 1. 1>"
+      ],
+      "evaluation": {
+        "accuracy": 0.945,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.704,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.5472428729588145,
+      "timestamp": "2026-02-18T10:45:23.201656"
+    },
+    {
+      "persona": "student-undergraduate",
+      "query": "도서관 이용 시간이 어떻게 돼?",
+      "category": "campus_life",
+      "difficulty": "easy",
+      "answer": "규정에 따르면: 구매업무규정 > 제15조 기록물평가심의회 > ⑨ 심의회: 심의회의 위원장 및 위원은 기록물 평가와 관련하여 알게 된 사항이나 비밀을 사적인 이익을 위하여 이용하거나 누설하여서는 안 된다.\n\n편찬례 및 취급 요령 > 제1 회 > 3. 이 규정집: 이 규정집은 이용의 편의를 위하여 번호(예 :...",
+      "contexts": [
+        "구매업무규정 > 제15조 기록물평가심의회 > ⑨ 심의회: 심의회의 위원장 및 위원은 기록물 평가와 관련하여 알게 된 사항이나 비밀을 사적인 이익을 위하여 이용하거나 누설하여서는 안 된다.",
+        "편찬례 및 취급 요령 > 제1 회 > 3. 이 규정집: 이 규정집은 이용의 편의를 위하여 번호(예 :"
+      ],
+      "evaluation": {
+        "accuracy": 0.923,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.698,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.3872602206514592,
+      "timestamp": "2026-02-18T10:45:23.301145"
+    },
+    {
+      "persona": "student-undergraduate",
+      "query": "학생증 재발급 어떻게 해?",
+      "category": "admin",
+      "difficulty": "easy",
+      "answer": "규정에 따르면: 사무분장규정 > 제14조 학사지원팀 > 51. 모바일 학생증 및 국제학생증 발급 관리: 모바일 학생증 및 국제학생증 발급 관리\n\n제증명서발급규정 > 제6조 발급절차 > ② 전항: 전항의 단서조항에서 조사기록, 대조자는 증명서 해당란에 날인하여야 한다. <신설 2016. 7. 1>...",
+      "contexts": [
+        "사무분장규정 > 제14조 학사지원팀 > 51. 모바일 학생증 및 국제학생증 발급 관리: 모바일 학생증 및 국제학생증 발급 관리",
+        "제증명서발급규정 > 제6조 발급절차 > ② 전항: 전항의 단서조항에서 조사기록, 대조자는 증명서 해당란에 날인하여야 한다. <신설 2016. 7. 1>"
+      ],
+      "evaluation": {
+        "accuracy": 0.903,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.693,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.2877244321496074,
+      "timestamp": "2026-02-18T10:45:23.689150"
+    },
+    {
+      "persona": "student-undergraduate",
+      "query": "성적증명서 발급받고 싶어",
+      "category": "admin",
+      "difficulty": "easy",
+      "answer": "규정에 따르면: 제증명서발급규정 > 제3조 발급대상 > 4. 교직원증명서 <신설 2022 > 가. 재직증명서 : 현재 근무하고 있: 재직증명서 : 현재 근무하고 있는 자\n\n사무분장규정 > 제14조 학사지원팀 > 52. 제증명서, 팩스민원증명서, 인터넷 증명 등 발: 제증명서, 팩스민원증명서, 인터넷 증명 등 발급 관리...",
+      "contexts": [
+        "제증명서발급규정 > 제3조 발급대상 > 4. 교직원증명서 <신설 2022 > 가. 재직증명서 : 현재 근무하고 있: 재직증명서 : 현재 근무하고 있는 자",
+        "사무분장규정 > 제14조 학사지원팀 > 52. 제증명서, 팩스민원증명서, 인터넷 증명 등 발: 제증명서, 팩스민원증명서, 인터넷 증명 등 발급 관리"
+      ],
+      "evaluation": {
+        "accuracy": 0.9,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.693,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.4508128135860807,
+      "timestamp": "2026-02-18T10:45:23.850656"
+    },
+    {
+      "persona": "student-undergraduate",
+      "query": "F 학점 받으면 어떡하냐...",
+      "category": "academic",
+      "difficulty": "medium",
+      "answer": "규정에 따르면: 동의대학교학칙 > 제41조 학점인정범위: 제9장 등록 및 수강신청\n\n연장평가 판정 기준 > 제7조 학점인정 및 성적부여 > ⑦ 현장실습학기제 취득 학점: 현장실습학기제 취득 학점은 해당 이수영역으로 인정하되, 환산 총점 및 평점평균의 산출에는 포함하지 않는다....",
+      "contexts": [
+        "동의대학교학칙 > 제41조 학점인정범위: 제9장 등록 및 수강신청",
+        "연장평가 판정 기준 > 제7조 학점인정 및 성적부여 > ⑦ 현장실습학기제 취득 학점: 현장실습학기제 취득 학점은 해당 이수영역으로 인정하되, 환산 총점 및 평점평균의 산출에는 포함하지 않는다."
+      ],
+      "evaluation": {
+        "accuracy": 0.9,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.693,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.5602583306919973,
+      "timestamp": "2026-02-18T10:45:24.008454"
+    },
+    {
+      "persona": "student-undergraduate",
+      "query": "학기 중에 휴학할 수 있어?",
+      "category": "procedural",
+      "difficulty": "medium",
+      "answer": "규정에 따르면: 휴학규정 > 제6조 통산기간 및 연장 > ③ 부득이한 사유가 있: 부득이한 사유가 있는 경우에는 통산기간 내에서 개강일 전에 1회에 한하여 연장할 수 있으며 2개 학기를 초과할 수 없다. <개정 2011. 12. 1., 2016. 9. 1., 2019. 2. 1.>\n유급, 육아(임신, 출산 포함)로 인한 휴학은 통산기간에 포함하지 않는다. <개정 2011. 12. 1., 2016. 9. 1., 2019. 2. 1.>\n자는 복학예정학기 개시일 이전에 구비서류를 제출하여 허가를 받아야 한다. <신설 2011. 12. 1.>\n\n등록금에관...",
+      "contexts": [
+        "휴학규정 > 제6조 통산기간 및 연장 > ③ 부득이한 사유가 있: 부득이한 사유가 있는 경우에는 통산기간 내에서 개강일 전에 1회에 한하여 연장할 수 있으며 2개 학기를 초과할 수 없다. <개정 2011. 12. 1., 2016. 9. 1., 2019. 2. 1.>\n유급, 육아(임신, 출산 포함)로 인한 휴학은 통산기간에 포함하지 않는다. <개정 2011. 12. 1., 2016. 9. 1., 2019. 2. 1.>\n자는 복학예정학기 개시일 이전에 구비서류를 제출하여 허가를 받아야 한다. <신설 2011. 12. 1.>",
+        "등록금에관한규정 > 제5조 등록금의 반환: 단, 휴학을 한 자는 휴학일자를 기준으로 하며, 휴학자 중 등록금 이월 휴학을 연속적으로 한 경우, 다수의 휴학처리 중 학기개시일로부터 가장 많이 경과한 휴학처리일을 기준으로 한다. <개정 2017. 11. 1>\n반환사유 발생일반환 금액 학기 개시일부터 30일 까지 등록금 6분의 5 해당액 학기 개시일에서 30일이 지난 날부터 60일 까지 등록금 3분의 2 해당액 학기 개시일에서 60일이 지난 날부터 90일 까지 등록금 2분의 1 해당액 학기 개시일에서 90일이 지난 날 반환하지 아니함\n반환사유 발생일\n반환 금액\n학기 개시일부터 30일 까지\n등록금 6분의 5 해당액\n학기 개시일에서 30일이 지난 날부터 60일 까지\n등록금 3분의 2 해당액\n학기 개시일에서 60일이 지난 날부터 90일 까지\n등록금 2분의 1 해당액\n학기 개시일에서 90일이 지난 날\n반환하지 아니함"
+      ],
+      "evaluation": {
+        "accuracy": 0.945,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.704,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.3715275165339045,
+      "timestamp": "2026-02-18T10:45:24.136352"
+    },
+    {
+      "persona": "student-undergraduate",
+      "query": "전공 바꿀 수 있어?",
+      "category": "academic",
+      "difficulty": "medium",
+      "answer": "규정에 따르면: 강의시간편성및수업규정 > 제2조 강의시간 및 편성 > ③ 교양, 교직 등 필수 이수 과목: 교양, 교직 등 필수 이수 과목은 전공과목에 우선하여 강의시간을 편성하며, 학과(전공)별 전공 필수과목은 교양 과목 강의시간에 편성할 수 없다. <신설 2018. 1. 1, 개정 2024. 3. 1.>\n\n학점은행제운영에관한규정 > 제19조 학위수여 요건 > 1: 1. 총 취득학점이 140학점 이상일 것\n2. 총 취득학점 중 교양과목의 학점이 30학점 이상일 것\n3. 총 취득학점 중 전공과목의 학점이 60학점 이상일 것\n4. 총 취득학점 중 본...",
+      "contexts": [
+        "강의시간편성및수업규정 > 제2조 강의시간 및 편성 > ③ 교양, 교직 등 필수 이수 과목: 교양, 교직 등 필수 이수 과목은 전공과목에 우선하여 강의시간을 편성하며, 학과(전공)별 전공 필수과목은 교양 과목 강의시간에 편성할 수 없다. <신설 2018. 1. 1, 개정 2024. 3. 1.>",
+        "학점은행제운영에관한규정 > 제19조 학위수여 요건 > 1: 1. 총 취득학점이 140학점 이상일 것\n2. 총 취득학점 중 교양과목의 학점이 30학점 이상일 것\n3. 총 취득학점 중 전공과목의 학점이 60학점 이상일 것\n4. 총 취득학점 중 본 대학교에서 취득한 학점이 84학점 이상일 것\n단, 전공 18학점 이상이 포함되어야 한다. <개정 2011. 7. 1>\n5. 표준교육과정에 편성된 해당 전공필수 과목의 학점을 모두 취득할 것\n단, 음악학전공만 해당한다.\n6. 졸업논문 또는 그와 동등한 실적 심사에 통과한 자"
+      ],
+      "evaluation": {
+        "accuracy": 0.947,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.704,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.47654483981855017,
+      "timestamp": "2026-02-18T10:45:24.212972"
+    },
+    {
+      "persona": "student-undergraduate",
+      "query": "복수전공 하려면 뭐가 필요해?",
+      "category": "academic",
+      "difficulty": "medium",
+      "answer": "규정에 따르면: 교원양성과정운영규정 > 제10조 복수전공 > ④ > 1. 복수전공 학과(전공): 복수전공 학과(전공)의 전공과목 50학점 이상\n\n교육과정편성및이수규정 > 제9조 졸업학점 > 31. (경과조치) 이 변경 규정 시행 이전에 복수전: (경과조치) 이 변경 규정 시행 이전에 복수전공·연계전공·부전공 신청한 자는 이 변경 규정에 의하여 신청한 것으로 본다....",
+      "contexts": [
+        "교원양성과정운영규정 > 제10조 복수전공 > ④ > 1. 복수전공 학과(전공): 복수전공 학과(전공)의 전공과목 50학점 이상",
+        "교육과정편성및이수규정 > 제9조 졸업학점 > 31. (경과조치) 이 변경 규정 시행 이전에 복수전: (경과조치) 이 변경 규정 시행 이전에 복수전공·연계전공·부전공 신청한 자는 이 변경 규정에 의하여 신청한 것으로 본다."
+      ],
+      "evaluation": {
+        "accuracy": 0.933,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.701,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.5427541497696208,
+      "timestamp": "2026-02-18T10:45:24.319568"
+    },
+    {
+      "persona": "student-undergraduate",
+      "query": "부전공 신청은 언제 해?",
+      "category": "academic",
+      "difficulty": "medium",
+      "answer": "규정에 따르면: 교육과정편성및이수규정 > 제9조 졸업학점 > 31. (경과조치) 이 변경 규정 시행 이전에 복수전: (경과조치) 이 변경 규정 시행 이전에 복수전공·연계전공·부전공 신청한 자는 이 변경 규정에 의하여 신청한 것으로 본다.\n\n사무분장규정 > 제14조 학사지원팀 > 48. 제2전공(복수・연계・융합・부전공) 및 마이크로: 제2전공(복수・연계・융합・부전공) 및 마이크로디그리 과정 신청 접수 및 관리...",
+      "contexts": [
+        "교육과정편성및이수규정 > 제9조 졸업학점 > 31. (경과조치) 이 변경 규정 시행 이전에 복수전: (경과조치) 이 변경 규정 시행 이전에 복수전공·연계전공·부전공 신청한 자는 이 변경 규정에 의하여 신청한 것으로 본다.",
+        "사무분장규정 > 제14조 학사지원팀 > 48. 제2전공(복수・연계・융합・부전공) 및 마이크로: 제2전공(복수・연계・융합・부전공) 및 마이크로디그리 과정 신청 접수 및 관리"
+      ],
+      "evaluation": {
+        "accuracy": 0.938,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.702,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.4232262321449918,
+      "timestamp": "2026-02-18T10:45:24.377393"
+    },
+    {
+      "persona": "student-undergraduate",
+      "query": "휴학 기간 연장할 수 있어?",
+      "category": "procedural",
+      "difficulty": "medium",
+      "answer": "규정에 따르면: 휴학규정 > 제6조 통산기간 및 연장 > ③ 부득이한 사유가 있: 부득이한 사유가 있는 경우에는 통산기간 내에서 개강일 전에 1회에 한하여 연장할 수 있으며 2개 학기를 초과할 수 없다. <개정 2011. 12. 1., 2016. 9. 1., 2019. 2. 1.>\n유급, 육아(임신, 출산 포함)로 인한 휴학은 통산기간에 포함하지 않는다. <개정 2011. 12. 1., 2016. 9. 1., 2019. 2. 1.>\n자는 복학예정학기 개시일 이전에 구비서류를 제출하여 허가를 받아야 한다. <신설 2011. 12. 1.>\n\n평정기준:...",
+      "contexts": [
+        "휴학규정 > 제6조 통산기간 및 연장 > ③ 부득이한 사유가 있: 부득이한 사유가 있는 경우에는 통산기간 내에서 개강일 전에 1회에 한하여 연장할 수 있으며 2개 학기를 초과할 수 없다. <개정 2011. 12. 1., 2016. 9. 1., 2019. 2. 1.>\n유급, 육아(임신, 출산 포함)로 인한 휴학은 통산기간에 포함하지 않는다. <개정 2011. 12. 1., 2016. 9. 1., 2019. 2. 1.>\n자는 복학예정학기 개시일 이전에 구비서류를 제출하여 허가를 받아야 한다. <신설 2011. 12. 1.>",
+        "평정기준: 평정점\n5점\n4점\n3점\n2점\n1점\n근무태도\n직무수행의 성실도, 복무규율의 준수의 자세\n창의·개혁성\n창의적으로 업무를 개선하고 조직의 발전과 변혁을 추구하는 자세와 의욕\n업무추진력\n업무를 신속·정확·공정하게 처리하고 문제점을 파악하여 적극적으로 해결하는 능력\n인품\n예절, 품행, 교양 등 교직원으로 갖추어야 할 소망과 자질\n애교심\n조직구성원으로서의 사명감을 가지고 조직의 발전을 위해 헌신·기여하려는 자세와 노력\n인화·봉사성\n구성원 간 협동과 단결, 타부서업무에 적극적으로 협조하며, 행정업무를 수행함에 있어 친절하며 정성껏 봉사하려는 자세\n지도·통솔력\n업무효과가 극대화될 수 있도록 구성원들을 지도·감독하고 통솔할 수 있는 능력\n총 점\n다면평정위원직위 : 성명 : (인)\n다면평정위원\n직위 : 성명 : (인)\n[별지 제9호 서식]\n경력ㆍ가점ㆍ감점평정표\n□ 소속 : □ 직급: (현직급임용일 : )\n□ 성명 : □ 평정일자 : 년 월 일\n구 분평정점평 정 대 상 경 력비 고경력평정기본"
+      ],
+      "evaluation": {
+        "accuracy": 0.945,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.704,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.5351313712578414,
+      "timestamp": "2026-02-18T10:45:24.584906"
+    },
+    {
+      "persona": "student-undergraduate",
+      "query": "장학금 받으면 등록금 얼마야?",
+      "category": "financial",
+      "difficulty": "medium",
+      "answer": "규정에 따르면: 대학원장학금지급에관한세칙 > 제4조 장학생의 종류 및 자격 > 2. 학・군협정장학생 : 육군본부와: 학・군협정장학생 : 육군본부와의 학・군 제휴협정에 따라 입학한 학생에 대하여 등록금의 일부를 장학금으로 지급할 수 있다. <신설 2012. 2. 1., 개정 2023. 10. 1.>\n\n대학원장학금지급에관한세칙 > 제5조 자격규제 > 6. 기타 장학생으로서 부적격한 행위를 한자: 기타 장학생으로서 부적격한 행위를 한자...",
+      "contexts": [
+        "대학원장학금지급에관한세칙 > 제4조 장학생의 종류 및 자격 > 2. 학・군협정장학생 : 육군본부와: 학・군협정장학생 : 육군본부와의 학・군 제휴협정에 따라 입학한 학생에 대하여 등록금의 일부를 장학금으로 지급할 수 있다. <신설 2012. 2. 1., 개정 2023. 10. 1.>",
+        "대학원장학금지급에관한세칙 > 제5조 자격규제 > 6. 기타 장학생으로서 부적격한 행위를 한자: 기타 장학생으로서 부적격한 행위를 한자"
+      ],
+      "evaluation": {
+        "accuracy": 0.929,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.7,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.5238257735763157,
+      "timestamp": "2026-02-18T10:45:24.733059"
+    },
+    {
+      "persona": "student-undergraduate",
+      "query": "계절학기 수강하면 학점 몇 개야?",
+      "category": "academic",
+      "difficulty": "medium",
+      "answer": "규정에 따르면: 계절수업규정 > 제5조 수강신청: 수업의 신청 학점은 6학점 이내로 한다.\n\n군입대휴학중취득학점인정규정 > 제9조 준용 > 1. 학점인정신청 > 나. 군교육훈련이수학점: 군교육훈련이수학점...",
+      "contexts": [
+        "계절수업규정 > 제5조 수강신청: 수업의 신청 학점은 6학점 이내로 한다.",
+        "군입대휴학중취득학점인정규정 > 제9조 준용 > 1. 학점인정신청 > 나. 군교육훈련이수학점: 군교육훈련이수학점"
+      ],
+      "evaluation": {
+        "accuracy": 0.85,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.68,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.01618359312700931,
+      "timestamp": "2026-02-18T10:45:24.779868"
+    },
+    {
+      "persona": "student-undergraduate",
+      "query": "유고결석 처리 어떻게 해?",
+      "category": "academic",
+      "difficulty": "medium",
+      "answer": "규정에 따르면: 출석인정및공결규정 > 제2조 용어의 정의 > 2. 공결 : 수업에 결석한 것으로 간주하고 출석부: 공결 : 수업에 결석한 것으로 간주하고 출석부에 ‘공결’로 표기하되, 출석점수 평가 시 출석으로 인정한다. <신설 2018. 2. 1.>\n\n출석인정및공결규정 > 제3조 출석 인정 사유 및 기간 > 5. 조기 취업자 : 취업 기간 동안 수업과 관련하여 별도: 조기 취업자 : 취업 기간 동안 수업과 관련하여 별도의 특별과제를 수행하여야 하며, 이는 수강과목의 성적 평가 시 반영할 수 있다. <개정 2017. 2. 1.>...",
+      "contexts": [
+        "출석인정및공결규정 > 제2조 용어의 정의 > 2. 공결 : 수업에 결석한 것으로 간주하고 출석부: 공결 : 수업에 결석한 것으로 간주하고 출석부에 ‘공결’로 표기하되, 출석점수 평가 시 출석으로 인정한다. <신설 2018. 2. 1.>",
+        "출석인정및공결규정 > 제3조 출석 인정 사유 및 기간 > 5. 조기 취업자 : 취업 기간 동안 수업과 관련하여 별도: 조기 취업자 : 취업 기간 동안 수업과 관련하여 별도의 특별과제를 수행하여야 하며, 이는 수강과목의 성적 평가 시 반영할 수 있다. <개정 2017. 2. 1.>"
+      ],
+      "evaluation": {
+        "accuracy": 0.943,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.703,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.47871470669761046,
+      "timestamp": "2026-02-18T10:45:24.929268"
+    },
+    {
+      "persona": "student-undergraduate",
+      "query": "재수강하면 성적 어떻게 돼?",
+      "category": "academic",
+      "difficulty": "medium",
+      "answer": "규정에 따르면: 군입대휴학중취득학점인정규정 > 제9조 준용 > 1. 학점인정신청 > 나. 군교육훈련이수학점: 군교육훈련이수학점\n\n연장평가 판정 기준 > 제7조 학점인정 및 성적부여 > ⑦ 현장실습학기제 취득 학점: 현장실습학기제 취득 학점은 해당 이수영역으로 인정하되, 환산 총점 및 평점평균의 산출에는 포함하지 않는다....",
+      "contexts": [
+        "군입대휴학중취득학점인정규정 > 제9조 준용 > 1. 학점인정신청 > 나. 군교육훈련이수학점: 군교육훈련이수학점",
+        "연장평가 판정 기준 > 제7조 학점인정 및 성적부여 > ⑦ 현장실습학기제 취득 학점: 현장실습학기제 취득 학점은 해당 이수영역으로 인정하되, 환산 총점 및 평점평균의 산출에는 포함하지 않는다."
+      ],
+      "evaluation": {
+        "accuracy": 0.906,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.694,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.016131830251343737,
+      "timestamp": "2026-02-18T10:45:24.978148"
+    },
+    {
+      "persona": "student-undergraduate",
+      "query": "휴학하고 군대 가면 복학은 언제 해야 해?",
+      "category": "procedural",
+      "difficulty": "hard",
+      "answer": "규정에 따르면: 휴학규정 > 제3조 구분 및 변경 > ④ 창업교육학사운영위원회에서 창업휴학 중단 및 취소된 자: 창업교육학사운영위원회에서 창업휴학 중단 및 취소된 자는 창업휴학을 일반휴학으로 변경한다. <신설 2014. 3. 1.>\n\n복학규정 > 제2조 복학의 구분: 휴학규정 제3조제1항제2호를 제외한 사유로 휴학하였던 자의 복학 <개정 2019. 2. 1.>...",
+      "contexts": [
+        "휴학규정 > 제3조 구분 및 변경 > ④ 창업교육학사운영위원회에서 창업휴학 중단 및 취소된 자: 창업교육학사운영위원회에서 창업휴학 중단 및 취소된 자는 창업휴학을 일반휴학으로 변경한다. <신설 2014. 3. 1.>",
+        "복학규정 > 제2조 복학의 구분: 휴학규정 제3조제1항제2호를 제외한 사유로 휴학하였던 자의 복학 <개정 2019. 2. 1.>"
+      ],
+      "evaluation": {
+        "accuracy": 0.917,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.697,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.016133989952406134,
+      "timestamp": "2026-02-18T10:45:25.019875"
+    },
+    {
+      "persona": "student-undergraduate",
+      "query": "장학금 받다가 휴학하면 반납해야 해?",
+      "category": "financial",
+      "difficulty": "hard",
+      "answer": "규정에 따르면: 휴학규정 > 제6조 통산기간 및 연장 > ⑧ 휴학자 중 등록금 부분 이월자: 휴학자 중 등록금 부분 이월자는 해당 복학학기에 휴학연장을 할 수 없다. <신설 2020. 7. 1.>\n\n교내연구비운영규정 > 제10조 연구비의 반환 > 5. <삭제 2014: <삭제 2014. 3. 1>...",
+      "contexts": [
+        "휴학규정 > 제6조 통산기간 및 연장 > ⑧ 휴학자 중 등록금 부분 이월자: 휴학자 중 등록금 부분 이월자는 해당 복학학기에 휴학연장을 할 수 없다. <신설 2020. 7. 1.>",
+        "교내연구비운영규정 > 제10조 연구비의 반환 > 5. <삭제 2014: <삭제 2014. 3. 1>"
+      ],
+      "evaluation": {
+        "accuracy": 0.914,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.696,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.01618359312700931,
+      "timestamp": "2026-02-18T10:45:25.092875"
+    },
+    {
+      "persona": "student-undergraduate",
+      "query": "이중전공하고 부전공도 할 수 있어?",
+      "category": "academic",
+      "difficulty": "hard",
+      "answer": "규정에 따르면: 사무분장규정 > 제14조 학사지원팀 > 48. 제2전공(복수・연계・융합・부전공) 및 마이크로: 제2전공(복수・연계・융합・부전공) 및 마이크로디그리 과정 신청 접수 및 관리\n\n복수전공규정 > 제8조 인정 > 29. (경과조치) 이 변경 규정 시행 이전에 복수전: (경과조치) 이 변경 규정 시행 이전에 복수전공을 신청한 자는 이 변경 규정에 의하여 신청한 것으로 본다....",
+      "contexts": [
+        "사무분장규정 > 제14조 학사지원팀 > 48. 제2전공(복수・연계・융합・부전공) 및 마이크로: 제2전공(복수・연계・융합・부전공) 및 마이크로디그리 과정 신청 접수 및 관리",
+        "복수전공규정 > 제8조 인정 > 29. (경과조치) 이 변경 규정 시행 이전에 복수전: (경과조치) 이 변경 규정 시행 이전에 복수전공을 신청한 자는 이 변경 규정에 의하여 신청한 것으로 본다."
+      ],
+      "evaluation": {
+        "accuracy": 0.938,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.702,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.020229491408761638,
+      "timestamp": "2026-02-18T10:45:25.133937"
+    },
+    {
+      "persona": "student-undergraduate",
+      "query": "8학기 넘어도 등록할 수 있어?",
+      "category": "academic",
+      "difficulty": "hard",
+      "answer": "규정에 따르면: 대학원수업․이수학점․학점인정에관한세칙 > 제2조 수강신청: 포함, 노인전문간호사과정은 예외)을, 박사학위과정의 경우 매학기 12학점(논문지도학점 포함)을 초과할 수 없으며, 다만, 선수과목 또는 대학원장이 지정하는 교과목에 대해서는 별도로 한 학기에 6학점 이내로 신청할 수 있다. 단, 특수대학원의 수강신청 학점은 매학기 6학점(실기과목 학점은 제외)을 초과할 수 없으나, 최종학기(5학기)에 한하여 9학점까지 신청할 수 있다. 다만, 행정복지대학원, 산업문화대학원, 부동산대학원은 매학기 9학점까지, 교육대학원은 8학점까지 신청할 수...",
+      "contexts": [
+        "대학원수업․이수학점․학점인정에관한세칙 > 제2조 수강신청: 포함, 노인전문간호사과정은 예외)을, 박사학위과정의 경우 매학기 12학점(논문지도학점 포함)을 초과할 수 없으며, 다만, 선수과목 또는 대학원장이 지정하는 교과목에 대해서는 별도로 한 학기에 6학점 이내로 신청할 수 있다. 단, 특수대학원의 수강신청 학점은 매학기 6학점(실기과목 학점은 제외)을 초과할 수 없으나, 최종학기(5학기)에 한하여 9학점까지 신청할 수 있다. 다만, 행정복지대학원, 산업문화대학원, 부동산대학원은 매학기 9학점까지, 교육대학원은 8학점까지 신청할 수 있다. <개정 2006. 3. 1, 2010. 3. 1, 2012. 5. 1, 2013. 3. 1, 2016. 5. 1, 2017. 10. 1, 2019. 10. 1, 2022. 7. 1, 2023. 1. 1>",
+        "대학원연구등록에관한세칙 > 제7조 자격상실 > 5. 이 변경 세칙: 이 변경 세칙은 2024년 3월 1일부터 시행한다. 단, 변경 세칙의 제4조(등록금)는 2024년 3월 1일 입학자부터 적용 되며, 2001학년도부터 2023학년도 박사과정 입학자는 당해 학기 등록금의 10%를 연구등록금으로 1회에 한하여 납부한다."
+      ],
+      "evaluation": {
+        "accuracy": 0.938,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.702,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.3573254363594681,
+      "timestamp": "2026-02-18T10:45:25.241736"
+    },
+    {
+      "persona": "student-undergraduate",
+      "query": "학기당 21학점 넘게 신청할 수 있어?",
+      "category": "academic",
+      "difficulty": "hard",
+      "answer": "규정에 따르면: 대학원수업․이수학점․학점인정에관한세칙 > 제2조 수강신청: 포함, 노인전문간호사과정은 예외)을, 박사학위과정의 경우 매학기 12학점(논문지도학점 포함)을 초과할 수 없으며, 다만, 선수과목 또는 대학원장이 지정하는 교과목에 대해서는 별도로 한 학기에 6학점 이내로 신청할 수 있다. 단, 특수대학원의 수강신청 학점은 매학기 6학점(실기과목 학점은 제외)을 초과할 수 없으나, 최종학기(5학기)에 한하여 9학점까지 신청할 수 있다. 다만, 행정복지대학원, 산업문화대학원, 부동산대학원은 매학기 9학점까지, 교육대학원은 8학점까지 신청할 수...",
+      "contexts": [
+        "대학원수업․이수학점․학점인정에관한세칙 > 제2조 수강신청: 포함, 노인전문간호사과정은 예외)을, 박사학위과정의 경우 매학기 12학점(논문지도학점 포함)을 초과할 수 없으며, 다만, 선수과목 또는 대학원장이 지정하는 교과목에 대해서는 별도로 한 학기에 6학점 이내로 신청할 수 있다. 단, 특수대학원의 수강신청 학점은 매학기 6학점(실기과목 학점은 제외)을 초과할 수 없으나, 최종학기(5학기)에 한하여 9학점까지 신청할 수 있다. 다만, 행정복지대학원, 산업문화대학원, 부동산대학원은 매학기 9학점까지, 교육대학원은 8학점까지 신청할 수 있다. <개정 2006. 3. 1, 2010. 3. 1, 2012. 5. 1, 2013. 3. 1, 2016. 5. 1, 2017. 10. 1, 2019. 10. 1, 2022. 7. 1, 2023. 1. 1>",
+        "동의대학교대학원학칙 > 제21조 수료: 수료에 필요한 이수학점의 평점평균은 3.0(F비포함) 이상이어야 한다. <개정 2024. 10. 1.>"
+      ],
+      "evaluation": {
+        "accuracy": 0.938,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.702,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.3252664501766766,
+      "timestamp": "2026-02-18T10:45:25.340282"
+    },
+    {
+      "persona": "student-graduate",
+      "query": "연구비 신청 방법이 뭐예요?",
+      "category": "research",
+      "difficulty": "easy",
+      "answer": "규정에 따르면: 교내연구비운영규정 > 제9조 연구비 지원 > ③ 특별연구과제: 특별연구과제의 연구비는 연구책임자의 지급신청에 의하여 지급한다. <신설 2024. 6. 1.>\n<신설 2014. 3. 1., 개정 2024. 6. 1.>\n\n교내연구비운영규정 > 제2조 연구비 지원 및 배정제한 > ② 제1항에도 불구하고 의무기간 내에 일반연구과제: 제1항에도 불구하고 의무기간 내에 일반연구과제 결과물을 미제출한 자는 연구비 배정을 제한하지 아니한다....",
+      "contexts": [
+        "교내연구비운영규정 > 제9조 연구비 지원 > ③ 특별연구과제: 특별연구과제의 연구비는 연구책임자의 지급신청에 의하여 지급한다. <신설 2024. 6. 1.>\n<신설 2014. 3. 1., 개정 2024. 6. 1.>",
+        "교내연구비운영규정 > 제2조 연구비 지원 및 배정제한 > ② 제1항에도 불구하고 의무기간 내에 일반연구과제: 제1항에도 불구하고 의무기간 내에 일반연구과제 결과물을 미제출한 자는 연구비 배정을 제한하지 아니한다."
+      ],
+      "evaluation": {
+        "accuracy": 0.923,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.698,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.6114218509786432,
+      "timestamp": "2026-02-18T10:45:25.610758"
+    },
+    {
+      "persona": "student-graduate",
+      "query": "논문 제출 기한이 언제까지예요?",
+      "category": "research",
+      "difficulty": "easy",
+      "answer": "규정에 따르면: 대학원학위논문심사에관한세칙 > 제16조 우수논문 포상 > 2. (폐지규정) 이 세칙: (폐지규정) 이 세칙의 시행과 동시에 일반대학원학위논문심사에관한세칙, 산업대학원학위논문심사에관한세칙은 폐지한다.\n\n동의대학교대학원학칙 > 제29조 학위논문의 심사: 제7장 학위수여...",
+      "contexts": [
+        "대학원학위논문심사에관한세칙 > 제16조 우수논문 포상 > 2. (폐지규정) 이 세칙: (폐지규정) 이 세칙의 시행과 동시에 일반대학원학위논문심사에관한세칙, 산업대학원학위논문심사에관한세칙은 폐지한다.",
+        "동의대학교대학원학칙 > 제29조 학위논문의 심사: 제7장 학위수여"
+      ],
+      "evaluation": {
+        "accuracy": 0.87,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.685,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.3542168664058697,
+      "timestamp": "2026-02-18T10:45:25.788139"
+    },
+    {
+      "persona": "student-graduate",
+      "query": "학위청구 논문 심사비가 얼마예요?",
+      "category": "financial",
+      "difficulty": "easy",
+      "answer": "규정에 따르면: 대학원학위논문심사에관한세칙 > 제13조 심사결과 보고 > 1. 석사학위청구논문: 석사학위청구논문\n\n대학원학위논문심사에관한세칙 > 제9조 논문심사위원 자격 > 2018. 4: 4. 1.>...",
+      "contexts": [
+        "대학원학위논문심사에관한세칙 > 제13조 심사결과 보고 > 1. 석사학위청구논문: 석사학위청구논문",
+        "대학원학위논문심사에관한세칙 > 제9조 논문심사위원 자격 > 2018. 4: 4. 1.>"
+      ],
+      "evaluation": {
+        "accuracy": 0.824,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.673,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.4994011449283023,
+      "timestamp": "2026-02-18T10:45:25.999773"
+    },
+    {
+      "persona": "student-graduate",
+      "query": "조교 월급이 얼마예요?",
+      "category": "salary",
+      "difficulty": "easy",
+      "answer": "규정에 따르면: 콜라보교육센터규정 > 제5조 구성 > ④ 전임교원, 연구교수(연구원), 직원 및 조교: 전임교원, 연구교수(연구원), 직원 및 조교의 임용과 복무에 관한 사항은 관련 규정에 따른다.\n\n전공설계지원센터규정 > 제4조 구성 > ④ 전임교원, 연구교수(연구원), 직원 및 조교: 전임교원, 연구교수(연구원), 직원 및 조교의 임용과 복무에 관한 사항은 관련 규정에 따른다....",
+      "contexts": [
+        "콜라보교육센터규정 > 제5조 구성 > ④ 전임교원, 연구교수(연구원), 직원 및 조교: 전임교원, 연구교수(연구원), 직원 및 조교의 임용과 복무에 관한 사항은 관련 규정에 따른다.",
+        "전공설계지원센터규정 > 제4조 구성 > ④ 전임교원, 연구교수(연구원), 직원 및 조교: 전임교원, 연구교수(연구원), 직원 및 조교의 임용과 복무에 관한 사항은 관련 규정에 따른다."
+      ],
+      "evaluation": {
+        "accuracy": 0.909,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.695,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.6444798522017213,
+      "timestamp": "2026-02-18T10:45:26.033926"
+    },
+    {
+      "persona": "student-graduate",
+      "query": "연구실 사용 신청 어떻게 해요?",
+      "category": "research",
+      "difficulty": "easy",
+      "answer": "규정에 따르면: 시설물사용에관한규정 > 제5조 사용허가 > ② 시설물사용허가 사항이 학생활동과 관련이 되: 시설물사용허가 사항이 학생활동과 관련이 되는 경우에는 동아리 지도교수 또는 학생지원처장을 경유하여 신청하여야 한다. <개정 2022. 3. 1.>\n\n교직원복무규정 > 제26조 병가: 병가를 신청하는 경우 병가 사유를 증빙할 수 있는 서류(입퇴원 확인서 등)를 제출하여야 하며, 병가 사유 서류를 제출할 수 없는 경우 잔여 연가를 사용하여야 한다. <개정 2025. 4. 1.>...",
+      "contexts": [
+        "시설물사용에관한규정 > 제5조 사용허가 > ② 시설물사용허가 사항이 학생활동과 관련이 되: 시설물사용허가 사항이 학생활동과 관련이 되는 경우에는 동아리 지도교수 또는 학생지원처장을 경유하여 신청하여야 한다. <개정 2022. 3. 1.>",
+        "교직원복무규정 > 제26조 병가: 병가를 신청하는 경우 병가 사유를 증빙할 수 있는 서류(입퇴원 확인서 등)를 제출하여야 하며, 병가 사유 서류를 제출할 수 없는 경우 잔여 연가를 사용하여야 한다. <개정 2025. 4. 1.>"
+      ],
+      "evaluation": {
+        "accuracy": 0.941,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.703,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.45251802492420223,
+      "timestamp": "2026-02-18T10:45:26.173676"
+    },
+    {
+      "persona": "student-graduate",
+      "query": "대학원 등록금 납부 기한이 언제까지예요?",
+      "category": "financial",
+      "difficulty": "easy",
+      "answer": "규정에 따르면: 연장평가 판정 기준 > 제5조 교육과정 편성 > 구분편성기간학점시행시기단기1개월3학점계절수업2: 구분편성기간학점시행시기단기1개월3학점계절수업2개월6학점장기15주 이상17학점(단, 졸업 학점이 140 학점 이상인 학과의 경우 18학점 부여)학기 중\n구분\n편성기간\n학점\n시행시기\n단기\n1개월\n3학점\n계절수업\n2개월\n6학점\n장기\n15주 이상\n17학점\n(단, 졸업 학점이 140 학점 이상인 학과의 경우 18학점 부여)\n학기 중\n\n명예교수규정 > 제7조 대우 > 11. (경과조치) 이 규정 시행 당시 추대 중인 명예교수: (경과조치) 이 규정...",
+      "contexts": [
+        "연장평가 판정 기준 > 제5조 교육과정 편성 > 구분편성기간학점시행시기단기1개월3학점계절수업2: 구분편성기간학점시행시기단기1개월3학점계절수업2개월6학점장기15주 이상17학점(단, 졸업 학점이 140 학점 이상인 학과의 경우 18학점 부여)학기 중\n구분\n편성기간\n학점\n시행시기\n단기\n1개월\n3학점\n계절수업\n2개월\n6학점\n장기\n15주 이상\n17학점\n(단, 졸업 학점이 140 학점 이상인 학과의 경우 18학점 부여)\n학기 중",
+        "명예교수규정 > 제7조 대우 > 11. (경과조치) 이 규정 시행 당시 추대 중인 명예교수: (경과조치) 이 규정 시행 당시 추대 중인 명예교수는 추대기간을 종신으로 하며, 추대기간이 경과한 명예교수는 본인의 신청을 받아 추대기간을 종신으로 하여 재추대할 수 있다."
+      ],
+      "evaluation": {
+        "accuracy": 0.941,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.703,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.6827796223342604,
+      "timestamp": "2026-02-18T10:45:26.373964"
+    },
+    {
+      "persona": "student-graduate",
+      "query": "학위증 발급받고 싶어요",
+      "category": "admin",
+      "difficulty": "easy",
+      "answer": "규정에 따르면: 제증명서발급규정 > 제3조 발급대상 > 4. 교직원증명서 <신설 2022 > 가. 재직증명서 : 현재 근무하고 있: 재직증명서 : 현재 근무하고 있는 자\n\n제증명서발급규정 > 제11조 제증명서발급프로그램 사용 인·허가 관리 및 사용자 범위 > ① 제증명서 발급프로그램 사용 인·허가: 제증명서 발급프로그램 사용 인·허가는 학사지원팀에서 관리한다....",
+      "contexts": [
+        "제증명서발급규정 > 제3조 발급대상 > 4. 교직원증명서 <신설 2022 > 가. 재직증명서 : 현재 근무하고 있: 재직증명서 : 현재 근무하고 있는 자",
+        "제증명서발급규정 > 제11조 제증명서발급프로그램 사용 인·허가 관리 및 사용자 범위 > ① 제증명서 발급프로그램 사용 인·허가: 제증명서 발급프로그램 사용 인·허가는 학사지원팀에서 관리한다."
+      ],
+      "evaluation": {
+        "accuracy": 0.909,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.695,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.21960216003525573,
+      "timestamp": "2026-02-18T10:45:26.426915"
+    },
+    {
+      "persona": "student-graduate",
+      "query": "지도교수 변경 어떻게 해요?",
+      "category": "academic",
+      "difficulty": "easy",
+      "answer": "규정에 따르면: 산학협력업적 평가기준: 구 분평 가 기 준평 가 점 수비 고교육 현장실습학기제체결표준체결건당 20점자율체결건당 10점 해당 교원이 현장실습학기제 체결에 결정적인 역할을 하여 현장실습학기제교육과정 참여학생이 파견되고 학생지원처에서 확인한 경우 인정 단, 동일 기업일 경우에는 1건으로 인정 ※ IPP장기현장실습 및 IPP형 일학습병행제는 IPP사업단의 현장실습을 이수한 경우 인정IPP장기현장실습매칭 건당 3점, IPP형 일학습병행제 매칭 건당 10점IPP사업 산학협력교원은 년간 최대 150점까지 인정현장실습지도현장실습지도학생당 3점학기...",
+      "contexts": [
+        "산학협력업적 평가기준: 구 분평 가 기 준평 가 점 수비 고교육 현장실습학기제체결표준체결건당 20점자율체결건당 10점 해당 교원이 현장실습학기제 체결에 결정적인 역할을 하여 현장실습학기제교육과정 참여학생이 파견되고 학생지원처에서 확인한 경우 인정 단, 동일 기업일 경우에는 1건으로 인정 ※ IPP장기현장실습 및 IPP형 일학습병행제는 IPP사업단의 현장실습을 이수한 경우 인정IPP장기현장실습매칭 건당 3점, IPP형 일학습병행제 매칭 건당 10점IPP사업 산학협력교원은 년간 최대 150점까지 인정현장실습지도현장실습지도학생당 3점학기당 최대 15점까지 인정IPP장기현장실습 및 IPP형 일학습병행제 현장실습지도 학생당 3점IPP사업 산학협력교원은 년간 최대 150점까지 인정 산업체재직자교육교육시간당 2점 정규교과 교과목 강의 해당강좌의 학점당 5점 정규교과로 개설 된 캡스톤디자인 강좌 담당교수 (3단계 마스터프로젝트 과정만 인정)창업 친화형 강좌 개설강좌당 3점창업의 이론⸱실무 능력 배",
+        "대학원학과주임교수지도교수및공동지도교수에관한세칙 > 제1조 목적: 제3편 행정 3—2—112～대학원학과주임교수지도교수및공동지도교수에관한세칙 3—2—112～\n제3편 행정 3—2—112～\n대학원학과주임교수지도교수및공동지도교수에관한세칙 3—2—112～"
+      ],
+      "evaluation": {
+        "accuracy": 0.944,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.704,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.7859027495060251,
+      "timestamp": "2026-02-18T10:45:26.724004"
+    },
+    {
+      "persona": "student-graduate",
+      "query": "논문 심사 위원 몇 명이 필요해요?",
+      "category": "research",
+      "difficulty": "easy",
+      "answer": "규정에 따르면: 대학원학위논문심사에관한세칙 > 제9조 논문심사위원 자격 > 2018. 4: 4. 1.>\n\n동의대학교대학원학칙 > 제29조 학위논문의 심사: 제7장 학위수여...",
+      "contexts": [
+        "대학원학위논문심사에관한세칙 > 제9조 논문심사위원 자격 > 2018. 4: 4. 1.>",
+        "동의대학교대학원학칙 > 제29조 학위논문의 심사: 제7장 학위수여"
+      ],
+      "evaluation": {
+        "accuracy": 0.824,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.673,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.4507205109291895,
+      "timestamp": "2026-02-18T10:45:26.898382"
+    },
+    {
+      "persona": "student-graduate",
+      "query": "학자금 대출 이자 얼마예요?",
+      "category": "financial",
+      "difficulty": "easy",
+      "answer": "규정에 따르면: 학점은행제장학금지급에관한운영세칙 > 제4조 장학생 선발대상 및 수혜인원: 15학점 이상을 신청한 자 중 직전 학기 평균 성적이 80점 이상인 자를 대상으로 한다. 직전 학기는 1학기는 하계 계절학기, 2학기는 동계 계절학기를 합산하여 산정한다. <개정 2016. 3. 1, 2021. 2. 1>\n. 공로장학금 : 학내외 활동을 통하여 교육원 발전에 공로가 있는 자로서 다음 각 목의 1에 해당하는 자 중에서 원장이 정한다. <신설 2016. 3. 1, 개정 2021. 2. 1>\n가. 각종 대회 입상으로 학교 명예를 선양시킨 자\n나. 입...",
+      "contexts": [
+        "학점은행제장학금지급에관한운영세칙 > 제4조 장학생 선발대상 및 수혜인원: 15학점 이상을 신청한 자 중 직전 학기 평균 성적이 80점 이상인 자를 대상으로 한다. 직전 학기는 1학기는 하계 계절학기, 2학기는 동계 계절학기를 합산하여 산정한다. <개정 2016. 3. 1, 2021. 2. 1>\n. 공로장학금 : 학내외 활동을 통하여 교육원 발전에 공로가 있는 자로서 다음 각 목의 1에 해당하는 자 중에서 원장이 정한다. <신설 2016. 3. 1, 개정 2021. 2. 1>\n가. 각종 대회 입상으로 학교 명예를 선양시킨 자\n나. 입학생 모집에 공로가 있는 자\n. 보훈장학금 : 국가유공자 등 예우 및 지원에 관한 법률에 규정된 자로 한다. <신설 2016. 3. 1>\n<개정 2016. 3. 1, 2021. 2. 1>\n수강인원성적우수장학금자원봉사 장학금25명 미만A 1명A 1명25명 이상 50명 미만A 1명, B 1명A 1명, B 1명50명 이상 75명 미만A 2명, B 2명A 2명, ",
+        "등록금에관한규정 > 제3조 납부방법: 휴 학 일대체 인정 금액∼ 수업일수 1/4등록금 전액이월∼ 수업일수 1/3등록금 1/3 납부∼ 수업일수 1/2등록금 1/2 납부수업일수 1/2 초과전액 납부\n휴 학 일\n대체 인정 금액\n∼ 수업일수 1/4\n등록금 전액이월\n∼ 수업일수 1/3\n등록금 1/3 납부\n∼ 수업일수 1/2\n등록금 1/2 납부\n수업일수 1/2 초과\n전액 납부"
+      ],
+      "evaluation": {
+        "accuracy": 0.95,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.705,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.44439230164404564,
+      "timestamp": "2026-02-18T10:45:27.000449"
+    },
+    {
+      "persona": "student-graduate",
+      "query": "석박사 통합과정 전환 조건이 뭐예요?",
+      "category": "academic",
+      "difficulty": "medium",
+      "answer": "규정에 따르면: [3-2] 연구실(실험․실습실) 일반 안전수칙 > 3. 항상 실험 > 다. 위험한 반응 조건(고온, 고압 등): 위험한 반응 조건(고온, 고압 등)\n\n취․창업역량마일리지규정 > 제4조 설치요건 > ② > 10. 기타 계약학과 운영에 있어 필요한 사항: 기타 계약학과 운영에 있어 필요한 사항...",
+      "contexts": [
+        "[3-2] 연구실(실험․실습실) 일반 안전수칙 > 3. 항상 실험 > 다. 위험한 반응 조건(고온, 고압 등): 위험한 반응 조건(고온, 고압 등)",
+        "취․창업역량마일리지규정 > 제4조 설치요건 > ② > 10. 기타 계약학과 운영에 있어 필요한 사항: 기타 계약학과 운영에 있어 필요한 사항"
+      ],
+      "evaluation": {
+        "accuracy": 0.897,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.692,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.37795640904398053,
+      "timestamp": "2026-02-18T10:45:27.140737"
+    },
+    {
+      "persona": "student-graduate",
+      "query": "연구년제 신청 자격이 어떻게 돼요?",
+      "category": "research",
+      "difficulty": "medium",
+      "answer": "규정에 따르면: 교원연구년제규정 > 제3조 자격 > ⑥ 산학관련 공동 연구를 위한 교수파견제를 위하여: 산학관련 공동 연구를 위한 교수파견제를 위하여 연구년을 신청하는 경우 우선하여 선정할 수 있다. <신설 2018. 3. 1>\n\n교원인사규정 > 제8조 교원의 자격 > ⑦ 산업체 경력 기준 임용 시 산학협력실적이 없: 산업체 경력 기준 임용 시 산학협력실적이 없는 경우, 산업체경력 2년을 산학협력실적 100%로 대체가 가능하다. 즉, 조교수는 12년 이상, 부교수는 27년 이상, 교수는 34년 이상의 산업체경력으로 신규임용이 가능하다. <신설 20...",
+      "contexts": [
+        "교원연구년제규정 > 제3조 자격 > ⑥ 산학관련 공동 연구를 위한 교수파견제를 위하여: 산학관련 공동 연구를 위한 교수파견제를 위하여 연구년을 신청하는 경우 우선하여 선정할 수 있다. <신설 2018. 3. 1>",
+        "교원인사규정 > 제8조 교원의 자격 > ⑦ 산업체 경력 기준 임용 시 산학협력실적이 없: 산업체 경력 기준 임용 시 산학협력실적이 없는 경우, 산업체경력 2년을 산학협력실적 100%로 대체가 가능하다. 즉, 조교수는 12년 이상, 부교수는 27년 이상, 교수는 34년 이상의 산업체경력으로 신규임용이 가능하다. <신설 2018. 3. 1.>"
+      ],
+      "evaluation": {
+        "accuracy": 0.946,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.704,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.6525271792868537,
+      "timestamp": "2026-02-18T10:45:27.407298"
+    },
+    {
+      "persona": "student-graduate",
+      "query": "학위 논문 플래그십 통과 기준이 뭐예요?",
+      "category": "research",
+      "difficulty": "medium",
+      "answer": "규정에 따르면: 대학원석사학위청구논문대체인정실적에관한세칙: 제 학생 행정\n\n지표별 산출 기준 > 제1조 목적 > ⑥ ~: ~...",
+      "contexts": [
+        "대학원석사학위청구논문대체인정실적에관한세칙: 제 학생 행정",
+        "지표별 산출 기준 > 제1조 목적 > ⑥ ~: ~"
+      ],
+      "evaluation": {
+        "accuracy": 0.8,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.667,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.016197233344245505,
+      "timestamp": "2026-02-18T10:45:27.469475"
+    },
+    {
+      "persona": "student-graduate",
+      "query": "TA 수행하면 등록금 감면돼요?",
+      "category": "financial",
+      "difficulty": "medium",
+      "answer": "규정에 따르면: FUN학생경험지원센터규정 > 제3조 구성 > ③ 센터: 센터의 업무를 수행하기 위하여 전임 및 비전임교원(연구원 등), 직원, 조교를 둘 수 있다.\n\n학점은행제장학금지급에관한운영세칙 > 제6조 장학금액 및 지급 > 4. 보훈장학금: 보훈장학금은 매학기 등록금 납부 시 감면함을 원칙으로 한다. <신설 2021. 2. 1>...",
+      "contexts": [
+        "FUN학생경험지원센터규정 > 제3조 구성 > ③ 센터: 센터의 업무를 수행하기 위하여 전임 및 비전임교원(연구원 등), 직원, 조교를 둘 수 있다.",
+        "학점은행제장학금지급에관한운영세칙 > 제6조 장학금액 및 지급 > 4. 보훈장학금: 보훈장학금은 매학기 등록금 납부 시 감면함을 원칙으로 한다. <신설 2021. 2. 1>"
+      ],
+      "evaluation": {
+        "accuracy": 0.923,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.698,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.016034709752319482,
+      "timestamp": "2026-02-18T10:45:27.514346"
+    },
+    {
+      "persona": "student-graduate",
+      "query": "해외 학회 참석 지원받을 수 있어요?",
+      "category": "research",
+      "difficulty": "medium",
+      "answer": "규정에 따르면: 교원국내외출장에관한규정 > 제4조 허가 > ② 국가연구개발비 지원을 받아 해외 학술대회에 참가하: 국가연구개발비 지원을 받아 해외 학술대회에 참가하는 연구자의 출장은 심의 신청서, 부실학회 체크리스트를 첨부하여 단과대학 업적평가위원회의 승인을 받은 후 출장 신청을 해야 한다. 단, 국내 학회참석의 출장인 경우 소속 대학장의 승인으로 허가할 수 있다. <신설 2020. 5. 1.>\n\n사무분장규정 > 제13조 교무팀 > 27. 학회 학술대회 참가 경비 지원: 학회 학술대회 참가 경비 지원...",
+      "contexts": [
+        "교원국내외출장에관한규정 > 제4조 허가 > ② 국가연구개발비 지원을 받아 해외 학술대회에 참가하: 국가연구개발비 지원을 받아 해외 학술대회에 참가하는 연구자의 출장은 심의 신청서, 부실학회 체크리스트를 첨부하여 단과대학 업적평가위원회의 승인을 받은 후 출장 신청을 해야 한다. 단, 국내 학회참석의 출장인 경우 소속 대학장의 승인으로 허가할 수 있다. <신설 2020. 5. 1.>",
+        "사무분장규정 > 제13조 교무팀 > 27. 학회 학술대회 참가 경비 지원: 학회 학술대회 참가 경비 지원"
+      ],
+      "evaluation": {
+        "accuracy": 0.945,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.704,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.44222249682633247,
+      "timestamp": "2026-02-18T10:45:27.731440"
+    },
+    {
+      "persona": "student-graduate",
+      "query": "학위청구 논문 심사 절차가 어떻게 돼요?",
+      "category": "research",
+      "difficulty": "medium",
+      "answer": "규정에 따르면: 대학원학위논문심사에관한세칙 > 제16조 우수논문 포상 > 2. (폐지규정) 이 세칙: (폐지규정) 이 세칙의 시행과 동시에 일반대학원학위논문심사에관한세칙, 산업대학원학위논문심사에관한세칙은 폐지한다.\n\n대학원학위논문심사에관한세칙 > 제13조 심사결과 보고 > 1. 석사학위청구논문: 석사학위청구논문...",
+      "contexts": [
+        "대학원학위논문심사에관한세칙 > 제16조 우수논문 포상 > 2. (폐지규정) 이 세칙: (폐지규정) 이 세칙의 시행과 동시에 일반대학원학위논문심사에관한세칙, 산업대학원학위논문심사에관한세칙은 폐지한다.",
+        "대학원학위논문심사에관한세칙 > 제13조 심사결과 보고 > 1. 석사학위청구논문: 석사학위청구논문"
+      ],
+      "evaluation": {
+        "accuracy": 0.87,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.685,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.6863422162309609,
+      "timestamp": "2026-02-18T10:45:27.928406"
+    },
+    {
+      "persona": "student-graduate",
+      "query": "연구윤리 교육 이수 필수예요?",
+      "category": "research",
+      "difficulty": "medium",
+      "answer": "규정에 따르면: 연제3편 행정 3—1—119～연구윤리·진실성검증및처리에관한규정 3—1—119～구윤리․진실성검증및처리에관한규정 > 제28조 연구자의 역할과 책임 > 10. 지속적인 연구윤리교육: 지속적인 연구윤리교육의 참여\n\n동의대학교대학원학칙 > 제20조의3 연구윤리교육 > ② 연구윤리 교육: 연구윤리 교육의 성적은 P/F로 부여한다. <신설 2024. 3. 1.>...",
+      "contexts": [
+        "연제3편 행정 3—1—119～연구윤리·진실성검증및처리에관한규정 3—1—119～구윤리․진실성검증및처리에관한규정 > 제28조 연구자의 역할과 책임 > 10. 지속적인 연구윤리교육: 지속적인 연구윤리교육의 참여",
+        "동의대학교대학원학칙 > 제20조의3 연구윤리교육 > ② 연구윤리 교육: 연구윤리 교육의 성적은 P/F로 부여한다. <신설 2024. 3. 1.>"
+      ],
+      "evaluation": {
+        "accuracy": 0.9,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.693,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.6041110068248143,
+      "timestamp": "2026-02-18T10:45:28.072404"
+    },
+    {
+      "persona": "student-graduate",
+      "query": "박사자격시험 응시 자격이 뭐예요?",
+      "category": "academic",
+      "difficulty": "medium",
+      "answer": "규정에 따르면: [3-2] 연구실(실험․실습실) 일반 안전수칙 > 3. 항상 실험 > 다. 위험한 반응 조건(고온, 고압 등): 위험한 반응 조건(고온, 고압 등)\n\n학점은행제운영에관한규정 > 제4조 지원서류 > 2. 출신학교 졸업증명서 또: 출신학교 졸업증명서 또는 졸업예정증명서(법령에 의해 자격이 인정되는 자는 자격인정 증명서)...",
+      "contexts": [
+        "[3-2] 연구실(실험․실습실) 일반 안전수칙 > 3. 항상 실험 > 다. 위험한 반응 조건(고온, 고압 등): 위험한 반응 조건(고온, 고압 등)",
+        "학점은행제운영에관한규정 > 제4조 지원서류 > 2. 출신학교 졸업증명서 또: 출신학교 졸업증명서 또는 졸업예정증명서(법령에 의해 자격이 인정되는 자는 자격인정 증명서)"
+      ],
+      "evaluation": {
+        "accuracy": 0.906,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.694,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.42129724209142994,
+      "timestamp": "2026-02-18T10:45:28.209989"
+    },
+    {
+      "persona": "student-graduate",
+      "query": "휴학하고 군대 가면 어떻게 돼요?",
+      "category": "procedural",
+      "difficulty": "medium",
+      "answer": "규정에 따르면: 휴학규정 > 제3조 구분 및 변경 > ④ 창업교육학사운영위원회에서 창업휴학 중단 및 취소된 자: 창업교육학사운영위원회에서 창업휴학 중단 및 취소된 자는 창업휴학을 일반휴학으로 변경한다. <신설 2014. 3. 1.>\n\n대학직장예비군연대운영규정 > 제8조 임원의 직무: 제3장 방위협의회 운영...",
+      "contexts": [
+        "휴학규정 > 제3조 구분 및 변경 > ④ 창업교육학사운영위원회에서 창업휴학 중단 및 취소된 자: 창업교육학사운영위원회에서 창업휴학 중단 및 취소된 자는 창업휴학을 일반휴학으로 변경한다. <신설 2014. 3. 1.>",
+        "대학직장예비군연대운영규정 > 제8조 임원의 직무: 제3장 방위협의회 운영"
+      ],
+      "evaluation": {
+        "accuracy": 0.897,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.692,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.01618359312700931,
+      "timestamp": "2026-02-18T10:45:28.252836"
+    },
+    {
+      "persona": "student-graduate",
+      "query": "논문 표절 검사 통과 기준이 뭐예요?",
+      "category": "research",
+      "difficulty": "medium",
+      "answer": "규정에 따르면: 연구실적 평가기준 > 1. 2인 이상 > 가. 논문, 학술발표 및 연구보고서: 논문, 학술발표 및 연구보고서의 경우 <개정 2025. 3. 1.>\n\n지표별 산출 기준 > 제1조 목적 > ⑥ ~: ~...",
+      "contexts": [
+        "연구실적 평가기준 > 1. 2인 이상 > 가. 논문, 학술발표 및 연구보고서: 논문, 학술발표 및 연구보고서의 경우 <개정 2025. 3. 1.>",
+        "지표별 산출 기준 > 제1조 목적 > ⑥ ~: ~"
+      ],
+      "evaluation": {
+        "accuracy": 0.889,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.69,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.016305305834655386,
+      "timestamp": "2026-02-18T10:45:28.296269"
+    },
+    {
+      "persona": "student-graduate",
+      "query": "석사 과정 중 박사 과정으로 전환하면 논문 다시 써야 해요?",
+      "category": "academic",
+      "difficulty": "hard",
+      "answer": "규정에 따르면: 대학원편입학에관한세칙 > 제2조 지원자격 > 2. 박사학위과정: 박사학위과정\n\n대학원학위논문심사에관한세칙 > 제13조 심사결과 보고 > 1. 석사학위청구논문: 석사학위청구논문...",
+      "contexts": [
+        "대학원편입학에관한세칙 > 제2조 지원자격 > 2. 박사학위과정: 박사학위과정",
+        "대학원학위논문심사에관한세칙 > 제13조 심사결과 보고 > 1. 석사학위청구논문: 석사학위청구논문"
+      ],
+      "evaluation": {
+        "accuracy": 0.812,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.67,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.016132389849999578,
+      "timestamp": "2026-02-18T10:45:28.335713"
+    },
+    {
+      "persona": "student-graduate",
+      "query": "연구비 집행 내역 제출 안 하면 어떻게 돼요?",
+      "category": "research",
+      "difficulty": "hard",
+      "answer": "규정에 따르면: 교내연구비운영규정 > 제9조 연구비 지원 > ③ 특별연구과제: 특별연구과제의 연구비는 연구책임자의 지급신청에 의하여 지급한다. <신설 2024. 6. 1.>\n<신설 2014. 3. 1., 개정 2024. 6. 1.>\n\n학습유형 인정 기준 > ⑧ 플립러닝: 플립러닝...",
+      "contexts": [
+        "교내연구비운영규정 > 제9조 연구비 지원 > ③ 특별연구과제: 특별연구과제의 연구비는 연구책임자의 지급신청에 의하여 지급한다. <신설 2024. 6. 1.>\n<신설 2014. 3. 1., 개정 2024. 6. 1.>",
+        "학습유형 인정 기준 > ⑧ 플립러닝: 플립러닝"
+      ],
+      "evaluation": {
+        "accuracy": 0.897,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.692,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.01618359312700931,
+      "timestamp": "2026-02-18T10:45:28.393988"
+    },
+    {
+      "persona": "student-graduate",
+      "query": "학위 취소되는 경우가 있어요?",
+      "category": "academic",
+      "difficulty": "hard",
+      "answer": "규정에 따르면: 외국인유학생입학및관리규정 > 제3조 입학대상 > ③ 대학원 : 석사: 대학원 : 석사는 국내․외 4년제 대학 졸업자로 학사학위 이상 소지자이며, 박사는 국내․외 석사학위 이상 소지자\n\n연구교수및연구원규정 > 제2조 적용대상자: 가. 연구원은 국내의 공공기관 또는 기업체에서 특수한 학문영역에 있어 탁월한 경험과 연구업적이 있고 본 대학교에서 일정기간 유급 또는 무급으로 연구에 종사할 자로서 책임연구원, 선임연구원, 연구원으로 구분한다. <개정 2021. 3. 1., 2023. 3. 1.>\n나. 책임연구원은 박사학위 소지자 또는 석사학...",
+      "contexts": [
+        "외국인유학생입학및관리규정 > 제3조 입학대상 > ③ 대학원 : 석사: 대학원 : 석사는 국내․외 4년제 대학 졸업자로 학사학위 이상 소지자이며, 박사는 국내․외 석사학위 이상 소지자",
+        "연구교수및연구원규정 > 제2조 적용대상자: 가. 연구원은 국내의 공공기관 또는 기업체에서 특수한 학문영역에 있어 탁월한 경험과 연구업적이 있고 본 대학교에서 일정기간 유급 또는 무급으로 연구에 종사할 자로서 책임연구원, 선임연구원, 연구원으로 구분한다. <개정 2021. 3. 1., 2023. 3. 1.>\n나. 책임연구원은 박사학위 소지자 또는 석사학위 취득 후 관련 연구 분야에 10년 이상 경력이 있는 자 <개정 2021. 3. 1>\n다. 선임연구원은 석사학위 이상의 소지자 또는 학사학위 취득 후 관련 연구 분야에 10년 이상 경력이 있는 자 <개정 2021. 3. 1.>\n라. 연구원은 학사학위 이상의 자격을 가진 자 <개정 2021. 3. 1., 2023. 3. 1.>\n박사 후 전문 연구원(Post Doc.) <신설 2024. 3. 1.>"
+      ],
+      "evaluation": {
+        "accuracy": 0.949,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.705,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.3810510237607752,
+      "timestamp": "2026-02-18T10:45:28.484075"
+    },
+    {
+      "persona": "student-graduate",
+      "query": "외국인 교환학생으로 논문심사 받을 수 있어요?",
+      "category": "research",
+      "difficulty": "hard",
+      "answer": "규정에 따르면: 대학원학위논문심사에관한세칙 > 제9조 논문심사위원 자격 > 2018. 4: 4. 1.>\n\n동의대학교대학원학칙 > 제29조 학위논문의 심사: 제7장 학위수여...",
+      "contexts": [
+        "대학원학위논문심사에관한세칙 > 제9조 논문심사위원 자격 > 2018. 4: 4. 1.>",
+        "동의대학교대학원학칙 > 제29조 학위논문의 심사: 제7장 학위수여"
+      ],
+      "evaluation": {
+        "accuracy": 0.824,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.673,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.521230475067844,
+      "timestamp": "2026-02-18T10:45:28.662701"
+    },
+    {
+      "persona": "student-graduate",
+      "query": "복수학위 과정 어떻게 신청해요?",
+      "category": "academic",
+      "difficulty": "hard",
+      "answer": "규정에 따르면: 취․창업역량마일리지규정 > 제3조 용어의 정의 > ③ “복수학위”: “복수학위” 란 본 대학교와 협정을 체결한 국내외 다른 대학에서 각각 제공하는 교육과정을 이수하여 취득한 학점을 상호 인정해서 양 대학의 학위취득에 필요한 요건을 충족한 자에게 각 대학의 명의로 수여하는 학위를 말한다.\n\n교육과정편성및이수규정 > 제9조 졸업학점 > 31. (경과조치) 이 변경 규정 시행 이전에 복수전: (경과조치) 이 변경 규정 시행 이전에 복수전공·연계전공·부전공 신청한 자는 이 변경 규정에 의하여 신청한 것으로 본다....",
+      "contexts": [
+        "취․창업역량마일리지규정 > 제3조 용어의 정의 > ③ “복수학위”: “복수학위” 란 본 대학교와 협정을 체결한 국내외 다른 대학에서 각각 제공하는 교육과정을 이수하여 취득한 학점을 상호 인정해서 양 대학의 학위취득에 필요한 요건을 충족한 자에게 각 대학의 명의로 수여하는 학위를 말한다.",
+        "교육과정편성및이수규정 > 제9조 졸업학점 > 31. (경과조치) 이 변경 규정 시행 이전에 복수전: (경과조치) 이 변경 규정 시행 이전에 복수전공·연계전공·부전공 신청한 자는 이 변경 규정에 의하여 신청한 것으로 본다."
+      ],
+      "evaluation": {
+        "accuracy": 0.95,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.705,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.5240010467628888,
+      "timestamp": "2026-02-18T10:45:28.773716"
+    },
+    {
+      "persona": "professor",
+      "query": "연구년 신청 기간이 언제까지입니까?",
+      "category": "research",
+      "difficulty": "easy",
+      "answer": "규정에 따르면: 산학협력업적 평가기준: 구 분평 가 기 준평 가 점 수비 고교육 현장실습학기제체결표준체결건당 20점자율체결건당 10점 해당 교원이 현장실습학기제 체결에 결정적인 역할을 하여 현장실습학기제교육과정 참여학생이 파견되고 학생지원처에서 확인한 경우 인정 단, 동일 기업일 경우에는 1건으로 인정 ※ IPP장기현장실습 및 IPP형 일학습병행제는 IPP사업단의 현장실습을 이수한 경우 인정IPP장기현장실습매칭 건당 3점, IPP형 일학습병행제 매칭 건당 10점IPP사업 산학협력교원은 년간 최대 150점까지 인정현장실습지도현장실습지도학생당 3점학기...",
+      "contexts": [
+        "산학협력업적 평가기준: 구 분평 가 기 준평 가 점 수비 고교육 현장실습학기제체결표준체결건당 20점자율체결건당 10점 해당 교원이 현장실습학기제 체결에 결정적인 역할을 하여 현장실습학기제교육과정 참여학생이 파견되고 학생지원처에서 확인한 경우 인정 단, 동일 기업일 경우에는 1건으로 인정 ※ IPP장기현장실습 및 IPP형 일학습병행제는 IPP사업단의 현장실습을 이수한 경우 인정IPP장기현장실습매칭 건당 3점, IPP형 일학습병행제 매칭 건당 10점IPP사업 산학협력교원은 년간 최대 150점까지 인정현장실습지도현장실습지도학생당 3점학기당 최대 15점까지 인정IPP장기현장실습 및 IPP형 일학습병행제 현장실습지도 학생당 3점IPP사업 산학협력교원은 년간 최대 150점까지 인정 산업체재직자교육교육시간당 2점 정규교과 교과목 강의 해당강좌의 학점당 5점 정규교과로 개설 된 캡스톤디자인 강좌 담당교수 (3단계 마스터프로젝트 과정만 인정)창업 친화형 강좌 개설강좌당 3점창업의 이론⸱실무 능력 배",
+        "교원연구년제규정 > 제7조 인원 및 배분: 8명(정년제 교원만 해당) 이상인 학과에서 2명이 선정된 경우 연구년 기간은 반드시 한 학기만 겹치도록 하여야 한다. <신설 2008. 2. 1, 개정 2018. 3. 1>"
+      ],
+      "evaluation": {
+        "accuracy": 0.944,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.704,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.6085089654968414,
+      "timestamp": "2026-02-18T10:45:29.093020"
+    },
+    {
+      "persona": "professor",
+      "query": "강의평가 결과는 어디서 확인합니까?",
+      "category": "teaching",
+      "difficulty": "easy",
+      "answer": "규정에 따르면: 교원연구년제규정 > 제3조의2 배정제외 > 2. 최근년도 연속2회 강의평가 결과 하위 5%에 해당되: 최근년도 연속2회 강의평가 결과 하위 5%에 해당되는 자는 선정에서 제외할 수 있다. 단, 하위 5%에 해당되는 자 중 강의평가평점이 4.0 이상인 경우에는 예외로 한다. <개정 2012. 5. 1 2018. 3. 1>\n\n성적평가규정 > 제13조 성적 평가 공정성 강화 > ① 강의: 강의...",
+      "contexts": [
+        "교원연구년제규정 > 제3조의2 배정제외 > 2. 최근년도 연속2회 강의평가 결과 하위 5%에 해당되: 최근년도 연속2회 강의평가 결과 하위 5%에 해당되는 자는 선정에서 제외할 수 있다. 단, 하위 5%에 해당되는 자 중 강의평가평점이 4.0 이상인 경우에는 예외로 한다. <개정 2012. 5. 1 2018. 3. 1>",
+        "성적평가규정 > 제13조 성적 평가 공정성 강화 > ① 강의: 강의"
+      ],
+      "evaluation": {
+        "accuracy": 0.933,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.701,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.3779411873459831,
+      "timestamp": "2026-02-18T10:45:29.185467"
+    },
+    {
+      "persona": "professor",
+      "query": "연구비 정산 서류가 뭡니까?",
+      "category": "research",
+      "difficulty": "easy",
+      "answer": "규정에 따르면: 학술연구보조비지원에관한규정 > 제5조 공동연구에 대한 지원기준 > 1: 1. 주저자 및 교신저자 : 학술연구보조비 지원액×2/(N+2)<개정 2011. 3. 1>\n2. 주저자와 교신저자가 동일인일 경우 : 학술연구보조비 지원액×3/(N+2)<개정 2011. 3. 1>\n3. 공동연구자 : 학술연구보조비 지원액×1/(N+2)<신설 2011. 3. 1>\n※ N은 연구에 참여한 총저자 수 (단, 연구자수가 15명 이상일 때 n을 15로 처리)\n※ 주저자가 명시되지 않은 경우 처음 표시된 저자를 주저자로 인정하며, 교신저자가 명시되지 않은 ...",
+      "contexts": [
+        "학술연구보조비지원에관한규정 > 제5조 공동연구에 대한 지원기준 > 1: 1. 주저자 및 교신저자 : 학술연구보조비 지원액×2/(N+2)<개정 2011. 3. 1>\n2. 주저자와 교신저자가 동일인일 경우 : 학술연구보조비 지원액×3/(N+2)<개정 2011. 3. 1>\n3. 공동연구자 : 학술연구보조비 지원액×1/(N+2)<신설 2011. 3. 1>\n※ N은 연구에 참여한 총저자 수 (단, 연구자수가 15명 이상일 때 n을 15로 처리)\n※ 주저자가 명시되지 않은 경우 처음 표시된 저자를 주저자로 인정하며, 교신저자가 명시되지 않은 경우는 마지막 저자를 교신저자로 인정한다.",
+        "교원파견연구에관한규정 > 제8조 보고사항 > ⑤ 연구실적물을 제출하지 아니한 교원: 연구실적물을 제출하지 아니한 교원은 차후 파견연구 및 연구년을 신청할 수 없으며, 제출기한 이후 연구실적물을 제출한 경우, 차기 파견연구 및 연구년을 위한 근무년수 산정은 연구실적물이 제출된 다음해부터 기산한다. 그리고 연구실적물이 제출될 때까지 교내연구비 배정지원에서 제외한다. <신설 2012. 5. 1>"
+      ],
+      "evaluation": {
+        "accuracy": 0.94,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.703,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.3039325620929456,
+      "timestamp": "2026-02-18T10:45:29.354376"
+    },
+    {
+      "persona": "professor",
+      "query": "출장 신청 어떻게 합니까?",
+      "category": "admin",
+      "difficulty": "easy",
+      "answer": "규정에 따르면: 교원국내외출장에관한규정 > 제4조 허가 > ② 국가연구개발비 지원을 받아 해외 학술대회에 참가하: 국가연구개발비 지원을 받아 해외 학술대회에 참가하는 연구자의 출장은 심의 신청서, 부실학회 체크리스트를 첨부하여 단과대학 업적평가위원회의 승인을 받은 후 출장 신청을 해야 한다. 단, 국내 학회참석의 출장인 경우 소속 대학장의 승인으로 허가할 수 있다. <신설 2020. 5. 1.>\n\n교원국내외출장에관한규정 > 제5조 출장의 제한 > 2. 국외출장일 경우 휴일을 포함하여 학기당 7일을 초과하: 국외출장일 경우 휴일을 포함하여 학기당 7...",
+      "contexts": [
+        "교원국내외출장에관한규정 > 제4조 허가 > ② 국가연구개발비 지원을 받아 해외 학술대회에 참가하: 국가연구개발비 지원을 받아 해외 학술대회에 참가하는 연구자의 출장은 심의 신청서, 부실학회 체크리스트를 첨부하여 단과대학 업적평가위원회의 승인을 받은 후 출장 신청을 해야 한다. 단, 국내 학회참석의 출장인 경우 소속 대학장의 승인으로 허가할 수 있다. <신설 2020. 5. 1.>",
+        "교원국내외출장에관한규정 > 제5조 출장의 제한 > 2. 국외출장일 경우 휴일을 포함하여 학기당 7일을 초과하: 국외출장일 경우 휴일을 포함하여 학기당 7일을 초과하는 경우 및 동일 학과에 동시에 2명을 초과하는 경우 <개정 2024. 1. 1.>"
+      ],
+      "evaluation": {
+        "accuracy": 0.946,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.704,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.4112070046290115,
+      "timestamp": "2026-02-18T10:45:29.490692"
+    },
+    {
+      "persona": "professor",
+      "query": "휴직 신청 기간이 언제까지입니까?",
+      "category": "personnel",
+      "difficulty": "easy",
+      "answer": "규정에 따르면: 사무분장규정 > 제14조 학사지원팀 > 49. 시간제등록생 신청 접수 및 관리: 시간제등록생 신청 접수 및 관리\n\n명예교수규정 > 제7조 대우 > 11. (경과조치) 이 규정 시행 당시 추대 중인 명예교수: (경과조치) 이 규정 시행 당시 추대 중인 명예교수는 추대기간을 종신으로 하며, 추대기간이 경과한 명예교수는 본인의 신청을 받아 추대기간을 종신으로 하여 재추대할 수 있다....",
+      "contexts": [
+        "사무분장규정 > 제14조 학사지원팀 > 49. 시간제등록생 신청 접수 및 관리: 시간제등록생 신청 접수 및 관리",
+        "명예교수규정 > 제7조 대우 > 11. (경과조치) 이 규정 시행 당시 추대 중인 명예교수: (경과조치) 이 규정 시행 당시 추대 중인 명예교수는 추대기간을 종신으로 하며, 추대기간이 경과한 명예교수는 본인의 신청을 받아 추대기간을 종신으로 하여 재추대할 수 있다."
+      ],
+      "evaluation": {
+        "accuracy": 0.921,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.698,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.6560865055489985,
+      "timestamp": "2026-02-18T10:45:29.733040"
+    },
+    {
+      "persona": "professor",
+      "query": "연구실 안전 교육 언제 이수합니까?",
+      "category": "research",
+      "difficulty": "easy",
+      "answer": "규정에 따르면: 소방안전관리규정 > 제6조 교육 및 훈련: <개정 2014. 11. 1>\n\n연구실안전관리규정 > 제4조 연구실안전관리위원회구성및운영 > ⑧ 위원회: 위원회의 사무를 처리하기 위해 간사를 두며, 간사는 연구실안전환경관리자로 한다. <신설 2014. 11. 1.>...",
+      "contexts": [
+        "소방안전관리규정 > 제6조 교육 및 훈련: <개정 2014. 11. 1>",
+        "연구실안전관리규정 > 제4조 연구실안전관리위원회구성및운영 > ⑧ 위원회: 위원회의 사무를 처리하기 위해 간사를 두며, 간사는 연구실안전환경관리자로 한다. <신설 2014. 11. 1.>"
+      ],
+      "evaluation": {
+        "accuracy": 0.893,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.691,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.4518092671234855,
+      "timestamp": "2026-02-18T10:45:29.826588"
+    },
+    {
+      "persona": "professor",
+      "query": "학생 연구원 채용 절차가 어떻습니까?",
+      "category": "research",
+      "difficulty": "easy",
+      "answer": "규정에 따르면: 출석인정및공결규정 > 제7조 절차 및 허가 > ③ 제3조제5호: 제3조제5호의 출석인정은 지정한 일시에 해당 학생이 학생정보시스템을 통해 증빙서류를 탑재, 신청하면 학사지원팀에서 적합여부를 확인 후 승인 처리한다. <신설 2023. 9. 1.>\n\n직원인사규정 > 제10조 신규임용의 방법과 절차: 신규채용 전형 1~2차 심사의 위원은 총장이 임명하는 교직원 약간 명으로 구성된다. <개정 2008. 2. 1., 2025. 1. 1.>...",
+      "contexts": [
+        "출석인정및공결규정 > 제7조 절차 및 허가 > ③ 제3조제5호: 제3조제5호의 출석인정은 지정한 일시에 해당 학생이 학생정보시스템을 통해 증빙서류를 탑재, 신청하면 학사지원팀에서 적합여부를 확인 후 승인 처리한다. <신설 2023. 9. 1.>",
+        "직원인사규정 > 제10조 신규임용의 방법과 절차: 신규채용 전형 1~2차 심사의 위원은 총장이 임명하는 교직원 약간 명으로 구성된다. <개정 2008. 2. 1., 2025. 1. 1.>"
+      ],
+      "evaluation": {
+        "accuracy": 0.944,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.704,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.5140830337927844,
+      "timestamp": "2026-02-18T10:45:30.069864"
+    },
+    {
+      "persona": "professor",
+      "query": "재직증명서 발급받고 싶습니다",
+      "category": "admin",
+      "difficulty": "easy",
+      "answer": "규정에 따르면: 제증명서발급규정 > 제3조 발급대상 > 4. 교직원증명서 <신설 2022 > 가. 재직증명서 : 현재 근무하고 있: 재직증명서 : 현재 근무하고 있는 자\n\n제증명서발급규정 > 제9조 수수료: 구분수수료재학생(국문, 영문)500원졸업생(국문, 영문)800원교육비납입증명서500원교직원증명서무상\n구분\n수수료\n재학생(국문, 영문)\n500원\n졸업생(국문, 영문)\n800원\n교육비납입증명서\n500원\n교직원증명서\n무상...",
+      "contexts": [
+        "제증명서발급규정 > 제3조 발급대상 > 4. 교직원증명서 <신설 2022 > 가. 재직증명서 : 현재 근무하고 있: 재직증명서 : 현재 근무하고 있는 자",
+        "제증명서발급규정 > 제9조 수수료: 구분수수료재학생(국문, 영문)500원졸업생(국문, 영문)800원교육비납입증명서500원교직원증명서무상\n구분\n수수료\n재학생(국문, 영문)\n500원\n졸업생(국문, 영문)\n800원\n교육비납입증명서\n500원\n교직원증명서\n무상"
+      ],
+      "evaluation": {
+        "accuracy": 0.906,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.694,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.557904774051438,
+      "timestamp": "2026-02-18T10:45:30.135939"
+    },
+    {
+      "persona": "professor",
+      "query": "승진 심사 서류가 뭡니까?",
+      "category": "personnel",
+      "difficulty": "easy",
+      "answer": "규정에 따르면: 교원인사규정 > 제43조 호봉승급제한 해제시 호봉승급 방법 > ③ > 49. (경과조치) 제32조 승진심사용 연구실적물 중: (경과조치) 제32조 승진심사용 연구실적물 중 2020년 2월 29일 이전 게재되어 국제기타학술지 및 국제기타A학술지로 인정된 논문은 실적물 심사를 제외하나, 2020년 3월 1일 이후 게재된 국제기타학술지 논문은 심사 의뢰 대상이 된다....",
+      "contexts": [
+        "교원인사규정 > 제43조 호봉승급제한 해제시 호봉승급 방법 > ③ > 49. (경과조치) 제32조 승진심사용 연구실적물 중: (경과조치) 제32조 승진심사용 연구실적물 중 2020년 2월 29일 이전 게재되어 국제기타학술지 및 국제기타A학술지로 인정된 논문은 실적물 심사를 제외하나, 2020년 3월 1일 이후 게재된 국제기타학술지 논문은 심사 의뢰 대상이 된다."
+      ],
+      "evaluation": {
+        "accuracy": 0.921,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.698,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.6663993058397621,
+      "timestamp": "2026-02-18T10:45:30.240429"
+    },
+    {
+      "persona": "professor",
+      "query": "연구비 카드 한도가 얼마입니까?",
+      "category": "financial",
+      "difficulty": "easy",
+      "answer": "규정에 따르면: 학술연구보조비지원에관한규정 > 제5조 공동연구에 대한 지원기준 > 1: 1. 주저자 및 교신저자 : 학술연구보조비 지원액×2/(N+2)<개정 2011. 3. 1>\n2. 주저자와 교신저자가 동일인일 경우 : 학술연구보조비 지원액×3/(N+2)<개정 2011. 3. 1>\n3. 공동연구자 : 학술연구보조비 지원액×1/(N+2)<신설 2011. 3. 1>\n※ N은 연구에 참여한 총저자 수 (단, 연구자수가 15명 이상일 때 n을 15로 처리)\n※ 주저자가 명시되지 않은 경우 처음 표시된 저자를 주저자로 인정하며, 교신저자가 명시되지 않은 ...",
+      "contexts": [
+        "학술연구보조비지원에관한규정 > 제5조 공동연구에 대한 지원기준 > 1: 1. 주저자 및 교신저자 : 학술연구보조비 지원액×2/(N+2)<개정 2011. 3. 1>\n2. 주저자와 교신저자가 동일인일 경우 : 학술연구보조비 지원액×3/(N+2)<개정 2011. 3. 1>\n3. 공동연구자 : 학술연구보조비 지원액×1/(N+2)<신설 2011. 3. 1>\n※ N은 연구에 참여한 총저자 수 (단, 연구자수가 15명 이상일 때 n을 15로 처리)\n※ 주저자가 명시되지 않은 경우 처음 표시된 저자를 주저자로 인정하며, 교신저자가 명시되지 않은 경우는 마지막 저자를 교신저자로 인정한다.",
+        "교원파견연구에관한규정 > 제8조 보고사항 > ⑤ 연구실적물을 제출하지 아니한 교원: 연구실적물을 제출하지 아니한 교원은 차후 파견연구 및 연구년을 신청할 수 없으며, 제출기한 이후 연구실적물을 제출한 경우, 차기 파견연구 및 연구년을 위한 근무년수 산정은 연구실적물이 제출된 다음해부터 기산한다. 그리고 연구실적물이 제출될 때까지 교내연구비 배정지원에서 제외한다. <신설 2012. 5. 1>"
+      ],
+      "evaluation": {
+        "accuracy": 0.94,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.703,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.30393599136422544,
+      "timestamp": "2026-02-18T10:45:30.411377"
+    },
+    {
+      "persona": "professor",
+      "query": "연구년제 신청 자격 요건이 어떻게 됩니까?",
+      "category": "research",
+      "difficulty": "medium",
+      "answer": "규정에 따르면: 교원연구년제규정 > 제3조 자격 > ⑥ 산학관련 공동 연구를 위한 교수파견제를 위하여: 산학관련 공동 연구를 위한 교수파견제를 위하여 연구년을 신청하는 경우 우선하여 선정할 수 있다. <신설 2018. 3. 1>\n\n교원인사규정 > 제8조 교원의 자격 > ⑦ 산업체 경력 기준 임용 시 산학협력실적이 없: 산업체 경력 기준 임용 시 산학협력실적이 없는 경우, 산업체경력 2년을 산학협력실적 100%로 대체가 가능하다. 즉, 조교수는 12년 이상, 부교수는 27년 이상, 교수는 34년 이상의 산업체경력으로 신규임용이 가능하다. <신설 20...",
+      "contexts": [
+        "교원연구년제규정 > 제3조 자격 > ⑥ 산학관련 공동 연구를 위한 교수파견제를 위하여: 산학관련 공동 연구를 위한 교수파견제를 위하여 연구년을 신청하는 경우 우선하여 선정할 수 있다. <신설 2018. 3. 1>",
+        "교원인사규정 > 제8조 교원의 자격 > ⑦ 산업체 경력 기준 임용 시 산학협력실적이 없: 산업체 경력 기준 임용 시 산학협력실적이 없는 경우, 산업체경력 2년을 산학협력실적 100%로 대체가 가능하다. 즉, 조교수는 12년 이상, 부교수는 27년 이상, 교수는 34년 이상의 산업체경력으로 신규임용이 가능하다. <신설 2018. 3. 1.>"
+      ],
+      "evaluation": {
+        "accuracy": 0.946,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.704,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.6591244334704819,
+      "timestamp": "2026-02-18T10:45:30.645187"
+    },
+    {
+      "persona": "professor",
+      "query": "정년보장 심사 기준이 구체적으로 어떻게 됩니까?",
+      "category": "personnel",
+      "difficulty": "medium",
+      "answer": "규정에 따르면: 교원및직원의보수규정 > 제2조 적용범위 > ② 2015년 9월 1일 이후 신규임용 된 정년제 교원: 2015년 9월 1일 이후 신규임용 된 정년제 교원은 연봉제를 적용하며 구체적인 운영방법은 따로 정한다. <신설 2015. 9. 1>\n\n비정년제전임교원규정 > 제11조 교수회 > 18. (경과조치) 2020년 3월 1일 현재 재직: (경과조치) 2020년 3월 1일 현재 재직 중인 비정년제전임교원은 2021년 3월 1일자 재임용 심사부터 변경된 기준을 적용한다....",
+      "contexts": [
+        "교원및직원의보수규정 > 제2조 적용범위 > ② 2015년 9월 1일 이후 신규임용 된 정년제 교원: 2015년 9월 1일 이후 신규임용 된 정년제 교원은 연봉제를 적용하며 구체적인 운영방법은 따로 정한다. <신설 2015. 9. 1>",
+        "비정년제전임교원규정 > 제11조 교수회 > 18. (경과조치) 2020년 3월 1일 현재 재직: (경과조치) 2020년 3월 1일 현재 재직 중인 비정년제전임교원은 2021년 3월 1일자 재임용 심사부터 변경된 기준을 적용한다."
+      ],
+      "evaluation": {
+        "accuracy": 0.933,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.701,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.4291220401062965,
+      "timestamp": "2026-02-18T10:45:30.750766"
+    },
+    {
+      "persona": "professor",
+      "query": "교수 승진 심사 절차가 어떻게 진행됩니까?",
+      "category": "personnel",
+      "difficulty": "medium",
+      "answer": "규정에 따르면: 교원인사규정 > 제43조 호봉승급제한 해제시 호봉승급 방법 > ② > 23. (경과조치) 제19조 제1항 각 호중 전임강사: (경과조치) 제19조 제1항 각 호중 전임강사에서 조교수 승진 시 연구업적 인정률 200%는 2009. 3. 1자 승진심사대상자부터 적용하며, 조교수에서 부교수 승진 시 연구업적 인정률 450% 이상, 부교수에서 교수 승진시 연구업적 인정률 600% 이상은 2010. 3. 1자 승진심사대상자부터 적용한다.\n\nJA교원인사규정 > 제3조 신규채용 > ② 교원신규임용지침에 따라 심사 절차에 참여하: 교원신규임용지침...",
+      "contexts": [
+        "교원인사규정 > 제43조 호봉승급제한 해제시 호봉승급 방법 > ② > 23. (경과조치) 제19조 제1항 각 호중 전임강사: (경과조치) 제19조 제1항 각 호중 전임강사에서 조교수 승진 시 연구업적 인정률 200%는 2009. 3. 1자 승진심사대상자부터 적용하며, 조교수에서 부교수 승진 시 연구업적 인정률 450% 이상, 부교수에서 교수 승진시 연구업적 인정률 600% 이상은 2010. 3. 1자 승진심사대상자부터 적용한다.",
+        "JA교원인사규정 > 제3조 신규채용 > ② 교원신규임용지침에 따라 심사 절차에 참여하: 교원신규임용지침에 따라 심사 절차에 참여하는 심사위원 구성은 원소속 학과(전공)와 참여 학과(전공) 전임교원 포함을 원칙으로 하되, 구성이 어려운 경우 원소속 학과(전공) 또는 참여 학과(전공)만으로도 구성할 수 있다."
+      ],
+      "evaluation": {
+        "accuracy": 0.939,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.702,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.7764524636131463,
+      "timestamp": "2026-02-18T10:45:30.833584"
+    },
+    {
+      "persona": "professor",
+      "query": "연구비 간접비 비율이 얼마입니까?",
+      "category": "research",
+      "difficulty": "medium",
+      "answer": "규정에 따르면: 교원파견연구에관한규정 > 제8조 보고사항 > ⑤ 연구실적물을 제출하지 아니한 교원: 연구실적물을 제출하지 아니한 교원은 차후 파견연구 및 연구년을 신청할 수 없으며, 제출기한 이후 연구실적물을 제출한 경우, 차기 파견연구 및 연구년을 위한 근무년수 산정은 연구실적물이 제출된 다음해부터 기산한다. 그리고 연구실적물이 제출될 때까지 교내연구비 배정지원에서 제외한다. <신설 2012. 5. 1>\n\n국내외학술회의참가지원에관한규정 > 제2조 지원범위 > ② 연구자가 2인 이상일 경우 학술회의참가지원비: 연구자가 2인 이상일 경우 학술회의참가...",
+      "contexts": [
+        "교원파견연구에관한규정 > 제8조 보고사항 > ⑤ 연구실적물을 제출하지 아니한 교원: 연구실적물을 제출하지 아니한 교원은 차후 파견연구 및 연구년을 신청할 수 없으며, 제출기한 이후 연구실적물을 제출한 경우, 차기 파견연구 및 연구년을 위한 근무년수 산정은 연구실적물이 제출된 다음해부터 기산한다. 그리고 연구실적물이 제출될 때까지 교내연구비 배정지원에서 제외한다. <신설 2012. 5. 1>",
+        "국내외학술회의참가지원에관한규정 > 제2조 지원범위 > ② 연구자가 2인 이상일 경우 학술회의참가지원비: 연구자가 2인 이상일 경우 학술회의참가지원비는 책임연구자(학술연구보조비지원에관한규정에 의한 책임연구자의 기준)에게 지급한다. <개정 2016. 3. 1>"
+      ],
+      "evaluation": {
+        "accuracy": 0.941,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.703,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.4423235412034117,
+      "timestamp": "2026-02-18T10:45:31.011729"
+    },
+    {
+      "persona": "professor",
+      "query": "학기당 강의 시간이 몇 시간입니까?",
+      "category": "teaching",
+      "difficulty": "medium",
+      "answer": "규정에 따르면: 강의전담교원임용규정 > 제14조 준용 > 5. (경과조치) 2012년 2월 29일 현재 재직: (경과조치) 2012년 2월 29일 현재 재직 중인 강의전담교원의 강의책임시간은 임용계약기간이 만료될 때까지는 주 12시간으로 한다.\n\n비정년제전임교원규정 > 제2조 구분 > ② 교육전담교원: 교육전담교원의 강의 책임시간은 매주 9시간, 산학협력교원의 강의 책임시간은 매주 6시간으로 하며, 연구전담교원의 강의 책임시간은 연구활동 정도에 따라 조정할 수 있다. 단, 산학협력교원의 경우 직전 재계약평정 필수업적 중 취업학생수가 연간 7명 이상...",
+      "contexts": [
+        "강의전담교원임용규정 > 제14조 준용 > 5. (경과조치) 2012년 2월 29일 현재 재직: (경과조치) 2012년 2월 29일 현재 재직 중인 강의전담교원의 강의책임시간은 임용계약기간이 만료될 때까지는 주 12시간으로 한다.",
+        "비정년제전임교원규정 > 제2조 구분 > ② 교육전담교원: 교육전담교원의 강의 책임시간은 매주 9시간, 산학협력교원의 강의 책임시간은 매주 6시간으로 하며, 연구전담교원의 강의 책임시간은 연구활동 정도에 따라 조정할 수 있다. 단, 산학협력교원의 경우 직전 재계약평정 필수업적 중 취업학생수가 연간 7명 이상일 경우와 재직자전형 학생모집 실적이 학생 모집 연간 22명 이상일 경우, 재계약임용 평가기간 중 취득한 산학협력업적 점수가 상위 5%에 해당되는 경우 책임시간은 매주 3시간으로 감면할 수 있다. <개정 2011. 7. 1., 2012. 6. 1., 2014. 3. 1., 2018. 3. 1., 2019. 3. 1., 2020. 3. 1.>"
+      ],
+      "evaluation": {
+        "accuracy": 0.943,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.703,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.36580201851400895,
+      "timestamp": "2026-02-18T10:45:31.259579"
+    },
+    {
+      "persona": "professor",
+      "query": "대학원생 지도비 지급 기준이 어떻게 됩니까?",
+      "category": "research",
+      "difficulty": "medium",
+      "answer": "규정에 따르면: 대학원장학금지급에관한세칙 > 제1조 목적: 제3편 행정 3—2—107～대학원장학금지급에관한세칙 3—2—107～\n제3편 행정 3—2—107～\n대학원장학금지급에관한세칙 3—2—107～\n\n동의대학교대학원학칙 > 제36조 <삭제 2004. 3. 1>: 제9장 학생지도ㆍ의무, 장학 및 연구보조, 포상 및 징계...",
+      "contexts": [
+        "대학원장학금지급에관한세칙 > 제1조 목적: 제3편 행정 3—2—107～대학원장학금지급에관한세칙 3—2—107～\n제3편 행정 3—2—107～\n대학원장학금지급에관한세칙 3—2—107～",
+        "동의대학교대학원학칙 > 제36조 <삭제 2004. 3. 1>: 제9장 학생지도ㆍ의무, 장학 및 연구보조, 포상 및 징계"
+      ],
+      "evaluation": {
+        "accuracy": 0.87,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.685,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.4907514208097254,
+      "timestamp": "2026-02-18T10:45:31.373978"
+    },
+    {
+      "persona": "professor",
+      "query": "휴직 중 연구비 집행 가능합니까?",
+      "category": "research",
+      "difficulty": "medium",
+      "answer": "규정에 따르면: 교내연구비운영규정 > 제9조 연구비 지원 > ③ 특별연구과제: 특별연구과제의 연구비는 연구책임자의 지급신청에 의하여 지급한다. <신설 2024. 6. 1.>\n<신설 2014. 3. 1., 개정 2024. 6. 1.>\n\n입학사정관: ▪위촉입학사정관 위촉\n○\n▪입학사정관 교육‧훈련 계획 수립 및 운영\n○\n통계분석\n▪전형결과 통계 분석\n○\n▪학생부종합전형 특성 분석\n○\n홍보\n▪입시홍보 계획 수립\n○\n▪온‧오프라인 입시홍보 운영\n○\n▪입시홍보 콘텐츠 제작\n○\n▪입학홍보대사 선발 및 운영\n○\n지원사업\n▪고교교육 기여대학 지원사업 관리 및 운...",
+      "contexts": [
+        "교내연구비운영규정 > 제9조 연구비 지원 > ③ 특별연구과제: 특별연구과제의 연구비는 연구책임자의 지급신청에 의하여 지급한다. <신설 2024. 6. 1.>\n<신설 2014. 3. 1., 개정 2024. 6. 1.>",
+        "입학사정관: ▪위촉입학사정관 위촉\n○\n▪입학사정관 교육‧훈련 계획 수립 및 운영\n○\n통계분석\n▪전형결과 통계 분석\n○\n▪학생부종합전형 특성 분석\n○\n홍보\n▪입시홍보 계획 수립\n○\n▪온‧오프라인 입시홍보 운영\n○\n▪입시홍보 콘텐츠 제작\n○\n▪입학홍보대사 선발 및 운영\n○\n지원사업\n▪고교교육 기여대학 지원사업 관리 및 운영\n○\n고교연계\n▪고교-대학연계 프로그램 기획\n○\n▪고교-대학연계 프로그램 운영\n○\n연구\n▪입학전형 관련 연구 수행\n○\n위원회\n▪입학전형 관련 위원회 위원 위촉\n○\n▪입학전형 관련 위원회 운영\n○\n입학허가\n▪입학허가 및 취소\n○\n▪이의제기에 대한 심의\n○\n￭국제교류처 국제교류팀\n단위업무세 부 업 무총장전결권자부총장부서장팀장국제교류▪국제교류처장 직인 관수○▪국외 대학과의 자매결연 및 국제학술교류 관련 업무○▪국외 대학 교환교수 파견 및 초빙 관련 업무○▪외국인 유학생 유치 및 관리○▪외국인 유학생을 위한 프로그램 운영○▪교환학생, 연수생 선발 및 파견○▪부서 관련 위원회 "
+      ],
+      "evaluation": {
+        "accuracy": 0.942,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.703,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.6372656914633079,
+      "timestamp": "2026-02-18T10:45:31.640149"
+    },
+    {
+      "persona": "professor",
+      "query": "산학협력 연구 계약 절차가 어떻게 됩니까?",
+      "category": "research",
+      "difficulty": "medium",
+      "answer": "규정에 따르면: 비정년제전임교원규정 > 제2조 구분 > ② 교육전담교원: 교육전담교원의 강의 책임시간은 매주 9시간, 산학협력교원의 강의 책임시간은 매주 6시간으로 하며, 연구전담교원의 강의 책임시간은 연구활동 정도에 따라 조정할 수 있다. 단, 산학협력교원의 경우 직전 재계약평정 필수업적 중 취업학생수가 연간 7명 이상일 경우와 재직자전형 학생모집 실적이 학생 모집 연간 22명 이상일 경우, 재계약임용 평가기간 중 취득한 산학협력업적 점수가 상위 5%에 해당되는 경우 책임시간은 매주 3시간으로 감면할 수 있다. <개정 2011. 7. 1., 20...",
+      "contexts": [
+        "비정년제전임교원규정 > 제2조 구분 > ② 교육전담교원: 교육전담교원의 강의 책임시간은 매주 9시간, 산학협력교원의 강의 책임시간은 매주 6시간으로 하며, 연구전담교원의 강의 책임시간은 연구활동 정도에 따라 조정할 수 있다. 단, 산학협력교원의 경우 직전 재계약평정 필수업적 중 취업학생수가 연간 7명 이상일 경우와 재직자전형 학생모집 실적이 학생 모집 연간 22명 이상일 경우, 재계약임용 평가기간 중 취득한 산학협력업적 점수가 상위 5%에 해당되는 경우 책임시간은 매주 3시간으로 감면할 수 있다. <개정 2011. 7. 1., 2012. 6. 1., 2014. 3. 1., 2018. 3. 1., 2019. 3. 1., 2020. 3. 1.>",
+        "교원인사규정 > 제43조 호봉승급제한 해제시 호봉승급 방법 > ③ > 52. (경과조치) 제18조, 19조, 22조, 23조: (경과조치) 제18조, 19조, 22조, 23조의 승진임용과 재계약임용 연구실적물에 대해 산학협력업적점수 전체로 대체 할 수 있도록 하는 내용은 2022. 3. 1.자 이후 실적부터 적용되며 2022. 2. 28자 이전의 산학협력업적점수의 연구실적 대체는 2022. 3. 1.자 개정 이전 규정을 따른다."
+      ],
+      "evaluation": {
+        "accuracy": 0.946,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.704,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.5491057330268231,
+      "timestamp": "2026-02-18T10:45:31.943101"
+    },
+    {
+      "persona": "professor",
+      "query": "방학 중 연구실 사용 규정이 어떻게 됩니까?",
+      "category": "research",
+      "difficulty": "medium",
+      "answer": "규정에 따르면: 연구실안전관리규정 > 제4조 연구실안전관리위원회구성및운영 > ② 위원회: 위원회는 교학부총장·관리처장·산학협력단장·연구실안전환경관리자와 연구실책임자·연구활동종사자 중에서 총장이 지명하는 자 등 15인으로 구성하되 연구활동종사자가 2 분의 1 이상이 포함되어야 하며, 위원장은 교학부총장으로 한다. 위원장은 필요시 위원 중 1인을 연구실 안전관리책임위원으로 지정할 수 있다. <개정 2008. 2. 1, 2009. 6. 16, 2009. 9. 1, 2009. 10. 20, 2014. 3. 1, 2014. 8. 20, 2016. 12. 1...",
+      "contexts": [
+        "연구실안전관리규정 > 제4조 연구실안전관리위원회구성및운영 > ② 위원회: 위원회는 교학부총장·관리처장·산학협력단장·연구실안전환경관리자와 연구실책임자·연구활동종사자 중에서 총장이 지명하는 자 등 15인으로 구성하되 연구활동종사자가 2 분의 1 이상이 포함되어야 하며, 위원장은 교학부총장으로 한다. 위원장은 필요시 위원 중 1인을 연구실 안전관리책임위원으로 지정할 수 있다. <개정 2008. 2. 1, 2009. 6. 16, 2009. 9. 1, 2009. 10. 20, 2014. 3. 1, 2014. 8. 20, 2016. 12. 1, 2020. 3. 1>",
+        "연구실안전관리규정 > 제3조 정의 > 7. “연구실사고”: “연구실사고”란 연구실에서 연구활동과 관련하여 연구활동종사자가 부상·질병·신체장해·사망 등 생명 및 신체상의 손해를 입거나 연구실의 시설·장비 등이 훼손되는 것을 말한다. <신설 2014. 3. 1>"
+      ],
+      "evaluation": {
+        "accuracy": 0.943,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.703,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.5612633114320827,
+      "timestamp": "2026-02-18T10:45:32.074488"
+    },
+    {
+      "persona": "professor",
+      "query": "교원 연수 지원금이 얼마입니까?",
+      "category": "training",
+      "difficulty": "medium",
+      "answer": "규정에 따르면: 학교법인동의학원정관 > 제131조 사학기관 행동강령 > ② > 14. (교직원에 대한 경과조치) 이 정관 시행 당시: (교직원에 대한 경과조치) 이 정관 시행 당시 대학교육기관에 근무하는 교원(학교의 장을 제외한다) 및 일반직원은 이 정관에 의하여 당해 학교법인이 임명 한 것으로 본다. 다만, 대학교육기관의 교원 임용기간은 종전의 임용기간의 잔여기간으로 한다.\n\n사무분장규정 > 제13조 교무팀 > 11. 교원 교육ㆍ훈련 > 가. 교원 연수(대교협 연수 포함): 교원 연수(대교협 연수 포함)...",
+      "contexts": [
+        "학교법인동의학원정관 > 제131조 사학기관 행동강령 > ② > 14. (교직원에 대한 경과조치) 이 정관 시행 당시: (교직원에 대한 경과조치) 이 정관 시행 당시 대학교육기관에 근무하는 교원(학교의 장을 제외한다) 및 일반직원은 이 정관에 의하여 당해 학교법인이 임명 한 것으로 본다. 다만, 대학교육기관의 교원 임용기간은 종전의 임용기간의 잔여기간으로 한다.",
+        "사무분장규정 > 제13조 교무팀 > 11. 교원 교육ㆍ훈련 > 가. 교원 연수(대교협 연수 포함): 교원 연수(대교협 연수 포함)"
+      ],
+      "evaluation": {
+        "accuracy": 0.94,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.703,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.5132557201466487,
+      "timestamp": "2026-02-18T10:45:32.143100"
+    },
+    {
+      "persona": "professor",
+      "query": "연구년제 중 타 대학 겸직 가능합니까?",
+      "category": "research",
+      "difficulty": "hard",
+      "answer": "규정에 따르면: 교원파견연구에관한규정 > 제8조 보고사항 > ④ 파견연구교원: 파견연구교원은 복교 후 지원기관의 지침에 따라 국내 및 국제학술지에 게재한 연구실적물을 본교에도 반드시 제출해야 하고, 지원기관 지침이 없을 경우 교원연구년제규정 제11조(보고 및 연구실적물 제출) 제\n\n교원연구년제규정 > 제1조 목적: 제3편 행정 3—1—24～교원연구년제규정 3—1—24～\n제3편 행정 3—1—24～\n교원연구년제규정 3—1—24～...",
+      "contexts": [
+        "교원파견연구에관한규정 > 제8조 보고사항 > ④ 파견연구교원: 파견연구교원은 복교 후 지원기관의 지침에 따라 국내 및 국제학술지에 게재한 연구실적물을 본교에도 반드시 제출해야 하고, 지원기관 지침이 없을 경우 교원연구년제규정 제11조(보고 및 연구실적물 제출) 제",
+        "교원연구년제규정 > 제1조 목적: 제3편 행정 3—1—24～교원연구년제규정 3—1—24～\n제3편 행정 3—1—24～\n교원연구년제규정 3—1—24～"
+      ],
+      "evaluation": {
+        "accuracy": 0.923,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.698,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.5867635392744445,
+      "timestamp": "2026-02-18T10:45:32.274210"
+    },
+    {
+      "persona": "professor",
+      "query": "정년보장 심사 탈락 시 이의신청 가능합니까?",
+      "category": "personnel",
+      "difficulty": "hard",
+      "answer": "규정에 따르면: 성적평가규정 > 제7조 성적입력 및 확정 > ③ 성적 공고 및 이의신청 종료 후 교과목 담당교수: 성적 공고 및 이의신청 종료 후 교과목 담당교수는 최종확정 처리를 해야 한다. <개정 2020. 9. 1., 2020. 11. 1., 2023. 9. 1.>\n\n평정기준: 평정점\n5점\n4점\n3점\n2점\n1점\n근무태도\n직무수행의 성실도, 복무규율의 준수의 자세\n창의·개혁성\n창의적으로 업무를 개선하고 조직의 발전과 변혁을 추구하는 자세와 의욕\n업무추진력\n업무를 신속·정확·공정하게 처리하고 문제점을 파악하여 적극적으로 해결하는 능력\n인품\n예절,...",
+      "contexts": [
+        "성적평가규정 > 제7조 성적입력 및 확정 > ③ 성적 공고 및 이의신청 종료 후 교과목 담당교수: 성적 공고 및 이의신청 종료 후 교과목 담당교수는 최종확정 처리를 해야 한다. <개정 2020. 9. 1., 2020. 11. 1., 2023. 9. 1.>",
+        "평정기준: 평정점\n5점\n4점\n3점\n2점\n1점\n근무태도\n직무수행의 성실도, 복무규율의 준수의 자세\n창의·개혁성\n창의적으로 업무를 개선하고 조직의 발전과 변혁을 추구하는 자세와 의욕\n업무추진력\n업무를 신속·정확·공정하게 처리하고 문제점을 파악하여 적극적으로 해결하는 능력\n인품\n예절, 품행, 교양 등 교직원으로 갖추어야 할 소망과 자질\n애교심\n조직구성원으로서의 사명감을 가지고 조직의 발전을 위해 헌신·기여하려는 자세와 노력\n인화·봉사성\n구성원 간 협동과 단결, 타부서업무에 적극적으로 협조하며, 행정업무를 수행함에 있어 친절하며 정성껏 봉사하려는 자세\n지도·통솔력\n업무효과가 극대화될 수 있도록 구성원들을 지도·감독하고 통솔할 수 있는 능력\n총 점\n다면평정위원직위 : 성명 : (인)\n다면평정위원\n직위 : 성명 : (인)\n[별지 제9호 서식]\n경력ㆍ가점ㆍ감점평정표\n□ 소속 : □ 직급: (현직급임용일 : )\n□ 성명 : □ 평정일자 : 년 월 일\n구 분평정점평 정 대 상 경 력비 고경력평정기본"
+      ],
+      "evaluation": {
+        "accuracy": 0.95,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.705,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.4401823450324356,
+      "timestamp": "2026-02-18T10:45:32.501023"
+    },
+    {
+      "persona": "professor",
+      "query": "연구비 부정집행 시 제재가 어떻게 됩니까?",
+      "category": "research",
+      "difficulty": "hard",
+      "answer": "규정에 따르면: 학술연구보조비지원에관한규정 > 제5조 공동연구에 대한 지원기준 > 1: 1. 주저자 및 교신저자 : 학술연구보조비 지원액×2/(N+2)<개정 2011. 3. 1>\n2. 주저자와 교신저자가 동일인일 경우 : 학술연구보조비 지원액×3/(N+2)<개정 2011. 3. 1>\n3. 공동연구자 : 학술연구보조비 지원액×1/(N+2)<신설 2011. 3. 1>\n※ N은 연구에 참여한 총저자 수 (단, 연구자수가 15명 이상일 때 n을 15로 처리)\n※ 주저자가 명시되지 않은 경우 처음 표시된 저자를 주저자로 인정하며, 교신저자가 명시되지 않은 ...",
+      "contexts": [
+        "학술연구보조비지원에관한규정 > 제5조 공동연구에 대한 지원기준 > 1: 1. 주저자 및 교신저자 : 학술연구보조비 지원액×2/(N+2)<개정 2011. 3. 1>\n2. 주저자와 교신저자가 동일인일 경우 : 학술연구보조비 지원액×3/(N+2)<개정 2011. 3. 1>\n3. 공동연구자 : 학술연구보조비 지원액×1/(N+2)<신설 2011. 3. 1>\n※ N은 연구에 참여한 총저자 수 (단, 연구자수가 15명 이상일 때 n을 15로 처리)\n※ 주저자가 명시되지 않은 경우 처음 표시된 저자를 주저자로 인정하며, 교신저자가 명시되지 않은 경우는 마지막 저자를 교신저자로 인정한다.",
+        "제3편 행정 3—1—121～연구윤리규정 3—1—121～연구윤리규정 > 제5조 국가연구개발사업 관련 부정행위의 금지 > 1. 연구개발자료 또: 1. 연구개발자료 또는 연구개발성과를 위조․변조․표절하거나 저자를 부당하게 표시하는 행위\n2. 국가연구개발사업 연구개발비의 사용용도와 연구개발비 사용 기준을 위반한 행위\n3. 국가연구개발사업 연구개발성과의 소유․관리에 관한 규정을 위반하여 연구개발성과를 소유하거나 제3자에게 소유하게 한 행위\n4. 국가연구개발사업 및 연구개발과제와 관련하여 연구개발성과 등 중요 정보가 유출되지 아니하도록 중앙행정기관의 장이나 본교에서 수립․시행한 보안대책을 위반하거나 보안과제로 분류된 연구개발과제의 보안사항을 누설하거나 유출하는 행위\n5. 거짓이나 그 밖의 부정한 방법으로 연구개발과제를 신청하거나 이를 수행하는 행위\n6. 그 밖에 국가연구개발활동의 건전성을 저해하는 다음 각 목의 행위\n가. 연구부정행위 제보자에 대한 검증․조치 및 조사의 공정성․객관성을 해치는 "
+      ],
+      "evaluation": {
+        "accuracy": 0.94,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.703,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.37513970587745094,
+      "timestamp": "2026-02-18T10:45:32.688536"
+    },
+    {
+      "persona": "professor",
+      "query": "휴직 후 복직 시 호봉 어떻게 산정됩니까?",
+      "category": "personnel",
+      "difficulty": "hard",
+      "answer": "규정에 따르면: 학교법인동의학원정관 > 제45조 휴직의 기간 > 10. 제44조제1항제11호 및 제12호: 제44조제1항제11호 및 제12호의 사유로 인한 휴직기간은 그 임용기간으로 한다.\n\n교원인사규정 > 제6조 근무기간의 계산 > ④ 정관 제44조: 정관 제44조의 휴직사유로 인한 휴직기간은 근무기간에 산입하지 아니한다....",
+      "contexts": [
+        "학교법인동의학원정관 > 제45조 휴직의 기간 > 10. 제44조제1항제11호 및 제12호: 제44조제1항제11호 및 제12호의 사유로 인한 휴직기간은 그 임용기간으로 한다.",
+        "교원인사규정 > 제6조 근무기간의 계산 > ④ 정관 제44조: 정관 제44조의 휴직사유로 인한 휴직기간은 근무기간에 산입하지 아니한다."
+      ],
+      "evaluation": {
+        "accuracy": 0.9,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.693,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.4256186650614726,
+      "timestamp": "2026-02-18T10:45:32.797829"
+    },
+    {
+      "persona": "professor",
+      "query": "명예교수 위촉 조건이 어떻게 됩니까?",
+      "category": "personnel",
+      "difficulty": "hard",
+      "answer": "규정에 따르면: [3-2] 연구실(실험․실습실) 일반 안전수칙 > 3. 항상 실험 > 다. 위험한 반응 조건(고온, 고압 등): 위험한 반응 조건(고온, 고압 등)\n\n명예교수규정 > 제7조 대우 > 4. (경과조치) 종전 규정에 의해 추대된 명예교수: (경과조치) 종전 규정에 의해 추대된 명예교수의 추대기간은 그 추대일로부터 10년으로 한다....",
+      "contexts": [
+        "[3-2] 연구실(실험․실습실) 일반 안전수칙 > 3. 항상 실험 > 다. 위험한 반응 조건(고온, 고압 등): 위험한 반응 조건(고온, 고압 등)",
+        "명예교수규정 > 제7조 대우 > 4. (경과조치) 종전 규정에 의해 추대된 명예교수: (경과조치) 종전 규정에 의해 추대된 명예교수의 추대기간은 그 추대일로부터 10년으로 한다."
+      ],
+      "evaluation": {
+        "accuracy": 0.938,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.702,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.5062922731365006,
+      "timestamp": "2026-02-18T10:45:32.943079"
+    },
+    {
+      "persona": "staff-admin",
+      "query": "연차 휴가 신청 어떻게 하나요?",
+      "category": "leave",
+      "difficulty": "easy",
+      "answer": "규정에 따르면: 대학직장예비군연대운영규정 > 제4조 교육훈련 > ③ 교직원 : 연차에 따라 훈련유형을 차등적용하여: 교직원 : 연차에 따라 훈련유형을 차등적용하여 실시한다. <개정 2019. 3. 1>\n제2장 편성 기구\n\n교직원복무규정 > 제28조 특별휴가 > ⑤ 임신중: 임신중의 여교직원에 대하여는 그 출산의 전후를 통하여 90일의 출산휴가를 허가하여야 한다. 단, 휴가기간의 배치는 산후에 45일 이상이 되어야 한다. <개정 2007. 7. 1.>...",
+      "contexts": [
+        "대학직장예비군연대운영규정 > 제4조 교육훈련 > ③ 교직원 : 연차에 따라 훈련유형을 차등적용하여: 교직원 : 연차에 따라 훈련유형을 차등적용하여 실시한다. <개정 2019. 3. 1>\n제2장 편성 기구",
+        "교직원복무규정 > 제28조 특별휴가 > ⑤ 임신중: 임신중의 여교직원에 대하여는 그 출산의 전후를 통하여 90일의 출산휴가를 허가하여야 한다. 단, 휴가기간의 배치는 산후에 45일 이상이 되어야 한다. <개정 2007. 7. 1.>"
+      ],
+      "evaluation": {
+        "accuracy": 0.938,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.702,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.44653166476864853,
+      "timestamp": "2026-02-18T10:45:33.064053"
+    },
+    {
+      "persona": "staff-admin",
+      "query": "복무 근무 시간이 어떻게 되나요?",
+      "category": "personnel",
+      "difficulty": "easy",
+      "answer": "규정에 따르면: 교직원복무규정 > 제17조 시간외 근무 및 공휴일 근무: 제3장 업무인계ㆍ인수\n\n교직원복무규정 > 제24조 연가: 근속기간연가일수1년 미만월간 개근시 1일1년 이상연간 8할 이상 출근시 15일\n근속기간\n연가일수\n1년 미만\n월간 개근시 1일\n1년 이상\n연간 8할 이상 출근시 15일...",
+      "contexts": [
+        "교직원복무규정 > 제17조 시간외 근무 및 공휴일 근무: 제3장 업무인계ㆍ인수",
+        "교직원복무규정 > 제24조 연가: 근속기간연가일수1년 미만월간 개근시 1일1년 이상연간 8할 이상 출근시 15일\n근속기간\n연가일수\n1년 미만\n월간 개근시 1일\n1년 이상\n연간 8할 이상 출근시 15일"
+      ],
+      "evaluation": {
+        "accuracy": 0.903,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.693,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.4069448179829145,
+      "timestamp": "2026-02-18T10:45:33.157188"
+    },
+    {
+      "persona": "staff-admin",
+      "query": "급여 명세서 어디서 확인하나요?",
+      "category": "salary",
+      "difficulty": "easy",
+      "answer": "규정에 따르면: 한국어연수과정운영규정 > 제5조 교원 및 강사 > ② 교원 및 대우전임교원: 교원 및 대우전임교원은 상호계약에 의하되, 급여는 연봉제로 하며 세부사항은 따로 정한다.\n\n교원및직원의보수규정 > 제2조 적용범위 > ② 2015년 9월 1일 이후 신규임용 된 정년제 교원: 2015년 9월 1일 이후 신규임용 된 정년제 교원은 연봉제를 적용하며 구체적인 운영방법은 따로 정한다. <신설 2015. 9. 1>...",
+      "contexts": [
+        "한국어연수과정운영규정 > 제5조 교원 및 강사 > ② 교원 및 대우전임교원: 교원 및 대우전임교원은 상호계약에 의하되, 급여는 연봉제로 하며 세부사항은 따로 정한다.",
+        "교원및직원의보수규정 > 제2조 적용범위 > ② 2015년 9월 1일 이후 신규임용 된 정년제 교원: 2015년 9월 1일 이후 신규임용 된 정년제 교원은 연봉제를 적용하며 구체적인 운영방법은 따로 정한다. <신설 2015. 9. 1>"
+      ],
+      "evaluation": {
+        "accuracy": 0.923,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.698,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.4329954161245353,
+      "timestamp": "2026-02-18T10:45:33.253083"
+    },
+    {
+      "persona": "staff-admin",
+      "query": "사무용품 구매 요청 어떻게 하나요?",
+      "category": "admin",
+      "difficulty": "easy",
+      "answer": "규정에 따르면: 구매업무규정 > 제7조 구매절차 > 1: 1. 구매요청서접수\n2. 시장(가격) 조사\n3. 구매·계약 방법 및 낙찰자 결정방법 결정\n4. 예정가격 결정 및 업체 선정\n5. 계약서 작성 및 발주\n6. 검수(검사)필인 확인 및 대금 지급 요청\n\n구매업무규정 > 제2조 용어의 정의 > ① ‘구매’라 함: ‘구매’라 함은 물품구매계약, 시설공사계약, 용역계약, 매각계약 등에 관한 행위를 말한다....",
+      "contexts": [
+        "구매업무규정 > 제7조 구매절차 > 1: 1. 구매요청서접수\n2. 시장(가격) 조사\n3. 구매·계약 방법 및 낙찰자 결정방법 결정\n4. 예정가격 결정 및 업체 선정\n5. 계약서 작성 및 발주\n6. 검수(검사)필인 확인 및 대금 지급 요청",
+        "구매업무규정 > 제2조 용어의 정의 > ① ‘구매’라 함: ‘구매’라 함은 물품구매계약, 시설공사계약, 용역계약, 매각계약 등에 관한 행위를 말한다."
+      ],
+      "evaluation": {
+        "accuracy": 0.938,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.702,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.5031044989329373,
+      "timestamp": "2026-02-18T10:45:33.367562"
+    },
+    {
+      "persona": "staff-admin",
+      "query": "건강검진 신청 기간이 언제까지인가요?",
+      "category": "personnel",
+      "difficulty": "easy",
+      "answer": "규정에 따르면: 사무분장규정 > 제14조 학사지원팀 > 49. 시간제등록생 신청 접수 및 관리: 시간제등록생 신청 접수 및 관리\n\n연장평가 판정 기준 > 제5조 교육과정 편성 > 구분편성기간학점시행시기단기1개월3학점계절수업2: 구분편성기간학점시행시기단기1개월3학점계절수업2개월6학점장기15주 이상17학점(단, 졸업 학점이 140 학점 이상인 학과의 경우 18학점 부여)학기 중\n구분\n편성기간\n학점\n시행시기\n단기\n1개월\n3학점\n계절수업\n2개월\n6학점\n장기\n15주 이상\n17학점\n(단, 졸업 학점이 140 학점 이상인 학과의 경우 18학점 부여)\n학기 중...",
+      "contexts": [
+        "사무분장규정 > 제14조 학사지원팀 > 49. 시간제등록생 신청 접수 및 관리: 시간제등록생 신청 접수 및 관리",
+        "연장평가 판정 기준 > 제5조 교육과정 편성 > 구분편성기간학점시행시기단기1개월3학점계절수업2: 구분편성기간학점시행시기단기1개월3학점계절수업2개월6학점장기15주 이상17학점(단, 졸업 학점이 140 학점 이상인 학과의 경우 18학점 부여)학기 중\n구분\n편성기간\n학점\n시행시기\n단기\n1개월\n3학점\n계절수업\n2개월\n6학점\n장기\n15주 이상\n17학점\n(단, 졸업 학점이 140 학점 이상인 학과의 경우 18학점 부여)\n학기 중"
+      ],
+      "evaluation": {
+        "accuracy": 0.939,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.702,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.5857901033215072,
+      "timestamp": "2026-02-18T10:45:33.759334"
+    },
+    {
+      "persona": "staff-admin",
+      "query": "연말정산 서류 제출 언제까지인가요?",
+      "category": "salary",
+      "difficulty": "easy",
+      "answer": "규정에 따르면: 조교규정 > 제7조 대우 및 보수 > 8. (경과조치) 2005년 12월 31일 이전 임: (경과조치) 2005년 12월 31일 이전 임용자 중 임용 기간을 통산하여 3년이 경과된 조교(학사/실습조교)는 재임용 제외대상에서 제외하며, 2006년 1월 1일 이후 임용되는 조교는 계약기간 + 학기말까지의 잔여기간 동안만 임용한다.\n\n휴학규정 > 제6조 통산기간 및 연장 > ③ 부득이한 사유가 있: 부득이한 사유가 있는 경우에는 통산기간 내에서 개강일 전에 1회에 한하여 연장할 수 있으며 2개 학기를 초과할 수 없다. <개정 2011. ...",
+      "contexts": [
+        "조교규정 > 제7조 대우 및 보수 > 8. (경과조치) 2005년 12월 31일 이전 임: (경과조치) 2005년 12월 31일 이전 임용자 중 임용 기간을 통산하여 3년이 경과된 조교(학사/실습조교)는 재임용 제외대상에서 제외하며, 2006년 1월 1일 이후 임용되는 조교는 계약기간 + 학기말까지의 잔여기간 동안만 임용한다.",
+        "휴학규정 > 제6조 통산기간 및 연장 > ③ 부득이한 사유가 있: 부득이한 사유가 있는 경우에는 통산기간 내에서 개강일 전에 1회에 한하여 연장할 수 있으며 2개 학기를 초과할 수 없다. <개정 2011. 12. 1., 2016. 9. 1., 2019. 2. 1.>\n유급, 육아(임신, 출산 포함)로 인한 휴학은 통산기간에 포함하지 않는다. <개정 2011. 12. 1., 2016. 9. 1., 2019. 2. 1.>\n자는 복학예정학기 개시일 이전에 구비서류를 제출하여 허가를 받아야 한다. <신설 2011. 12. 1.>"
+      ],
+      "evaluation": {
+        "accuracy": 0.95,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.705,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.5652948872896806,
+      "timestamp": "2026-02-18T10:45:34.005220"
+    },
+    {
+      "persona": "staff-admin",
+      "query": "출장비 정산 어떻게 하나요?",
+      "category": "financial",
+      "difficulty": "easy",
+      "answer": "규정에 따르면: 직원국내외출장에관한규정 > 제10조 여비지급의 특례 > 14. 이 변경 규정 > 가. 출장자: 출장자...",
+      "contexts": [
+        "직원국내외출장에관한규정 > 제10조 여비지급의 특례 > 14. 이 변경 규정 > 가. 출장자: 출장자"
+      ],
+      "evaluation": {
+        "accuracy": 0.786,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.664,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.7645738636363636,
+      "timestamp": "2026-02-18T10:45:34.105041"
+    },
+    {
+      "persona": "staff-admin",
+      "query": "회의실 예약 방법이 뭐예요?",
+      "category": "admin",
+      "difficulty": "easy",
+      "answer": "규정에 따르면: 시설관리규정 > 제10조 일반 관리 > 1. 건물 및 구축물: 1. 건물 및 구축물의 신설, 구조변경의 경우\n2. 실용도의 확정 및 변경의 경우\n3. 건축법, 소방법 등 건축 관련법에 반하여 불가피하게 시설물을 변경하게 될 경우\n4. 실험실습실, 교수연구실 및 행정사무실에 개별 냉난방기기를 설치할 경우\n5. 기타 중요한 사항의 경우\n\n시설물사용에관한규정 > 제5조 사용허가 > ② 시설물사용허가 사항이 학생활동과 관련이 되: 시설물사용허가 사항이 학생활동과 관련이 되는 경우에는 동아리 지도교수 또는 학생지원처장을 경유하여 신청하여야 ...",
+      "contexts": [
+        "시설관리규정 > 제10조 일반 관리 > 1. 건물 및 구축물: 1. 건물 및 구축물의 신설, 구조변경의 경우\n2. 실용도의 확정 및 변경의 경우\n3. 건축법, 소방법 등 건축 관련법에 반하여 불가피하게 시설물을 변경하게 될 경우\n4. 실험실습실, 교수연구실 및 행정사무실에 개별 냉난방기기를 설치할 경우\n5. 기타 중요한 사항의 경우",
+        "시설물사용에관한규정 > 제5조 사용허가 > ② 시설물사용허가 사항이 학생활동과 관련이 되: 시설물사용허가 사항이 학생활동과 관련이 되는 경우에는 동아리 지도교수 또는 학생지원처장을 경유하여 신청하여야 한다. <개정 2022. 3. 1.>"
+      ],
+      "evaluation": {
+        "accuracy": 0.949,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.705,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.6083213958777114,
+      "timestamp": "2026-02-18T10:45:34.448911"
+    },
+    {
+      "persona": "staff-admin",
+      "query": "재직증명서 발급받고 싶어요",
+      "category": "admin",
+      "difficulty": "easy",
+      "answer": "규정에 따르면: 제증명서발급규정 > 제3조 발급대상 > 4. 교직원증명서 <신설 2022 > 가. 재직증명서 : 현재 근무하고 있: 재직증명서 : 현재 근무하고 있는 자\n\n제증명서발급규정 > 제9조 수수료: 구분수수료재학생(국문, 영문)500원졸업생(국문, 영문)800원교육비납입증명서500원교직원증명서무상\n구분\n수수료\n재학생(국문, 영문)\n500원\n졸업생(국문, 영문)\n800원\n교육비납입증명서\n500원\n교직원증명서\n무상...",
+      "contexts": [
+        "제증명서발급규정 > 제3조 발급대상 > 4. 교직원증명서 <신설 2022 > 가. 재직증명서 : 현재 근무하고 있: 재직증명서 : 현재 근무하고 있는 자",
+        "제증명서발급규정 > 제9조 수수료: 구분수수료재학생(국문, 영문)500원졸업생(국문, 영문)800원교육비납입증명서500원교직원증명서무상\n구분\n수수료\n재학생(국문, 영문)\n500원\n졸업생(국문, 영문)\n800원\n교육비납입증명서\n500원\n교직원증명서\n무상"
+      ],
+      "evaluation": {
+        "accuracy": 0.906,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.694,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.5579204778981343,
+      "timestamp": "2026-02-18T10:45:34.522758"
+    },
+    {
+      "persona": "staff-admin",
+      "query": "퇴직금 산정 어떻게 되나요?",
+      "category": "salary",
+      "difficulty": "easy",
+      "answer": "규정에 따르면: 소프트웨어융합센터규정 > 제11조 퇴직금: 제5장 연봉계약 체결\n\n교직원복무규정 > 제28조 특별휴가 > ⑥ 직원인사규정에 의한 명예퇴직 및 조기퇴직을 할 직원: 직원인사규정에 의한 명예퇴직 및 조기퇴직을 할 직원은 퇴직 예정일 전 1개월의 퇴직준비 휴가를 얻을 수 있다. <신설 2018. 8. 1.>\n정년이 보장된 직원은 자기계발의 기회를 위하여 안식휴가를 얻을 수 있으며, 휴가 기간 및 사용은 직원 안식휴가 지침에 따른다. 단, 사용된 휴가는 퇴직준비 휴가에서 감한다. <신설 2023. 4. 1.>...",
+      "contexts": [
+        "소프트웨어융합센터규정 > 제11조 퇴직금: 제5장 연봉계약 체결",
+        "교직원복무규정 > 제28조 특별휴가 > ⑥ 직원인사규정에 의한 명예퇴직 및 조기퇴직을 할 직원: 직원인사규정에 의한 명예퇴직 및 조기퇴직을 할 직원은 퇴직 예정일 전 1개월의 퇴직준비 휴가를 얻을 수 있다. <신설 2018. 8. 1.>\n정년이 보장된 직원은 자기계발의 기회를 위하여 안식휴가를 얻을 수 있으며, 휴가 기간 및 사용은 직원 안식휴가 지침에 따른다. 단, 사용된 휴가는 퇴직준비 휴가에서 감한다. <신설 2023. 4. 1.>"
+      ],
+      "evaluation": {
+        "accuracy": 0.946,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.704,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.5577870271375999,
+      "timestamp": "2026-02-18T10:45:34.667214"
+    },
+    {
+      "persona": "staff-admin",
+      "query": "육아휴직 신청 자격이 어떻게 되나요?",
+      "category": "leave",
+      "difficulty": "medium",
+      "answer": "규정에 따르면: 교직원복무규정 > 제28조 특별휴가 > ⑤ 임신중: 임신중의 여교직원에 대하여는 그 출산의 전후를 통하여 90일의 출산휴가를 허가하여야 한다. 단, 휴가기간의 배치는 산후에 45일 이상이 되어야 한다. <개정 2007. 7. 1.>\n\n교원연구년제규정 > 제3조 자격 > ⑥ 산학관련 공동 연구를 위한 교수파견제를 위하여: 산학관련 공동 연구를 위한 교수파견제를 위하여 연구년을 신청하는 경우 우선하여 선정할 수 있다. <신설 2018. 3. 1>...",
+      "contexts": [
+        "교직원복무규정 > 제28조 특별휴가 > ⑤ 임신중: 임신중의 여교직원에 대하여는 그 출산의 전후를 통하여 90일의 출산휴가를 허가하여야 한다. 단, 휴가기간의 배치는 산후에 45일 이상이 되어야 한다. <개정 2007. 7. 1.>",
+        "교원연구년제규정 > 제3조 자격 > ⑥ 산학관련 공동 연구를 위한 교수파견제를 위하여: 산학관련 공동 연구를 위한 교수파견제를 위하여 연구년을 신청하는 경우 우선하여 선정할 수 있다. <신설 2018. 3. 1>"
+      ],
+      "evaluation": {
+        "accuracy": 0.942,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.703,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.6075299856951076,
+      "timestamp": "2026-02-18T10:45:34.863789"
+    },
+    {
+      "persona": "staff-admin",
+      "query": "성과상여금 지급 기준이 뭔가요?",
+      "category": "salary",
+      "difficulty": "medium",
+      "answer": "규정에 따르면: [초빙교원, 강의전담교원] 신규임용심사기준 > 제2조 정의 > 6. “불이익조치” > 라. 성과평가 또: 성과평가 또는 동료평가 등에서의 차별과 그에 따른 임금 또는 상여금 등의 차별 지급\n\n구매업무규정 > 제15조 기록물평가심의회 > ⑩ 외부위원이 회의에 출석한 때에: 외부위원이 회의에 출석한 때에는 심의 위원으로 참여한 인원에게 수당을 지급할 수 있으며, 지급 금액은 본 대학교 교원및직원의수당규정 제29조 기준을 따른다....",
+      "contexts": [
+        "[초빙교원, 강의전담교원] 신규임용심사기준 > 제2조 정의 > 6. “불이익조치” > 라. 성과평가 또: 성과평가 또는 동료평가 등에서의 차별과 그에 따른 임금 또는 상여금 등의 차별 지급",
+        "구매업무규정 > 제15조 기록물평가심의회 > ⑩ 외부위원이 회의에 출석한 때에: 외부위원이 회의에 출석한 때에는 심의 위원으로 참여한 인원에게 수당을 지급할 수 있으며, 지급 금액은 본 대학교 교원및직원의수당규정 제29조 기준을 따른다."
+      ],
+      "evaluation": {
+        "accuracy": 0.938,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.702,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.2884708412535139,
+      "timestamp": "2026-02-18T10:45:34.974246"
+    },
+    {
+      "persona": "staff-admin",
+      "query": "직급 승진 심사 기준이 어떻게 되나요?",
+      "category": "personnel",
+      "difficulty": "medium",
+      "answer": "규정에 따르면: 교원인사규정 > 제43조 호봉승급제한 해제시 호봉승급 방법 > ③ > 49. (경과조치) 제32조 승진심사용 연구실적물 중: (경과조치) 제32조 승진심사용 연구실적물 중 2020년 2월 29일 이전 게재되어 국제기타학술지 및 국제기타A학술지로 인정된 논문은 실적물 심사를 제외하나, 2020년 3월 1일 이후 게재된 국제기타학술지 논문은 심사 의뢰 대상이 된다....",
+      "contexts": [
+        "교원인사규정 > 제43조 호봉승급제한 해제시 호봉승급 방법 > ③ > 49. (경과조치) 제32조 승진심사용 연구실적물 중: (경과조치) 제32조 승진심사용 연구실적물 중 2020년 2월 29일 이전 게재되어 국제기타학술지 및 국제기타A학술지로 인정된 논문은 실적물 심사를 제외하나, 2020년 3월 1일 이후 게재된 국제기타학술지 논문은 심사 의뢰 대상이 된다."
+      ],
+      "evaluation": {
+        "accuracy": 0.921,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.698,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.7222916666666666,
+      "timestamp": "2026-02-18T10:45:35.082797"
+    },
+    {
+      "persona": "staff-admin",
+      "query": "해외 연수 신청 절차가 어떻게 되나요?",
+      "category": "training",
+      "difficulty": "medium",
+      "answer": "규정에 따르면: (SUN) 운영: ▪교수역량인증제(SUN) 운영\n○\n정책 개발\n▪원격수업 운영 및 관리에 관한 정책 개발\n○\n인프라 관리\n▪DOOR(Dong-eui Open Online Resource) 시스템 운영, 관리\n○\n▪e러닝 강좌 및 교육콘텐츠 기획, 개발, 제작\n○\n▪MOOC 지원, 운영\n○\n▪콜라보스튜디오 운영, 관리\n○\n위원회 업무\n▪위원회 운영 관련 제반 사항\n○\n기타\n▪제 규정의 개폐안 제출\n○\n▪각종 회의자료 작성․제출\n○\n￭교무처 교육혁신원 전공설계지원센터\n단위업무세 부 업 무총장전결권자부총장부서장소장전공설계지도▪센터의 운영...",
+      "contexts": [
+        "(SUN) 운영: ▪교수역량인증제(SUN) 운영\n○\n정책 개발\n▪원격수업 운영 및 관리에 관한 정책 개발\n○\n인프라 관리\n▪DOOR(Dong-eui Open Online Resource) 시스템 운영, 관리\n○\n▪e러닝 강좌 및 교육콘텐츠 기획, 개발, 제작\n○\n▪MOOC 지원, 운영\n○\n▪콜라보스튜디오 운영, 관리\n○\n위원회 업무\n▪위원회 운영 관련 제반 사항\n○\n기타\n▪제 규정의 개폐안 제출\n○\n▪각종 회의자료 작성․제출\n○\n￭교무처 교육혁신원 전공설계지원센터\n단위업무세 부 업 무총장전결권자부총장부서장소장전공설계지도▪센터의 운영계획 수립 및 정책 개발○▪학생 맞춤형 전공 설계 및 진로 컨설팅○▪전공설계지원 프로그램 개발 및 운영○▪다전공 지원체계 및 교육과정 연구○▪전공설계 교육과정 관련 성과 분석○\n단위업무\n세 부 업 무\n총장\n전결권자\n부총장\n부서장\n소장\n전공설계지도\n▪센터의 운영계획 수립 및 정책 개발\n○\n▪학생 맞춤형 전공 설계 및 진로 컨설팅\n○\n▪전공설계지원 프로그램 개",
+        "출석인정및공결규정 > 제7조 절차 및 허가 > ③ 제3조제5호: 제3조제5호의 출석인정은 지정한 일시에 해당 학생이 학생정보시스템을 통해 증빙서류를 탑재, 신청하면 학사지원팀에서 적합여부를 확인 후 승인 처리한다. <신설 2023. 9. 1.>"
+      ],
+      "evaluation": {
+        "accuracy": 0.942,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.703,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.6371255099383457,
+      "timestamp": "2026-02-18T10:45:35.687998"
+    },
+    {
+      "persona": "staff-admin",
+      "query": "보안 교육 이수 의무가 있나요?",
+      "category": "admin",
+      "difficulty": "medium",
+      "answer": "규정에 따르면: 보안업무규정 > 제3조 보안담당관의 지정 및 임무 > ④ 보안업무담당자가 교체되었을 경우에: 보안업무담당자가 교체되었을 경우에는 교체 후 3일 이내에 인계인수를 하여야 한다.\n\n보안업무규정 > 제26조 개인정보보호: 제6장 보안조사 및 교육...",
+      "contexts": [
+        "보안업무규정 > 제3조 보안담당관의 지정 및 임무 > ④ 보안업무담당자가 교체되었을 경우에: 보안업무담당자가 교체되었을 경우에는 교체 후 3일 이내에 인계인수를 하여야 한다.",
+        "보안업무규정 > 제26조 개인정보보호: 제6장 보안조사 및 교육"
+      ],
+      "evaluation": {
+        "accuracy": 0.885,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.689,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.42091825027357277,
+      "timestamp": "2026-02-18T10:45:35.826233"
+    },
+    {
+      "persona": "staff-admin",
+      "query": "야근 수당 계산 어떻게 되나요?",
+      "category": "salary",
+      "difficulty": "medium",
+      "answer": "규정에 따르면: 강사료지급규정 > 제7조 강사료 계산: 다음 각호는 제6조의 규정에 불구하고 별도로 계산한다. <개정 2007. 4. 1., 2023. 3. 1.>\n으로 한다. <신설 2017. 7. 1.>\n야간강좌의 강사료, 대단위강좌 강사료, 팀티칭 특강비는 별도의 추가 수당을 지급할 수 있고, 그 지급 기준은 [별표 1]을 따른다. <개정 2024. 3. 1.>\n수강인원이 분반 기준을 초과한 강의 중 교과목 특성상 단반으로 개설하여야 할 경우 추가로 계산할 수 있다. <개정 2024. 3. 1.>\n\n교원및직원의수당규정 > 제29조 각종 수당 ...",
+      "contexts": [
+        "강사료지급규정 > 제7조 강사료 계산: 다음 각호는 제6조의 규정에 불구하고 별도로 계산한다. <개정 2007. 4. 1., 2023. 3. 1.>\n으로 한다. <신설 2017. 7. 1.>\n야간강좌의 강사료, 대단위강좌 강사료, 팀티칭 특강비는 별도의 추가 수당을 지급할 수 있고, 그 지급 기준은 [별표 1]을 따른다. <개정 2024. 3. 1.>\n수강인원이 분반 기준을 초과한 강의 중 교과목 특성상 단반으로 개설하여야 할 경우 추가로 계산할 수 있다. <개정 2024. 3. 1.>",
+        "교원및직원의수당규정 > 제29조 각종 수당 등에 관한 지급기준: 구분지출과목금액(원)지급기준관련근거비고감사단 및 심의위원회 회의수당감사단감사인 및 간사수당교직원각종수당50,0001일내부감사규정 제8조의2외부전문가일반용역비400,0001회보고서작성수당교직원각종수당100,0001회위원 및 간사교직원각종수당100,0001회내부감사규정 제11조의2갑질예방위원회 회의수당내부위원 및 간사, 서기교직원각종수당100,0001회갑질예방위원회규정제8조의2외부위원일반용역비200,0001회학생위원기타학생경비100,0001회갑질예방위원회 산하 진상조사위원회 회의수당내부위원 및 간사, 서기교직원각종수당100,0001인갑질예방위원회규정제8조의2조사심의위원회 회의수당내부위원 및 간사교직원각종수당100,0001회인권센터규정 제33조외부관련 분야일반용역비200,0001회전문300,000학생위원기타학생경비100,0001회교원 및 직원징계위원회회의수당내부위원교직원각종수당100,0001인학교법인동의학원정관외부일반기타운영"
+      ],
+      "evaluation": {
+        "accuracy": 0.95,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.705,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.38920172518189045,
+      "timestamp": "2026-02-18T10:45:35.990871"
+    },
+    {
+      "persona": "staff-admin",
+      "query": "전보 발령 신청 어떻게 하나요?",
+      "category": "personnel",
+      "difficulty": "medium",
+      "answer": "규정에 따르면: 편찬례 및 취급 요령 > 제1 회 > 5. 이 규정집: 이 규정집은 대학본부, 대학(원)의 부 단위 이상의 부서와 부속, 부설 기관 등에 1권씩 배부하고 비치함을 원칙으로 합니다. 각 부서에서는 팀장, 학과의 경우에는 학과장 이상의 교직원으로 관리 책임자를 정하여 관리하고, 전보 시에는 반드시 인계 인수하여야 합니다.\n\n사무분장규정 > 제13조 교무팀 > 20. 학력ㆍ전력ㆍ신원조회ㆍ인사발령대장ㆍ인사기록카드: 학력ㆍ전력ㆍ신원조회ㆍ인사발령대장ㆍ인사기록카드 정리 및 임명장 수여 업무...",
+      "contexts": [
+        "편찬례 및 취급 요령 > 제1 회 > 5. 이 규정집: 이 규정집은 대학본부, 대학(원)의 부 단위 이상의 부서와 부속, 부설 기관 등에 1권씩 배부하고 비치함을 원칙으로 합니다. 각 부서에서는 팀장, 학과의 경우에는 학과장 이상의 교직원으로 관리 책임자를 정하여 관리하고, 전보 시에는 반드시 인계 인수하여야 합니다.",
+        "사무분장규정 > 제13조 교무팀 > 20. 학력ㆍ전력ㆍ신원조회ㆍ인사발령대장ㆍ인사기록카드: 학력ㆍ전력ㆍ신원조회ㆍ인사발령대장ㆍ인사기록카드 정리 및 임명장 수여 업무"
+      ],
+      "evaluation": {
+        "accuracy": 0.944,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.704,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.4204690119597247,
+      "timestamp": "2026-02-18T10:45:36.111142"
+    },
+    {
+      "persona": "staff-admin",
+      "query": "병가 신청 시 필요 서류가 뭔가요?",
+      "category": "leave",
+      "difficulty": "medium",
+      "answer": "규정에 따르면: 교직원복무규정 > 제26조 병가: 병가를 신청하는 경우 병가 사유를 증빙할 수 있는 서류(입퇴원 확인서 등)를 제출하여야 하며, 병가 사유 서류를 제출할 수 없는 경우 잔여 연가를 사용하여야 한다. <개정 2025. 4. 1.>\n\n지표별 산출 기준 > 제6조 준용 > 7. (경과조치) 제4조: (경과조치) 제4조의 2항과 관련하여 2022년 3월 기준 질병 휴직 중인 교원의 경우 3월 연구활동비부터 소급하여 적용한다....",
+      "contexts": [
+        "교직원복무규정 > 제26조 병가: 병가를 신청하는 경우 병가 사유를 증빙할 수 있는 서류(입퇴원 확인서 등)를 제출하여야 하며, 병가 사유 서류를 제출할 수 없는 경우 잔여 연가를 사용하여야 한다. <개정 2025. 4. 1.>",
+        "지표별 산출 기준 > 제6조 준용 > 7. (경과조치) 제4조: (경과조치) 제4조의 2항과 관련하여 2022년 3월 기준 질병 휴직 중인 교원의 경우 3월 연구활동비부터 소급하여 적용한다."
+      ],
+      "evaluation": {
+        "accuracy": 0.941,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.703,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.4576159113756166,
+      "timestamp": "2026-02-18T10:45:36.275420"
+    },
+    {
+      "persona": "staff-admin",
+      "query": "퇴직 연금 가입 기간 어떻게 계산하나요?",
+      "category": "salary",
+      "difficulty": "medium",
+      "answer": "규정에 따르면: 교원인사규정 > 제6조 근무기간의 계산 > ④ 정관 제44조: 정관 제44조의 휴직사유로 인한 휴직기간은 근무기간에 산입하지 아니한다.\n\n교직원복무규정 > 제28조 특별휴가 > ⑥ 직원인사규정에 의한 명예퇴직 및 조기퇴직을 할 직원: 직원인사규정에 의한 명예퇴직 및 조기퇴직을 할 직원은 퇴직 예정일 전 1개월의 퇴직준비 휴가를 얻을 수 있다. <신설 2018. 8. 1.>\n정년이 보장된 직원은 자기계발의 기회를 위하여 안식휴가를 얻을 수 있으며, 휴가 기간 및 사용은 직원 안식휴가 지침에 따른다. 단, 사용된 휴가는 퇴직준비 휴가에...",
+      "contexts": [
+        "교원인사규정 > 제6조 근무기간의 계산 > ④ 정관 제44조: 정관 제44조의 휴직사유로 인한 휴직기간은 근무기간에 산입하지 아니한다.",
+        "교직원복무규정 > 제28조 특별휴가 > ⑥ 직원인사규정에 의한 명예퇴직 및 조기퇴직을 할 직원: 직원인사규정에 의한 명예퇴직 및 조기퇴직을 할 직원은 퇴직 예정일 전 1개월의 퇴직준비 휴가를 얻을 수 있다. <신설 2018. 8. 1.>\n정년이 보장된 직원은 자기계발의 기회를 위하여 안식휴가를 얻을 수 있으며, 휴가 기간 및 사용은 직원 안식휴가 지침에 따른다. 단, 사용된 휴가는 퇴직준비 휴가에서 감한다. <신설 2023. 4. 1.>"
+      ],
+      "evaluation": {
+        "accuracy": 0.95,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.705,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.49467094766553643,
+      "timestamp": "2026-02-18T10:45:36.429530"
+    },
+    {
+      "persona": "staff-admin",
+      "query": "시설 사용 승인 절차가 어떻게 되나요?",
+      "category": "admin",
+      "difficulty": "medium",
+      "answer": "규정에 따르면: 시설관리규정 > 제10조 일반 관리 > 1. 건물 및 구축물: 1. 건물 및 구축물의 신설, 구조변경의 경우\n2. 실용도의 확정 및 변경의 경우\n3. 건축법, 소방법 등 건축 관련법에 반하여 불가피하게 시설물을 변경하게 될 경우\n4. 실험실습실, 교수연구실 및 행정사무실에 개별 냉난방기기를 설치할 경우\n5. 기타 중요한 사항의 경우\n\n물품관리규정 > 제2조 정의 > ② “비품”이라 함: “비품”이라 함은 내용연수가 3년 이상으로 그 품질 형상이 변화하지 않고 비교적 장기간 사용 할 수 있는 기계기구, 집기비품 등의 유체물을 말한다....",
+      "contexts": [
+        "시설관리규정 > 제10조 일반 관리 > 1. 건물 및 구축물: 1. 건물 및 구축물의 신설, 구조변경의 경우\n2. 실용도의 확정 및 변경의 경우\n3. 건축법, 소방법 등 건축 관련법에 반하여 불가피하게 시설물을 변경하게 될 경우\n4. 실험실습실, 교수연구실 및 행정사무실에 개별 냉난방기기를 설치할 경우\n5. 기타 중요한 사항의 경우",
+        "물품관리규정 > 제2조 정의 > ② “비품”이라 함: “비품”이라 함은 내용연수가 3년 이상으로 그 품질 형상이 변화하지 않고 비교적 장기간 사용 할 수 있는 기계기구, 집기비품 등의 유체물을 말한다. 단, 토지, 건물, 기타 시설물에 부착되거나 이에 준하는 기계설비 품목(공조시설, 전기시설, 승강기 등)은 제외한다. <신설 2017. 3. 1>"
+      ],
+      "evaluation": {
+        "accuracy": 0.95,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.705,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.6519763786972949,
+      "timestamp": "2026-02-18T10:45:36.736642"
+    },
+    {
+      "persona": "staff-admin",
+      "query": "장기 근속자 포상 기준이 어떻게 되나요?",
+      "category": "personnel",
+      "difficulty": "hard",
+      "answer": "규정에 따르면: 연장평가 판정 기준 > 제5조 교육과정 편성 > 구분편성기간학점시행시기단기1개월3학점계절수업2: 구분편성기간학점시행시기단기1개월3학점계절수업2개월6학점장기15주 이상17학점(단, 졸업 학점이 140 학점 이상인 학과의 경우 18학점 부여)학기 중\n구분\n편성기간\n학점\n시행시기\n단기\n1개월\n3학점\n계절수업\n2개월\n6학점\n장기\n15주 이상\n17학점\n(단, 졸업 학점이 140 학점 이상인 학과의 경우 18학점 부여)\n학기 중\n\n졸업논문또는졸업실적심사규정 > 제14조 불합격자및면제 > ③ > 6. (경과조치) 졸업예정자로서 마지막학기에 장기...",
+      "contexts": [
+        "연장평가 판정 기준 > 제5조 교육과정 편성 > 구분편성기간학점시행시기단기1개월3학점계절수업2: 구분편성기간학점시행시기단기1개월3학점계절수업2개월6학점장기15주 이상17학점(단, 졸업 학점이 140 학점 이상인 학과의 경우 18학점 부여)학기 중\n구분\n편성기간\n학점\n시행시기\n단기\n1개월\n3학점\n계절수업\n2개월\n6학점\n장기\n15주 이상\n17학점\n(단, 졸업 학점이 140 학점 이상인 학과의 경우 18학점 부여)\n학기 중",
+        "졸업논문또는졸업실적심사규정 > 제14조 불합격자및면제 > ③ > 6. (경과조치) 졸업예정자로서 마지막학기에 장기: (경과조치) 졸업예정자로서 마지막학기에 장기 인턴십 과정을 이수하는 학생은 이수 후 이 규정에 준하여 심사를 통과하여야 한다."
+      ],
+      "evaluation": {
+        "accuracy": 0.95,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.705,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.4530085844317096,
+      "timestamp": "2026-02-18T10:45:36.848339"
+    },
+    {
+      "persona": "staff-admin",
+      "query": "징계 처분 시 정년 보장되나요?",
+      "category": "personnel",
+      "difficulty": "hard",
+      "answer": "규정에 따르면: 명예(조기)퇴직수당지급규정 > 제2조 명예퇴직수당의 지급대상: 징계처분의 집행이 종료된 날로부터 견책 6개월, 감봉 12개월, 정직 18개월이 경과하지 아니한 자(명예 또는 조기 퇴직일자 기준) <개정 2023. 4. 1.>\n\n감사 지침: ▪감사실 관련 규정의 제정 및 개정에 대한 발의 요구\n○\n▪감사실 관련 지침의 제정 및 개정\n○\n감사 수행\n▪감사계획에 의한 실시 통보\n○\n▪감사 계획의 변경\n○\n▪감사단 구성\n○\n▪감사단 교육\n○\n▪감사 수행에 필요한 자문 의뢰\n○\n▪재무 및 일상감사에 필요한 자료 수집\n○\n▪재무감사 및 일상감...",
+      "contexts": [
+        "명예(조기)퇴직수당지급규정 > 제2조 명예퇴직수당의 지급대상: 징계처분의 집행이 종료된 날로부터 견책 6개월, 감봉 12개월, 정직 18개월이 경과하지 아니한 자(명예 또는 조기 퇴직일자 기준) <개정 2023. 4. 1.>",
+        "감사 지침: ▪감사실 관련 규정의 제정 및 개정에 대한 발의 요구\n○\n▪감사실 관련 지침의 제정 및 개정\n○\n감사 수행\n▪감사계획에 의한 실시 통보\n○\n▪감사 계획의 변경\n○\n▪감사단 구성\n○\n▪감사단 교육\n○\n▪감사 수행에 필요한 자문 의뢰\n○\n▪재무 및 일상감사에 필요한 자료 수집\n○\n▪재무감사 및 일상감사 결과 지적사항 시정 요구\n○\n▪감사결과 보고\n○\n▪감사결과 시정요구\n○\n▪감사결과 통보\n○\n▪감사결과 이의신청\n○\n▪감사결과 재심의\n○\n▪감사결과 공개\n○\n▪감사결과 면책신청 통지\n○\n▪면책심사처리\n○\n▪감사심의위원회 운영 관련 행정처리\n○\n▪대외기관 감사 관련 업무협조\n○\n▪포상 및 징계요구\n○\n감사 이행관리\n▪감사결과 처분 요구사항 미이행에 따른 상기 및 독촉\n○\n▪감사결과 처분 요구사항 이행 완결\n○\n▪감사결과 처분 요구사항 미이행에 따른 제재\n○\n▪감사결과 처분 요구사항 집행불능처리 및 종결\n○\n감사 성과관리\n▪연간 감사 성과관리 보고\n○\n￭ 연구윤리센터\n단위업무세 부"
+      ],
+      "evaluation": {
+        "accuracy": 0.95,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.705,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.5585278231210535,
+      "timestamp": "2026-02-18T10:45:37.033492"
+    },
+    {
+      "persona": "staff-admin",
+      "query": "퇴직 후 재고용 조건이 어떻게 되나요?",
+      "category": "personnel",
+      "difficulty": "hard",
+      "answer": "규정에 따르면: 검수규정 > 제12조 입고 및 관리 > ③ 단과대학에서: 단과대학에서는 학과에 납품되는 물품에 대한 품질, 수량, 규격 및 기타 납품조건에 합당한 경우 납품명세서에 날인을 한 후 물품거래대장에 기록하고 해당학과에 인수·인계한다. <신설 2017. 3. 1>\n\n명예(조기)퇴직수당지급규정 > 제2조 명예퇴직수당의 지급대상: 징계처분의 집행이 종료된 날로부터 견책 6개월, 감봉 12개월, 정직 18개월이 경과하지 아니한 자(명예 또는 조기 퇴직일자 기준) <개정 2023. 4. 1.>...",
+      "contexts": [
+        "검수규정 > 제12조 입고 및 관리 > ③ 단과대학에서: 단과대학에서는 학과에 납품되는 물품에 대한 품질, 수량, 규격 및 기타 납품조건에 합당한 경우 납품명세서에 날인을 한 후 물품거래대장에 기록하고 해당학과에 인수·인계한다. <신설 2017. 3. 1>",
+        "명예(조기)퇴직수당지급규정 > 제2조 명예퇴직수당의 지급대상: 징계처분의 집행이 종료된 날로부터 견책 6개월, 감봉 12개월, 정직 18개월이 경과하지 아니한 자(명예 또는 조기 퇴직일자 기준) <개정 2023. 4. 1.>"
+      ],
+      "evaluation": {
+        "accuracy": 0.949,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.705,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.43423754159604105,
+      "timestamp": "2026-02-18T10:45:37.164504"
+    },
+    {
+      "persona": "staff-admin",
+      "query": "공무상 재해 보상 범위가 어떻게 되나요?",
+      "category": "personnel",
+      "difficulty": "hard",
+      "answer": "규정에 따르면: 교원인사규정 > 제6조 근무기간의 계산 > ③ 공무로 국외파견 또: 공무로 국외파견 또는 국외출장중인 자의 그 파견 또는 출장기간 중에 근무기간이 만료되는 때에는 그 파견 또는 출장잔여기간까지를 근무기간으로 본다. 다만, 그 잔여기간이 2년을 초과할 수 없다. <개정 2011. 7. 1.>\n\n교내전동이동장치등에관한안전관리규정 > 제19조 운전자의 준수사항 등: 가. 정지하고 있는 경우\n나. 각종 범죄 및 재해 신고 등 긴급한 필요가 있는 경우\n제5장 안전사고...",
+      "contexts": [
+        "교원인사규정 > 제6조 근무기간의 계산 > ③ 공무로 국외파견 또: 공무로 국외파견 또는 국외출장중인 자의 그 파견 또는 출장기간 중에 근무기간이 만료되는 때에는 그 파견 또는 출장잔여기간까지를 근무기간으로 본다. 다만, 그 잔여기간이 2년을 초과할 수 없다. <개정 2011. 7. 1.>",
+        "교내전동이동장치등에관한안전관리규정 > 제19조 운전자의 준수사항 등: 가. 정지하고 있는 경우\n나. 각종 범죄 및 재해 신고 등 긴급한 필요가 있는 경우\n제5장 안전사고"
+      ],
+      "evaluation": {
+        "accuracy": 0.944,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.704,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.4351910851177414,
+      "timestamp": "2026-02-18T10:45:37.270954"
+    },
+    {
+      "persona": "staff-admin",
+      "query": "입찰 참가 자격 기준이 어떻게 되나요?",
+      "category": "admin",
+      "difficulty": "hard",
+      "answer": "규정에 따르면: 구매업무규정 > 제2조 용어의 정의 > ⑥ ‘예정가격’이라 함: ‘예정가격’이라 함은 입찰 또는 계약 체결 전에 낙찰자 및 계약금액의 결정기준으로 삼기 위하여 미리 작성․비치하여 두는 가액으로 제12조에 의하여 작성된 가격을 말한다.\n\n구매업무규정 > 제21조 입찰공고의 내용 > 10. 기타 입찰에 관하여 필요한 사항: 기타 입찰에 관하여 필요한 사항...",
+      "contexts": [
+        "구매업무규정 > 제2조 용어의 정의 > ⑥ ‘예정가격’이라 함: ‘예정가격’이라 함은 입찰 또는 계약 체결 전에 낙찰자 및 계약금액의 결정기준으로 삼기 위하여 미리 작성․비치하여 두는 가액으로 제12조에 의하여 작성된 가격을 말한다.",
+        "구매업무규정 > 제21조 입찰공고의 내용 > 10. 기타 입찰에 관하여 필요한 사항: 기타 입찰에 관하여 필요한 사항"
+      ],
+      "evaluation": {
+        "accuracy": 0.927,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.699,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.36569353198199994,
+      "timestamp": "2026-02-18T10:45:37.383652"
+    },
+    {
+      "persona": "parent",
+      "query": "자녀 등록금 납부 기한이 언제까지인가요?",
+      "category": "financial",
+      "difficulty": "easy",
+      "answer": "규정에 따르면: 연장평가 판정 기준 > 제5조 교육과정 편성 > 구분편성기간학점시행시기단기1개월3학점계절수업2: 구분편성기간학점시행시기단기1개월3학점계절수업2개월6학점장기15주 이상17학점(단, 졸업 학점이 140 학점 이상인 학과의 경우 18학점 부여)학기 중\n구분\n편성기간\n학점\n시행시기\n단기\n1개월\n3학점\n계절수업\n2개월\n6학점\n장기\n15주 이상\n17학점\n(단, 졸업 학점이 140 학점 이상인 학과의 경우 18학점 부여)\n학기 중\n\n명예교수규정 > 제7조 대우 > 11. (경과조치) 이 규정 시행 당시 추대 중인 명예교수: (경과조치) 이 규정...",
+      "contexts": [
+        "연장평가 판정 기준 > 제5조 교육과정 편성 > 구분편성기간학점시행시기단기1개월3학점계절수업2: 구분편성기간학점시행시기단기1개월3학점계절수업2개월6학점장기15주 이상17학점(단, 졸업 학점이 140 학점 이상인 학과의 경우 18학점 부여)학기 중\n구분\n편성기간\n학점\n시행시기\n단기\n1개월\n3학점\n계절수업\n2개월\n6학점\n장기\n15주 이상\n17학점\n(단, 졸업 학점이 140 학점 이상인 학과의 경우 18학점 부여)\n학기 중",
+        "명예교수규정 > 제7조 대우 > 11. (경과조치) 이 규정 시행 당시 추대 중인 명예교수: (경과조치) 이 규정 시행 당시 추대 중인 명예교수는 추대기간을 종신으로 하며, 추대기간이 경과한 명예교수는 본인의 신청을 받아 추대기간을 종신으로 하여 재추대할 수 있다."
+      ],
+      "evaluation": {
+        "accuracy": 0.941,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.703,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.6709804040616046,
+      "timestamp": "2026-02-18T10:45:37.583871"
+    },
+    {
+      "persona": "parent",
+      "query": "장학금 신청 방법이 어떻게 되나요?",
+      "category": "financial",
+      "difficulty": "easy",
+      "answer": "규정에 따르면: 대학원장학금지급에관한세칙 > 제4조 장학생의 종류 및 자격 > 2. 학・군협정장학생 : 육군본부와: 학・군협정장학생 : 육군본부와의 학・군 제휴협정에 따라 입학한 학생에 대하여 등록금의 일부를 장학금으로 지급할 수 있다. <신설 2012. 2. 1., 개정 2023. 10. 1.>\n\n등록금에관한규정 > 제8조 준용 > 11. (경과조치) 수업료 및 입학금반환에 관한 적용: (경과조치) 수업료 및 입학금반환에 관한 적용은 시행일이 속하는 학기의 수업료 및 입학금부터 적용한다....",
+      "contexts": [
+        "대학원장학금지급에관한세칙 > 제4조 장학생의 종류 및 자격 > 2. 학・군협정장학생 : 육군본부와: 학・군협정장학생 : 육군본부와의 학・군 제휴협정에 따라 입학한 학생에 대하여 등록금의 일부를 장학금으로 지급할 수 있다. <신설 2012. 2. 1., 개정 2023. 10. 1.>",
+        "등록금에관한규정 > 제8조 준용 > 11. (경과조치) 수업료 및 입학금반환에 관한 적용: (경과조치) 수업료 및 입학금반환에 관한 적용은 시행일이 속하는 학기의 수업료 및 입학금부터 적용한다."
+      ],
+      "evaluation": {
+        "accuracy": 0.938,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.702,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.6187535660252336,
+      "timestamp": "2026-02-18T10:45:37.761155"
+    },
+    {
+      "persona": "parent",
+      "query": "기숙사 비용이 얼마인가요?",
+      "category": "financial",
+      "difficulty": "easy",
+      "answer": "규정에 따르면: 대학원편입학에관한세칙 > 제3조 지원구비서류 > 1. 석사학위과정 > 라. 대학원장이 필요하다고 인정한 서류: 대학원장이 필요하다고 인정한 서류\n\n학점은행제장학금지급에관한운영세칙 > 제4조 장학생 선발대상 및 수혜인원: 15학점 이상을 신청한 자 중 직전 학기 평균 성적이 80점 이상인 자를 대상으로 한다. 직전 학기는 1학기는 하계 계절학기, 2학기는 동계 계절학기를 합산하여 산정한다. <개정 2016. 3. 1, 2021. 2. 1>\n. 공로장학금 : 학내외 활동을 통하여 교육원 발전에 공로가 있는 자로서 다음 각 목의 1에 해...",
+      "contexts": [
+        "대학원편입학에관한세칙 > 제3조 지원구비서류 > 1. 석사학위과정 > 라. 대학원장이 필요하다고 인정한 서류: 대학원장이 필요하다고 인정한 서류",
+        "학점은행제장학금지급에관한운영세칙 > 제4조 장학생 선발대상 및 수혜인원: 15학점 이상을 신청한 자 중 직전 학기 평균 성적이 80점 이상인 자를 대상으로 한다. 직전 학기는 1학기는 하계 계절학기, 2학기는 동계 계절학기를 합산하여 산정한다. <개정 2016. 3. 1, 2021. 2. 1>\n. 공로장학금 : 학내외 활동을 통하여 교육원 발전에 공로가 있는 자로서 다음 각 목의 1에 해당하는 자 중에서 원장이 정한다. <신설 2016. 3. 1, 개정 2021. 2. 1>\n가. 각종 대회 입상으로 학교 명예를 선양시킨 자\n나. 입학생 모집에 공로가 있는 자\n. 보훈장학금 : 국가유공자 등 예우 및 지원에 관한 법률에 규정된 자로 한다. <신설 2016. 3. 1>\n<개정 2016. 3. 1, 2021. 2. 1>\n수강인원성적우수장학금자원봉사 장학금25명 미만A 1명A 1명25명 이상 50명 미만A 1명, B 1명A 1명, B 1명50명 이상 75명 미만A 2명, B 2명A 2명, "
+      ],
+      "evaluation": {
+        "accuracy": 0.95,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.705,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.3339434917055615,
+      "timestamp": "2026-02-18T10:45:37.891670"
+    },
+    {
+      "persona": "parent",
+      "query": "성적표 받아볼 수 있나요?",
+      "category": "academic",
+      "difficulty": "easy",
+      "answer": "규정에 따르면: 학습‧연구‧실습 및 근무 경험 인정 기준 > 제7조 준용 > ④ 현장경험 학점: 현장경험 학점의 성적은 평가 및 인정기준을 충족할 경우 전공과목의 이수구분을 부여하고, 성적표에 PASS로 표기한다.\n\n학점은행제운영에관한규정 > 제19조 학위수여 요건 > 1: 1. 총 취득학점이 140학점 이상일 것\n2. 총 취득학점 중 교양과목의 학점이 30학점 이상일 것\n3. 총 취득학점 중 전공과목의 학점이 60학점 이상일 것\n4. 총 취득학점 중 본 대학교에서 취득한 학점이 84학점 이상일 것\n단, 전공 18학점 이상이 포함되어야 한다. <개...",
+      "contexts": [
+        "학습‧연구‧실습 및 근무 경험 인정 기준 > 제7조 준용 > ④ 현장경험 학점: 현장경험 학점의 성적은 평가 및 인정기준을 충족할 경우 전공과목의 이수구분을 부여하고, 성적표에 PASS로 표기한다.",
+        "학점은행제운영에관한규정 > 제19조 학위수여 요건 > 1: 1. 총 취득학점이 140학점 이상일 것\n2. 총 취득학점 중 교양과목의 학점이 30학점 이상일 것\n3. 총 취득학점 중 전공과목의 학점이 60학점 이상일 것\n4. 총 취득학점 중 본 대학교에서 취득한 학점이 84학점 이상일 것\n단, 전공 18학점 이상이 포함되어야 한다. <개정 2011. 7. 1>\n5. 표준교육과정에 편성된 해당 전공필수 과목의 학점을 모두 취득할 것\n단, 음악학전공만 해당한다.\n6. 졸업논문 또는 그와 동등한 실적 심사에 통과한 자"
+      ],
+      "evaluation": {
+        "accuracy": 0.947,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.704,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.36152958885388753,
+      "timestamp": "2026-02-18T10:45:37.996731"
+    },
+    {
+      "persona": "parent",
+      "query": "학자금 대출 이자가 얼마인가요?",
+      "category": "financial",
+      "difficulty": "easy",
+      "answer": "규정에 따르면: 학점은행제장학금지급에관한운영세칙 > 제4조 장학생 선발대상 및 수혜인원: 15학점 이상을 신청한 자 중 직전 학기 평균 성적이 80점 이상인 자를 대상으로 한다. 직전 학기는 1학기는 하계 계절학기, 2학기는 동계 계절학기를 합산하여 산정한다. <개정 2016. 3. 1, 2021. 2. 1>\n. 공로장학금 : 학내외 활동을 통하여 교육원 발전에 공로가 있는 자로서 다음 각 목의 1에 해당하는 자 중에서 원장이 정한다. <신설 2016. 3. 1, 개정 2021. 2. 1>\n가. 각종 대회 입상으로 학교 명예를 선양시킨 자\n나. 입...",
+      "contexts": [
+        "학점은행제장학금지급에관한운영세칙 > 제4조 장학생 선발대상 및 수혜인원: 15학점 이상을 신청한 자 중 직전 학기 평균 성적이 80점 이상인 자를 대상으로 한다. 직전 학기는 1학기는 하계 계절학기, 2학기는 동계 계절학기를 합산하여 산정한다. <개정 2016. 3. 1, 2021. 2. 1>\n. 공로장학금 : 학내외 활동을 통하여 교육원 발전에 공로가 있는 자로서 다음 각 목의 1에 해당하는 자 중에서 원장이 정한다. <신설 2016. 3. 1, 개정 2021. 2. 1>\n가. 각종 대회 입상으로 학교 명예를 선양시킨 자\n나. 입학생 모집에 공로가 있는 자\n. 보훈장학금 : 국가유공자 등 예우 및 지원에 관한 법률에 규정된 자로 한다. <신설 2016. 3. 1>\n<개정 2016. 3. 1, 2021. 2. 1>\n수강인원성적우수장학금자원봉사 장학금25명 미만A 1명A 1명25명 이상 50명 미만A 1명, B 1명A 1명, B 1명50명 이상 75명 미만A 2명, B 2명A 2명, ",
+        "등록금에관한규정 > 제3조 납부방법: 휴 학 일대체 인정 금액∼ 수업일수 1/4등록금 전액이월∼ 수업일수 1/3등록금 1/3 납부∼ 수업일수 1/2등록금 1/2 납부수업일수 1/2 초과전액 납부\n휴 학 일\n대체 인정 금액\n∼ 수업일수 1/4\n등록금 전액이월\n∼ 수업일수 1/3\n등록금 1/3 납부\n∼ 수업일수 1/2\n등록금 1/2 납부\n수업일수 1/2 초과\n전액 납부"
+      ],
+      "evaluation": {
+        "accuracy": 0.95,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.705,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.35957846430662715,
+      "timestamp": "2026-02-18T10:45:38.129690"
+    },
+    {
+      "persona": "parent",
+      "query": "등록금 분납 가능한가요?",
+      "category": "financial",
+      "difficulty": "easy",
+      "answer": "규정에 따르면: 등록금에관한규정 > 제8조 준용 > 11. (경과조치) 수업료 및 입학금반환에 관한 적용: (경과조치) 수업료 및 입학금반환에 관한 적용은 시행일이 속하는 학기의 수업료 및 입학금부터 적용한다.\n\n등록금에관한규정 > 제5조 등록금의 반환: 단, 휴학을 한 자는 휴학일자를 기준으로 하며, 휴학자 중 등록금 이월 휴학을 연속적으로 한 경우, 다수의 휴학처리 중 학기개시일로부터 가장 많이 경과한 휴학처리일을 기준으로 한다. <개정 2017. 11. 1>\n반환사유 발생일반환 금액 학기 개시일부터 30일 까지 등록금 6분의 5 해당액 학기 ...",
+      "contexts": [
+        "등록금에관한규정 > 제8조 준용 > 11. (경과조치) 수업료 및 입학금반환에 관한 적용: (경과조치) 수업료 및 입학금반환에 관한 적용은 시행일이 속하는 학기의 수업료 및 입학금부터 적용한다.",
+        "등록금에관한규정 > 제5조 등록금의 반환: 단, 휴학을 한 자는 휴학일자를 기준으로 하며, 휴학자 중 등록금 이월 휴학을 연속적으로 한 경우, 다수의 휴학처리 중 학기개시일로부터 가장 많이 경과한 휴학처리일을 기준으로 한다. <개정 2017. 11. 1>\n반환사유 발생일반환 금액 학기 개시일부터 30일 까지 등록금 6분의 5 해당액 학기 개시일에서 30일이 지난 날부터 60일 까지 등록금 3분의 2 해당액 학기 개시일에서 60일이 지난 날부터 90일 까지 등록금 2분의 1 해당액 학기 개시일에서 90일이 지난 날 반환하지 아니함\n반환사유 발생일\n반환 금액\n학기 개시일부터 30일 까지\n등록금 6분의 5 해당액\n학기 개시일에서 30일이 지난 날부터 60일 까지\n등록금 3분의 2 해당액\n학기 개시일에서 60일이 지난 날부터 90일 까지\n등록금 2분의 1 해당액\n학기 개시일에서 90일이 지난 날\n반환하지 아니함"
+      ],
+      "evaluation": {
+        "accuracy": 0.947,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.704,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.2945488806033052,
+      "timestamp": "2026-02-18T10:45:38.191348"
+    },
+    {
+      "persona": "parent",
+      "query": "식권 구매 어떻게 하나요?",
+      "category": "campus_life",
+      "difficulty": "easy",
+      "answer": "규정에 따르면: 구매업무규정 > 제19조 견적에 의한 가격결정 > 8. 추정가격이 5천만 원 이하인 계약으로서 다음: 추정가격이 5천만 원 이하인 계약으로서 다음의 어느 하나에 해당하는 자와 체결하는 물품의 제조ㆍ구매계약 또는 용역계약\n\n구매업무규정 > 제2조 용어의 정의 > ① ‘구매’라 함: ‘구매’라 함은 물품구매계약, 시설공사계약, 용역계약, 매각계약 등에 관한 행위를 말한다....",
+      "contexts": [
+        "구매업무규정 > 제19조 견적에 의한 가격결정 > 8. 추정가격이 5천만 원 이하인 계약으로서 다음: 추정가격이 5천만 원 이하인 계약으로서 다음의 어느 하나에 해당하는 자와 체결하는 물품의 제조ㆍ구매계약 또는 용역계약",
+        "구매업무규정 > 제2조 용어의 정의 > ① ‘구매’라 함: ‘구매’라 함은 물품구매계약, 시설공사계약, 용역계약, 매각계약 등에 관한 행위를 말한다."
+      ],
+      "evaluation": {
+        "accuracy": 0.925,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.699,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.2849507035542314,
+      "timestamp": "2026-02-18T10:45:38.291361"
+    },
+    {
+      "persona": "parent",
+      "query": "자녀 졸업식 언제인가요?",
+      "category": "academic",
+      "difficulty": "easy",
+      "answer": "규정에 따르면: 사무분장규정 > 제14조 학사지원팀 > 39. 졸업사정(조기졸업 포함) 및 학위등록: 졸업사정(조기졸업 포함) 및 학위등록\n\n학점은행제운영에관한규정 > 제19조 학위수여 요건 > 1: 1. 총 취득학점이 140학점 이상일 것\n2. 총 취득학점 중 교양과목의 학점이 30학점 이상일 것\n3. 총 취득학점 중 전공과목의 학점이 60학점 이상일 것\n4. 총 취득학점 중 본 대학교에서 취득한 학점이 84학점 이상일 것\n단, 전공 18학점 이상이 포함되어야 한다. <개정 2011. 7. 1>\n5. 표준교육과정에 편성된 해당 전공필수 과목의 학...",
+      "contexts": [
+        "사무분장규정 > 제14조 학사지원팀 > 39. 졸업사정(조기졸업 포함) 및 학위등록: 졸업사정(조기졸업 포함) 및 학위등록",
+        "학점은행제운영에관한규정 > 제19조 학위수여 요건 > 1: 1. 총 취득학점이 140학점 이상일 것\n2. 총 취득학점 중 교양과목의 학점이 30학점 이상일 것\n3. 총 취득학점 중 전공과목의 학점이 60학점 이상일 것\n4. 총 취득학점 중 본 대학교에서 취득한 학점이 84학점 이상일 것\n단, 전공 18학점 이상이 포함되어야 한다. <개정 2011. 7. 1>\n5. 표준교육과정에 편성된 해당 전공필수 과목의 학점을 모두 취득할 것\n단, 음악학전공만 해당한다.\n6. 졸업논문 또는 그와 동등한 실적 심사에 통과한 자"
+      ],
+      "evaluation": {
+        "accuracy": 0.944,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.704,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.7205097121483208,
+      "timestamp": "2026-02-18T10:45:38.446417"
+    },
+    {
+      "persona": "parent",
+      "query": "건강보험 증명서 필요해요",
+      "category": "admin",
+      "difficulty": "easy",
+      "answer": "규정에 따르면: 제증명서발급규정 > 제9조 수수료: 구분수수료재학생(국문, 영문)500원졸업생(국문, 영문)800원교육비납입증명서500원교직원증명서무상\n구분\n수수료\n재학생(국문, 영문)\n500원\n졸업생(국문, 영문)\n800원\n교육비납입증명서\n500원\n교직원증명서\n무상\n\n사무분장규정 > 제14조 학사지원팀 > 52. 제증명서, 팩스민원증명서, 인터넷 증명 등 발: 제증명서, 팩스민원증명서, 인터넷 증명 등 발급 관리...",
+      "contexts": [
+        "제증명서발급규정 > 제9조 수수료: 구분수수료재학생(국문, 영문)500원졸업생(국문, 영문)800원교육비납입증명서500원교직원증명서무상\n구분\n수수료\n재학생(국문, 영문)\n500원\n졸업생(국문, 영문)\n800원\n교육비납입증명서\n500원\n교직원증명서\n무상",
+        "사무분장규정 > 제14조 학사지원팀 > 52. 제증명서, 팩스민원증명서, 인터넷 증명 등 발: 제증명서, 팩스민원증명서, 인터넷 증명 등 발급 관리"
+      ],
+      "evaluation": {
+        "accuracy": 0.903,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.693,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.3934914716937335,
+      "timestamp": "2026-02-18T10:45:38.569476"
+    },
+    {
+      "persona": "parent",
+      "query": "학생 확인서 발급받고 싶어요",
+      "category": "admin",
+      "difficulty": "easy",
+      "answer": "규정에 따르면: 대학원외국인학생의특례입학에관한세칙 > 제6조 제출서류 > 1. 입학전형시 제출서류 > 마. 해외거주 사실 확인서(한국계 외국인 및 재외교: 해외거주 사실 확인서(한국계 외국인 및 재외교포인 경우에 한함) 1부\n\n제증명서발급규정 > 제3조 발급대상 > 4. 교직원증명서 <신설 2022 > 가. 재직증명서 : 현재 근무하고 있: 재직증명서 : 현재 근무하고 있는 자...",
+      "contexts": [
+        "대학원외국인학생의특례입학에관한세칙 > 제6조 제출서류 > 1. 입학전형시 제출서류 > 마. 해외거주 사실 확인서(한국계 외국인 및 재외교: 해외거주 사실 확인서(한국계 외국인 및 재외교포인 경우에 한함) 1부",
+        "제증명서발급규정 > 제3조 발급대상 > 4. 교직원증명서 <신설 2022 > 가. 재직증명서 : 현재 근무하고 있: 재직증명서 : 현재 근무하고 있는 자"
+      ],
+      "evaluation": {
+        "accuracy": 0.912,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.696,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.3352479257033858,
+      "timestamp": "2026-02-18T10:45:38.634939"
+    },
+    {
+      "persona": "parent",
+      "query": "장학금 받으면 세금 내야 하나요?",
+      "category": "financial",
+      "difficulty": "medium",
+      "answer": "규정에 따르면: 대학원장학금지급에관한세칙 > 제5조 자격규제 > 6. 기타 장학생으로서 부적격한 행위를 한자: 기타 장학생으로서 부적격한 행위를 한자\n\n대학원장학금지급에관한세칙 > 제4조 장학생의 종류 및 자격 > 2. 학・군협정장학생 : 육군본부와: 학・군협정장학생 : 육군본부와의 학・군 제휴협정에 따라 입학한 학생에 대하여 등록금의 일부를 장학금으로 지급할 수 있다. <신설 2012. 2. 1., 개정 2023. 10. 1.>...",
+      "contexts": [
+        "대학원장학금지급에관한세칙 > 제5조 자격규제 > 6. 기타 장학생으로서 부적격한 행위를 한자: 기타 장학생으로서 부적격한 행위를 한자",
+        "대학원장학금지급에관한세칙 > 제4조 장학생의 종류 및 자격 > 2. 학・군협정장학생 : 육군본부와: 학・군협정장학생 : 육군본부와의 학・군 제휴협정에 따라 입학한 학생에 대하여 등록금의 일부를 장학금으로 지급할 수 있다. <신설 2012. 2. 1., 개정 2023. 10. 1.>"
+      ],
+      "evaluation": {
+        "accuracy": 0.929,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.7,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.4907126560682504,
+      "timestamp": "2026-02-18T10:45:38.781296"
+    },
+    {
+      "persona": "parent",
+      "query": "자녀 휴학하면 등록금 반환받나요?",
+      "category": "financial",
+      "difficulty": "medium",
+      "answer": "규정에 따르면: 휴학규정 > 제3조 구분 및 변경 > ④ 창업교육학사운영위원회에서 창업휴학 중단 및 취소된 자: 창업교육학사운영위원회에서 창업휴학 중단 및 취소된 자는 창업휴학을 일반휴학으로 변경한다. <신설 2014. 3. 1.>\n\n등록금에관한규정 > 제5조 등록금의 반환: 단, 휴학을 한 자는 휴학일자를 기준으로 하며, 휴학자 중 등록금 이월 휴학을 연속적으로 한 경우, 다수의 휴학처리 중 학기개시일로부터 가장 많이 경과한 휴학처리일을 기준으로 한다. <개정 2017. 11. 1>\n반환사유 발생일반환 금액 학기 개시일부터 30일 까지 등록금 6...",
+      "contexts": [
+        "휴학규정 > 제3조 구분 및 변경 > ④ 창업교육학사운영위원회에서 창업휴학 중단 및 취소된 자: 창업교육학사운영위원회에서 창업휴학 중단 및 취소된 자는 창업휴학을 일반휴학으로 변경한다. <신설 2014. 3. 1.>",
+        "등록금에관한규정 > 제5조 등록금의 반환: 단, 휴학을 한 자는 휴학일자를 기준으로 하며, 휴학자 중 등록금 이월 휴학을 연속적으로 한 경우, 다수의 휴학처리 중 학기개시일로부터 가장 많이 경과한 휴학처리일을 기준으로 한다. <개정 2017. 11. 1>\n반환사유 발생일반환 금액 학기 개시일부터 30일 까지 등록금 6분의 5 해당액 학기 개시일에서 30일이 지난 날부터 60일 까지 등록금 3분의 2 해당액 학기 개시일에서 60일이 지난 날부터 90일 까지 등록금 2분의 1 해당액 학기 개시일에서 90일이 지난 날 반환하지 아니함\n반환사유 발생일\n반환 금액\n학기 개시일부터 30일 까지\n등록금 6분의 5 해당액\n학기 개시일에서 30일이 지난 날부터 60일 까지\n등록금 3분의 2 해당액\n학기 개시일에서 60일이 지난 날부터 90일 까지\n등록금 2분의 1 해당액\n학기 개시일에서 90일이 지난 날\n반환하지 아니함"
+      ],
+      "evaluation": {
+        "accuracy": 0.948,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.705,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.015985106577716308,
+      "timestamp": "2026-02-18T10:45:38.830147"
+    },
+    {
+      "persona": "parent",
+      "query": "기숙사 입사 자격 기준이 어떻게 되나요?",
+      "category": "campus_life",
+      "difficulty": "medium",
+      "answer": "규정에 따르면: 효민생활관규정: 후마니타스브랜드연구소규정【폐지】\n\n구매업무규정 > 제4조 담당부서 > ② > 4. 생활관에서 구매하: 생활관에서 구매하는 물품 및 용역의 계약...",
+      "contexts": [
+        "효민생활관규정: 후마니타스브랜드연구소규정【폐지】",
+        "구매업무규정 > 제4조 담당부서 > ② > 4. 생활관에서 구매하: 생활관에서 구매하는 물품 및 용역의 계약"
+      ],
+      "evaluation": {
+        "accuracy": 0.824,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.673,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.3348365162303976,
+      "timestamp": "2026-02-18T10:45:39.073625"
+    },
+    {
+      "persona": "parent",
+      "query": "유학생 자녀 등록금 차이가 있나요?",
+      "category": "financial",
+      "difficulty": "medium",
+      "answer": "규정에 따르면: 동의지천융합대학규정: 동의학원교직원및그자녀에대한학비감면규정【폐지】\n\n등록금에관한규정 > 제8조 준용 > 11. (경과조치) 수업료 및 입학금반환에 관한 적용: (경과조치) 수업료 및 입학금반환에 관한 적용은 시행일이 속하는 학기의 수업료 및 입학금부터 적용한다....",
+      "contexts": [
+        "동의지천융합대학규정: 동의학원교직원및그자녀에대한학비감면규정【폐지】",
+        "등록금에관한규정 > 제8조 준용 > 11. (경과조치) 수업료 및 입학금반환에 관한 적용: (경과조치) 수업료 및 입학금반환에 관한 적용은 시행일이 속하는 학기의 수업료 및 입학금부터 적용한다."
+      ],
+      "evaluation": {
+        "accuracy": 0.857,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.682,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.4263949728603724,
+      "timestamp": "2026-02-18T10:45:39.209293"
+    },
+    {
+      "persona": "parent",
+      "query": "장애 학생 지원 제도가 있나요?",
+      "category": "support",
+      "difficulty": "medium",
+      "answer": "규정에 따르면: 강좌운영 > 제4조 기능 > 8. 장애학생: 장애학생의 학습지원 및 교육활동 편의를 위하여 필요한 지원 <개정 2022. 6. 1.>\n\nFUN학생경험지원센터규정 > 제2조 업무 > 6. 통합 마일리지를 활용한 특별학점 및 장학금제도: 통합 마일리지를 활용한 특별학점 및 장학금제도 운영 지원...",
+      "contexts": [
+        "강좌운영 > 제4조 기능 > 8. 장애학생: 장애학생의 학습지원 및 교육활동 편의를 위하여 필요한 지원 <개정 2022. 6. 1.>",
+        "FUN학생경험지원센터규정 > 제2조 업무 > 6. 통합 마일리지를 활용한 특별학점 및 장학금제도: 통합 마일리지를 활용한 특별학점 및 장학금제도 운영 지원"
+      ],
+      "evaluation": {
+        "accuracy": 0.903,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.693,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.5518889927772213,
+      "timestamp": "2026-02-18T10:45:39.463921"
+    },
+    {
+      "persona": "parent",
+      "query": "군 휴학 시 등록금 반환받나요?",
+      "category": "financial",
+      "difficulty": "medium",
+      "answer": "규정에 따르면: 등록금에관한규정 > 제8조 준용 > 11. (경과조치) 수업료 및 입학금반환에 관한 적용: (경과조치) 수업료 및 입학금반환에 관한 적용은 시행일이 속하는 학기의 수업료 및 입학금부터 적용한다.\n\n등록금에관한규정 > 제5조 등록금의 반환: 단, 휴학을 한 자는 휴학일자를 기준으로 하며, 휴학자 중 등록금 이월 휴학을 연속적으로 한 경우, 다수의 휴학처리 중 학기개시일로부터 가장 많이 경과한 휴학처리일을 기준으로 한다. <개정 2017. 11. 1>\n반환사유 발생일반환 금액 학기 개시일부터 30일 까지 등록금 6분의 5 해당액 학기 ...",
+      "contexts": [
+        "등록금에관한규정 > 제8조 준용 > 11. (경과조치) 수업료 및 입학금반환에 관한 적용: (경과조치) 수업료 및 입학금반환에 관한 적용은 시행일이 속하는 학기의 수업료 및 입학금부터 적용한다.",
+        "등록금에관한규정 > 제5조 등록금의 반환: 단, 휴학을 한 자는 휴학일자를 기준으로 하며, 휴학자 중 등록금 이월 휴학을 연속적으로 한 경우, 다수의 휴학처리 중 학기개시일로부터 가장 많이 경과한 휴학처리일을 기준으로 한다. <개정 2017. 11. 1>\n반환사유 발생일반환 금액 학기 개시일부터 30일 까지 등록금 6분의 5 해당액 학기 개시일에서 30일이 지난 날부터 60일 까지 등록금 3분의 2 해당액 학기 개시일에서 60일이 지난 날부터 90일 까지 등록금 2분의 1 해당액 학기 개시일에서 90일이 지난 날 반환하지 아니함\n반환사유 발생일\n반환 금액\n학기 개시일부터 30일 까지\n등록금 6분의 5 해당액\n학기 개시일에서 30일이 지난 날부터 60일 까지\n등록금 3분의 2 해당액\n학기 개시일에서 60일이 지난 날부터 90일 까지\n등록금 2분의 1 해당액\n학기 개시일에서 90일이 지난 날\n반환하지 아니함"
+      ],
+      "evaluation": {
+        "accuracy": 0.947,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.704,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.5305872735348685,
+      "timestamp": "2026-02-18T10:45:39.544199"
+    },
+    {
+      "persona": "parent",
+      "query": "자녀 성적 부진 시 상담 가능한가요?",
+      "category": "academic",
+      "difficulty": "medium",
+      "answer": "규정에 따르면: 학습‧연구‧실습 및 근무 경험 인정 기준 > 제7조 준용 > ④ 현장경험 학점: 현장경험 학점의 성적은 평가 및 인정기준을 충족할 경우 전공과목의 이수구분을 부여하고, 성적표에 PASS로 표기한다.\n\n대학원수업․이수학점․학점인정에관한세칙 > 제8조 학업성적ㆍ평가ㆍ정정 > 4. 5: 5...",
+      "contexts": [
+        "학습‧연구‧실습 및 근무 경험 인정 기준 > 제7조 준용 > ④ 현장경험 학점: 현장경험 학점의 성적은 평가 및 인정기준을 충족할 경우 전공과목의 이수구분을 부여하고, 성적표에 PASS로 표기한다.",
+        "대학원수업․이수학점․학점인정에관한세칙 > 제8조 학업성적ㆍ평가ㆍ정정 > 4. 5: 5"
+      ],
+      "evaluation": {
+        "accuracy": 0.906,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.694,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.3572728936876244,
+      "timestamp": "2026-02-18T10:45:39.682145"
+    },
+    {
+      "persona": "parent",
+      "query": "교환학생 프로그램 비용이 어떻게 되나요?",
+      "category": "financial",
+      "difficulty": "medium",
+      "answer": "규정에 따르면: 개설운영: 3,000만원 이상 30점\n2,000만원 이상 20점\n1,500만원 이상 15점\n1,000만원 이상 10점\n500만원 이상 5점\n외부기관(자유기업원, 한국표준협회등)의 강좌를 유치하여 공학교육 등 대학특성화를 포함하는 강좌를 교내에 정규 강좌로 개설하고 강좌를 책임 운영하는 경우 금액에 따라 인정\n교육혁신 프로그램 / 진로·취업지도 및 상담교육 프로그램 참여\n1점/수강 콘텐츠 수\n온라인콘텐츠 수강\n연간\n최대\n50점\n3점/회(3시간 미만), 5점/회(3시간 이상)\n특강, 워크숍, 세미나 등의 프로그램 참여\n5점/프로그램 참...",
+      "contexts": [
+        "개설운영: 3,000만원 이상 30점\n2,000만원 이상 20점\n1,500만원 이상 15점\n1,000만원 이상 10점\n500만원 이상 5점\n외부기관(자유기업원, 한국표준협회등)의 강좌를 유치하여 공학교육 등 대학특성화를 포함하는 강좌를 교내에 정규 강좌로 개설하고 강좌를 책임 운영하는 경우 금액에 따라 인정\n교육혁신 프로그램 / 진로·취업지도 및 상담교육 프로그램 참여\n1점/수강 콘텐츠 수\n온라인콘텐츠 수강\n연간\n최대\n50점\n3점/회(3시간 미만), 5점/회(3시간 이상)\n특강, 워크숍, 세미나 등의 프로그램 참여\n5점/프로그램 참여 건당\n전문공동체 활동 (교수역량 강화 및 교수법 개선을 위한 공동체 모임), 학생 진로·취업 지도 우수 사례 성과 보고 및 강의 진행\n7점/과정(교내)\n10점/과정(교외)\n교수학습개발센터 등 행정부서 주관 연수(2차 시 이상 연속성이 있는 프로그램, 특별교육과정, 캠프 등 포함), 취업지원팀(대학일자리플러스센터) 등 행정부서 주관 연수\n3점/회당(자가진",
+        "국제언어교육원규정 > 제3조 업무 > 8. 교환학생 한국어 연수과정 운영: 교환학생 한국어 연수과정 운영"
+      ],
+      "evaluation": {
+        "accuracy": 0.947,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.704,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.4613585356668241,
+      "timestamp": "2026-02-18T10:45:39.818922"
+    },
+    {
+      "persona": "parent",
+      "query": "자녀가 아르바이트 할 수 있나요?",
+      "category": "campus_life",
+      "difficulty": "medium",
+      "answer": "규정에 따르면: 겸임교원임용등에관한시행세칙 > 제5조 채용공고 > ② 제1항에도 불구하고 채용공고를 하였으나, 지원자 또: 제1항에도 불구하고 채용공고를 하였으나, 지원자 또는 적임자가 없거나 임용포기 등으로 긴급하게 겸임교수 등을 채용할 필요가 있을 경우에는 특별채용을 할 수 있다.\n제2장 심사절차\n\n겸임교원임용등에관한시행세칙 > 제6조 지원 및 제출서류 > ③ 온라인 또: 온라인 또는 우편지원의 등록내용 또는 제출서류에 허위가 있는 경우 합격 및 임용을 취소할 수 있다....",
+      "contexts": [
+        "겸임교원임용등에관한시행세칙 > 제5조 채용공고 > ② 제1항에도 불구하고 채용공고를 하였으나, 지원자 또: 제1항에도 불구하고 채용공고를 하였으나, 지원자 또는 적임자가 없거나 임용포기 등으로 긴급하게 겸임교수 등을 채용할 필요가 있을 경우에는 특별채용을 할 수 있다.\n제2장 심사절차",
+        "겸임교원임용등에관한시행세칙 > 제6조 지원 및 제출서류 > ③ 온라인 또: 온라인 또는 우편지원의 등록내용 또는 제출서류에 허위가 있는 경우 합격 및 임용을 취소할 수 있다."
+      ],
+      "evaluation": {
+        "accuracy": 0.936,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.702,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.41969558152696484,
+      "timestamp": "2026-02-18T10:45:40.166064"
+    },
+    {
+      "persona": "parent",
+      "query": "복학 시 등록금 차이가 있나요?",
+      "category": "financial",
+      "difficulty": "medium",
+      "answer": "규정에 따르면: 사무분장규정 > 제14조 학사지원팀 > 35. 휴학ㆍ복학ㆍ자퇴 및 제적 안내, 신청 접수 및: 휴학ㆍ복학ㆍ자퇴 및 제적 안내, 신청 접수 및 처리\n\n학점은행제장학금지급에관한운영세칙 > 제6조 장학금액 및 지급 > 4. 보훈장학금: 보훈장학금은 매학기 등록금 납부 시 감면함을 원칙으로 한다. <신설 2021. 2. 1>...",
+      "contexts": [
+        "사무분장규정 > 제14조 학사지원팀 > 35. 휴학ㆍ복학ㆍ자퇴 및 제적 안내, 신청 접수 및: 휴학ㆍ복학ㆍ자퇴 및 제적 안내, 신청 접수 및 처리",
+        "학점은행제장학금지급에관한운영세칙 > 제6조 장학금액 및 지급 > 4. 보훈장학금: 보훈장학금은 매학기 등록금 납부 시 감면함을 원칙으로 한다. <신설 2021. 2. 1>"
+      ],
+      "evaluation": {
+        "accuracy": 0.909,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.695,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.5683652708159617,
+      "timestamp": "2026-02-18T10:45:40.335625"
+    },
+    {
+      "persona": "parent",
+      "query": "자녀가 학칙 위반 시 처벌이 어떻게 되나요?",
+      "category": "academic",
+      "difficulty": "hard",
+      "answer": "규정에 따르면: 제적규정 > 제3조 제적대상 > 5. 학내 질서 또: 학내 질서 또는 학칙을 위반하여 개전의 가망이 없다고 인정되는 자\n\n동의대학교학칙 > 제66조 자체평가 > ① 이 학칙: 이 학칙은 1998년 5월 1일부터 시행한다....",
+      "contexts": [
+        "제적규정 > 제3조 제적대상 > 5. 학내 질서 또: 학내 질서 또는 학칙을 위반하여 개전의 가망이 없다고 인정되는 자",
+        "동의대학교학칙 > 제66조 자체평가 > ① 이 학칙: 이 학칙은 1998년 5월 1일부터 시행한다."
+      ],
+      "evaluation": {
+        "accuracy": 0.897,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.692,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.35685190338533895,
+      "timestamp": "2026-02-18T10:45:40.432784"
+    },
+    {
+      "persona": "parent",
+      "query": "장학금 중복 수혜 가능한가요?",
+      "category": "financial",
+      "difficulty": "hard",
+      "answer": "규정에 따르면: 학점은행제장학금지급에관한운영세칙 > 제8조 중복수혜금지 > ② 제1항: 제1항의 규정에도 불구하고 다음 각호의 1에 해당하는 경우에는 중복 지급할 수 있다.\n\n대학원장학금지급에관한세칙 > 제5조 자격규제 > 6. 기타 장학생으로서 부적격한 행위를 한자: 기타 장학생으로서 부적격한 행위를 한자...",
+      "contexts": [
+        "학점은행제장학금지급에관한운영세칙 > 제8조 중복수혜금지 > ② 제1항: 제1항의 규정에도 불구하고 다음 각호의 1에 해당하는 경우에는 중복 지급할 수 있다.",
+        "대학원장학금지급에관한세칙 > 제5조 자격규제 > 6. 기타 장학생으로서 부적격한 행위를 한자: 기타 장학생으로서 부적격한 행위를 한자"
+      ],
+      "evaluation": {
+        "accuracy": 0.9,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.693,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.569783672851351,
+      "timestamp": "2026-02-18T10:45:40.559783"
+    },
+    {
+      "persona": "parent",
+      "query": "등록금 납부 후 자녀 자퇴하면 환불되나요?",
+      "category": "financial",
+      "difficulty": "hard",
+      "answer": "규정에 따르면: 제적규정 > 제3조 제적대상 > 8. 학생정보시스템에서 자퇴 신청 후, 승인 처리된: 학생정보시스템에서 자퇴 신청 후, 승인 처리된 자 <신설 2005. 12. 1, 개정 2021. 9. 1, 2023. 2. 1>\n\n비품 지급기준 > 2. 기: 기...",
+      "contexts": [
+        "제적규정 > 제3조 제적대상 > 8. 학생정보시스템에서 자퇴 신청 후, 승인 처리된: 학생정보시스템에서 자퇴 신청 후, 승인 처리된 자 <신설 2005. 12. 1, 개정 2021. 9. 1, 2023. 2. 1>",
+        "비품 지급기준 > 2. 기: 기"
+      ],
+      "evaluation": {
+        "accuracy": 0.897,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.692,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.01618359312700931,
+      "timestamp": "2026-02-18T10:45:40.603451"
+    },
+    {
+      "persona": "parent",
+      "query": "기숙사 퇴사 시 보증금 반환되나요?",
+      "category": "financial",
+      "difficulty": "hard",
+      "answer": "규정에 따르면: 위원회 운영: ▪전산정보원 소관 위원회 운영\n○\n정보인프라 관련 기술지원\n▪교내 정보화 사업 검토 및 지원\n○\n▪장애처리 Help Desk 운영\n○\n실습실관리\n▪전산실습실 관리 및 운영\n○\n▪위탁교육 지원 업무\n○\n행정업무\n▪업무용 전산장비 관리 및 운영\n○\n▪전산정보원 공통 행정업무\n○\n￭체육진흥단\n단위업무세 부 업 무총장전결권자부총장부서장팀장대회참가▪각종 대회 참가 신청○▪시합 결과 보고○예산▪문화체육부 국고보조 신청, 집행 및 보고○▪예산 집행 결과 보고 ○훈련▪연간 부별 훈련 계획 수립○▪훈련 성과 보고○▪부별 훈련일지 작성...",
+      "contexts": [
+        "위원회 운영: ▪전산정보원 소관 위원회 운영\n○\n정보인프라 관련 기술지원\n▪교내 정보화 사업 검토 및 지원\n○\n▪장애처리 Help Desk 운영\n○\n실습실관리\n▪전산실습실 관리 및 운영\n○\n▪위탁교육 지원 업무\n○\n행정업무\n▪업무용 전산장비 관리 및 운영\n○\n▪전산정보원 공통 행정업무\n○\n￭체육진흥단\n단위업무세 부 업 무총장전결권자부총장부서장팀장대회참가▪각종 대회 참가 신청○▪시합 결과 보고○예산▪문화체육부 국고보조 신청, 집행 및 보고○▪예산 집행 결과 보고 ○훈련▪연간 부별 훈련 계획 수립○▪훈련 성과 보고○▪부별 훈련일지 작성, 보관 ○선수관리▪훈련 및 경기력 분석 ○응원단▪응원단 관련 업무○\n단위업무\n세 부 업 무\n총장\n전결권자\n부총장\n부서장\n팀장\n대회참가\n▪각종 대회 참가 신청\n○\n▪시합 결과 보고\n○\n예산\n▪문화체육부 국고보조 신청, 집행 및 보고\n○\n▪예산 집행 결과 보고\n○\n훈련\n▪연간 부별 훈련 계획 수립\n○\n▪훈련 성과 보고\n○\n▪부별 훈련일지 작성, 보관\n○\n선수",
+        "등록금에관한규정 > 제8조 준용 > 8. (휴학생: (휴학생의 등록금에 관한 경과조치) 이 규정의 시행전 휴학자의 등록금 유효시기는 제3조의 변경규정에 불구하고 종전의 규정을 적용한다. 다만, 등록금을 납부하고 시행일 이전 매학기 수업일수의 1/2이 경과되기 전에 일반 휴학을 한 자가 시행일 이후 복학을 하는 경우에 납입금액이 휴학 전에 납부한 금액보다 증액된 경우에 그 차액을 징수하지 아니한다."
+      ],
+      "evaluation": {
+        "accuracy": 0.943,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.703,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.3854888037096639,
+      "timestamp": "2026-02-18T10:45:40.781078"
+    },
+    {
+      "persona": "parent",
+      "query": "부모님 동의 없는 휴학 가능한가요?",
+      "category": "procedural",
+      "difficulty": "hard",
+      "answer": "규정에 따르면: 휴학규정 > 제6조 통산기간 및 연장 > ③ 부득이한 사유가 있: 부득이한 사유가 있는 경우에는 통산기간 내에서 개강일 전에 1회에 한하여 연장할 수 있으며 2개 학기를 초과할 수 없다. <개정 2011. 12. 1., 2016. 9. 1., 2019. 2. 1.>\n유급, 육아(임신, 출산 포함)로 인한 휴학은 통산기간에 포함하지 않는다. <개정 2011. 12. 1., 2016. 9. 1., 2019. 2. 1.>\n자는 복학예정학기 개시일 이전에 구비서류를 제출하여 허가를 받아야 한다. <신설 2011. 12. 1.>\n\n평정기준:...",
+      "contexts": [
+        "휴학규정 > 제6조 통산기간 및 연장 > ③ 부득이한 사유가 있: 부득이한 사유가 있는 경우에는 통산기간 내에서 개강일 전에 1회에 한하여 연장할 수 있으며 2개 학기를 초과할 수 없다. <개정 2011. 12. 1., 2016. 9. 1., 2019. 2. 1.>\n유급, 육아(임신, 출산 포함)로 인한 휴학은 통산기간에 포함하지 않는다. <개정 2011. 12. 1., 2016. 9. 1., 2019. 2. 1.>\n자는 복학예정학기 개시일 이전에 구비서류를 제출하여 허가를 받아야 한다. <신설 2011. 12. 1.>",
+        "평정기준: 평정점\n5점\n4점\n3점\n2점\n1점\n근무태도\n직무수행의 성실도, 복무규율의 준수의 자세\n창의·개혁성\n창의적으로 업무를 개선하고 조직의 발전과 변혁을 추구하는 자세와 의욕\n업무추진력\n업무를 신속·정확·공정하게 처리하고 문제점을 파악하여 적극적으로 해결하는 능력\n인품\n예절, 품행, 교양 등 교직원으로 갖추어야 할 소망과 자질\n애교심\n조직구성원으로서의 사명감을 가지고 조직의 발전을 위해 헌신·기여하려는 자세와 노력\n인화·봉사성\n구성원 간 협동과 단결, 타부서업무에 적극적으로 협조하며, 행정업무를 수행함에 있어 친절하며 정성껏 봉사하려는 자세\n지도·통솔력\n업무효과가 극대화될 수 있도록 구성원들을 지도·감독하고 통솔할 수 있는 능력\n총 점\n다면평정위원직위 : 성명 : (인)\n다면평정위원\n직위 : 성명 : (인)\n[별지 제9호 서식]\n경력ㆍ가점ㆍ감점평정표\n□ 소속 : □ 직급: (현직급임용일 : )\n□ 성명 : □ 평정일자 : 년 월 일\n구 분평정점평 정 대 상 경 력비 고경력평정기본"
+      ],
+      "evaluation": {
+        "accuracy": 0.945,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.704,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.572899582632697,
+      "timestamp": "2026-02-18T10:45:40.948714"
+    },
+    {
+      "persona": "student-international",
+      "query": "How do I apply for dormitory?",
+      "category": "campus_life",
+      "difficulty": "easy",
+      "answer": "규정에 따르면: RISE사업단운영규정 > 제10조 취득자산의 귀속: 제5장 보 칙\n\nIPP사업단운영규정 > 제4조 업무 > 7. NCS 기반 듀얼공동훈련 교육과정 참여기관(기: NCS 기반 듀얼공동훈련 교육과정 참여기관(기업체) 발굴 및 관리, 협약체결 등 <개정 2016. 11. 1., 2024. 4. 1.>...",
+      "contexts": [
+        "RISE사업단운영규정 > 제10조 취득자산의 귀속: 제5장 보 칙",
+        "IPP사업단운영규정 > 제4조 업무 > 7. NCS 기반 듀얼공동훈련 교육과정 참여기관(기: NCS 기반 듀얼공동훈련 교육과정 참여기관(기업체) 발굴 및 관리, 협약체결 등 <개정 2016. 11. 1., 2024. 4. 1.>"
+      ],
+      "evaluation": {
+        "accuracy": 0.906,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.694,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.36361207995372197,
+      "timestamp": "2026-02-18T10:45:41.142406"
+    },
+    {
+      "persona": "student-international",
+      "query": "비자 연장 어떻게 해요?",
+      "category": "visa",
+      "difficulty": "easy",
+      "answer": "규정에 따르면: 휴학규정 > 제6조 통산기간 및 연장 > ⑦ 유급휴학 이후 복학하: 유급휴학 이후 복학하는 학기에는 휴학연장을 할 수 없다. <신설 2019. 2. 1.>\n\n연장평가 판정 기준 > 제1조 목적: 콜라보교육\n교양인정\n교양인정 연장평가 영역의 4개 평가항목 모두 충족해야 인정연장\n콜라보교육\n전공인정\n전공인정 연장평가 영역의 4개 평가항목 모두 충족해야 인정연장\n현장실습학기제운영규정제3편 행정 3—2—55～외국대학과의복수학위제운영규정 3—2—55～제3편 행정 3—2—69～현장실습학기제운영규정 3—2—69～\n제3편 행정 3—2—55～\n외국...",
+      "contexts": [
+        "휴학규정 > 제6조 통산기간 및 연장 > ⑦ 유급휴학 이후 복학하: 유급휴학 이후 복학하는 학기에는 휴학연장을 할 수 없다. <신설 2019. 2. 1.>",
+        "연장평가 판정 기준 > 제1조 목적: 콜라보교육\n교양인정\n교양인정 연장평가 영역의 4개 평가항목 모두 충족해야 인정연장\n콜라보교육\n전공인정\n전공인정 연장평가 영역의 4개 평가항목 모두 충족해야 인정연장\n현장실습학기제운영규정제3편 행정 3—2—55～외국대학과의복수학위제운영규정 3—2—55～제3편 행정 3—2—69～현장실습학기제운영규정 3—2—69～\n제3편 행정 3—2—55～\n외국대학과의복수학위제운영규정 3—2—55～\n제3편 행정 3—2—69～\n현장실습학기제운영규정 3—2—69～"
+      ],
+      "evaluation": {
+        "accuracy": 0.933,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.701,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.5421263320382108,
+      "timestamp": "2026-02-18T10:45:41.268521"
+    },
+    {
+      "persona": "student-international",
+      "query": "Tuition payment deadline when?",
+      "category": "financial",
+      "difficulty": "easy",
+      "answer": "규정에 따르면: 학습유형 인정 기준 > ⑧ 플립러닝: 플립러닝\n\n학습유형 인정 기준 > ⑧ > 90. 90: 90...",
+      "contexts": [
+        "학습유형 인정 기준 > ⑧ 플립러닝: 플립러닝",
+        "학습유형 인정 기준 > ⑧ > 90. 90: 90"
+      ],
+      "evaluation": {
+        "accuracy": 0.75,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.655,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.35166750722891155,
+      "timestamp": "2026-02-18T10:45:41.361359"
+    },
+    {
+      "persona": "student-international",
+      "query": "한국어 수업 어디서 해요?",
+      "category": "academic",
+      "difficulty": "easy",
+      "answer": "규정에 따르면: 한국어연수과정운영규정 > 제2조 업무 > 1. 한국어 정규과정 운영 <개정 2022: 한국어 정규과정 운영 <개정 2022. 9. 1>\n\n국제언어교육원규정 > 제4조 조직과 운영 > ③ 한국어과정: 한국어과정은 외국인의 한국어 교육과 한국어 능력인정 시험실시에 따른 제반 업무를 실시하며, 수강생들의 한국어 능력 향상을 위한 상담을 실시한다. <개정 2022. 9. 1.>...",
+      "contexts": [
+        "한국어연수과정운영규정 > 제2조 업무 > 1. 한국어 정규과정 운영 <개정 2022: 한국어 정규과정 운영 <개정 2022. 9. 1>",
+        "국제언어교육원규정 > 제4조 조직과 운영 > ③ 한국어과정: 한국어과정은 외국인의 한국어 교육과 한국어 능력인정 시험실시에 따른 제반 업무를 실시하며, 수강생들의 한국어 능력 향상을 위한 상담을 실시한다. <개정 2022. 9. 1.>"
+      ],
+      "evaluation": {
+        "accuracy": 0.917,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.697,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.6659270186616683,
+      "timestamp": "2026-02-18T10:45:41.471086"
+    },
+    {
+      "persona": "student-international",
+      "query": "How to get student ID card?",
+      "category": "admin",
+      "difficulty": "easy",
+      "answer": "규정에 따르면: 제증명서발급규정 > 제2조 종류 > 4. 교직원증명서 <신설 2022: 교직원증명서 <신설 2022. 11. 1>\n\n제증명서발급규정 > 제9조 수수료: 구분수수료재학생(국문, 영문)500원졸업생(국문, 영문)800원교육비납입증명서500원교직원증명서무상\n구분\n수수료\n재학생(국문, 영문)\n500원\n졸업생(국문, 영문)\n800원\n교육비납입증명서\n500원\n교직원증명서\n무상...",
+      "contexts": [
+        "제증명서발급규정 > 제2조 종류 > 4. 교직원증명서 <신설 2022: 교직원증명서 <신설 2022. 11. 1>",
+        "제증명서발급규정 > 제9조 수수료: 구분수수료재학생(국문, 영문)500원졸업생(국문, 영문)800원교육비납입증명서500원교직원증명서무상\n구분\n수수료\n재학생(국문, 영문)\n500원\n졸업생(국문, 영문)\n800원\n교육비납입증명서\n500원\n교직원증명서\n무상"
+      ],
+      "evaluation": {
+        "accuracy": 0.889,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.69,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.35166750722891155,
+      "timestamp": "2026-02-18T10:45:41.574039"
+    },
+    {
+      "persona": "student-international",
+      "query": "기숙사 식사 할 수 있어요?",
+      "category": "campus_life",
+      "difficulty": "easy",
+      "answer": "규정에 따르면: 연계교육과정운영규정 > 제6조 연계교육과정 이수자에 대한 조치: 연계학과에 편입학을 희망할 경우에는 정원 외 특별전형으로 선발할 수 있다.\n\n교원양성과정운영규정 > 제6조 이수예정자선발 > ④ 교직과정이수예정자 선발과정에서 탈락한 학생: 교직과정이수예정자 선발과정에서 탈락한 학생은 교직과정심의위원회에 이의 신청을 할 수 있으며, 교직과정심의위원회에서는 이의 신청을 검토하여 최종적으로 명단을 학사지원팀으로 제출하여야 한다. <신설 2019. 1. 1.>...",
+      "contexts": [
+        "연계교육과정운영규정 > 제6조 연계교육과정 이수자에 대한 조치: 연계학과에 편입학을 희망할 경우에는 정원 외 특별전형으로 선발할 수 있다.",
+        "교원양성과정운영규정 > 제6조 이수예정자선발 > ④ 교직과정이수예정자 선발과정에서 탈락한 학생: 교직과정이수예정자 선발과정에서 탈락한 학생은 교직과정심의위원회에 이의 신청을 할 수 있으며, 교직과정심의위원회에서는 이의 신청을 검토하여 최종적으로 명단을 학사지원팀으로 제출하여야 한다. <신설 2019. 1. 1.>"
+      ],
+      "evaluation": {
+        "accuracy": 0.93,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.7,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.2722344884399065,
+      "timestamp": "2026-02-18T10:45:41.675718"
+    },
+    {
+      "persona": "student-international",
+      "query": "Scholarship for international students?",
+      "category": "financial",
+      "difficulty": "easy",
+      "answer": "규정에 따르면: FUN학생경험지원센터규정 > 제2조 업무 > 7. 학생경력관리포털(DAP: Dongeui All: 학생경력관리포털(DAP: Dongeui All-in-onecareer assistance Platform)등 학생 경험 지원 관련 시스템 관리 및 운영\n\n연계교육과정운영규정 > 제5조 교수 및 학생의 교류: 및 교수ㆍ학생의 교류를 통한 협력을 도모한다....",
+      "contexts": [
+        "FUN학생경험지원센터규정 > 제2조 업무 > 7. 학생경력관리포털(DAP: Dongeui All: 학생경력관리포털(DAP: Dongeui All-in-onecareer assistance Platform)등 학생 경험 지원 관련 시스템 관리 및 운영",
+        "연계교육과정운영규정 > 제5조 교수 및 학생의 교류: 및 교수ㆍ학생의 교류를 통한 협력을 도모한다."
+      ],
+      "evaluation": {
+        "accuracy": 0.903,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.693,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.35766750722891155,
+      "timestamp": "2026-02-18T10:45:41.782714"
+    },
+    {
+      "persona": "student-international",
+      "query": "한국어 시험 언제 있어요?",
+      "category": "academic",
+      "difficulty": "easy",
+      "answer": "규정에 따르면: 국제언어교육원규정 > 제4조 조직과 운영 > ③ 한국어과정: 한국어과정은 외국인의 한국어 교육과 한국어 능력인정 시험실시에 따른 제반 업무를 실시하며, 수강생들의 한국어 능력 향상을 위한 상담을 실시한다. <개정 2022. 9. 1.>\n\n시험규정 > 제3조 추가시험 > ③ 추가시험: 추가시험의 성적 평가는 B0등급까지 평가한다. 다만, 추가시험 응시 사유가 본인의 책임이 아닐 경우에는 적용하지 않는다. <신설 2018. 2. 1>...",
+      "contexts": [
+        "국제언어교육원규정 > 제4조 조직과 운영 > ③ 한국어과정: 한국어과정은 외국인의 한국어 교육과 한국어 능력인정 시험실시에 따른 제반 업무를 실시하며, 수강생들의 한국어 능력 향상을 위한 상담을 실시한다. <개정 2022. 9. 1.>",
+        "시험규정 > 제3조 추가시험 > ③ 추가시험: 추가시험의 성적 평가는 B0등급까지 평가한다. 다만, 추가시험 응시 사유가 본인의 책임이 아닐 경우에는 적용하지 않는다. <신설 2018. 2. 1>"
+      ],
+      "evaluation": {
+        "accuracy": 0.941,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.703,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.2979568834215477,
+      "timestamp": "2026-02-18T10:45:41.894784"
+    },
+    {
+      "persona": "student-international",
+      "query": "Part-time job allowed?",
+      "category": "visa",
+      "difficulty": "easy",
+      "answer": "규정에 따르면: 연장평가 판정 기준 > 제3조 교육시간 > ③ 자율 현장실습학기제: 자율 현장실습학기제는 직무 관련 교육시간 비율이 100분의 25를 넘는 경우로 한다.\n\n연장평가 판정 기준 > 제10조 출석관리 > ② > 5. 1개월 기준 1일: 1개월 기준 1일의 유급휴일...",
+      "contexts": [
+        "연장평가 판정 기준 > 제3조 교육시간 > ③ 자율 현장실습학기제: 자율 현장실습학기제는 직무 관련 교육시간 비율이 100분의 25를 넘는 경우로 한다.",
+        "연장평가 판정 기준 > 제10조 출석관리 > ② > 5. 1개월 기준 1일: 1개월 기준 1일의 유급휴일"
+      ],
+      "evaluation": {
+        "accuracy": 0.893,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.691,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.35166099693936526,
+      "timestamp": "2026-02-18T10:45:42.001362"
+    },
+    {
+      "persona": "student-international",
+      "query": "건강보험 가입해야 해요?",
+      "category": "visa",
+      "difficulty": "easy",
+      "answer": "규정에 따르면: 사외이사겸직에관한규정 > 제4조 허가기준 > 3. 사외이사로서: 사외이사로서의 책임에 대비하여 당해 회사가 보험에 가입하여야 한다. 다만, 사외이사의 배상책임을 대표이사가 부담한다는 내용의 각서를 공증하여 제출하는 경우 보험가입 의무를 면제할 수 있다.\n\n개설운영: 3,000만원 이상 30점\n2,000만원 이상 20점\n1,500만원 이상 15점\n1,000만원 이상 10점\n500만원 이상 5점\n외부기관(자유기업원, 한국표준협회등)의 강좌를 유치하여 공학교육 등 대학특성화를 포함하는 강좌를 교내에 정규 강좌로 개설하고 강좌를 책임 운영...",
+      "contexts": [
+        "사외이사겸직에관한규정 > 제4조 허가기준 > 3. 사외이사로서: 사외이사로서의 책임에 대비하여 당해 회사가 보험에 가입하여야 한다. 다만, 사외이사의 배상책임을 대표이사가 부담한다는 내용의 각서를 공증하여 제출하는 경우 보험가입 의무를 면제할 수 있다.",
+        "개설운영: 3,000만원 이상 30점\n2,000만원 이상 20점\n1,500만원 이상 15점\n1,000만원 이상 10점\n500만원 이상 5점\n외부기관(자유기업원, 한국표준협회등)의 강좌를 유치하여 공학교육 등 대학특성화를 포함하는 강좌를 교내에 정규 강좌로 개설하고 강좌를 책임 운영하는 경우 금액에 따라 인정\n교육혁신 프로그램 / 진로·취업지도 및 상담교육 프로그램 참여\n1점/수강 콘텐츠 수\n온라인콘텐츠 수강\n연간\n최대\n50점\n3점/회(3시간 미만), 5점/회(3시간 이상)\n특강, 워크숍, 세미나 등의 프로그램 참여\n5점/프로그램 참여 건당\n전문공동체 활동 (교수역량 강화 및 교수법 개선을 위한 공동체 모임), 학생 진로·취업 지도 우수 사례 성과 보고 및 강의 진행\n7점/과정(교내)\n10점/과정(교외)\n교수학습개발센터 등 행정부서 주관 연수(2차 시 이상 연속성이 있는 프로그램, 특별교육과정, 캠프 등 포함), 취업지원팀(대학일자리플러스센터) 등 행정부서 주관 연수\n3점/회당(자가진"
+      ],
+      "evaluation": {
+        "accuracy": 0.947,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.704,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.31297150136700413,
+      "timestamp": "2026-02-18T10:45:42.651743"
+    },
+    {
+      "persona": "student-international",
+      "query": "아르바이트 허가 시간이 몇 시간이에요?",
+      "category": "visa",
+      "difficulty": "medium",
+      "answer": "규정에 따르면: 출석인정및공결규정 > 제4조 공결 사유 및 기간 > ② 학기별 최대 공결 허가 시간: 학기별 최대 공결 허가 시간은 수업시간 1/3 이내로 제한한다. 단, 제4조제1항제6호에 해당하는 사유는 1/2 이내로 한다. <개정 2018. 2. 1.>\n\n강의시간편성및수업규정 > 제9조 수업 및 출석 인정 > 1. 국가적인 행사 및 대학: 1. 국가적인 행사 및 대학의 행사\n2. 시험 기간\n3. 총장이 특별히 인정하는 행사 기간...",
+      "contexts": [
+        "출석인정및공결규정 > 제4조 공결 사유 및 기간 > ② 학기별 최대 공결 허가 시간: 학기별 최대 공결 허가 시간은 수업시간 1/3 이내로 제한한다. 단, 제4조제1항제6호에 해당하는 사유는 1/2 이내로 한다. <개정 2018. 2. 1.>",
+        "강의시간편성및수업규정 > 제9조 수업 및 출석 인정 > 1. 국가적인 행사 및 대학: 1. 국가적인 행사 및 대학의 행사\n2. 시험 기간\n3. 총장이 특별히 인정하는 행사 기간"
+      ],
+      "evaluation": {
+        "accuracy": 0.933,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.701,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.5073981052917301,
+      "timestamp": "2026-02-18T10:45:42.848904"
+    },
+    {
+      "persona": "student-international",
+      "query": "재학 중 여행 갈 수 있어요?",
+      "category": "visa",
+      "difficulty": "medium",
+      "answer": "규정에 따르면: 취․창업역량마일리지규정 > 제6조 학점이수 및 변경 > ⑤ 재학 중 1회에 한하여 취소ㆍ변경할 수 있으며, 소정: 재학 중 1회에 한하여 취소ㆍ변경할 수 있으며, 소정의 절차를 거쳐야 한다.\n\n연계전공규정 > 제6조 이수 및 변경 > ④ 재학 중 1회에 한하여 취소ㆍ변경할 수 있으며, 소정: 재학 중 1회에 한하여 취소ㆍ변경할 수 있으며, 소정의 절차를 거쳐야 한다. <신설 2011. 2. 10, 2018. 1. 1>...",
+      "contexts": [
+        "취․창업역량마일리지규정 > 제6조 학점이수 및 변경 > ⑤ 재학 중 1회에 한하여 취소ㆍ변경할 수 있으며, 소정: 재학 중 1회에 한하여 취소ㆍ변경할 수 있으며, 소정의 절차를 거쳐야 한다.",
+        "연계전공규정 > 제6조 이수 및 변경 > ④ 재학 중 1회에 한하여 취소ㆍ변경할 수 있으며, 소정: 재학 중 1회에 한하여 취소ㆍ변경할 수 있으며, 소정의 절차를 거쳐야 한다. <신설 2011. 2. 10, 2018. 1. 1>"
+      ],
+      "evaluation": {
+        "accuracy": 0.903,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.693,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.35002287163848195,
+      "timestamp": "2026-02-18T10:45:42.911164"
+    },
+    {
+      "persona": "student-international",
+      "query": "한국어 능력 시험 몇 점 필요해요?",
+      "category": "academic",
+      "difficulty": "medium",
+      "answer": "규정에 따르면: 국제언어교육원규정 > 제4조 조직과 운영 > ③ 한국어과정: 한국어과정은 외국인의 한국어 교육과 한국어 능력인정 시험실시에 따른 제반 업무를 실시하며, 수강생들의 한국어 능력 향상을 위한 상담을 실시한다. <개정 2022. 9. 1.>\n\n치안과학기술·정책연구소규정: 컴퓨터활용능력평가시험규정【폐지】...",
+      "contexts": [
+        "국제언어교육원규정 > 제4조 조직과 운영 > ③ 한국어과정: 한국어과정은 외국인의 한국어 교육과 한국어 능력인정 시험실시에 따른 제반 업무를 실시하며, 수강생들의 한국어 능력 향상을 위한 상담을 실시한다. <개정 2022. 9. 1.>",
+        "치안과학기술·정책연구소규정: 컴퓨터활용능력평가시험규정【폐지】"
+      ],
+      "evaluation": {
+        "accuracy": 0.903,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.693,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.2842377577176264,
+      "timestamp": "2026-02-18T10:45:42.976830"
+    },
+    {
+      "persona": "student-international",
+      "query": "International student scholarship requirements?",
+      "category": "financial",
+      "difficulty": "medium",
+      "answer": "규정에 따르면: 대학원장학금지급에관한세칙 > 제4조 장학생의 종류 및 자격 > 2. 학・군협정장학생 : 육군본부와: 학・군협정장학생 : 육군본부와의 학・군 제휴협정에 따라 입학한 학생에 대하여 등록금의 일부를 장학금으로 지급할 수 있다. <신설 2012. 2. 1., 개정 2023. 10. 1.>\n\n학점은행제장학금지급에관한운영세칙 > 제6조 장학금액 및 지급 > 2. 자원봉사 장학금: 자원봉사 장학금은 매년 8월, 12월에 지급한다. <신설 2021. 2. 1>...",
+      "contexts": [
+        "대학원장학금지급에관한세칙 > 제4조 장학생의 종류 및 자격 > 2. 학・군협정장학생 : 육군본부와: 학・군협정장학생 : 육군본부와의 학・군 제휴협정에 따라 입학한 학생에 대하여 등록금의 일부를 장학금으로 지급할 수 있다. <신설 2012. 2. 1., 개정 2023. 10. 1.>",
+        "학점은행제장학금지급에관한운영세칙 > 제6조 장학금액 및 지급 > 2. 자원봉사 장학금: 자원봉사 장학금은 매년 8월, 12월에 지급한다. <신설 2021. 2. 1>"
+      ],
+      "evaluation": {
+        "accuracy": 0.935,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.701,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.35167674815929706,
+      "timestamp": "2026-02-18T10:45:43.092147"
+    },
+    {
+      "persona": "student-international",
+      "query": "병원 갈 때 보험 되나요?",
+      "category": "visa",
+      "difficulty": "medium",
+      "answer": "규정에 따르면: 사외이사겸직에관한규정 > 제4조 허가기준 > 3. 사외이사로서: 사외이사로서의 책임에 대비하여 당해 회사가 보험에 가입하여야 한다. 다만, 사외이사의 배상책임을 대표이사가 부담한다는 내용의 각서를 공증하여 제출하는 경우 보험가입 의무를 면제할 수 있다.\n\n콜라보교육센터규정 > 제16조 급여 등 > ⑥ 사회보험(국민연금, 고용보험 등): 사회보험(국민연금, 고용보험 등)의 적용은 관련법령에 따른다....",
+      "contexts": [
+        "사외이사겸직에관한규정 > 제4조 허가기준 > 3. 사외이사로서: 사외이사로서의 책임에 대비하여 당해 회사가 보험에 가입하여야 한다. 다만, 사외이사의 배상책임을 대표이사가 부담한다는 내용의 각서를 공증하여 제출하는 경우 보험가입 의무를 면제할 수 있다.",
+        "콜라보교육센터규정 > 제16조 급여 등 > ⑥ 사회보험(국민연금, 고용보험 등): 사회보험(국민연금, 고용보험 등)의 적용은 관련법령에 따른다."
+      ],
+      "evaluation": {
+        "accuracy": 0.93,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.7,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.23052197908648814,
+      "timestamp": "2026-02-18T10:45:43.581905"
+    },
+    {
+      "persona": "student-international",
+      "query": "졸업 후 취업 비자 바꿀 수 있어요?",
+      "category": "visa",
+      "difficulty": "medium",
+      "answer": "규정에 따르면: 학칙 및 내규: ▪학칙 개정\n○\n▪각종 세칙의 제정과 개정\n○\n학사일정\n▪학사일정 수립 및 변경\n○\n▪기본계획 수립\n○\n▪부서별 업무협조 및 각종 자료 정리\n○\n교육과정\n▪교육과정운영위원회 위원 추천 및 위원회 소집\n○\n▪교육과정 개편에 관한 기본 계획 수립\n○\n▪교양과정 교과목 편성 및 개설\n○\n▪대학(학과)별 교과과정 개편(안) 취합\n○\n▪교육과정 개편(안) 확정\n○\n▪교육과정 책자 발간\n○\n강의시간표\n▪학기별 교과목 개설 원칙 수립\n○\n▪개설 과목 확정\n○\n▪분반 조정 및 폐강 처리에 관한 사항\n○\n▪강의실 배정 및 강의시간표...",
+      "contexts": [
+        "학칙 및 내규: ▪학칙 개정\n○\n▪각종 세칙의 제정과 개정\n○\n학사일정\n▪학사일정 수립 및 변경\n○\n▪기본계획 수립\n○\n▪부서별 업무협조 및 각종 자료 정리\n○\n교육과정\n▪교육과정운영위원회 위원 추천 및 위원회 소집\n○\n▪교육과정 개편에 관한 기본 계획 수립\n○\n▪교양과정 교과목 편성 및 개설\n○\n▪대학(학과)별 교과과정 개편(안) 취합\n○\n▪교육과정 개편(안) 확정\n○\n▪교육과정 책자 발간\n○\n강의시간표\n▪학기별 교과목 개설 원칙 수립\n○\n▪개설 과목 확정\n○\n▪분반 조정 및 폐강 처리에 관한 사항\n○\n▪강의실 배정 및 강의시간표 확정\n○\n▪교양과정 개설 교과목 담당 교원 배정\n○\n▪강의시간표 개정\n○\n▪교원별 담당 시수 확정\n○\n수업계획서\n▪기본계획 수립\n○\n▪취합ㆍ제본ㆍ배부\n○\n교원강의평가\n▪분석 결과 활용\n○\n수업진단평가\n▪지속적 교육 품질 개선(CQI) 사항 관리\n○\n수강신청\n▪기본계획 수립\n○\n▪수강신청 정정\n○\n▪수강신청 사항 최종 확정\n○\n수업\n▪교원 교외 출강 승인\n",
+        "연구교수및연구원규정 > 제2조 적용대상자: 가. 연구원은 국내의 공공기관 또는 기업체에서 특수한 학문영역에 있어 탁월한 경험과 연구업적이 있고 본 대학교에서 일정기간 유급 또는 무급으로 연구에 종사할 자로서 책임연구원, 선임연구원, 연구원으로 구분한다. <개정 2021. 3. 1., 2023. 3. 1.>\n나. 책임연구원은 박사학위 소지자 또는 석사학위 취득 후 관련 연구 분야에 10년 이상 경력이 있는 자 <개정 2021. 3. 1>\n다. 선임연구원은 석사학위 이상의 소지자 또는 학사학위 취득 후 관련 연구 분야에 10년 이상 경력이 있는 자 <개정 2021. 3. 1.>\n라. 연구원은 학사학위 이상의 자격을 가진 자 <개정 2021. 3. 1., 2023. 3. 1.>\n박사 후 전문 연구원(Post Doc.) <신설 2024. 3. 1.>"
+      ],
+      "evaluation": {
+        "accuracy": 0.946,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.704,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.6818430437679476,
+      "timestamp": "2026-02-18T10:45:43.846469"
+    },
+    {
+      "persona": "student-international",
+      "query": "휴학하면 비자 어떻게 돼요?",
+      "category": "visa",
+      "difficulty": "medium",
+      "answer": "규정에 따르면: 휴학규정 > 제3조 구분 및 변경 > ④ 창업교육학사운영위원회에서 창업휴학 중단 및 취소된 자: 창업교육학사운영위원회에서 창업휴학 중단 및 취소된 자는 창업휴학을 일반휴학으로 변경한다. <신설 2014. 3. 1.>\n\n사무분장규정 > 제14조 학사지원팀 > 52. 제증명서, 팩스민원증명서, 인터넷 증명 등 발: 제증명서, 팩스민원증명서, 인터넷 증명 등 발급 관리...",
+      "contexts": [
+        "휴학규정 > 제3조 구분 및 변경 > ④ 창업교육학사운영위원회에서 창업휴학 중단 및 취소된 자: 창업교육학사운영위원회에서 창업휴학 중단 및 취소된 자는 창업휴학을 일반휴학으로 변경한다. <신설 2014. 3. 1.>",
+        "사무분장규정 > 제14조 학사지원팀 > 52. 제증명서, 팩스민원증명서, 인터넷 증명 등 발: 제증명서, 팩스민원증명서, 인터넷 증명 등 발급 관리"
+      ],
+      "evaluation": {
+        "accuracy": 0.912,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.696,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.016133989952406134,
+      "timestamp": "2026-02-18T10:45:43.915739"
+    },
+    {
+      "persona": "student-international",
+      "query": "Exchange program credits transfer?",
+      "category": "academic",
+      "difficulty": "medium",
+      "answer": "규정에 따르면: 비품 지급기준 > 5. 수증물품내용 :: 수증물품내용 :\n\n교류학생선발규정 > 제7조 각종 보고 > 1. 체재지 도착 보고 : 출국 후 10일 이내: 체재지 도착 보고 : 출국 후 10일 이내...",
+      "contexts": [
+        "비품 지급기준 > 5. 수증물품내용 :: 수증물품내용 :",
+        "교류학생선발규정 > 제7조 각종 보고 > 1. 체재지 도착 보고 : 출국 후 10일 이내: 체재지 도착 보고 : 출국 후 10일 이내"
+      ],
+      "evaluation": {
+        "accuracy": 0.857,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.682,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.35166750722891155,
+      "timestamp": "2026-02-18T10:45:44.015637"
+    },
+    {
+      "persona": "student-international",
+      "query": "한국어 수업 레벨이 몇 개 있어요?",
+      "category": "academic",
+      "difficulty": "medium",
+      "answer": "규정에 따르면: 한국어연수과정운영규정 > 제2조 업무 > 4. 해외 자매대학 단기 한국어 연수과정 운영 <개: 해외 자매대학 단기 한국어 연수과정 운영 <개정 2022. 9. 1>\n\n외국인유학생의한국어강좌이수및학점인정에관한규정 > 제3조 이수 대상자 > ④ 한국어 강좌 고급 과정: 한국어 강좌 고급 과정은 한국어 강좌 중급 과정을 이수하였거나 한국어 강좌 초ㆍ중급 과정 전부 또는 중급 과정 이수가 면제된 2학년 이상인 외국인 유학생이 선택적으로 이수할 수 있으며, 이수할 경우 그 학점은 일반선택과정 학점으로 인정한다....",
+      "contexts": [
+        "한국어연수과정운영규정 > 제2조 업무 > 4. 해외 자매대학 단기 한국어 연수과정 운영 <개: 해외 자매대학 단기 한국어 연수과정 운영 <개정 2022. 9. 1>",
+        "외국인유학생의한국어강좌이수및학점인정에관한규정 > 제3조 이수 대상자 > ④ 한국어 강좌 고급 과정: 한국어 강좌 고급 과정은 한국어 강좌 중급 과정을 이수하였거나 한국어 강좌 초ㆍ중급 과정 전부 또는 중급 과정 이수가 면제된 2학년 이상인 외국인 유학생이 선택적으로 이수할 수 있으며, 이수할 경우 그 학점은 일반선택과정 학점으로 인정한다."
+      ],
+      "evaluation": {
+        "accuracy": 0.94,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.703,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.6375955152587284,
+      "timestamp": "2026-02-18T10:45:44.149385"
+    },
+    {
+      "persona": "student-international",
+      "query": "International office hours when?",
+      "category": "admin",
+      "difficulty": "medium",
+      "answer": "규정에 따르면: 교원국내외출장에관한규정 > 제5조 출장의 제한 > 2. 국외출장일 경우 휴일을 포함하여 학기당 7일을 초과하: 국외출장일 경우 휴일을 포함하여 학기당 7일을 초과하는 경우 및 동일 학과에 동시에 2명을 초과하는 경우 <개정 2024. 1. 1.>\n\n교원인사규정 > 제6조 근무기간의 계산 > ③ 공무로 국외파견 또: 공무로 국외파견 또는 국외출장중인 자의 그 파견 또는 출장기간 중에 근무기간이 만료되는 때에는 그 파견 또는 출장잔여기간까지를 근무기간으로 본다. 다만, 그 잔여기간이 2년을 초과할 수 없다. <개정 2011. 7. 1....",
+      "contexts": [
+        "교원국내외출장에관한규정 > 제5조 출장의 제한 > 2. 국외출장일 경우 휴일을 포함하여 학기당 7일을 초과하: 국외출장일 경우 휴일을 포함하여 학기당 7일을 초과하는 경우 및 동일 학과에 동시에 2명을 초과하는 경우 <개정 2024. 1. 1.>",
+        "교원인사규정 > 제6조 근무기간의 계산 > ③ 공무로 국외파견 또: 공무로 국외파견 또는 국외출장중인 자의 그 파견 또는 출장기간 중에 근무기간이 만료되는 때에는 그 파견 또는 출장잔여기간까지를 근무기간으로 본다. 다만, 그 잔여기간이 2년을 초과할 수 없다. <개정 2011. 7. 1.>"
+      ],
+      "evaluation": {
+        "accuracy": 0.945,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.704,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.3516677173694728,
+      "timestamp": "2026-02-18T10:45:44.270067"
+    },
+    {
+      "persona": "student-international",
+      "query": "D-2에서 D-4로 변경할 수 있어요?",
+      "category": "visa",
+      "difficulty": "hard",
+      "answer": "규정에 따르면: UX연구소규정: 2단계두뇌한국(BK21)해양한방바이오게놈소재인력양성사업팀규정【폐지】\n3D입체영상연구소규정【폐지】\n찾아보기\n<소관부서별>\n감사실\n연구윤리센터\n\n취․창업역량마일리지규정 > 제6조 학점이수 및 변경 > ⑤ 재학 중 1회에 한하여 취소ㆍ변경할 수 있으며, 소정: 재학 중 1회에 한하여 취소ㆍ변경할 수 있으며, 소정의 절차를 거쳐야 한다....",
+      "contexts": [
+        "UX연구소규정: 2단계두뇌한국(BK21)해양한방바이오게놈소재인력양성사업팀규정【폐지】\n3D입체영상연구소규정【폐지】\n찾아보기\n<소관부서별>\n감사실\n연구윤리센터",
+        "취․창업역량마일리지규정 > 제6조 학점이수 및 변경 > ⑤ 재학 중 1회에 한하여 취소ㆍ변경할 수 있으며, 소정: 재학 중 1회에 한하여 취소ㆍ변경할 수 있으며, 소정의 절차를 거쳐야 한다."
+      ],
+      "evaluation": {
+        "accuracy": 0.893,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.691,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.3138574307949907,
+      "timestamp": "2026-02-18T10:45:44.343251"
+    },
+    {
+      "persona": "student-international",
+      "query": "졸업 후 6개월 비자 연장 가능해요?",
+      "category": "visa",
+      "difficulty": "hard",
+      "answer": "규정에 따르면: 대학원외국인학생의특례입학에관한세칙 > 제6조 제출서류 > 1. 입학전형시 제출서류 > 다. 대학졸업(예정)증명서 1부(박사학위과정 지원자: 대학졸업(예정)증명서 1부(박사학위과정 지원자는 대학 및 대학원 졸업(예정)증명서 각 1부)\n\n연구교수및연구원규정 > 제2조 적용대상자: 가. 연구원은 국내의 공공기관 또는 기업체에서 특수한 학문영역에 있어 탁월한 경험과 연구업적이 있고 본 대학교에서 일정기간 유급 또는 무급으로 연구에 종사할 자로서 책임연구원, 선임연구원, 연구원으로 구분한다. <개정 2021. 3. 1., 2023. 3. 1...",
+      "contexts": [
+        "대학원외국인학생의특례입학에관한세칙 > 제6조 제출서류 > 1. 입학전형시 제출서류 > 다. 대학졸업(예정)증명서 1부(박사학위과정 지원자: 대학졸업(예정)증명서 1부(박사학위과정 지원자는 대학 및 대학원 졸업(예정)증명서 각 1부)",
+        "연구교수및연구원규정 > 제2조 적용대상자: 가. 연구원은 국내의 공공기관 또는 기업체에서 특수한 학문영역에 있어 탁월한 경험과 연구업적이 있고 본 대학교에서 일정기간 유급 또는 무급으로 연구에 종사할 자로서 책임연구원, 선임연구원, 연구원으로 구분한다. <개정 2021. 3. 1., 2023. 3. 1.>\n나. 책임연구원은 박사학위 소지자 또는 석사학위 취득 후 관련 연구 분야에 10년 이상 경력이 있는 자 <개정 2021. 3. 1>\n다. 선임연구원은 석사학위 이상의 소지자 또는 학사학위 취득 후 관련 연구 분야에 10년 이상 경력이 있는 자 <개정 2021. 3. 1.>\n라. 연구원은 학사학위 이상의 자격을 가진 자 <개정 2021. 3. 1., 2023. 3. 1.>\n박사 후 전문 연구원(Post Doc.) <신설 2024. 3. 1.>"
+      ],
+      "evaluation": {
+        "accuracy": 0.943,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.703,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.5544088750866205,
+      "timestamp": "2026-02-18T10:45:44.493665"
+    },
+    {
+      "persona": "student-international",
+      "query": "Professional visa E-7 requirements?",
+      "category": "visa",
+      "difficulty": "hard",
+      "answer": "규정에 따르면: 연구실적 평가기준 > 5. 국가연구개발비 등 정부 재원으로 이루어지: 국가연구개발비 등 정부 재원으로 이루어지는 학술활동의 국외 논문 및 국외학술발표 실적 등록 시 국외학술대회 참가심의서, 부실학술지(학회) 체크리스트를 제출하여야 한다. 또한 교원이 특수관계인 및 R&E 참여학생과 논문(학술대회/학술지)을 공저하고자 하는 경우에는 사전 공개양식을 작성하여 제출하여야 한다. <신설 2020. 5. 1., 개정 2022. 1. 1.>\n\n편입학규정 > 제7조 학력조회 > 23. 이 변경 규정: 이 변경 규정은 2023년 7월 1일부터 시...",
+      "contexts": [
+        "연구실적 평가기준 > 5. 국가연구개발비 등 정부 재원으로 이루어지: 국가연구개발비 등 정부 재원으로 이루어지는 학술활동의 국외 논문 및 국외학술발표 실적 등록 시 국외학술대회 참가심의서, 부실학술지(학회) 체크리스트를 제출하여야 한다. 또한 교원이 특수관계인 및 R&E 참여학생과 논문(학술대회/학술지)을 공저하고자 하는 경우에는 사전 공개양식을 작성하여 제출하여야 한다. <신설 2020. 5. 1., 개정 2022. 1. 1.>",
+        "편입학규정 > 제7조 학력조회 > 23. 이 변경 규정: 이 변경 규정은 2023년 7월 1일부터 시행한다."
+      ],
+      "evaluation": {
+        "accuracy": 0.947,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.704,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.24213855113157445,
+      "timestamp": "2026-02-18T10:45:45.211003"
+    },
+    {
+      "persona": "student-international",
+      "query": "International student tuition waiver criteria?",
+      "category": "financial",
+      "difficulty": "hard",
+      "answer": "규정에 따르면: 학습유형 인정 기준 > ⑪ Gamification: Gamification\n\n학습유형 인정 기준 > ⑨ EdTech활용: EdTech활용...",
+      "contexts": [
+        "학습유형 인정 기준 > ⑪ Gamification: Gamification",
+        "학습유형 인정 기준 > ⑨ EdTech활용: EdTech활용"
+      ],
+      "evaluation": {
+        "accuracy": 0.75,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.655,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.35166750722891155,
+      "timestamp": "2026-02-18T10:45:45.322586"
+    },
+    {
+      "persona": "student-international",
+      "query": "Dual degree program available?",
+      "category": "academic",
+      "difficulty": "hard",
+      "answer": "규정에 따르면: FUN학생경험지원센터규정 > 제2조 업무 > 7. 학생경력관리포털(DAP: Dongeui All: 학생경력관리포털(DAP: Dongeui All-in-onecareer assistance Platform)등 학생 경험 지원 관련 시스템 관리 및 운영\n\n개발 및 운영: ▪교육혁신 프로그램 세부계획 수립 및 결과 보고\n○\n교육성과 분석\n▪역량과 연계한 교육성과 분석\n○\n및 환류\n▪수업평가 수행, 분석 및 개선 방안 수립\n○\n▪콜라보교육인정제 운영 및 관리\n○\n￭교무처 교육혁신원 교수학습개발센터\n단위업무세 부 업 무총장전결권자부총장부서장...",
+      "contexts": [
+        "FUN학생경험지원센터규정 > 제2조 업무 > 7. 학생경력관리포털(DAP: Dongeui All: 학생경력관리포털(DAP: Dongeui All-in-onecareer assistance Platform)등 학생 경험 지원 관련 시스템 관리 및 운영",
+        "개발 및 운영: ▪교육혁신 프로그램 세부계획 수립 및 결과 보고\n○\n교육성과 분석\n▪역량과 연계한 교육성과 분석\n○\n및 환류\n▪수업평가 수행, 분석 및 개선 방안 수립\n○\n▪콜라보교육인정제 운영 및 관리\n○\n￭교무처 교육혁신원 교수학습개발센터\n단위업무세 부 업 무총장전결권자부총장부서장소장교수 및 학습역량 ▪교수 및 학습역량 강화 프로그램 개발 및 운영○강화프로그램기획, ▪교수 및 학습역량 강화 개발 및 운영○운영, 지원 ▪교수 및 학습역량 강화 프로그램 개발 및 운영 ○교수 및 학습역량 ▪교수 및 학습역량 강화 프로그램 분석 및 결과 보고○강화를 위한 각종연구 및 자료 수집교수역량인증제▪교수역량인증(SUN) 교원 확정 ○(SUN) 운영 ▪교수역량인증제(SUN) 운영○정책 개발▪원격수업 운영 및 관리에 관한 정책 개발○인프라 관리▪DOOR(Dong-eui Open Online Resource) 시스템 운영, 관리 ○▪e러닝 강좌 및 교육콘텐츠 기획, 개발, 제작○▪MOOC 지원, 운영"
+      ],
+      "evaluation": {
+        "accuracy": 0.936,
+        "completeness": 0.87,
+        "citations": 0.5,
+        "context_relevance": 0.5,
+        "overall_score": 0.702,
+        "passed": false,
+        "failure_reasons": [
+          "Answer Relevancy below threshold: 0.500 < 0.7",
+          "Contextual Precision below threshold: 0.500 < 0.65"
+        ]
+      },
+      "confidence": 0.35166750722891155,
+      "timestamp": "2026-02-18T10:45:45.507239"
+    }
+  ]
+}
