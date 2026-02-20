@@ -34,8 +34,22 @@ from ..infrastructure.patterns import (
     normalize_article_token,
 )
 from ..infrastructure.query_analyzer import Audience, QueryType
+from .intent_classifier import (
+    IntentCategory,
+    IntentClassifier,
+    IntentClassificationResult,
+)
 
 logger = logging.getLogger(__name__)
+
+# Intent-aware search configurations for different query types
+# Higher top_k for complex intent categories to improve recall
+INTENT_SEARCH_CONFIGS: dict[IntentCategory, dict[str, float | int]] = {
+    IntentCategory.PROCEDURE: {"top_k": 15, "boost_procedure": 1.5},
+    IntentCategory.DEADLINE: {"top_k": 10, "boost_date": 1.3},
+    IntentCategory.ELIGIBILITY: {"top_k": 12, "boost_condition": 1.4},
+    IntentCategory.GENERAL: {"top_k": 10},  # default
+}
 
 # Audience to Persona mapping for persona-aware response generation
 # Maps Audience enum values to persona names used by PersonaAwareGenerator
@@ -403,6 +417,12 @@ class SearchUseCase:
         # Reranking metrics (Cycle 3)
         self._reranking_metrics = RerankingMetrics()
 
+        # Intent Classifier (SPEC-RAG-QUALITY-007)
+        # Classifies user query intent for intent-aware search parameter adjustment
+        self._intent_classifier = IntentClassifier()
+        self._last_intent_classification: Optional[IntentClassificationResult] = None
+        logger.debug("IntentClassifier initialized for intent-aware search")
+
         # Citation Verification Service (SPEC-RAG-Q-004)
         # Lazy initialized to avoid circular imports
         self._citation_verification_service: Optional["CitationVerificationService"] = (
@@ -484,6 +504,66 @@ class SearchUseCase:
                 self._hybrid_searcher.set_llm_client(self.llm)
 
         self._hybrid_initialized = True
+
+    # --- Intent-Aware Search (SPEC-RAG-QUALITY-007) ---
+
+    def _get_intent_aware_search_params(
+        self, intent: IntentCategory, base_top_k: int = 10
+    ) -> dict[str, float | int]:
+        """
+        Get search parameters adjusted based on query intent.
+
+        Intent-aware search parameter adjustment improves retrieval quality
+        by adapting search configuration to the query's intent category.
+
+        Args:
+            intent: The classified intent category.
+            base_top_k: The base top_k value to use as minimum.
+
+        Returns:
+            Dictionary with adjusted search parameters:
+            - top_k: Adjusted result count based on intent
+            - boost_*: Intent-specific score boost factors
+        """
+        config = INTENT_SEARCH_CONFIGS.get(intent, INTENT_SEARCH_CONFIGS[IntentCategory.GENERAL])
+
+        # Ensure top_k is at least the base value
+        adjusted_top_k = max(config.get("top_k", base_top_k), base_top_k)
+
+        result: dict[str, float | int] = {"top_k": adjusted_top_k}
+
+        # Add intent-specific boosts
+        if "boost_procedure" in config:
+            result["boost_procedure"] = config["boost_procedure"]
+        if "boost_date" in config:
+            result["boost_date"] = config["boost_date"]
+        if "boost_condition" in config:
+            result["boost_condition"] = config["boost_condition"]
+
+        return result
+
+    def _classify_and_log_intent(self, query_text: str) -> IntentClassificationResult:
+        """
+        Classify query intent and log the classification for monitoring.
+
+        Args:
+            query_text: The query to classify.
+
+        Returns:
+            IntentClassificationResult with category, confidence, and matched keywords.
+        """
+        result = self._intent_classifier.classify(query_text)
+        self._last_intent_classification = result
+
+        logger.info(
+            "Intent classification for '%s...': category=%s, confidence=%.2f, keywords=%s",
+            query_text[:30] if len(query_text) > 30 else query_text,
+            result.category.value,
+            result.confidence,
+            result.matched_keywords[:3] if result.matched_keywords else [],
+        )
+
+        return result
 
     # --- Phase 2: Search Strategy Branching ---
 
@@ -646,13 +726,13 @@ class SearchUseCase:
 
         query_text = unicodedata.normalize("NFC", query_text)
 
-        # 1. Rule code pattern (e.g., "3-1-24")
+        # 1. Rule code pattern (e.g., "3-1-24") - structural, no intent adjustment needed
         if RULE_CODE_PATTERN.match(query_text):
             return self._search_by_rule_code_pattern(
                 query_text, filter, top_k, include_abolished
             )
 
-        # 2. Regulation name only (e.g., "교원인사규정")
+        # 2. Regulation name only (e.g., "교원인사규정") - structural, no intent adjustment
         reg_only = _extract_regulation_only_query(query_text)
         if reg_only:
             result = self._search_by_regulation_only(
@@ -661,16 +741,24 @@ class SearchUseCase:
             if result is not None:
                 return result
 
-        # 3. Regulation + article (e.g., "교원인사규정 제8조")
+        # 3. Regulation + article (e.g., "교원인사규정 제8조") - structural, no intent adjustment
         reg_article = _extract_regulation_article_query(query_text)
         if reg_article:
             return self._search_by_regulation_article(
                 query_text, reg_article, filter, top_k, include_abolished
             )
 
-        # 4. General search with hybrid/reranking
+        # 4. General search with hybrid/reranking - apply intent-aware params
+        # Intent-aware search: Classify query intent for natural language queries only
+        intent_result = self._classify_and_log_intent(query_text)
+        intent_params = self._get_intent_aware_search_params(
+            intent_result.category, base_top_k=top_k
+        )
+        # Adjust top_k based on intent (only increase, never decrease below user-specified)
+        adjusted_top_k = max(intent_params.get("top_k", top_k), top_k)
+
         return self._search_general(
-            query_text, filter, top_k, include_abolished, audience_override
+            query_text, filter, adjusted_top_k, include_abolished, audience_override
         )
 
     def _search_by_rule_code_pattern(
