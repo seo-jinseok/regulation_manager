@@ -71,12 +71,33 @@ FALLBACK_MESSAGE_EN = (
     "Please try asking in different words or contact the relevant university department."
 )
 
+# REQ-002: Regeneration loop constants
+# Threshold for triggering regeneration (below this = retry with stricter prompt)
+FAITHFULNESS_REGENERATION_THRESHOLD = 0.6
+# Maximum number of regeneration attempts
+MAX_REGENERATION_ATTEMPTS = 2
+
+# REQ-002: Stricter prompt for regeneration attempts
+# This prompt adds additional warnings to ensure context-only responses
+REGENERATION_STRICT_PROMPT_KO = """당신은 대학 규정 전문가입니다.
+
+[중요 경고 - 반드시 준수]
+1. 제공된 규정 문맥에 있는 내용만 사용하여 답변하세요.
+2. 문맥에 없는 정보를 절대로 생성하거나 추측하지 마세요.
+3. 인용(제X조)은 문맥에 실제로 존재하는 조항만 언급하세요.
+4. 숫자, 날짜, 연락처 등 구체적인 정보는 문맥에서 확인된 것만 사용하세요.
+5. 이전 답변에서 문맥에 없는 정보가 포함되어 있었습니다. 반드시 수정하세요.
+6. 확실하지 않은 경우 "제공된 규정에서 찾을 수 없습니다"라고 명시하세요.
+
+다음 규정 문맥을 바탕으로 질문에 답변하세요:"""
+
 # Forward references for type hints
 if TYPE_CHECKING:
     from ..domain.llm.ambiguity_classifier import DisambiguationDialog
     from .multi_hop_handler import MultiHopHandler
     from .academic_calendar_service import AcademicCalendarService
     from ..infrastructure.period_keyword_detector import PeriodKeywordDetector
+    from ..domain.evaluation.faithfulness_validator import FaithfulnessValidator
     from ..domain.citation.citation_verification_service import (
         CitationVerificationService,
     )
@@ -169,6 +190,48 @@ def _get_fallback_regulation_qa_prompt() -> str:
     """Fallback prompt if prompts.json is not available."""
     return """당신은 동의대학교 규정 전문가입니다.
 주어진 규정 내용을 바탕으로 사용자의 질문에 **상세하고 친절하게** 답변하세요.
+
+## 🔒 CONTEXT BOUNDARY (CRITICAL - SPEC-RAG-QUALITY-008)
+
+당신의 답변은 **오직 [CONTEXT] 섹션에 포함된 내용에만 근거해야 합니다.**
+
+```
+[CONTEXT START - 반드시 이 내용만 참조하세요]
+{context_chunks}
+[CONTEXT END - 이 범위 밖의 정보는 사용하지 마세요]
+```
+
+### ⚠️ Context-Only 규칙 (Violation Detection)
+
+**당신은 [CONTEXT] 섹션의 정보만 사용하여 답변해야 합니다.**
+
+다음은 **절대 금지**됩니다:
+
+1. **[CONTEXT]에 없는 전화번호, 이메일, 부서명 생성**
+   - 금지 예시: "02-1234-5678", "department@dongui.ac.kr"
+   - 대안: "정확한 연락처는 학교 홈페이지에서 확인하시기 바랍니다."
+
+2. **[CONTEXT]에 없는 규정 인용 (제X조)**
+   - 금지 예시: [CONTEXT]에 "제15조"가 없는데 인용
+   - 확인: 조항 번호는 반드시 [CONTEXT]에서 찾을 수 있어야 함
+
+3. **[CONTEXT]에 없는 수치, 날짜, 기간 언급**
+   - 금지 예시: "40%", "30일 이내" (CONTEXT에 없는 경우)
+   - 확인: 모든 숫자는 [CONTEXT]에서 확인 가능해야 함
+
+4. **일반적인 대학 규정이나 타 학교 사례 언급**
+   - 금지 예시: "일반적으로 대학에서는...", "서울대학교의 경우..."
+   - 이 시스템은 **동의대학교 규정만** 다룹니다
+
+5. **회피 표현 사용**
+   - 금지 예시: "보통", "통상적으로", "일반적으로"
+   - 이유: [CONTEXT] 외부 지식을 암시하는 표현
+
+### 정보가 [CONTEXT]에 없는 경우 필수 응답
+
+정보가 [CONTEXT]에서 찾을 수 없는 경우, **반드시** 다음과 같이 답변하세요:
+
+> "제공된 규정에서 해당 정보를 찾을 수 없습니다. 관련 부서에 문의해 주시기 바랍니다."
 
 ## ⚠️ 절대 금지 사항 (할루시네이션 방지 - SPEC-RAG-Q-001 Phase 3 강화)
 1. **전화번호/연락처 생성 금지**: 절대로 "02-XXXX-XXXX", "02-1234-5678" 등 전화번호를 만들어내지 마세요.
@@ -275,6 +338,7 @@ class SearchUseCase:
         reranker: Optional[IReranker] = None,
         enable_warmup: Optional[bool] = None,
         hallucination_filter: Optional[HallucinationFilter] = None,
+        faithfulness_validator: Optional["FaithfulnessValidator"] = None,
         period_keyword_detector: Optional["PeriodKeywordDetector"] = None,
         academic_calendar_service: Optional["AcademicCalendarService"] = None,
     ):
@@ -289,7 +353,8 @@ class SearchUseCase:
             use_hybrid: Whether to use hybrid search (default: from config).
             reranker: Optional reranker implementation (auto-created if None and use_reranker=True).
             enable_warmup: Whether to warmup in background (default: WARMUP_ON_INIT env).
-            hallucination_filter: Optional HallucinationFilter (auto-created from config if None).
+            hallucination_filter: Optional HallucinationFilter for pattern-based filtering (auto-created from config if None).
+            faithfulness_validator: Optional FaithfulnessValidator for semantic-based validation (auto-created if None).
             period_keyword_detector: Optional PeriodKeywordDetector for deadline/date queries.
             academic_calendar_service: Optional AcademicCalendarService for academic calendar info.
         """
@@ -368,6 +433,17 @@ class SearchUseCase:
                 )
         else:
             self.hallucination_filter = None
+
+        # Faithfulness Validator (REQ-003: Semantic-based validation)
+        # Complements HallucinationFilter with semantic claim verification
+        if faithfulness_validator is not None:
+            self._faithfulness_validator = faithfulness_validator
+            logger.info("FaithfulnessValidator injected via constructor")
+        else:
+            # Lazy import to avoid circular dependency with domain.evaluation
+            from ..domain.evaluation.faithfulness_validator import FaithfulnessValidator
+            self._faithfulness_validator = FaithfulnessValidator()
+            logger.info("FaithfulnessValidator initialized for semantic validation")
 
         # Confidence threshold for fallback response (TAG-001: Prevent Hallucination)
         # When confidence score is below this threshold, return fallback message
@@ -2708,6 +2784,201 @@ class SearchUseCase:
                 user_message=corrected_user_message,
                 temperature=0.0,
             )
+
+        return answer_text
+
+    def _generate_answer_with_validation(
+        self,
+        question: str,
+        context: str,
+        context_list: List[str],
+        history_text: Optional[str] = None,
+        debug: bool = False,
+        custom_prompt: Optional[str] = None,
+        persona: Optional[str] = None,
+        max_retries: int = MAX_REGENERATION_ATTEMPTS,
+    ) -> tuple[str, Dict[str, Any]]:
+        """
+        Generate answer with faithfulness validation and regeneration loop.
+
+        REQ-002: Regeneration loop implementation.
+        - Validates answer with FaithfulnessValidator
+        - If faithfulness < 0.6, regenerates with stricter prompt (max 2 retries)
+        - If all attempts fail, returns fallback response
+
+        Args:
+            question: User's question.
+            context: Search result context (formatted string).
+            context_list: List of context texts for faithfulness validation.
+            history_text: Optional conversation history.
+            debug: Whether to print debug info.
+            custom_prompt: Optional custom system prompt.
+            persona: Optional persona name for persona-aware response generation.
+            max_retries: Maximum regeneration attempts (default: 2).
+
+        Returns:
+            Tuple of (answer_text, metadata_dict) where metadata includes:
+            - faithfulness_score: float (0.0-1.0)
+            - validation_attempts: int
+            - final_status: str ("validated"|"regenerated"|"fallback")
+        """
+        # Initialize metadata
+        metadata: Dict[str, Any] = {
+            "faithfulness_score": 0.0,
+            "validation_attempts": 0,
+            "final_status": "validated",
+            "ungrounded_claims": [],
+        }
+
+        # Use instance validator (initialized in __init__)
+        validator = self._faithfulness_validator
+
+        # Build user message
+        user_message = self._build_user_message(question, context, history_text)
+
+        # Determine system prompt
+        system_prompt = custom_prompt or REGULATION_QA_PROMPT
+        if persona and not custom_prompt:
+            system_prompt = self._enhance_prompt_with_persona(
+                system_prompt, persona, question
+            )
+
+        # Generate initial answer
+        answer_text = self.llm.generate(
+            system_prompt=system_prompt,
+            user_message=user_message,
+            temperature=0.0,
+        )
+
+        # Validate with faithfulness validator
+        validation_result = validator.validate_answer(
+            answer=answer_text,
+            context=context_list,
+            threshold=FAITHFULNESS_REGENERATION_THRESHOLD,
+        )
+
+        metadata["faithfulness_score"] = validation_result.score
+        metadata["validation_attempts"] = 1
+
+        if debug:
+            logger.debug(
+                f"Faithfulness validation attempt 1: score={validation_result.score:.3f}, "
+                f"is_acceptable={validation_result.is_acceptable}"
+            )
+
+        # Check if answer is acceptable
+        if validation_result.is_acceptable:
+            metadata["final_status"] = "validated"
+            logger.info(
+                f"Answer validated with faithfulness score: {validation_result.score:.3f}"
+            )
+            return answer_text, metadata
+
+        # Regeneration loop
+        for attempt in range(1, max_retries + 1):
+            logger.info(
+                f"Faithfulness below threshold ({validation_result.score:.3f} < "
+                f"{FAITHFULNESS_REGENERATION_THRESHOLD}), regeneration attempt {attempt}/{max_retries}"
+            )
+
+            # Generate with stricter prompt
+            answer_text = self._generate_answer_strict(
+                question=question,
+                context=context,
+                history_text=history_text,
+                previous_ungrounded_claims=validation_result.ungrounded_claims,
+                previous_suggestion=validation_result.suggestion,
+            )
+
+            # Re-validate
+            validation_result = validator.validate_answer(
+                answer=answer_text,
+                context=context_list,
+                threshold=FAITHFULNESS_REGENERATION_THRESHOLD,
+            )
+
+            metadata["faithfulness_score"] = validation_result.score
+            metadata["validation_attempts"] = attempt + 1
+
+            if debug:
+                logger.debug(
+                    f"Faithfulness validation attempt {attempt + 1}: "
+                    f"score={validation_result.score:.3f}, "
+                    f"is_acceptable={validation_result.is_acceptable}"
+                )
+
+            if validation_result.is_acceptable:
+                metadata["final_status"] = "regenerated"
+                logger.info(
+                    f"Answer regenerated successfully after {attempt + 1} attempts, "
+                    f"faithfulness score: {validation_result.score:.3f}"
+                )
+                return answer_text, metadata
+
+        # All attempts failed - return fallback response
+        metadata["final_status"] = "fallback"
+        metadata["ungrounded_claims"] = validation_result.ungrounded_claims
+
+        logger.warning(
+            f"All regeneration attempts failed. Final faithfulness score: "
+            f"{validation_result.score:.3f}. Returning fallback response."
+        )
+
+        fallback_text = FALLBACK_MESSAGE_KO
+        return fallback_text, metadata
+
+    def _generate_answer_strict(
+        self,
+        question: str,
+        context: str,
+        history_text: Optional[str] = None,
+        previous_ungrounded_claims: Optional[List[str]] = None,
+        previous_suggestion: str = "",
+    ) -> str:
+        """
+        Generate answer with stricter prompt for regeneration attempts.
+
+        REQ-002: Uses stricter prompt with warnings about context-only responses.
+
+        Args:
+            question: User's question.
+            context: Search result context.
+            history_text: Optional conversation history.
+            previous_ungrounded_claims: Claims from previous attempt that were not grounded.
+            previous_suggestion: Suggestion from previous validation.
+
+        Returns:
+            Generated answer text.
+        """
+        # Build feedback for previous issues
+        feedback_parts = []
+        if previous_ungrounded_claims:
+            claims_str = ", ".join(previous_ungrounded_claims[:5])  # Limit to first 5
+            feedback_parts.append(f"이전 답변에서 검증되지 않은 주장: {claims_str}")
+        if previous_suggestion:
+            feedback_parts.append(f"개선 제안: {previous_suggestion}")
+
+        feedback_text = "\n".join(feedback_parts) if feedback_parts else ""
+
+        # Build user message with feedback
+        user_message = self._build_user_message(question, context, history_text)
+
+        if feedback_text:
+            user_message = (
+                f"{user_message}\n\n"
+                f"---\n"
+                f"[이전 답변 검토 결과]\n"
+                f"{feedback_text}\n\n"
+                f"위 문제점을 해결하여, 제공된 규정 문맥에 있는 내용만으로 답변해주세요. "
+                f"문맥에 없는 정보는 추가하지 마세요."
+            )
+
+        # Generate with stricter prompt
+        answer_text = self.llm.generate(
+            system_prompt=REGENERATION_STRICT_PROMPT_KO,
+            user_message=user_message,
+            temperature=0.0,
+        )
 
         return answer_text
 
