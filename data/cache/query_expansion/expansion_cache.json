@@ -329,5 +329,101 @@
     "expanded_query": "석사 과정 논문 심사 기준이 어떻게 됩니까? 석사 논문 논문 심사 기준 학위 논문 석사 논문 논문 심사 기준 학위 논문",
     "intent": "석사 논문 심사 기준 문의",
     "confidence": 0.95
+  },
+  "fec6d8202a373753": {
+    "keywords": [
+      "복학생",
+      "복학신청",
+      "복학원",
+      "신원확인",
+      "제출서류"
+    ],
+    "expanded_query": "복학 신청 방법 알려주실까요 복학원 복학 신청 싶어 [Note: Response generated using fallback provider due to primary provider unavailability.]\n\n신청서 지원 어떻게 [Note: Response generated using fallback provider due to primary provider unavailability.]\n\n절차 방식 [Note: Response generated using fallback provider due to primary provider unavailability.]\n\n문의하실까요 질문하시겠습니까 복학생 복학신청 신원확인",
+    "intent": "복학 신청 절차 및 방법 문의",
+    "confidence": 0.95
+  },
+  "e476ab9f20e5d52a": {
+    "keywords": [
+      "장학금",
+      "신청서",
+      "지원 절차",
+      "등록금 감면",
+      "국가장학금",
+      "교내장학금"
+    ],
+    "expanded_query": "장학금 신청 방법 알려주실까요 관심 장학 장학생 등록금 수업료 학비지원 등록금감면 국가장학금 교내장학금 학자금 싶어 [Note: Response generated using fallback provider due to primary provider unavailability.]\n\n신청서 지원 어떻게 [Note: Response generated using fallback provider due to primary provider unavailability.]\n\n절차 방식 [Note: Response generated using fallback provider due to primary provider unavailability.]\n\n문의하실까요 질문하시겠습니까 지원 절차 등록금 감면",
+    "intent": "장학금 신청 절차 및 방법 문의",
+    "confidence": 0.95
+  },
+  "20fb035925bf480f": {
+    "keywords": [
+      "수강신청",
+      "수강절차",
+      "강의등록",
+      "학사일정",
+      "수강신청기간"
+    ],
+    "expanded_query": "수강 절차 알려주세요 수강신청 수강절차 강의등록",
+    "intent": "수강 절차 문의",
+    "confidence": 0.95
+  },
+  "b4dc497e7fc86702": {
+    "keywords": [
+      "학적 등록",
+      "신입생 등록",
+      "초기 학적 처리",
+      "학사 행정 절차"
+    ],
+    "expanded_query": "처음이라 등록를 잘 몰라요 학적 등록 신입생 등록 초기 학적 처리",
+    "intent": "학적 등록 절차 문의",
+    "confidence": 0.95
+  },
+  "9047604c59561b6f": {
+    "keywords": [
+      "수강신청",
+      "강의 등록",
+      "학기 초 수강",
+      "수강 계획",
+      "학사 규정"
+    ],
+    "expanded_query": "처음이라 수강를 잘 몰라요 수강신청 강의 등록 학기 초 수강",
+    "intent": "수강 신청 관련 문의",
+    "confidence": 0.85
+  },
+  "e2ea48fd1ed5a70f": {
+    "keywords": [
+      "등록자격",
+      "입학요건",
+      "학적등록",
+      "자격기준",
+      "학칙"
+    ],
+    "expanded_query": "등록 자격이 뭐예요? 등록자격 입학요건 학적등록",
+    "intent": "등록 자격 요건 문의",
+    "confidence": 0.95
+  },
+  "edffeeb8072964d8": {
+    "keywords": [
+      "수강자격",
+      "수강요건",
+      "수강신청",
+      "학점요건",
+      "선수과목"
+    ],
+    "expanded_query": "수강 자격이 뭐예요? 수강자격 수강요건 수강신청",
+    "intent": "수강 자격 요건 문의",
+    "confidence": 0.95
+  },
+  "b474e4f4510d60ed": {
+    "keywords": [
+      "복학생",
+      "복학신청",
+      "복학원",
+      "신입생",
+      "재학생"
+    ],
+    "expanded_query": "복학 신청 방법 알려주실까요 복학원 복학 신청 싶어 신청서 지원 어떻게 절차 방식 문의하실까요 질문하시겠습니까 복학생 복학신청 신입생",
+    "intent": "복학 신청 절차 및 방법 문의",
+    "confidence": 0.95
   }
 }

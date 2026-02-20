@@ -37,25 +37,6 @@
     "timestamp": 1770723140.296572,
     "ttl_hours": 168
   },
-  "7e4372f377d7880e9be921e10d69476c": {
-    "cache_type": "query_expansion",
-    "query_hash": "7e4372f377d7880e9be921e10d69476c",
-    "data": {
-      "keywords": [
-        "연구년",
-        "연구년 규정",
-        "연구년 적용 기준",
-        "연구년 신청 절차",
-        "연구활동 지원"
-      ],
-      "intent": "연구년 적용 기준 및 절차 문의",
-      "confidence": 0.95,
-      "expanded_query": "연구년 적용 기준 상세히 연구년 규정 연구년 적용 기준 연구년 신청 절차",
-      "method": "llm"
-    },
-    "timestamp": 1770724951.666684,
-    "ttl_hours": 168
-  },
   "1f27f9449db2fd1c61944c7872153bea": {
     "cache_type": "query_expansion",
     "query_hash": "1f27f9449db2fd1c61944c7872153bea",
@@ -75,44 +56,6 @@
     "timestamp": 1770725598.809979,
     "ttl_hours": 168
   },
-  "83d6e2ba1141cb829762e3eb8d7eb37e": {
-    "cache_type": "query_expansion",
-    "query_hash": "83d6e2ba1141cb829762e3eb8d7eb37e",
-    "data": {
-      "keywords": [
-        "급여",
-        "서식",
-        "양식",
-        "급여명세서",
-        "급여지급규정"
-      ],
-      "intent": "급여 관련 서식 양식 문의",
-      "confidence": 0.95,
-      "expanded_query": "급여 관련 서식 양식 알려주세요 급여명세서 급여지급규정",
-      "method": "llm"
-    },
-    "timestamp": 1770725806.037316,
-    "ttl_hours": 168
-  },
-  "406d434e30be2cd4b5d446f771228610": {
-    "cache_type": "query_expansion",
-    "query_hash": "406d434e30be2cd4b5d446f771228610",
-    "data": {
-      "keywords": [
-        "연수승인",
-        "권한자",
-        "승인권자",
-        "교육훈련규정",
-        "인사규정"
-      ],
-      "intent": "연수 승인 권한자 문의",
-      "confidence": 0.95,
-      "expanded_query": "연수 승인 권한자가 누구인가요? 연수승인 권한자 승인권자",
-      "method": "llm"
-    },
-    "timestamp": 1770726016.3157818,
-    "ttl_hours": 168
-  },
   "751e5f10188db4f5d739484b3405fc0e": {
     "cache_type": "query_expansion",
     "query_hash": "751e5f10188db4f5d739484b3405fc0e",
@@ -130,25 +73,6 @@
       "method": "llm"
     },
     "timestamp": 1770726379.393037,
-    "ttl_hours": 168
-  },
-  "11ca85d335a2a98007e613dd15d37a26": {
-    "cache_type": "query_expansion",
-    "query_hash": "11ca85d335a2a98007e613dd15d37a26",
-    "data": {
-      "keywords": [
-        "기숙사",
-        "비용",
-        "숙사",
-        "주거비",
-        "기숙사 규정"
-      ],
-      "intent": "기숙사 비용 문의",
-      "confidence": 0.95,
-      "expanded_query": "기숙사 비용이 어떻게 되나요? 비용 숙사 주거비",
-      "method": "llm"
-    },
-    "timestamp": 1770726968.205933,
     "ttl_hours": 168
   },
   "cf671c57772c72a53613da65736d2174": {
@@ -534,6 +458,234 @@
       "method": "llm"
     },
     "timestamp": 1771332474.260108,
+    "ttl_hours": 168
+  },
+  "ca3406b85f85b31c3cdcbcc040dac566": {
+    "cache_type": "query_expansion",
+    "query_hash": "ca3406b85f85b31c3cdcbcc040dac566",
+    "data": {
+      "keywords": [
+        "복학생",
+        "복학신청",
+        "복학원",
+        "신원확인",
+        "제출서류"
+      ],
+      "intent": "복학 신청 절차 및 방법 문의",
+      "confidence": 0.95,
+      "expanded_query": "복학 신청 방법 알려주실까요 복학원 복학 신청 싶어 [Note: Response generated using fallback provider due to primary provider unavailability.]\n\n신청서 지원 어떻게 [Note: Response generated using fallback provider due to primary provider unavailability.]\n\n절차 방식 [Note: Response generated using fallback provider due to primary provider unavailability.]\n\n문의하실까요 질문하시겠습니까 복학생 복학신청 신원확인",
+      "method": "llm"
+    },
+    "timestamp": 1771405440.874959,
+    "ttl_hours": 168
+  },
+  "21c2525bea6532e8e8f391c326039a84": {
+    "cache_type": "query_expansion",
+    "query_hash": "21c2525bea6532e8e8f391c326039a84",
+    "data": {
+      "keywords": [
+        "장학금",
+        "신청서",
+        "지원 절차",
+        "등록금 감면",
+        "국가장학금",
+        "교내장학금"
+      ],
+      "intent": "장학금 신청 절차 및 방법 문의",
+      "confidence": 0.95,
+      "expanded_query": "장학금 신청 방법 알려주실까요 관심 장학 장학생 등록금 수업료 학비지원 등록금감면 국가장학금 교내장학금 학자금 싶어 [Note: Response generated using fallback provider due to primary provider unavailability.]\n\n신청서 지원 어떻게 [Note: Response generated using fallback provider due to primary provider unavailability.]\n\n절차 방식 [Note: Response generated using fallback provider due to primary provider unavailability.]\n\n문의하실까요 질문하시겠습니까 지원 절차 등록금 감면",
+      "method": "llm"
+    },
+    "timestamp": 1771405557.844043,
+    "ttl_hours": 168
+  },
+  "83a4b1c80c2a4a2b070bad69459d1dbd": {
+    "cache_type": "query_expansion",
+    "query_hash": "83a4b1c80c2a4a2b070bad69459d1dbd",
+    "data": {
+      "keywords": [
+        "수강신청",
+        "수강절차",
+        "강의등록",
+        "학사일정",
+        "수강신청기간"
+      ],
+      "intent": "수강 절차 문의",
+      "confidence": 0.95,
+      "expanded_query": "수강 절차 알려주세요 수강신청 수강절차 강의등록",
+      "method": "llm"
+    },
+    "timestamp": 1771405605.39855,
+    "ttl_hours": 168
+  },
+  "bc376f29fe096f07af7cf5acec69f3ed": {
+    "cache_type": "query_expansion",
+    "query_hash": "bc376f29fe096f07af7cf5acec69f3ed",
+    "data": {
+      "keywords": [
+        "학적 등록",
+        "신입생 등록",
+        "초기 학적 처리",
+        "학사 행정 절차"
+      ],
+      "intent": "학적 등록 절차 문의",
+      "confidence": 0.95,
+      "expanded_query": "처음이라 등록를 잘 몰라요 학적 등록 신입생 등록 초기 학적 처리",
+      "method": "llm"
+    },
+    "timestamp": 1771405664.2096498,
+    "ttl_hours": 168
+  },
+  "7e4372f377d7880e9be921e10d69476c": {
+    "cache_type": "query_expansion",
+    "query_hash": "7e4372f377d7880e9be921e10d69476c",
+    "data": {
+      "keywords": [
+        "연구년",
+        "연구년 규정",
+        "연구년 적용 기준",
+        "연구년 신청 절차",
+        "연구활동 지원"
+      ],
+      "intent": "연구년 적용 기준 및 절차 문의",
+      "confidence": 0.95,
+      "expanded_query": "연구년 적용 기준 상세히 연구년 규정 연구년 적용 기준 연구년 신청 절차",
+      "method": "cache"
+    },
+    "timestamp": 1771405831.019642,
+    "ttl_hours": 168
+  },
+  "83d6e2ba1141cb829762e3eb8d7eb37e": {
+    "cache_type": "query_expansion",
+    "query_hash": "83d6e2ba1141cb829762e3eb8d7eb37e",
+    "data": {
+      "keywords": [
+        "급여",
+        "서식",
+        "양식",
+        "급여명세서",
+        "급여지급규정"
+      ],
+      "intent": "급여 관련 서식 양식 문의",
+      "confidence": 0.95,
+      "expanded_query": "급여 관련 서식 양식 알려주세요 급여명세서 급여지급규정",
+      "method": "cache"
+    },
+    "timestamp": 1771405831.663223,
+    "ttl_hours": 168
+  },
+  "406d434e30be2cd4b5d446f771228610": {
+    "cache_type": "query_expansion",
+    "query_hash": "406d434e30be2cd4b5d446f771228610",
+    "data": {
+      "keywords": [
+        "연수승인",
+        "권한자",
+        "승인권자",
+        "교육훈련규정",
+        "인사규정"
+      ],
+      "intent": "연수 승인 권한자 문의",
+      "confidence": 0.95,
+      "expanded_query": "연수 승인 권한자가 누구인가요? 연수승인 권한자 승인권자",
+      "method": "cache"
+    },
+    "timestamp": 1771405833.07651,
+    "ttl_hours": 168
+  },
+  "11ca85d335a2a98007e613dd15d37a26": {
+    "cache_type": "query_expansion",
+    "query_hash": "11ca85d335a2a98007e613dd15d37a26",
+    "data": {
+      "keywords": [
+        "기숙사",
+        "비용",
+        "숙사",
+        "주거비",
+        "기숙사 규정"
+      ],
+      "intent": "기숙사 비용 문의",
+      "confidence": 0.95,
+      "expanded_query": "기숙사 비용이 어떻게 되나요? 비용 숙사 주거비",
+      "method": "cache"
+    },
+    "timestamp": 1771405835.6136892,
+    "ttl_hours": 168
+  },
+  "98f5d56bdf98587db945b54e031caf43": {
+    "cache_type": "query_expansion",
+    "query_hash": "98f5d56bdf98587db945b54e031caf43",
+    "data": {
+      "keywords": [
+        "수강신청",
+        "강의 등록",
+        "학기 초 수강",
+        "수강 계획",
+        "학사 규정"
+      ],
+      "intent": "수강 신청 관련 문의",
+      "confidence": 0.85,
+      "expanded_query": "처음이라 수강를 잘 몰라요 수강신청 강의 등록 학기 초 수강",
+      "method": "llm"
+    },
+    "timestamp": 1771502408.637399,
+    "ttl_hours": 168
+  },
+  "c1d799bca24852f50f5bb184dfee9272": {
+    "cache_type": "query_expansion",
+    "query_hash": "c1d799bca24852f50f5bb184dfee9272",
+    "data": {
+      "keywords": [
+        "등록자격",
+        "입학요건",
+        "학적등록",
+        "자격기준",
+        "학칙"
+      ],
+      "intent": "등록 자격 요건 문의",
+      "confidence": 0.95,
+      "expanded_query": "등록 자격이 뭐예요? 등록자격 입학요건 학적등록",
+      "method": "llm"
+    },
+    "timestamp": 1771502482.125946,
+    "ttl_hours": 168
+  },
+  "82b66bda22488e6902bf7074b5d169df": {
+    "cache_type": "query_expansion",
+    "query_hash": "82b66bda22488e6902bf7074b5d169df",
+    "data": {
+      "keywords": [
+        "수강자격",
+        "수강요건",
+        "수강신청",
+        "학점요건",
+        "선수과목"
+      ],
+      "intent": "수강 자격 요건 문의",
+      "confidence": 0.95,
+      "expanded_query": "수강 자격이 뭐예요? 수강자격 수강요건 수강신청",
+      "method": "llm"
+    },
+    "timestamp": 1771502663.481466,
+    "ttl_hours": 168
+  },
+  "9e0d63eef25d3007c0113aef47568d53": {
+    "cache_type": "query_expansion",
+    "query_hash": "9e0d63eef25d3007c0113aef47568d53",
+    "data": {
+      "keywords": [
+        "복학생",
+        "복학신청",
+        "복학원",
+        "신입생",
+        "재학생"
+      ],
+      "intent": "복학 신청 절차 및 방법 문의",
+      "confidence": 0.95,
+      "expanded_query": "복학 신청 방법 알려주실까요 복학원 복학 신청 싶어 신청서 지원 어떻게 절차 방식 문의하실까요 질문하시겠습니까 복학생 복학신청 신입생",
+      "method": "llm"
+    },
+    "timestamp": 1771502825.8882911,
     "ttl_hours": 168
   }
 }

@@ -1,0 +1,162 @@
+{
+  "session_id": "eval-96bf6c18",
+  "started_at": "2026-02-19T20:55:31.223446",
+  "updated_at": "2026-02-19T21:05:01.555415",
+  "status": "running",
+  "total_queries": 150,
+  "completed_queries": 12,
+  "failed_queries": 12,
+  "personas": {
+    "freshman": {
+      "persona_name": "freshman",
+      "total_queries": 25,
+      "completed_queries": 12,
+      "failed_queries": 12,
+      "completed_query_ids": [
+        "q_0",
+        "q_1",
+        "q_2",
+        "q_3",
+        "q_4",
+        "q_5",
+        "q_6",
+        "q_7",
+        "q_8",
+        "q_9",
+        "q_10",
+        "q_11"
+      ],
+      "failed_query_ids": [
+        "q_0",
+        "q_1",
+        "q_2",
+        "q_3",
+        "q_4",
+        "q_5",
+        "q_6",
+        "q_7",
+        "q_8",
+        "q_9",
+        "q_10",
+        "q_11"
+      ],
+      "last_query": "q_11",
+      "last_timestamp": "2026-02-19T21:05:01.555407"
+    },
+    "graduate": {
+      "persona_name": "graduate",
+      "total_queries": 25,
+      "completed_queries": 0,
+      "failed_queries": 0,
+      "completed_query_ids": [],
+      "failed_query_ids": [],
+      "last_query": null,
+      "last_timestamp": null
+    },
+    "professor": {
+      "persona_name": "professor",
+      "total_queries": 25,
+      "completed_queries": 0,
+      "failed_queries": 0,
+      "completed_query_ids": [],
+      "failed_query_ids": [],
+      "last_query": null,
+      "last_timestamp": null
+    },
+    "staff": {
+      "persona_name": "staff",
+      "total_queries": 25,
+      "completed_queries": 0,
+      "failed_queries": 0,
+      "completed_query_ids": [],
+      "failed_query_ids": [],
+      "last_query": null,
+      "last_timestamp": null
+    },
+    "parent": {
+      "persona_name": "parent",
+      "total_queries": 25,
+      "completed_queries": 0,
+      "failed_queries": 0,
+      "completed_query_ids": [],
+      "failed_query_ids": [],
+      "last_query": null,
+      "last_timestamp": null
+    },
+    "international": {
+      "persona_name": "international",
+      "total_queries": 25,
+      "completed_queries": 0,
+      "failed_queries": 0,
+      "completed_query_ids": [],
+      "failed_query_ids": [],
+      "last_query": null,
+      "last_timestamp": null
+    }
+  },
+  "results": [
+    {
+      "score": 0.593,
+      "query": "휴학 자격이 뭐예요?"
+    },
+    {
+      "score": 0.593,
+      "query": "복학 어떻게 해요?"
+    },
+    {
+      "score": 0.593,
+      "query": "성적 어떻게 해요?"
+    },
+    {
+      "score": 0.593,
+      "query": "장학금 어떻게 해요?"
+    },
+    {
+      "score": 0.593,
+      "query": "처음이라 수강를 잘 몰라요"
+    },
+    {
+      "score": 0.593,
+      "query": "등록 자격이 뭐예요?"
+    },
+    {
+      "score": 0.593,
+      "query": "휴학 기간이 얼마나 돼요?"
+    },
+    {
+      "score": 0.593,
+      "query": "복학 자격이 뭐예요?"
+    },
+    {
+      "score": 0.593,
+      "query": "성적 어떻게 해요?"
+    },
+    {
+      "score": 0.593,
+      "query": "장학금 절차 알려주세요"
+    },
+    {
+      "score": 0.634,
+      "query": "수강 자격이 뭐예요?"
+    },
+    {
+      "score": 0.593,
+      "query": "등록 자격이 뭐예요?"
+    }
+  ],
+  "errors": [
+    "'ProgressInfo' object has no attribute 'completed'",
+    "'ProgressInfo' object has no attribute 'completed'",
+    "'ProgressInfo' object has no attribute 'completed'",
+    "'ProgressInfo' object has no attribute 'completed'",
+    "'ProgressInfo' object has no attribute 'completed'",
+    "'ProgressInfo' object has no attribute 'completed'",
+    "'ProgressInfo' object has no attribute 'completed'",
+    "'ProgressInfo' object has no attribute 'completed'",
+    "'ProgressInfo' object has no attribute 'completed'",
+    "'ProgressInfo' object has no attribute 'completed'",
+    "'ProgressInfo' object has no attribute 'completed'",
+    "'ProgressInfo' object has no attribute 'completed'"
+  ],
+  "metadata": {}
+}

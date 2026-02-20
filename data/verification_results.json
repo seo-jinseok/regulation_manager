@@ -1,0 +1,50 @@
+{
+  "ragas_environment": {
+    "chromadb": true,
+    "ragas": true,
+    "ragas_metrics": true,
+    "llm_configured": false,
+    "errors": [],
+    "warnings": [
+      "Using deprecated ragas.metrics import. Update to ragas.metrics.collections",
+      "OPENAI_API_KEY not set"
+    ],
+    "chromadb_version": "1.5.0",
+    "ragas_version": "0.4.3",
+    "metrics_available": [
+      "faithfulness",
+      "answer_relevancy",
+      "context_precision",
+      "context_recall"
+    ]
+  },
+  "citation_analysis": {
+    "total": 150,
+    "with_citations": 1,
+    "citation_rate": 0.006666666666666667,
+    "files_analyzed": 10
+  },
+  "score_analysis": {
+    "count": 5,
+    "mean": 0.5,
+    "variance": 0.0,
+    "std_dev": 0.0,
+    "min": 0.5,
+    "max": 0.5,
+    "is_uniform": true,
+    "likely_default": true,
+    "warning": "CRITICAL: All 5 scores are exactly 0.50. This is the default value when RAGAS cannot calculate metrics. Likely causes: Missing LLM configuration, chromadb issues, or metric calculation failure."
+  },
+  "small_scale_test": {
+    "ragas_available": true,
+    "test_count": 3,
+    "scores": {},
+    "analysis": {
+      "error_details": "cannot import name 'AnswerRelevance' from 'ragas.metrics._answer_relevance' (/Users/truestone/Dropbox/repo/University/regulation_manager/.venv/lib/python3.11/site-packages/ragas/metrics/_answer_relevance.py)",
+      "recommendation": "Check RAGAS configuration and dependencies"
+    },
+    "errors": [
+      "RAGAS evaluation failed: cannot import name 'AnswerRelevance' from 'ragas.metrics._answer_relevance' (/Users/truestone/Dropbox/repo/University/regulation_manager/.venv/lib/python3.11/site-packages/ragas/metrics/_answer_relevance.py)"
+    ]
+  }
+}

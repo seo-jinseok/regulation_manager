@@ -1,0 +1,29 @@
+{
+  "query": "복학 어떻게 해요?",
+  "answer": "[Note: Response generated using fallback provider due to primary provider unavailability.]\n\n복학 절차에 대한 구체적인 내용은 제공된 컨텍스트에서 확인되지 않습니다. 다만, [정확한 정보는 동의대학교 규정을 확인하세요] 복학을 위해서는 해당 학과 또는 학사지원팀에 문의하시기 바랍니다. 학교 홈페이지에서 관련 규정이나 절차를 확인할 수 있습니다.",
+  "contexts": [
+    "학점은행제운영에관한규정 > 제14조의2 출석 및 수업 관리 > ③ 그 외 출석 및 수업 관리에 필요한 세부적인 사항: 그 외 출석 및 수업 관리에 필요한 세부적인 사항은 따로 정한다. [본조신설 2017. 3. 1]",
+    "시설물사용에관한규정 > 제5조 사용허가 > ④ 시설물을 사용할 때에: 시설물을 사용할 때에는 [(교내: 최대 2개월 ~ 최소 10일전)(외부: 최대 1개월 ~ 최소 10일전)] 별지서식의 시설물사용신청서를 접수부서에 제출하여야 한다. <개정 2008. 3. 1., 2012. 10. 1., 2015. 2. 1.>",
+    "성적평가규정 > 제13조 성적 평가 공정성 강화 > ⑫ 서비스러닝: 서비스러닝",
+    "출석인정및공결규정 > 제2조 용어의 정의 > 2. 공결 : 수업에 결석한 것으로 간주하고 출석부: 공결 : 수업에 결석한 것으로 간주하고 출석부에 ‘공결’로 표기하되, 출석점수 평가 시 출석으로 인정한다. <신설 2018. 2. 1.>",
+    "연구실안전관리규정 > 제24조의2 긴급대처방안: 제10장 사고조사 및 대책수립"
+  ],
+  "faithfulness": 0.5,
+  "answer_relevancy": 0.5,
+  "contextual_precision": 0.5,
+  "contextual_recall": 0.87,
+  "overall_score": 0.593,
+  "passed": false,
+  "failure_reasons": [
+    "Faithfulness below threshold: 0.500 < 0.6",
+    "Answer Relevancy below threshold: 0.500 < 0.7",
+    "Contextual Precision below threshold: 0.500 < 0.65",
+    "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+  ],
+  "timestamp": "2026-02-19T20:59:08.175220",
+  "metadata": {
+    "framework": "ragas",
+    "judge_model": "gpt-4o",
+    "evaluation_method": "ragas"
+  }
+}

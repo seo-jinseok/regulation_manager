@@ -1,0 +1,92 @@
+{
+  "session_id": "eval-bb55e48c",
+  "started_at": "2026-02-19T21:06:32.692257",
+  "updated_at": "2026-02-19T21:07:50.586420",
+  "status": "running",
+  "total_queries": 60,
+  "completed_queries": 2,
+  "failed_queries": 2,
+  "personas": {
+    "freshman": {
+      "persona_name": "freshman",
+      "total_queries": 10,
+      "completed_queries": 2,
+      "failed_queries": 2,
+      "completed_query_ids": [
+        "q_0",
+        "q_1"
+      ],
+      "failed_query_ids": [
+        "q_0",
+        "q_1"
+      ],
+      "last_query": "q_1",
+      "last_timestamp": "2026-02-19T21:07:50.586417"
+    },
+    "graduate": {
+      "persona_name": "graduate",
+      "total_queries": 10,
+      "completed_queries": 0,
+      "failed_queries": 0,
+      "completed_query_ids": [],
+      "failed_query_ids": [],
+      "last_query": null,
+      "last_timestamp": null
+    },
+    "professor": {
+      "persona_name": "professor",
+      "total_queries": 10,
+      "completed_queries": 0,
+      "failed_queries": 0,
+      "completed_query_ids": [],
+      "failed_query_ids": [],
+      "last_query": null,
+      "last_timestamp": null
+    },
+    "staff": {
+      "persona_name": "staff",
+      "total_queries": 10,
+      "completed_queries": 0,
+      "failed_queries": 0,
+      "completed_query_ids": [],
+      "failed_query_ids": [],
+      "last_query": null,
+      "last_timestamp": null
+    },
+    "parent": {
+      "persona_name": "parent",
+      "total_queries": 10,
+      "completed_queries": 0,
+      "failed_queries": 0,
+      "completed_query_ids": [],
+      "failed_query_ids": [],
+      "last_query": null,
+      "last_timestamp": null
+    },
+    "international": {
+      "persona_name": "international",
+      "total_queries": 10,
+      "completed_queries": 0,
+      "failed_queries": 0,
+      "completed_query_ids": [],
+      "failed_query_ids": [],
+      "last_query": null,
+      "last_timestamp": null
+    }
+  },
+  "results": [
+    {
+      "score": 0.593,
+      "query": "휴학 자격이 뭐예요?"
+    },
+    {
+      "score": 0.593,
+      "query": "복학 신청 방법 알려주실까요?"
+    }
+  ],
+  "errors": [
+    "'ProgressInfo' object has no attribute 'completed'",
+    "'ProgressInfo' object has no attribute 'completed'"
+  ],
+  "metadata": {}
+}
