@@ -35,9 +35,10 @@ _bge_available: Optional[bool] = None  # None = not tested, True = available, Fa
 _last_reranker_error: Optional[str] = None
 
 # SPEC-RAG-QUALITY-006: Context Relevance threshold
+# SPEC-RAG-QUALITY-007: Threshold increased from 0.15 to 0.25
 # Filter out documents with low relevance scores to improve context quality
-# Default threshold: 0.15 (documents below this are likely irrelevant)
-MIN_RELEVANCE_THRESHOLD = 0.15
+# Default threshold: 0.25 (documents below this are likely irrelevant)
+MIN_RELEVANCE_THRESHOLD = 0.25
 
 
 @dataclass
@@ -340,11 +341,21 @@ def rerank(
         results.sort(key=lambda x: x.score, reverse=True)
 
         # SPEC-RAG-QUALITY-006: Filter by minimum relevance threshold
+        # SPEC-RAG-QUALITY-007: Added score distribution logging
         # This improves context relevance by removing low-quality documents
         filtered_results = [r for r in results if r.score >= min_relevance]
         if len(filtered_results) < len(results):
             logger.debug(
                 f"Filtered {len(results) - len(filtered_results)} documents below relevance threshold {min_relevance}"
+            )
+
+        # SPEC-RAG-QUALITY-007: Log filtered documents count and score distribution
+        if filtered_results:
+            scores = [r.score for r in filtered_results]
+            avg_score = sum(scores) / len(scores)
+            logger.info(
+                f"Reranker filtered {len(scores)} docs, avg_score={avg_score:.3f}, "
+                f"min={min(scores):.3f}, max={max(scores):.3f}, threshold={min_relevance}"
             )
 
         return filtered_results[:top_k]
