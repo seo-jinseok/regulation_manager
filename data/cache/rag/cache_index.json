@@ -1,284 +1,199 @@
 {
-  "532a2c4d35dfd82004f3be48190abe1a": {
+  "25ea7fe134fb4006de64a722a2ab679a": {
     "cache_type": "llm_response",
-    "query_hash": "532a2c4d35dfd82004f3be48190abe1a",
+    "query_hash": "25ea7fe134fb4006de64a722a2ab679a",
     "data": {
       "session": {
-        "session_id": "5871bfda-761f-417a-8dda-296fd6b170d9",
+        "session_id": "8a584264-377a-4b9d-bf00-f1be335a7cc3",
         "user_id": null,
         "turns": [
           {
-            "turn_id": "d9ac4bb6-56a9-4631-841c-5e355c4cfe18",
-            "timestamp": 1771546192.5205991,
+            "turn_id": "4e91496d-2be0-4c49-bf06-d76587628170",
+            "timestamp": 1771667457.905698,
             "query": "test",
             "response": "response",
             "metadata": {}
           }
         ],
         "context_summary": "",
-        "created_at": 1771546192.5202181,
-        "last_activity": 1771546192.520601,
+        "created_at": 1771667457.905397,
+        "last_activity": 1771667457.9057002,
         "status": "active",
         "timeout_minutes": 30,
         "retention_hours": 24
       }
     },
-    "timestamp": 1771546192.52061,
+    "timestamp": 1771667457.905709,
     "ttl_hours": 1
   },
-  "bc306d1d594e4763e4a018aedbc54a7a": {
+  "664b861ecaee74b35099dcf476f9167c": {
     "cache_type": "llm_response",
-    "query_hash": "bc306d1d594e4763e4a018aedbc54a7a",
+    "query_hash": "664b861ecaee74b35099dcf476f9167c",
     "data": {
       "session": {
-        "session_id": "3286a4f2-15fa-4187-a6b2-1718e4803d95",
+        "session_id": "393647a6-f6d1-47ae-a86a-d78bd94279d2",
         "user_id": null,
         "turns": [
           {
-            "turn_id": "232615e2-7cc2-4264-9f14-70448e746387",
-            "timestamp": 1771546194.2016351,
+            "turn_id": "9b35e0db-26f5-43a8-a989-cbc924a31c06",
+            "timestamp": 1771667459.674647,
             "query": "질문 1",
             "response": "답변 1",
             "metadata": {}
           },
           {
-            "turn_id": "83ea29d8-e85d-4056-ad3f-6e490420ad22",
-            "timestamp": 1771546194.201917,
+            "turn_id": "210a6fd0-a484-4d04-828c-d9c401e861e3",
+            "timestamp": 1771667459.674931,
             "query": "질문 2",
             "response": "답변 2",
             "metadata": {}
           }
         ],
         "context_summary": "",
-        "created_at": 1771546194.201236,
-        "last_activity": 1771546194.201918,
+        "created_at": 1771667459.67425,
+        "last_activity": 1771667459.674932,
         "status": "active",
         "timeout_minutes": 30,
         "retention_hours": 24
       }
     },
-    "timestamp": 1771546194.201925,
+    "timestamp": 1771667459.674939,
     "ttl_hours": 1
   },
-  "f919b3feed2a3f3ceee2f2029d1f9d89": {
+  "d480007df114156d27ce02b1dcf42b2a": {
     "cache_type": "llm_response",
-    "query_hash": "f919b3feed2a3f3ceee2f2029d1f9d89",
+    "query_hash": "d480007df114156d27ce02b1dcf42b2a",
     "data": {
       "session": {
-        "session_id": "8164fcdc-991f-489f-a82c-d015f783449d",
+        "session_id": "b592fc75-2b42-47fc-bfb4-4751bf11f1b0",
         "user_id": "user-1",
         "turns": [
           {
-            "turn_id": "7e06861f-838d-4a99-8d33-5d26b2129637",
-            "timestamp": 1771546194.635989,
+            "turn_id": "d9bd29b0-9621-479c-9d8e-fc3e0c5998a6",
+            "timestamp": 1771667460.096419,
             "query": "휴학 방법",
             "response": "휴학 신청서 제출",
             "metadata": {}
           }
         ],
         "context_summary": "",
-        "created_at": 1771546194.635231,
-        "last_activity": 1771546194.635991,
+        "created_at": 1771667460.095402,
+        "last_activity": 1771667460.096421,
         "status": "active",
         "timeout_minutes": 30,
         "retention_hours": 24
       }
     },
-    "timestamp": 1771546194.635999,
+    "timestamp": 1771667460.09643,
     "ttl_hours": 1
   },
-  "25e908bcc6996089f75601259efeb39d": {
+  "2059bc4ae09b64755f0c4c2902b2e72e": {
     "cache_type": "llm_response",
-    "query_hash": "25e908bcc6996089f75601259efeb39d",
+    "query_hash": "2059bc4ae09b64755f0c4c2902b2e72e",
     "data": {
       "session": {
-        "session_id": "5b2cad00-34ef-43e2-b4c3-3c4f4e125e97",
+        "session_id": "e99906b5-5a9a-49c3-878f-83c2519103ac",
         "user_id": "user-2",
         "turns": [
           {
-            "turn_id": "3e611879-e326-4788-b6b5-a7c018458c52",
-            "timestamp": 1771546194.636317,
+            "turn_id": "4bf4c8c7-09f7-4719-ac57-8776aff58335",
+            "timestamp": 1771667460.09678,
             "query": "등록금 납부",
             "response": "등록금은 학기 시작 전",
             "metadata": {}
           }
         ],
         "context_summary": "",
-        "created_at": 1771546194.635633,
-        "last_activity": 1771546194.636318,
+        "created_at": 1771667460.095973,
+        "last_activity": 1771667460.096781,
         "status": "active",
         "timeout_minutes": 30,
         "retention_hours": 24
       }
     },
-    "timestamp": 1771546194.6363242,
+    "timestamp": 1771667460.096788,
     "ttl_hours": 1
   },
-  "8a1b09a84d1a41312232860af89881a1": {
+  "19f20e82bd0e3f9ba1ba069f5ad5eb49": {
     "cache_type": "llm_response",
-    "query_hash": "8a1b09a84d1a41312232860af89881a1",
+    "query_hash": "19f20e82bd0e3f9ba1ba069f5ad5eb49",
     "data": {
       "session": {
-        "session_id": "ccfc0586-6488-46a8-99ed-1b968cfb5207",
+        "session_id": "dc35da7d-904b-4873-8ef0-5156399dd674",
         "user_id": null,
         "turns": [
           {
-            "turn_id": "6ea5ec4f-4cf8-4fdf-910c-be039dd21268",
-            "timestamp": 1771546197.538142,
+            "turn_id": "c256eba6-0665-4640-acf1-dbd58828eb7b",
+            "timestamp": 1771667463.169313,
             "query": "   ",
             "response": "Response 1",
             "metadata": {}
           },
           {
-            "turn_id": "67e7cd96-32ea-481b-8248-525bdfa54c31",
-            "timestamp": 1771546197.538831,
+            "turn_id": "2f43e83a-1afb-4409-8ca8-6e79f6a87890",
+            "timestamp": 1771667463.169746,
             "query": "",
             "response": "Response 2",
             "metadata": {}
           },
           {
-            "turn_id": "d64c568f-b83e-4519-81e5-f23489498c8a",
-            "timestamp": 1771546197.539252,
+            "turn_id": "0f463e30-6841-48a2-a969-669a2af6c3ca",
+            "timestamp": 1771667463.170198,
             "query": "Third question",
             "response": "Response 3",
             "metadata": {}
           }
         ],
         "context_summary": "이전 대화가 있습니다.",
-        "created_at": 1771546197.5375519,
-        "last_activity": 1771546197.539252,
+        "created_at": 1771667463.167876,
+        "last_activity": 1771667463.1701992,
         "status": "active",
         "timeout_minutes": 30,
         "retention_hours": 24
       }
     },
-    "timestamp": 1771546197.539263,
+    "timestamp": 1771667463.170211,
     "ttl_hours": 1
   },
-  "3bd003430136ead52ec69d4173f18726": {
+  "f3b15edc07206f87aef53000ae61a113": {
     "cache_type": "llm_response",
-    "query_hash": "3bd003430136ead52ec69d4173f18726",
+    "query_hash": "f3b15edc07206f87aef53000ae61a113",
     "data": {
       "session": {
-        "session_id": "abc1ea8f-cfa1-4fae-9294-b25abaaf143d",
+        "session_id": "34bb0e93-282f-4f37-9058-b91568ab8559",
         "user_id": null,
         "turns": [
           {
-            "turn_id": "00694186-5ab3-4b10-8518-7f0159a9f623",
-            "timestamp": 1771546199.240273,
+            "turn_id": "bdb12953-e35e-420c-b54e-7762633fb805",
+            "timestamp": 1771667464.88043,
             "query": "첫 번째 질문",
             "response": "첫 번째 답변",
             "metadata": {}
           },
           {
-            "turn_id": "e1ac2cc4-13b4-4e21-9bd5-3bb4768a6770",
-            "timestamp": 1771546199.2407749,
+            "turn_id": "36009bde-29c6-424d-94f6-2078a4a0d08c",
+            "timestamp": 1771667464.880956,
             "query": "두 번째 질문",
             "response": "두 번째 답변",
             "metadata": {}
           },
           {
-            "turn_id": "0aa2bf8d-8296-4cd3-b296-82e2a5e9fea7",
-            "timestamp": 1771546199.241264,
+            "turn_id": "cc7c5ea3-af3b-4d3e-9c29-30e1c0da7b3c",
+            "timestamp": 1771667464.881502,
             "query": "세 번째 질문",
             "response": "세 번째 답변",
             "metadata": {}
           }
         ],
-        "context_summary": "이전에 번째, 질문, 첫에 대해 질문하셨습니다.",
-        "created_at": 1771546199.2396128,
-        "last_activity": 1771546199.241264,
+        "context_summary": "이전에 첫, 질문, 번째에 대해 질문하셨습니다.",
+        "created_at": 1771667464.879675,
+        "last_activity": 1771667464.8815029,
         "status": "active",
         "timeout_minutes": 30,
         "retention_hours": 24
       }
     },
-    "timestamp": 1771546199.241277,
+    "timestamp": 1771667464.8815172,
     "ttl_hours": 1
-  },
-  "27c847adf885c510954278b8139040ee": {
-    "cache_type": "retrieval",
-    "query_hash": "27c847adf885c510954278b8139040ee",
-    "data": {
-      "results": [
-        {
-          "chunk_id": "doc1",
-          "score": 0.73,
-          "rank": 0,
-          "rule_code": "",
-          "title": "휴직규정",
-          "text": "교원인사규정 제15조",
-          "level": "text"
-        }
-      ]
-    },
-    "timestamp": 1771547236.755187,
-    "ttl_hours": 24
-  },
-  "a278bc6b21592085d66bd11373890cf8": {
-    "cache_type": "retrieval",
-    "query_hash": "a278bc6b21592085d66bd11373890cf8",
-    "data": {
-      "results": [
-        {
-          "chunk_id": "doc1",
-          "score": 0.9,
-          "rank": 1,
-          "rule_code": "",
-          "title": "",
-          "text": "content",
-          "level": "text"
-        }
-      ]
-    },
-    "timestamp": 1771547238.68843,
-    "ttl_hours": 24
-  },
-  "897b32d1221464f029e51fb1e1d5fe03": {
-    "cache_type": "retrieval",
-    "query_hash": "897b32d1221464f029e51fb1e1d5fe03",
-    "data": {
-      "results": [
-        {
-          "chunk_id": "doc2",
-          "score": 0.15,
-          "rank": 1,
-          "rule_code": "",
-          "title": "",
-          "text": "also irrelevant",
-          "level": "text"
-        },
-        {
-          "chunk_id": "doc1",
-          "score": 0.1,
-          "rank": 1,
-          "rule_code": "",
-          "title": "",
-          "text": "irrelevant content",
-          "level": "text"
-        }
-      ]
-    },
-    "timestamp": 1771547240.15655,
-    "ttl_hours": 24
-  },
-  "1e12297a2f60739ab3a7fe9af0e34c4a": {
-    "cache_type": "retrieval",
-    "query_hash": "1e12297a2f60739ab3a7fe9af0e34c4a",
-    "data": {
-      "results": [
-        {
-          "chunk_id": "doc1",
-          "score": 0.9,
-          "rank": 1,
-          "rule_code": "",
-          "title": "",
-          "text": "content",
-          "level": "text"
-        }
-      ]
-    },
-    "timestamp": 1771547242.535959,
-    "ttl_hours": 24
   }
 }

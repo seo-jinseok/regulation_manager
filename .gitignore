@@ -195,3 +195,17 @@ dist-ssr/
 .vercel/
 .netlify/
 .firebase/
+
+# ===========================================
+# RAG System Generated Files
+# ===========================================
+# Evaluation results
+data/evaluations/
+data/checkpoints/
+
+# Cache files
+data/cache/
+.cache/
+
+# Metrics and A/B test results
+.metrics/

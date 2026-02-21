@@ -37,25 +37,6 @@
     "timestamp": 1770723140.296572,
     "ttl_hours": 168
   },
-  "1f27f9449db2fd1c61944c7872153bea": {
-    "cache_type": "query_expansion",
-    "query_hash": "1f27f9449db2fd1c61944c7872153bea",
-    "data": {
-      "keywords": [
-        "휴가",
-        "휴가신청",
-        "휴가절차",
-        "휴가규정",
-        "휴가인가"
-      ],
-      "intent": "휴가 신청 및 처리 절차 문의",
-      "confidence": 0.95,
-      "expanded_query": "휴가 업무 처리 절차 확인 휴가신청 휴가절차 휴가규정",
-      "method": "llm"
-    },
-    "timestamp": 1770725598.809979,
-    "ttl_hours": 168
-  },
   "751e5f10188db4f5d739484b3405fc0e": {
     "cache_type": "query_expansion",
     "query_hash": "751e5f10188db4f5d739484b3405fc0e",
@@ -686,6 +667,105 @@
       "method": "llm"
     },
     "timestamp": 1771502825.8882911,
+    "ttl_hours": 168
+  },
+  "e67e7d4dd42ad173ccec94b2fb253014": {
+    "cache_type": "query_expansion",
+    "query_hash": "e67e7d4dd42ad173ccec94b2fb253014",
+    "data": {
+      "keywords": [
+        "복학신청",
+        "복학생",
+        "학적관리",
+        "복학절차",
+        "학사경고"
+      ],
+      "intent": "복학 절차 문의",
+      "confidence": 0.95,
+      "expanded_query": "복학 절차 관련 복학신청 복학원 복학절차 학적 복학 신청 어떻게 [Note: Response generated using fallback provider due to primary provider unavailability.]\n\n절차 과정 복학생 학적관리 학사경고",
+      "method": "llm"
+    },
+    "timestamp": 1771573598.9828742,
+    "ttl_hours": 168
+  },
+  "1f27f9449db2fd1c61944c7872153bea": {
+    "cache_type": "query_expansion",
+    "query_hash": "1f27f9449db2fd1c61944c7872153bea",
+    "data": {
+      "keywords": [
+        "휴가",
+        "휴가신청",
+        "휴가절차",
+        "휴가규정",
+        "휴가인가"
+      ],
+      "intent": "휴가 신청 및 처리 절차 문의",
+      "confidence": 0.95,
+      "expanded_query": "휴가 업무 처리 절차 확인 휴가신청 휴가절차 휴가규정",
+      "method": "cache"
+    },
+    "timestamp": 1771573634.223496,
+    "ttl_hours": 168
+  },
+  "4a0ba126416b6b0fa025180afd03e81f": {
+    "cache_type": "query_expansion",
+    "query_hash": "4a0ba126416b6b0fa025180afd03e81f",
+    "data": {
+      "keywords": [
+        "복학생",
+        "복학 신청",
+        "소요기간",
+        "처리기간",
+        "심사기간",
+        "승인기간",
+        "학사일정"
+      ],
+      "intent": "복학 기간 및 처리 절차 문의",
+      "confidence": 0.95,
+      "expanded_query": "복학 기간이 얼마나 돼요 기간 문의 (얼마나, 몇 일/주/월) 소요기간 처리기간 심사기간 승인기간 시간/마감 (언제까지) 마감 신청기간 학사일정 접수마감 종료일 복학원 복학 신청 학기 학기제 정도 규모 가능 허용됨 복학생 복학 신청",
+      "method": "llm"
+    },
+    "timestamp": 1771574035.268793,
+    "ttl_hours": 168
+  },
+  "3a7b2bb6f0c37a7a38165f742fb1ed94": {
+    "cache_type": "query_expansion",
+    "query_hash": "3a7b2bb6f0c37a7a38165f742fb1ed94",
+    "data": {
+      "keywords": [
+        "휴가",
+        "휴가신청",
+        "기한",
+        "휴가처리",
+        "휴가규정"
+      ],
+      "intent": "휴가 신청 기한 문의",
+      "confidence": 0.95,
+      "expanded_query": "휴가 처리 기한이 언제까지인가요? 휴가신청 기한 휴가처리",
+      "method": "llm"
+    },
+    "timestamp": 1771574356.9809148,
+    "ttl_hours": 168
+  },
+  "a1bf8ef33e754b8b18f148f3ba823b73": {
+    "cache_type": "query_expansion",
+    "query_hash": "a1bf8ef33e754b8b18f148f3ba823b73",
+    "data": {
+      "keywords": [
+        "장학금",
+        "신청 방법",
+        "국가장학금",
+        "교내장학금",
+        "등록금 지원",
+        "신청 절차",
+        "학비 지원"
+      ],
+      "intent": "장학금 신청 방법 문의",
+      "confidence": 0.95,
+      "expanded_query": "장학금 신청 방법 알려주실까요 관심 장학 장학생 등록금 수업료 학비지원 등록금감면 국가장학금 교내장학금 학자금 싶어 [Note: Response generated using fallback provider due to primary provider unavailability.]\n\n신청서 요청 어떻게 [Note: Response generated using fallback provider due to primary provider unavailability.]\n\n절차 방식 [Note: Response generated using fallback provider due to primary provider unavailability.]\n\n안내해 드리겠습니다 정보 제공 신청 방법 등록금 지원 신청 절차",
+      "method": "llm"
+    },
+    "timestamp": 1771657953.93099,
     "ttl_hours": 168
   }
 }

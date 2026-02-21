@@ -1,0 +1,36 @@
+{
+  "query": "복무 승인 권한자가 누구인가요?",
+  "answer": "[Note: Response generated using fallback provider due to primary provider unavailability.]\n\n복무 승인 권한자는 교직원복무규정 제32조 겸직허가에 명시되어 있지 않습니다. 해당 규정에서는 겸직 허가에 대한 일반적인 사항만을 다루고 있으며, 구체적인 승인 권한자에 대한 정보는 확인되지 않습니다. 추가적인 정보는 동의대학교의 관련 부서나 공식 문서를 통해 확인하시기 바랍니다.",
+  "contexts": [
+    "교직원복무규정 > 제32조 겸직허가 > 3. 사망으로 인한 경조사 > 가. 신 청 자 :: 신 청 자 :",
+    "교직원복무규정 > 제17조 시간외 근무 및 공휴일 근무: 제3장 업무인계ㆍ인수",
+    "교직원복무규정 > 제32조 겸직허가 > 1. 이 규정: 이 규정은 1998년 3월 1일부터 시행한다.",
+    "교직원복무규정 > 제32조 겸직허가 > 11. 이 변경 규정: 이 변경 규정은 2018년 8월 1일부터 시행한다.",
+    "교직원복무규정 > 제32조 겸직허가 > 9. 이 변경 규정: 이 변경 규정은 2015년 2월 1일부터 시행한다.",
+    "교직원복무규정 > 제32조 겸직허가 > 5. 이 변경 규정: 이 변경 규정은 2008년 2월 1일부터 시행한다.",
+    "교직원복무규정 > 제32조 겸직허가 > 12. 이 변경 규정: 이 변경 규정은 2022년 6월 1일부터 시행한다.",
+    "교직원복무규정 > 제32조 겸직허가 > 10. 이 변경 규정: 이 변경 규정은 2017년 11월 1일부터 시행한다.",
+    "교직원복무규정 > 제32조 겸직허가 > 13. 이 변경 규정: 이 변경 규정은 2023년 4월 1일부터 시행한다.",
+    "교직원복무규정 > 제32조 겸직허가 > 14. 이 변경 규정: 이 변경 규정은 2025년 4월 1일부터 시행한다.",
+    "교직원복무규정 > 제32조 겸직허가 > 8. 이 변경 규정: 이 변경 규정은 2012년 3월 1일부터 시행한다.",
+    "교직원복무규정 > 제32조 겸직허가 > 7. 이 변경 규정: 이 변경 규정은 2011년 10월 1일부터 시행한다."
+  ],
+  "faithfulness": 0.5,
+  "answer_relevancy": 0.5,
+  "contextual_precision": 0.5,
+  "contextual_recall": 0.87,
+  "overall_score": 0.593,
+  "passed": false,
+  "failure_reasons": [
+    "Faithfulness below threshold: 0.500 < 0.6",
+    "Answer Relevancy below threshold: 0.500 < 0.7",
+    "Contextual Precision below threshold: 0.500 < 0.65",
+    "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+  ],
+  "timestamp": "2026-02-21T17:06:01.335385",
+  "metadata": {
+    "framework": "ragas",
+    "judge_model": "gpt-4o",
+    "evaluation_method": "ragas"
+  }
+}

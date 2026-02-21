@@ -1,0 +1,29 @@
+{
+  "query": "복학 기간이 얼마나 돼요?",
+  "answer": "동의대학교의 복학 기간에 대해 안내해 드리겠습니다.  \n\n1. **휴학 사유별 복학 기한**:  \n   - 휴학규정 제3조제1항제2호를 제외한 사유로 휴학하신 경우, 복학 기한은 해당 학기의 소정 기일 내에 이루어져야 합니다(제적규정 제3조 제1항 참조).  \n   - 단, 유급휴학 이후 복학하는 학기에는 휴학연장이 불가능합니다(휴학규정 제6조 ⑦항).  \n\n2. **복학 등록 절차**:  \n   - 복학생은 휴학규정 제6조에 따라 등록절차를 이행해야 하며, 구체적인 절차는 학교 홈페이지에서 확인하시기 바랍니다.  \n\n복학 관련 추가 문의 사항은 학교 홈페이지 또는 해당 학과 사무실을 통해 문의해 주세요.",
+  "contexts": [
+    "복학규정 > 제2조 복학의 구분: 휴학규정 제3조제1항제2호를 제외한 사유로 휴학하였던 자의 복학 <개정 2019. 2. 1.>",
+    "휴학규정 > 제6조 통산기간 및 연장 > ⑦ 유급휴학 이후 복학하: 유급휴학 이후 복학하는 학기에는 휴학연장을 할 수 없다. <신설 2019. 2. 1.>",
+    "제적규정 > 제3조 제적대상 > 1. 휴학기간: 휴학기간의 경과 후 소정의 기일 내에 복학하지 않는 자",
+    "복학규정 > 제1조 목적: 제3편 행정 3—2—24～복학규정 3—2—24～\n제3편 행정 3—2—24～\n복학규정 3—2—24～",
+    "복학규정 > 제6조 복학생의 등록절차 > 1. 이 규정: 이 규정은 1981년 3월 1일부터 시행한다."
+  ],
+  "faithfulness": 0.5,
+  "answer_relevancy": 0.5,
+  "contextual_precision": 0.5,
+  "contextual_recall": 0.87,
+  "overall_score": 0.593,
+  "passed": false,
+  "failure_reasons": [
+    "Faithfulness below threshold: 0.500 < 0.6",
+    "Answer Relevancy below threshold: 0.500 < 0.7",
+    "Contextual Precision below threshold: 0.500 < 0.65",
+    "CRITICAL: Faithfulness below critical threshold - high hallucination risk"
+  ],
+  "timestamp": "2026-02-20T16:54:59.765368",
+  "metadata": {
+    "framework": "ragas",
+    "judge_model": "gpt-4o",
+    "evaluation_method": "ragas"
+  }
+}

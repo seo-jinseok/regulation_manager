@@ -425,5 +425,57 @@
     "expanded_query": "복학 신청 방법 알려주실까요 복학원 복학 신청 싶어 신청서 지원 어떻게 절차 방식 문의하실까요 질문하시겠습니까 복학생 복학신청 신입생",
     "intent": "복학 신청 절차 및 방법 문의",
     "confidence": 0.95
+  },
+  "8fa309bb86350637": {
+    "keywords": [
+      "복학신청",
+      "복학생",
+      "학적관리",
+      "복학절차",
+      "학사경고"
+    ],
+    "expanded_query": "복학 절차 관련 복학신청 복학원 복학절차 학적 복학 신청 어떻게 [Note: Response generated using fallback provider due to primary provider unavailability.]\n\n절차 과정 복학생 학적관리 학사경고",
+    "intent": "복학 절차 문의",
+    "confidence": 0.95
+  },
+  "8d4231cf0a72a41a": {
+    "keywords": [
+      "복학생",
+      "복학 신청",
+      "소요기간",
+      "처리기간",
+      "심사기간",
+      "승인기간",
+      "학사일정"
+    ],
+    "expanded_query": "복학 기간이 얼마나 돼요 기간 문의 (얼마나, 몇 일/주/월) 소요기간 처리기간 심사기간 승인기간 시간/마감 (언제까지) 마감 신청기간 학사일정 접수마감 종료일 복학원 복학 신청 학기 학기제 정도 규모 가능 허용됨 복학생 복학 신청",
+    "intent": "복학 기간 및 처리 절차 문의",
+    "confidence": 0.95
+  },
+  "76a3f8a850cf45f6": {
+    "keywords": [
+      "휴가",
+      "휴가신청",
+      "기한",
+      "휴가처리",
+      "휴가규정"
+    ],
+    "expanded_query": "휴가 처리 기한이 언제까지인가요? 휴가신청 기한 휴가처리",
+    "intent": "휴가 신청 기한 문의",
+    "confidence": 0.95
+  },
+  "9f1567663525fb82": {
+    "keywords": [
+      "장학금",
+      "신청 방법",
+      "국가장학금",
+      "교내장학금",
+      "등록금 지원",
+      "신청 절차",
+      "학비 지원"
+    ],
+    "expanded_query": "장학금 신청 방법 알려주실까요 관심 장학 장학생 등록금 수업료 학비지원 등록금감면 국가장학금 교내장학금 학자금 싶어 [Note: Response generated using fallback provider due to primary provider unavailability.]\n\n신청서 요청 어떻게 [Note: Response generated using fallback provider due to primary provider unavailability.]\n\n절차 방식 [Note: Response generated using fallback provider due to primary provider unavailability.]\n\n안내해 드리겠습니다 정보 제공 신청 방법 등록금 지원 신청 절차",
+    "intent": "장학금 신청 방법 문의",
+    "confidence": 0.95
   }
 }
