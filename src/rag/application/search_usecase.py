@@ -98,6 +98,7 @@ if TYPE_CHECKING:
     from .academic_calendar_service import AcademicCalendarService
     from ..infrastructure.period_keyword_detector import PeriodKeywordDetector
     from ..domain.evaluation.faithfulness_validator import FaithfulnessValidator
+    from ..domain.evaluation.evasive_detector import EvasiveResponseDetector
     from ..domain.citation.citation_verification_service import (
         CitationVerificationService,
     )
@@ -453,6 +454,26 @@ class SearchUseCase:
             f"Faithfulness validation: enabled={self._use_faithfulness_validation}, "
             f"threshold={self._faithfulness_threshold}, "
             f"max_attempts={self._max_regeneration_attempts}"
+        )
+
+        # Evasive Response Detection (SPEC-RAG-QUALITY-010)
+        # Detects when LLM gives evasive responses instead of using context
+        from ..domain.evaluation.evasive_detector import EvasiveResponseDetector
+
+        self._evasive_detector = EvasiveResponseDetector()
+        self._enable_evasive_detection = getattr(
+            config, "enable_evasive_detection", True
+        )
+        self._max_evasive_regeneration_attempts = getattr(
+            config, "max_evasive_regeneration_attempts", 1
+        )
+        # Metrics for evasive detection
+        self._evasive_detection_total = 0
+        self._evasive_detected_count = 0
+        self._evasive_regenerated_count = 0
+        logger.info(
+            f"Evasive detection: enabled={self._enable_evasive_detection}, "
+            f"max_regeneration_attempts={self._max_evasive_regeneration_attempts}"
         )
 
         # Confidence threshold for fallback response (TAG-001: Prevent Hallucination)
@@ -2945,6 +2966,58 @@ class SearchUseCase:
 
         # Check if answer is acceptable
         if validation_result.is_acceptable:
+            # SPEC-RAG-QUALITY-010: Check for evasive response patterns
+            # Even faithful answers can be evasive (not providing actual info)
+            if self._enable_evasive_detection:
+                evasive_result = self._evasive_detector.detect(
+                    answer=answer_text, context=context_list
+                )
+                self._evasive_detection_total += 1
+                metadata["evasive_detected"] = evasive_result.is_evasive
+
+                if evasive_result.is_evasive:
+                    self._evasive_detected_count += 1
+                    logger.warning(
+                        f"Evasive response detected: patterns={evasive_result.detected_patterns}, "
+                        f"context_has_info={evasive_result.context_has_info}, "
+                        f"confidence={evasive_result.confidence:.3f}"
+                    )
+
+                    # Regenerate if context has info (answer should have used it)
+                    if self._evasive_detector.should_regenerate(evasive_result):
+                        hint = self._evasive_detector.get_regeneration_hint(evasive_result)
+                        logger.info(
+                            f"Regenerating evasive response with hint: {hint[:50]}..."
+                        )
+
+                        # Generate with evasive-aware prompt (max 1 attempt)
+                        regenerated_answer = self._generate_answer_with_evasive_hint(
+                            question=question,
+                            context=context,
+                            history_text=history_text,
+                            evasive_hint=hint,
+                            detected_patterns=evasive_result.detected_patterns,
+                        )
+
+                        # Verify regeneration didn't produce another evasive response
+                        new_evasive = self._evasive_detector.detect(
+                            answer=regenerated_answer, context=context_list
+                        )
+
+                        if not new_evasive.is_evasive:
+                            self._evasive_regenerated_count += 1
+                            metadata["final_status"] = "evasive_regenerated"
+                            metadata["evasive_patterns"] = evasive_result.detected_patterns
+                            logger.info(
+                                f"Evasive response successfully regenerated "
+                                f"(rate: {self._evasive_regenerated_count}/{self._evasive_detected_count:.2%})"
+                            )
+                            return regenerated_answer, metadata
+                        else:
+                            logger.warning(
+                                "Regenerated answer still evasive, returning original"
+                            )
+
             metadata["final_status"] = "validated"
             logger.info(
                 f"Answer validated with faithfulness score: {validation_result.score:.3f}"
@@ -3053,6 +3126,64 @@ class SearchUseCase:
         # Generate with stricter prompt
         answer_text = self.llm.generate(
             system_prompt=REGENERATION_STRICT_PROMPT_KO,
+            user_message=user_message,
+            temperature=0.0,
+        )
+
+        return answer_text
+
+    def _generate_answer_with_evasive_hint(
+        self,
+        question: str,
+        context: str,
+        history_text: Optional[str] = None,
+        evasive_hint: str = "",
+        detected_patterns: Optional[List[str]] = None,
+    ) -> str:
+        """
+        Generate answer after evasive response detection.
+
+        SPEC-RAG-QUALITY-010: Uses prompt with hint about available context
+        to guide LLM to use context instead of evasive responses.
+
+        Args:
+            question: User's question.
+            context: Search result context.
+            history_text: Optional conversation history.
+            evasive_hint: Hint about what information is available in context.
+            detected_patterns: List of detected evasive patterns.
+
+        Returns:
+            Generated answer text.
+        """
+        # Build evasive-aware prompt
+        evasive_prompt = f"""당신은 대학 규정 전문가입니다.
+
+[중요 지시 - 반드시 준수]
+이전 답변이 회피성 응답으로 감지되었습니다. 다음 패턴이 감지되었습니다:
+{', '.join(detected_patterns or ['알 수 없음'])}
+
+{evasive_hint}
+
+**절대 하지 말아야 할 행동:**
+1. "홈페이지를 참고하세요" - 제공된 문맥에 정보가 있으면 직접 답변하세요
+2. "관련 부서에 문의하세요" - 규정에서 찾을 수 있는 정보를 제공하세요
+3. "문맥에서 찾을 수 없습니다" - 문맥을 다시 확인하고 활용 가능한 정보를 제공하세요
+4. "확인이 필요합니다" - 제공된 규정 내용을 바탕으로 직접 답변하세요
+
+**답변 원칙:**
+- 제공된 규정 문맥에 있는 정보를 사용하여 직접 답변하세요
+- 구체적인 규정 조항(제X조)을 인용하세요
+- 숫자, 날짜, 기간 등 구체적인 정보를 포함하세요
+
+다음 규정 문맥을 바탕으로 질문에 답변하세요:"""
+
+        # Build user message
+        user_message = self._build_user_message(question, context, history_text)
+
+        # Generate with evasive-aware prompt
+        answer_text = self.llm.generate(
+            system_prompt=evasive_prompt,
             user_message=user_message,
             temperature=0.0,
         )
@@ -4285,6 +4416,49 @@ class SearchUseCase:
     def print_reranking_metrics(self) -> None:
         """Print reranking metrics summary to log (Cycle 3)."""
         logger.info(self._reranking_metrics.get_summary())
+
+    # --- SPEC-RAG-QUALITY-010: Evasive Detection Metrics ---
+
+    def get_evasive_detection_metrics(self) -> Dict[str, Any]:
+        """
+        Get evasive detection metrics (SPEC-RAG-QUALITY-010).
+
+        Returns:
+            Dictionary with evasive detection metrics:
+            - evasive_detection_total: Total number of evasive checks
+            - evasive_detected_count: Number of evasive responses detected
+            - evasive_regenerated_count: Number of successful regenerations
+            - evasive_rate: Ratio of evasive responses (target < 5%)
+        """
+        total = self._evasive_detection_total
+        detected = self._evasive_detected_count
+        regenerated = self._evasive_regenerated_count
+
+        return {
+            "evasive_detection_total": total,
+            "evasive_detected_count": detected,
+            "evasive_regenerated_count": regenerated,
+            "evasive_rate": detected / total if total > 0 else 0.0,
+            "regeneration_success_rate": regenerated / detected if detected > 0 else 0.0,
+        }
+
+    def reset_evasive_detection_metrics(self) -> None:
+        """Reset evasive detection metrics to zero."""
+        self._evasive_detection_total = 0
+        self._evasive_detected_count = 0
+        self._evasive_regenerated_count = 0
+        logger.info("Evasive detection metrics reset")
+
+    def print_evasive_detection_metrics(self) -> None:
+        """Print evasive detection metrics summary to log."""
+        metrics = self.get_evasive_detection_metrics()
+        logger.info(
+            f"Evasive Detection Metrics: "
+            f"total={metrics['evasive_detection_total']}, "
+            f"detected={metrics['evasive_detected_count']}, "
+            f"regenerated={metrics['evasive_regenerated_count']}, "
+            f"rate={metrics['evasive_rate']:.2%}"
+        )
 
     # --- Phase 3: Multilingual Answer Support ---
 

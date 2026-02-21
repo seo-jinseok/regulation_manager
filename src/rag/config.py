@@ -318,6 +318,21 @@ class RAGConfig:
         default_factory=lambda: int(os.getenv("RAG_MAX_REGENERATION_ATTEMPTS", "2"))
     )
 
+    # Evasive response detection settings (SPEC-RAG-QUALITY-010)
+    # Detects when LLM gives evasive responses instead of using context
+    enable_evasive_detection: bool = field(
+        default_factory=lambda: os.getenv(
+            "RAG_ENABLE_EVASIVE_DETECTION", "true"
+        ).lower()
+        == "true"
+    )
+    # Maximum 1 regeneration attempt for evasive responses
+    max_evasive_regeneration_attempts: int = field(
+        default_factory=lambda: int(
+            os.getenv("RAG_MAX_EVASIVE_REGENERATION_ATTEMPTS", "1")
+        )
+    )
+
     # RAG Query Cache settings
     enable_cache: bool = field(
         default_factory=lambda: os.getenv("RAG_ENABLE_CACHE", "true").lower() == "true"
