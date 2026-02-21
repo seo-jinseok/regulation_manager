@@ -321,6 +321,16 @@ def create_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="대화형 모드로 연속 질의",
     )
+    search_parser.add_argument(
+        "--trace",
+        action="store_true",
+        help="상세 처리 과정 실시간 출력",
+    )
+    search_parser.add_argument(
+        "--monitor",
+        action="store_true",
+        help="Gradio 웹 대시보드 실행 (Phase 4-5)",
+    )
     # Unified specific arguments
     mode_group = search_parser.add_mutually_exclusive_group()
     mode_group.add_argument(
@@ -909,6 +919,88 @@ def _select_regulation(matches, interactive: bool):
         print("올바른 선택이 아닙니다.")
 
 
+def _launch_monitor_dashboard(args) -> int:
+    """Launch Gradio dashboard in background thread for monitoring.
+
+    This implements the --monitor flag for SPEC-RAG-MONITOR-001 Phase 5.
+
+    Args:
+        args: Parsed CLI arguments.
+
+    Returns:
+        Exit code (0 for success).
+    """
+    import threading
+    import webbrowser
+    import time
+
+    try:
+        import gradio as gr
+    except ImportError:
+        print_error("Gradio가 설치되지 않았습니다. 설치: uv add gradio")
+        return 1
+
+    from .gradio_app import create_app
+
+    print_info("실시간 모니터 대시보드 시작 중...")
+
+    # Determine port
+    port = getattr(args, "port", 7860)
+    if hasattr(args, "db_path"):
+        db_path = args.db_path
+    else:
+        db_path = "data/chroma_db"
+
+    # Create app
+    try:
+        app = create_app(db_path=db_path, use_mock_llm=False)
+    except Exception as e:
+        print_error(f"대시보드 생성 실패: {e}")
+        return 1
+
+    # Launch URL
+    url = f"http://127.0.0.1:{port}"
+
+    def run_server():
+        """Run Gradio server in background thread."""
+        try:
+            app.launch(
+                server_port=port,
+                share=False,
+                show_error=True,
+                prevent_thread_lock=True,  # Don't block
+            )
+        except Exception as e:
+            print_error(f"서버 실행 오류: {e}")
+
+    # Start server in background thread
+    server_thread = threading.Thread(target=run_server, daemon=True)
+    server_thread.start()
+
+    # Wait for server to start
+    time.sleep(2)
+
+    print_success(f"모니터 대시보드 실행 중: {url}")
+    print_info("'📡 실시간 모니터' 탭에서 RAG 파이프라인을 실시간으로 확인할 수 있습니다.")
+    print_info("종료하려면 Ctrl+C를 누르세요.")
+
+    # Auto-open browser
+    try:
+        webbrowser.open(url)
+        print_info(f"브라우저에서 {url} 열기...")
+    except Exception:
+        print_info(f"브라우저를 수동으로 열어주세요: {url}")
+
+    # Keep main thread alive
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        print("\n종료합니다.")
+        return 0
+
+
+
 def _perform_unified_search(
     args,
     force_mode: Optional[str] = None,
@@ -925,6 +1017,17 @@ def _perform_unified_search(
     from ..infrastructure.query_analyzer import QueryAnalyzer
     from ..infrastructure.tool_executor import ToolExecutor
 
+    # Initialize trace handler if --trace flag is set
+    trace_handler = None
+    if getattr(args, "trace", False):
+        from .cli_trace.trace_handler import TraceOutputHandler
+        trace_handler = TraceOutputHandler(show_tokens=False)
+        trace_handler.subscribe()
+
+    # Handle --monitor flag (Phase 4-5)
+    if getattr(args, "monitor", False):
+        return _launch_monitor_dashboard(args)
+
     state = state or {}
     raw_query = _sanitize_query_input(args.query)
     query = raw_query
@@ -936,8 +1039,12 @@ def _perform_unified_search(
     query = _sanitize_query_input(query)
     if not query:
         if interactive:
+            if trace_handler:
+                trace_handler.unsubscribe()
             return 0
         print_error("검색어를 입력해주세요.")
+        if trace_handler:
+            trace_handler.unsubscribe()
         return 1
 
     args.query = query
@@ -946,6 +1053,8 @@ def _perform_unified_search(
     store = ChromaVectorStore(persist_directory=args.db_path)
     if store.count() == 0:
         print_error("데이터베이스가 비어 있습니다. 먼저 sync를 실행하세요.")
+        if trace_handler:
+            trace_handler.unsubscribe()
         return 1
 
     use_reranker = not getattr(args, "no_rerank", False)
@@ -1079,15 +1188,23 @@ def _perform_unified_search(
                                 border_style="red",
                             )
                         )
+                        if trace_handler:
+                            trace_handler.unsubscribe()
                         return 1
 
                     elif evt_type == "clarification":
                         live.stop()
                         _handle_cli_clarification(event)
+                        if trace_handler:
+                            trace_handler.unsubscribe()
                         return 0
+            if trace_handler:
+                trace_handler.unsubscribe()
             return 0
         except Exception as e:
             print_error(f"처리 중 오류 발생: {e}")
+            if trace_handler:
+                trace_handler.unsubscribe()
             return 1
 
     # Standard non-streaming path
@@ -1095,14 +1212,20 @@ def _perform_unified_search(
 
     if result.type == QueryType.CLARIFICATION:
         _handle_cli_clarification(result)
+        if trace_handler:
+            trace_handler.unsubscribe()
         return 0
 
     if not result.success and result.type != QueryType.ERROR:
         print_info(result.content)
+        if trace_handler:
+            trace_handler.unsubscribe()
         return 0
 
     if result.type == QueryType.ERROR:
         print_error(result.content)
+        if trace_handler:
+            trace_handler.unsubscribe()
         return 1
 
     # Display Result
@@ -1113,6 +1236,8 @@ def _perform_unified_search(
         state, result.data, raw_query, result.content, result.suggestions
     )
 
+    if trace_handler:
+        trace_handler.unsubscribe()
     return 0
 
 

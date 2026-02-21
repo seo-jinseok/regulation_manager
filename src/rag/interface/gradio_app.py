@@ -861,7 +861,7 @@ def create_app(
                                 }
                             ],
                             avatar_images=("👤", "🤖"),
-                            bubble_full_width=False,
+                            # bubble_full_width removed for Gradio 6.0 compatibility
                         )
 
                         # Input area
@@ -1329,7 +1329,11 @@ def create_app(
                     outputs=[status_markdown],
                 )
 
-            # Tab 3: Quality Evaluation (P2)
+            # Tab 3: Live Monitor (Phase 4-5)
+            with gr.TabItem("📡 실시간 모니터"):
+                _create_live_monitor_tab(db_path)
+
+            # Tab 4: Quality Evaluation (P2)
             with gr.TabItem("📊 품질 평가"):
                 _create_evaluation_tab(db_path, llm_client if not use_mock_llm else None)
 
@@ -1733,6 +1737,147 @@ def _create_evaluation_tab(db_path: str, llm_client):
             eval_failures,
             eval_recommendations,
         ],
+    )
+
+
+def _create_live_monitor_tab(db_path: str):
+    """Create Live Monitor tab for real-time RAG pipeline monitoring.
+
+    This implements Phase 4-5 of SPEC-RAG-MONITOR-001.
+    """
+    from .web.live_monitor import LiveMonitor
+
+    gr.Markdown("### 📡 실시간 RAG 파이프라인 모니터링")
+    gr.Markdown("RAG 파이프라인의 실행 과정을 실시간으로 확인합니다.")
+
+    # Initialize monitor
+    monitor = LiveMonitor()
+
+    # Import EventType for event filtering
+    from ..infrastructure.logging.events import EventType
+
+    with gr.Row():
+        # Left column: Event timeline
+        with gr.Column(scale=2):
+            gr.Markdown("#### 📊 이벤트 타임라인")
+
+            with gr.Row():
+                # Event type filter
+                event_filter = gr.Dropdown(
+                    choices=["전체"] + [et.value for et in EventType],
+                    value="전체",
+                    label="이벤트 유형 필터",
+                    scale=2,
+                )
+
+                # Refresh button
+                refresh_btn = gr.Button("🔄 새로고침", variant="secondary", scale=1)
+
+            # Event display (Dataframe)
+            event_display = gr.Dataframe(
+                headers=["시간", "유형", "요약"],
+                datatype=["str", "str", "str"],
+                value=[],
+                label="이벤트",
+                interactive=False,
+                wrap=True,
+                # max_rows removed for Gradio 6.0 compatibility
+            )
+
+            # Clear events button
+            clear_btn = gr.Button("🗑️ 이벤트 지우기", variant="secondary", size="sm")
+
+        # Right column: Query testing
+        with gr.Column(scale=1):
+            gr.Markdown("#### 🧪 쿼리 테스트")
+
+            query_input = gr.Textbox(
+                label="테스트 쿼리",
+                placeholder="질문을 입력하세요... (예: 휴학 신청 절차)",
+                lines=2,
+            )
+
+            query_top_k = gr.Slider(
+                minimum=1,
+                maximum=10,
+                value=5,
+                step=1,
+                label="결과 수 (top_k)",
+            )
+
+            submit_btn = gr.Button("▶ 실행", variant="primary")
+
+            # Result display
+            result_display = gr.Markdown(
+                value="쿼리를 실행하면 결과가 여기에 표시됩니다.",
+                label="결과",
+            )
+
+            # Event count
+            event_count = gr.Textbox(
+                label="캡처된 이벤트 수",
+                value="0",
+                interactive=False,
+            )
+
+    # Event handlers
+    def refresh_events(filter_type: str):
+        """Refresh event display."""
+        events = monitor.get_events_for_gradio()
+
+        if filter_type != "전체":
+            # Filter by event type
+            events = [e for e in events if e[1] == filter_type]
+
+        return events, str(len(events))
+
+    def run_query(query: str, top_k: int):
+        """Run test query and return results."""
+        if not query.strip():
+            return "쿼리를 입력해주세요.", "0"
+
+        result = monitor.submit_query(query, top_k=top_k)
+
+        if not result.get("success"):
+            return f"❌ 오류: {result.get('error', 'Unknown error')}", str(result.get("event_count", 0))
+
+        # Format result
+        output = f"### 결과\n\n"
+        output += f"**쿼리**: {result['query']}\n\n"
+        output += f"**응답 유형**: {result.get('result_type', 'unknown')}\n\n"
+        output += f"**캡처된 이벤트**: {result.get('event_count', 0)}개\n\n"
+
+        if result.get("result"):
+            # Truncate long results
+            result_text = result['result']
+            if len(result_text) > 500:
+                result_text = result_text[:500] + "..."
+            output += f"---\n\n{result_text}"
+
+        return output, str(result.get("event_count", 0))
+
+    def clear_events():
+        """Clear all events from buffer."""
+        monitor.clear_events()
+        return [], "0"
+
+    # Wire up event handlers
+    refresh_btn.click(
+        fn=refresh_events,
+        inputs=[event_filter],
+        outputs=[event_display, event_count],
+    )
+
+    submit_btn.click(
+        fn=run_query,
+        inputs=[query_input, query_top_k],
+        outputs=[result_display, event_count],
+    )
+
+    clear_btn.click(
+        fn=clear_events,
+        inputs=[],
+        outputs=[event_display, event_count],
     )
 
 

@@ -388,6 +388,7 @@ class QueryHandler:
         query: str,
         context: Optional[QueryContext] = None,
         options: Optional[QueryOptions] = None,
+        correlation_id: Optional[str] = None,
     ) -> QueryResult:
         """
         Main entry point for query processing.
@@ -396,6 +397,16 @@ class QueryHandler:
         If use_function_gemma is enabled and adapter is available,
         uses FunctionGemma for tool-based processing.
         """
+        # SPEC-RAG-MONITOR-001: Emit query received event
+        from ..infrastructure.logging import RAGInteractionLogger
+
+        logger_instance = RAGInteractionLogger()
+        if correlation_id is None:
+            correlation_id = logger_instance.log_query_received(query)
+        else:
+            # Log with existing correlation ID (for tracing)
+            logger_instance.log_query_received(query)
+
         context = context or QueryContext()
         options = options or QueryOptions()
         query = self._normalize_query(query)
