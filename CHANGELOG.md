@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Real-time RAG monitoring system with --trace and --monitor flags (SPEC-RAG-MONITOR-001)
+  - EventEmitter singleton pattern for RAG pipeline events
+  - 7 event types: QueryReceived, QueryRewritten, SearchCompleted, RerankingCompleted, LLMGenerationStarted, TokenGenerated, AnswerGenerated
+  - CLI --trace flag: detailed processing steps output in terminal
+  - CLI --monitor flag: Gradio web dashboard for live event streaming
+  - LiveMonitor dashboard with event buffer (max 100 events)
+  - Correlation ID tracking for end-to-end request tracing
+  - LatencyTimer context manager for performance measurement
+  - 71 tests passing with 97-98% coverage
 - IntentClassifier for query intent classification (PROCEDURE, ELIGIBILITY, DEADLINE, GENERAL) (SPEC-RAG-QUALITY-006)
 - CitationValidator integration in search_usecase.py for enhanced citation quality (SPEC-RAG-QUALITY-006)
 - Forced citation generation when LLM response lacks citations (SPEC-RAG-QUALITY-006)

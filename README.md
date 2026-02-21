@@ -256,6 +256,8 @@ $ uv run regulation
 | `--include-abolished` | 폐지된 규정 포함 |
 | `--no-rerank` | AI 재정렬 비활성화 |
 | `-v`, `--verbose` | 상세 정보 출력 (쿼리 분석, 모드 결정 이유 등) |
+| `--trace` | RAG 파이프라인 처리 과정 실시간 출력 (v2.7.0+) |
+| `--monitor` | Gradio 웹 대시보드로 실시간 모니터링 (v2.7.0+) |
 
 **LLM 옵션**:
 
@@ -338,6 +340,78 @@ src/rag/automation/
 
 > RAG 테스팅 자동화는 Clean Architecture로 구현되었으며, 120개의 단위 테스트로 검증되었습니다.
 
+### RAG 실시간 모니터링 (v2.7.0+)
+
+RAG 파이프라인의 내부 처리 과정을 실시간으로 모니터링하는 기능을 제공합니다. 사용자와 동일한 CLI 환경에서 시스템 동작을 직접 관찰할 수 있습니다.
+
+#### CLI --trace 플래그
+
+```bash
+uv run regulation search "휴학 절차" --trace
+```
+
+**출력 예시**:
+
+```text
+🔍 [TRACE] Query Analysis
+   Original: "휴학 절차"
+   Rewritten: "대학 휴학 신청 방법 절차"
+   Intent: policy_inquiry
+   Entities: [휴학]
+
+🔎 [TRACE] Vector Search
+   Found 5 results (latency: 45ms)
+   1. [0.89] 대학규정 제25조 휴학에 관한 사항...
+   2. [0.85] 휴학신청서 제출 안내...
+   ...
+
+📊 [TRACE] Reranking
+   Reranked 5 results (latency: 12ms)
+   1. [0.95] 대학규정 제25조... (+0.06)
+   ...
+
+🤖 [TRACE] LLM Generation
+   Model: gpt-4o-mini
+   Prompt tokens: 1,245
+   Streaming answer...
+```
+
+#### CLI --monitor 플래그 (웹 대시보드)
+
+```bash
+uv run regulation search "휴학 절차" --monitor
+```
+
+**동작**:
+1. Gradio 대시보드가 localhost:7860에서 시작
+2. 브라우저가 자동으로 열림
+3. 실시간 이벤트 스트림이 웹 UI에 표시됨
+4. CLI는 정상적으로 계속 실행됨
+
+**대시보드 기능**:
+- **Live Stream**: RAG 이벤트 실시간 시각화
+- **Query Test**: 대시보드에서 직접 쿼리 입력
+- **Performance**: 각 단계별 지연 시간 메트릭
+- **History**: 과거 쿼리 및 재생 기능
+
+#### 이벤트 타입
+
+| 이벤트 | 설명 |
+|--------|------|
+| `QueryReceived` | 쿼리 수신 (타임스탬프, 원본 쿼리) |
+| `QueryRewritten` | 쿼리 재작성 (원본, 재작성된 쿼리, 전략) |
+| `SearchCompleted` | 검색 완료 (결과, 점수, 지연 시간) |
+| `RerankingCompleted` | 재순위 완료 (재정렬된 결과, 점수 변화) |
+| `LLMGenerationStarted` | LLM 생성 시작 (프롬프트 메타데이터) |
+| `TokenGenerated` | 토큰 생성 (스트리밍) |
+| `AnswerGenerated` | 답변 생성 완료 (전체 응답, 토큰 수) |
+
+**기술 세부사항**:
+- `EventEmitter` 싱글톤 패턴으로 이벤트 발행
+- Correlation ID로 요청 추적 (UUID4)
+- 최대 100개 이벤트 버퍼링
+- < 10% 오버헤드로 성능 영향 최소화
+
 ### MCP 서버 (AI 에이전트 연동)
 
 AI 에이전트(Claude, Cursor 등)에서 규정 검색 기능을 사용할 수 있는 MCP(Model Context Protocol) 서버를 제공합니다.
@@ -397,6 +471,8 @@ uv run regulation serve --mcp
 | `regulation search "<쿼리>" --interactive` | 대화형 모드 |
 | `regulation search "<질문>" -a` | AI 답변 생성 강제 |
 | `regulation search "<키워드>" -q` | 문서 검색 강제 |
+| `regulation search "<쿼리>" --trace` | RAG 파이프라인 추적 (v2.7.0+) |
+| `regulation search "<쿼리>" --monitor` | 실시간 모니터링 대시보드 (v2.7.0+) |
 | `regulation status` | 동기화 상태 확인 |
 | `regulation reset --confirm` | DB 초기화 |
 | `regulation serve --web` | Web UI 시작 |
