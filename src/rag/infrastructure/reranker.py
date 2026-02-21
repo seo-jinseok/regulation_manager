@@ -465,6 +465,107 @@ class BGEReranker(IReranker):
             model_name: Optional model name. Defaults to bge-reranker-v2-m3.
         """
         self._model_name = model_name
+        # Load document type weights from config (SPEC-RAG-QUALITY-009)
+        from ..config import get_config
+        config = get_config()
+        self._document_type_weights = config.reranker.DOCUMENT_TYPE_WEIGHTS
+        self._intent_rerank_configs = config.reranker.INTENT_RERANK_CONFIGS
+
+    def _detect_document_type(self, metadata: dict, content: str = "") -> str:
+        """
+        Detect document type from metadata and content.
+
+        SPEC-RAG-QUALITY-009: Document type detection for Korean regulations.
+
+        Args:
+            metadata: Document metadata dictionary.
+            content: Document content (optional, used for pattern matching).
+
+        Returns:
+            Document type: "regulation", "form", "appendix", or "default".
+        """
+        # Check chunk_level field (CHUNK_LEVEL in domain/entities.py)
+        chunk_level = metadata.get("chunk_level", "")
+        if chunk_level:
+            chunk_level_lower = chunk_level.lower()
+            if "form" in chunk_level_lower or "서식" in chunk_level:
+                return "form"
+            if "appendix" in chunk_level_lower or "별표" in chunk_level:
+                return "appendix"
+            if "transitional" in chunk_level_lower or "경과" in chunk_level:
+                return "appendix"  # Treat transitional provisions as appendix
+
+        # Check content patterns for transitional provisions
+        if content:
+            if "경과조치" in content or "부칙" in content:
+                return "appendix"
+            if "서식" in content and len(content) < 500:  # Short form documents
+                return "form"
+
+        # Check for explicit doc_type in metadata
+        doc_type = metadata.get("doc_type", "")
+        if doc_type and doc_type in self._document_type_weights:
+            return doc_type
+
+        # Default to regulation for main content
+        return "regulation"
+
+    def apply_type_weights(
+        self,
+        results: List[RerankedResult],
+        intent: Optional[str] = None,
+    ) -> List[RerankedResult]:
+        """
+        Apply document type weights to reranked results.
+
+        SPEC-RAG-QUALITY-009 REQ-003: Optimize Reranker for Korean Regulations.
+        Boosts or suppresses documents based on their type and query intent.
+
+        Args:
+            results: List of RerankedResult objects.
+            intent: Query intent category (PROCEDURE, DEADLINE, ELIGIBILITY, GENERAL).
+
+        Returns:
+            List of RerankedResult with adjusted scores, sorted by boosted score.
+        """
+        if not results:
+            return results
+
+        # Get intent-specific weights if available
+        type_weights = self._document_type_weights.copy()
+        if intent and intent in self._intent_rerank_configs:
+            intent_weights = self._intent_rerank_configs[intent]
+            type_weights.update(intent_weights)
+            logger.debug(f"Applying intent-specific weights for {intent}: {intent_weights}")
+
+        weighted_results = []
+        for r in results:
+            doc_type = self._detect_document_type(r.metadata, r.content)
+            weight = type_weights.get(doc_type, type_weights.get("default", 1.0))
+
+            boosted_score = min(1.0, r.score * weight)
+            weighted_results.append(
+                RerankedResult(
+                    doc_id=r.doc_id,
+                    content=r.content,
+                    score=boosted_score,
+                    original_rank=r.original_rank,
+                    metadata=r.metadata,
+                )
+            )
+
+        # Re-sort by weighted score
+        weighted_results.sort(key=lambda x: x.score, reverse=True)
+
+        # Log type weight application summary
+        type_counts = {}
+        for r in weighted_results[:10]:  # Top 10 results
+            doc_type = self._detect_document_type(r.metadata, r.content)
+            type_counts[doc_type] = type_counts.get(doc_type, 0) + 1
+        if type_counts:
+            logger.debug(f"Document type distribution in top 10: {type_counts}")
+
+        return weighted_results
 
     def rerank(
         self,
@@ -499,6 +600,8 @@ class BGEReranker(IReranker):
         """
         Rerank documents using BGE cross-encoder with metadata context boosting.
 
+        SPEC-RAG-QUALITY-009: Enhanced with intent-based type weighting.
+
         Args:
             query: The search query.
             documents: List of (doc_id, content, metadata) tuples.
@@ -507,6 +610,8 @@ class BGEReranker(IReranker):
                 - target_audience: Boost documents for this audience.
                 - regulation_boost: Boost factor for matching regulation (default: 0.15).
                 - audience_boost: Boost factor for matching audience (default: 0.1).
+                - intent: Query intent category (PROCEDURE, DEADLINE, ELIGIBILITY, GENERAL).
+                - apply_type_weights: Whether to apply document type weights (default: True).
             top_k: Maximum number of results to return.
 
         Returns:
@@ -519,6 +624,12 @@ class BGEReranker(IReranker):
 
         # Get base reranked results
         results = rerank(query, documents, top_k=len(documents))  # Get all, then filter
+
+        # Apply document type weights first (SPEC-RAG-QUALITY-009)
+        apply_type_weights = context.get("apply_type_weights", True)
+        intent = context.get("intent")
+        if apply_type_weights:
+            results = self.apply_type_weights(results, intent=intent)
 
         # Apply context-based boosting
         target_regulation = context.get("target_regulation")

@@ -11,6 +11,20 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 
+def _get_api_key_env_var(provider: str) -> str:
+    """Get the appropriate API key environment variable name based on provider."""
+    provider_api_keys = {
+        "openai": "OPENAI_API_KEY",
+        "openrouter": "OPENROUTER_API_KEY",
+        "gemini": "GEMINI_API_KEY",
+        "lmstudio": None,  # No API key needed for local
+        "ollama": None,  # No API key needed for local
+        "local": None,  # No API key needed for local
+        "mlx": None,  # No API key needed for local
+    }
+    return provider_api_keys.get(provider.lower(), "OPENAI_API_KEY")
+
+
 @dataclass
 class LLMProviderConfig:
     """Configuration for a single LLM provider."""
@@ -44,7 +58,8 @@ class FallbackConfig:
                 "provider": os.getenv("LLM_PROVIDER", "openrouter"),
                 "model": os.getenv("LLM_MODEL", "openai/gpt-4o-mini"),
                 "base_url": os.getenv("LLM_BASE_URL", "https://openrouter.ai/api/v1"),
-                "api_key_env_var": "OPENROUTER_API_KEY",
+                # Dynamically select API key based on provider
+                "api_key_env_var": _get_api_key_env_var(os.getenv("LLM_PROVIDER", "openrouter")),
                 "priority": 1,
             },
             {
@@ -120,6 +135,44 @@ class RerankerConfig:
     # Metrics tracking for A/B testing
     track_model_performance: bool = True
     metrics_storage_dir: str = ".metrics/reranker_ab"
+
+    # Document type weights for Korean regulation reranking (SPEC-RAG-QUALITY-009 REQ-003)
+    # Higher weights boost relevant document types, lower weights suppress irrelevant ones
+    DOCUMENT_TYPE_WEIGHTS: Dict[str, float] = field(
+        default_factory=lambda: {
+            "regulation": 1.5,  # Boost main regulation content
+            "form": 0.5,       # Suppress forms (서식)
+            "appendix": 0.5,   # Suppress appendices/transitional provisions (별표/경과조치)
+            "default": 1.0,    # Default weight for unknown types
+        }
+    )
+
+    # Intent-based reranking configurations (SPEC-RAG-QUALITY-009 REQ-003)
+    # Boost specific document types based on query intent
+    INTENT_RERANK_CONFIGS: Dict[str, Dict[str, float]] = field(
+        default_factory=lambda: {
+            "PROCEDURE": {
+                "regulation": 1.5,
+                "form": 0.7,      # Forms may be needed for procedures
+                "appendix": 0.5,
+            },
+            "DEADLINE": {
+                "regulation": 1.5,
+                "form": 0.4,
+                "appendix": 0.6,  # Transitional provisions may have deadlines
+            },
+            "ELIGIBILITY": {
+                "regulation": 1.5,
+                "form": 0.5,
+                "appendix": 0.5,
+            },
+            "GENERAL": {
+                "regulation": 1.3,
+                "form": 0.5,
+                "appendix": 0.5,
+            },
+        }
+    )
 
 
 @dataclass
@@ -246,6 +299,23 @@ class RAGConfig:
         default_factory=lambda: float(
             os.getenv("RAG_CONFIDENCE_THRESHOLD", "0.3")
         )
+    )
+
+    # Faithfulness validation settings (SPEC-RAG-QUALITY-009)
+    # Enable faithfulness validation by default to prevent hallucination
+    use_faithfulness_validation: bool = field(
+        default_factory=lambda: os.getenv(
+            "RAG_USE_FAITHFULNESS_VALIDATION", "true"
+        ).lower()
+        == "true"
+    )
+    faithfulness_threshold: float = field(
+        default_factory=lambda: float(
+            os.getenv("RAG_FAITHFULNESS_THRESHOLD", "0.6")
+        )
+    )
+    max_regeneration_attempts: int = field(
+        default_factory=lambda: int(os.getenv("RAG_MAX_REGENERATION_ATTEMPTS", "2"))
     )
 
     # RAG Query Cache settings
@@ -476,3 +546,99 @@ def reset_config() -> None:
     """Reset configuration to defaults (useful for testing)."""
     global _config
     _config = None
+
+
+@dataclass
+class SearchConfig:
+    """
+    Configuration for search behavior and answer validation.
+
+    This dataclass encapsulates settings for faithfulness validation,
+    regeneration loop, and other search-related parameters.
+
+    SPEC-RAG-QUALITY-009: Configuration for Milestone 1 - Faithfulness Validation
+
+    Attributes:
+        use_faithfulness_validation: Enable faithfulness validation for answers.
+        faithfulness_threshold: Minimum score (0.0-1.0) to accept answer.
+        max_regeneration_attempts: Maximum regeneration retries when score < threshold.
+        use_reranker: Enable reranking of search results.
+        use_hybrid: Enable hybrid search (dense + sparse).
+        default_top_k: Default number of results to return.
+        max_context_chars: Maximum context length for LLM (characters).
+    """
+
+    # Faithfulness validation settings (SPEC-RAG-QUALITY-009)
+    use_faithfulness_validation: bool = True
+    faithfulness_threshold: float = 0.6
+    max_regeneration_attempts: int = 2
+
+    # Search settings
+    use_reranker: bool = True
+    use_hybrid: bool = True
+    default_top_k: int = 5
+    max_context_chars: int = 4000
+
+    # Optional overrides
+    custom_prompt: Optional[str] = None
+    persona: Optional[str] = None
+
+    def __post_init__(self):
+        """Validate configuration after initialization."""
+        # Validate threshold range
+        if not 0.0 <= self.faithfulness_threshold <= 1.0:
+            raise ValueError(
+                f"faithfulness_threshold must be between 0.0 and 1.0, "
+                f"got {self.faithfulness_threshold}"
+            )
+
+        # Validate max_regeneration_attempts
+        if self.max_regeneration_attempts < 0:
+            raise ValueError(
+                f"max_regeneration_attempts must be >= 0, "
+                f"got {self.max_regeneration_attempts}"
+            )
+
+        # Validate default_top_k
+        if self.default_top_k < 1:
+            raise ValueError(
+                f"default_top_k must be >= 1, got {self.default_top_k}"
+            )
+
+    @classmethod
+    def from_rag_config(cls, rag_config: RAGConfig) -> "SearchConfig":
+        """
+        Create SearchConfig from RAGConfig instance.
+
+        Args:
+            rag_config: RAGConfig instance to extract settings from.
+
+        Returns:
+            SearchConfig with settings from RAGConfig.
+        """
+        return cls(
+            use_faithfulness_validation=rag_config.use_faithfulness_validation,
+            faithfulness_threshold=rag_config.faithfulness_threshold,
+            max_regeneration_attempts=rag_config.max_regeneration_attempts,
+            use_reranker=rag_config.use_reranker,
+            use_hybrid=rag_config.use_hybrid,
+            default_top_k=rag_config.default_top_k,
+            max_context_chars=rag_config.max_context_chars,
+        )
+
+    def to_metadata(self) -> dict:
+        """
+        Export configuration as metadata dict for logging/metrics.
+
+        Returns:
+            Dictionary with configuration values.
+        """
+        return {
+            "use_faithfulness_validation": self.use_faithfulness_validation,
+            "faithfulness_threshold": self.faithfulness_threshold,
+            "max_regeneration_attempts": self.max_regeneration_attempts,
+            "use_reranker": self.use_reranker,
+            "use_hybrid": self.use_hybrid,
+            "default_top_k": self.default_top_k,
+        }
+

@@ -195,7 +195,7 @@ class TestRerankerWithContext:
         assert result_with_context[0][0] == "doc1"
 
     def test_rerank_with_context_empty_context(self, mock_reranker):
-        """빈 컨텍스트는 일반 rerank와 동일해야 함"""
+        """빈 컨텍스트에서도 타입 가중치가 적용되어야 함 (SPEC-RAG-QUALITY-009)"""
         reranker = BGEReranker()
         docs = [
             ("doc1", "장학금 신청", {"regulation_title": "장학규정"}),
@@ -204,6 +204,25 @@ class TestRerankerWithContext:
         result_normal = reranker.rerank("장학금", docs, top_k=1)
         result_context = reranker.rerank_with_context("장학금", docs, context={}, top_k=1)
 
+        # SPEC-RAG-QUALITY-009: Type weights are now applied by default
+        # Regulation type gets 1.5x boost, so context result should have higher score
+        assert result_context[0][2] >= result_normal[0][2]  # Type weights applied
+
+    def test_rerank_with_context_disable_type_weights(self, mock_reranker):
+        """apply_type_weights=False로 설정하면 타입 가중치 미적용"""
+        reranker = BGEReranker()
+        docs = [
+            ("doc1", "장학금 신청", {"regulation_title": "장학규정"}),
+        ]
+
+        result_normal = reranker.rerank("장학금", docs, top_k=1)
+        result_context = reranker.rerank_with_context(
+            "장학금", docs,
+            context={"apply_type_weights": False},
+            top_k=1
+        )
+
+        # Type weights disabled, should match normal rerank
         assert result_normal[0][2] == result_context[0][2]  # 동일 점수
 
     def test_rerank_with_audience_context(self, mock_reranker):

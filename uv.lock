@@ -4877,7 +4877,7 @@ requires-dist = [
     { name = "python-dotenv", specifier = ">=1.2.1" },
     { name = "questionary", specifier = ">=2.1.1" },
     { name = "ragas", specifier = ">=0.4.3" },
-    { name = "ragas", marker = "extra == 'dev'", specifier = ">=0.1.0" },
+    { name = "ragas", marker = "extra == 'dev'", specifier = ">=0.4.3" },
     { name = "rank-bm25", specifier = ">=0.2.2" },
     { name = "reportlab", specifier = ">=4.0.0" },
     { name = "rich", specifier = ">=14.2.0" },

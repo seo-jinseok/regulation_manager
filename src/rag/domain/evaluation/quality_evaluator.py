@@ -30,7 +30,12 @@ try:
         ContextRecall,
         Faithfulness,
     )
-    from ragas.run_config import RunConfig
+    # RunConfig moved to main module in 0.4.13+
+    try:
+        from ragas import RunConfig
+    except ImportError:
+        # Fallback for older versions
+        from ragas.run_config import RunConfig  # type: ignore[no-redef]
 
     RAGAS_AVAILABLE = True
 except ImportError as e:
@@ -44,6 +49,20 @@ try:
     LANGCHAIN_AVAILABLE = True
 except ImportError:
     LANGCHAIN_AVAILABLE = False
+
+# Import DeepEval for fallback evaluation
+DEEPEVAL_AVAILABLE = False
+DEEPEVAL_IMPORT_ERROR = None
+
+try:
+    from deepeval import evaluate as deepeval_evaluate
+    from deepeval.metrics import AnswerRelevancyMetric, FaithfulnessMetric
+    from deepeval.test_case import LLMTestCase
+
+    DEEPEVAL_AVAILABLE = True
+except ImportError as e:
+    DEEPEVAL_AVAILABLE = False
+    DEEPEVAL_IMPORT_ERROR = str(e)
 
 from .models import (  # noqa: E402
     EvaluationFramework,
@@ -364,8 +383,13 @@ class RAGQualityEvaluator:
 
             except Exception as e:
                 logger.warning(
-                    f"RAGAS faithfulness evaluation failed: {e}. Using fallback."
+                    f"RAGAS faithfulness evaluation failed: {e}. Trying deepeval fallback."
                 )
+                # Try deepeval fallback
+                deepeval_result = self._try_deepeval_faithfulness(query, answer, contexts)
+                if deepeval_result is not None:
+                    return deepeval_result
+                logger.warning("deepeval fallback also failed. Using mock evaluation.")
 
         # Fallback: Simple keyword-based scoring
         return self._mock_faithfulness(answer, contexts)
@@ -425,8 +449,13 @@ class RAGQualityEvaluator:
 
             except Exception as e:
                 logger.warning(
-                    f"RAGAS relevancy evaluation failed: {e}. Using fallback."
+                    f"RAGAS relevancy evaluation failed: {e}. Trying deepeval fallback."
                 )
+                # Try deepeval fallback
+                deepeval_result = self._try_deepeval_answer_relevancy(query, answer)
+                if deepeval_result is not None:
+                    return deepeval_result
+                logger.warning("deepeval fallback also failed. Using mock evaluation.")
 
         # Fallback: Simple keyword-based scoring
         return self._mock_answer_relevancy(query, answer)
@@ -552,6 +581,89 @@ class RAGQualityEvaluator:
 
         # Fallback: Simple scoring
         return self._mock_contextual_recall(contexts, ground_truth)
+
+    # DeepEval fallback methods for when RAGAS fails
+
+    def _try_deepeval_faithfulness(
+        self, query: str, answer: str, contexts: List[str]
+    ) -> Optional[MetricScore]:
+        """
+        Try deepeval faithfulness evaluation as fallback.
+
+        Returns None if deepeval is not available or fails.
+        """
+        if not DEEPEVAL_AVAILABLE:
+            logger.debug("deepeval not available for faithfulness fallback")
+            return None
+
+        try:
+            from deepeval.metrics import FaithfulnessMetric
+            from deepeval.test_case import LLMTestCase
+
+            test_case = LLMTestCase(
+                input=query,
+                actual_output=answer,
+                retrieval_context=contexts,
+            )
+
+            metric = FaithfulnessMetric(
+                threshold=self.thresholds.faithfulness,
+                model=self.judge_model,
+                include_reason=True,
+            )
+            metric.measure(test_case)
+
+            logger.info("deepeval faithfulness fallback succeeded")
+            return MetricScore(
+                name="faithfulness",
+                score=round(metric.score, 3),
+                passed=metric.is_successful(),
+                reason=metric.reason if metric.reason else "deepeval evaluation",
+            )
+
+        except Exception as e:
+            logger.debug(f"deepeval faithfulness fallback failed: {e}")
+            return None
+
+    def _try_deepeval_answer_relevancy(
+        self, query: str, answer: str
+    ) -> Optional[MetricScore]:
+        """
+        Try deepeval answer relevancy evaluation as fallback.
+
+        Returns None if deepeval is not available or fails.
+        """
+        if not DEEPEVAL_AVAILABLE:
+            logger.debug("deepeval not available for relevancy fallback")
+            return None
+
+        try:
+            from deepeval.metrics import AnswerRelevancyMetric
+            from deepeval.test_case import LLMTestCase
+
+            test_case = LLMTestCase(
+                input=query,
+                actual_output=answer,
+            )
+
+            metric = AnswerRelevancyMetric(
+                threshold=self.thresholds.answer_relevancy,
+                model=self.judge_model,
+                include_reason=True,
+            )
+            metric.measure(test_case)
+
+            logger.info("deepeval answer relevancy fallback succeeded")
+            return MetricScore(
+                name="answer_relevancy",
+                score=round(metric.score, 3),
+                passed=metric.is_successful(),
+                reason=metric.reason if metric.reason else "deepeval evaluation",
+            )
+
+        except Exception as e:
+            logger.debug(f"deepeval answer relevancy fallback failed: {e}")
+            return None
 
     # Mock/fallback methods when RAGAS is not available
 

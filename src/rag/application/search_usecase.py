@@ -445,6 +445,16 @@ class SearchUseCase:
             self._faithfulness_validator = FaithfulnessValidator()
             logger.info("FaithfulnessValidator initialized for semantic validation")
 
+        # Faithfulness validation settings (SPEC-RAG-QUALITY-009)
+        self._use_faithfulness_validation = config.use_faithfulness_validation
+        self._faithfulness_threshold = config.faithfulness_threshold
+        self._max_regeneration_attempts = config.max_regeneration_attempts
+        logger.info(
+            f"Faithfulness validation: enabled={self._use_faithfulness_validation}, "
+            f"threshold={self._faithfulness_threshold}, "
+            f"max_attempts={self._max_regeneration_attempts}"
+        )
+
         # Confidence threshold for fallback response (TAG-001: Prevent Hallucination)
         # When confidence score is below this threshold, return fallback message
         # instead of generating potentially hallucinated content
@@ -1449,8 +1459,15 @@ class SearchUseCase:
 
             start_time = time.time()
             rerank_k = top_k * 5 if is_intent else top_k * 2
+
+            # SPEC-RAG-QUALITY-009: Get intent for intent-aware reranking
+            rerank_intent = None
+            if self._last_intent_classification:
+                rerank_intent = self._last_intent_classification.category.value
+
             boosted_results = self._apply_reranking(
-                boosted_results, scoring_query_text, top_k, candidate_k=rerank_k
+                boosted_results, scoring_query_text, top_k, candidate_k=rerank_k,
+                intent=rerank_intent
             )
             reranker_time_ms = (time.time() - start_time) * 1000
             self._reranking_metrics.record_apply(
@@ -1734,6 +1751,7 @@ class SearchUseCase:
         candidate_k: Optional[int] = None,
         use_hybrid_scoring: bool = True,
         alpha: float = 0.7,
+        intent: Optional[str] = None,
     ) -> List[SearchResult]:
         """
         Apply cross-encoder reranking with optional hybrid scoring.
@@ -1743,6 +1761,8 @@ class SearchUseCase:
 
         Formula: final_score = α * reranker_score + (1 - α) * boosted_score
 
+        SPEC-RAG-QUALITY-009: Added intent-based reranking support.
+
         Args:
             results: Search results with boosted scores
             scoring_query_text: Query text for reranking
@@ -1750,6 +1770,7 @@ class SearchUseCase:
             candidate_k: Number of candidates to rerank
             use_hybrid_scoring: Whether to combine reranker + boost scores
             alpha: Weight for reranker score (0.7 = 70% reranker, 30% boost)
+            intent: Query intent category (PROCEDURE, DEADLINE, ELIGIBILITY, GENERAL)
         """
         self._ensure_reranker()
 
@@ -1764,8 +1785,26 @@ class SearchUseCase:
         # Store original boosted scores for hybrid scoring
         id_to_boosted_score = {r.chunk.id: r.score for r in candidates}
 
-        documents = [(r.chunk.id, r.chunk.text, {}) for r in candidates]
-        reranked = self._reranker.rerank(scoring_query_text, documents, top_k=top_k)
+        # SPEC-RAG-QUALITY-009: Use rerank_with_context for intent-aware reranking
+        documents = [
+            (r.chunk.id, r.chunk.text, r.chunk.to_metadata())
+            for r in candidates
+        ]
+
+        # Build context with intent for document type weighting
+        reranker_context = {
+            "intent": intent,
+            "apply_type_weights": True,
+        }
+
+        if hasattr(self._reranker, "rerank_with_context"):
+            reranked = self._reranker.rerank_with_context(
+                scoring_query_text, documents, context=reranker_context, top_k=top_k
+            )
+            logger.debug(f"Applied intent-aware reranking with intent={intent}")
+        else:
+            # Fallback to basic rerank if rerank_with_context not available
+            reranked = self._reranker.rerank(scoring_query_text, documents, top_k=top_k)
 
         id_to_result = {r.chunk.id: r for r in candidates}
         final_results = []
@@ -2582,19 +2621,59 @@ class SearchUseCase:
             logger.debug(f"[User]\n{user_message}")
             logger.debug("=" * 80)
 
-        # Generate answer with fact-check loop
         # TAG-005: Detect persona for persona-aware response generation
         detected_audience = self._detect_audience(question, audience_override)
         persona = self._get_persona_from_audience(detected_audience)
 
-        answer_text = self._generate_with_fact_check(
-            question=question,
-            context=context,
-            history_text=history_text,
-            debug=debug,
-            custom_prompt=custom_prompt,
-            persona=persona,
-        )
+        # SPEC-RAG-QUALITY-009: Use faithfulness validation when enabled
+        # This replaces _generate_with_fact_check with _generate_answer_with_validation
+        # which includes both fact checking AND faithfulness validation with regeneration
+        context_texts = [
+            r.chunk.text for r in filtered_results if hasattr(r, "chunk")
+        ]
+
+        if self._use_faithfulness_validation:
+            # Use faithfulness validation with regeneration loop
+            answer_text, validation_metadata = self._generate_answer_with_validation(
+                question=question,
+                context=context,
+                context_list=context_texts,
+                history_text=history_text,
+                debug=debug,
+                custom_prompt=custom_prompt,
+                persona=persona,
+                max_retries=self._max_regeneration_attempts,
+            )
+
+            # Log validation metrics
+            logger.info(
+                f"Faithfulness validation completed: "
+                f"score={validation_metadata.get('faithfulness_score', 0):.3f}, "
+                f"attempts={validation_metadata.get('validation_attempts', 0)}, "
+                f"status={validation_metadata.get('final_status', 'unknown')}"
+            )
+
+            # If fallback was returned, handle it
+            if validation_metadata.get("final_status") == "fallback":
+                logger.warning(
+                    f"All regeneration attempts failed for question: {question[:50]}..."
+                )
+                # Return with faithfulness score as confidence
+                return Answer(
+                    text=answer_text,
+                    sources=filtered_results,
+                    confidence=validation_metadata.get("faithfulness_score", 0.0),
+                )
+        else:
+            # Fallback to original fact-check only generation
+            answer_text = self._generate_with_fact_check(
+                question=question,
+                context=context,
+                history_text=history_text,
+                debug=debug,
+                custom_prompt=custom_prompt,
+                persona=persona,
+            )
 
         # Self-RAG: Start async support verification
         if self._enable_self_rag and self._self_rag_pipeline:
@@ -2603,10 +2682,8 @@ class SearchUseCase:
             )
 
         # Apply hallucination filter (SPEC-RAG-Q-002)
+        # Pattern-based filtering for phone numbers, emails, etc.
         if self.hallucination_filter:
-            context_texts = [
-                r.chunk.text for r in filtered_results if hasattr(r, "chunk")
-            ]
             filter_result = self.hallucination_filter.filter_response(
                 response=answer_text, context=context_texts
             )
@@ -2620,15 +2697,15 @@ class SearchUseCase:
                     f"Hallucination filter blocked response: {filter_result.block_reason}"
                 )
 
-        # SPEC-RAG-QUALITY-004: Faithfulness check
-        # Block answers with low faithfulness score (< 0.3)
-        faithfulness_result: Optional[FaithfulnessResult] = None
-        if self.hallucination_filter:
-            context_texts = [
-                r.chunk.text for r in filtered_results if hasattr(r, "chunk")
-            ]
-            faithfulness_result = self.hallucination_filter.calculate_faithfulness(
-                response=answer_text, context=context_texts
+        # SPEC-RAG-QUALITY-004: Faithfulness check (only when faithfulness validation is disabled)
+        # When _use_faithfulness_validation=True, faithfulness is already validated in
+        # _generate_answer_with_validation(), so we skip redundant checking here.
+        # This block only runs for backward compatibility when validation is disabled.
+        if not self._use_faithfulness_validation and self.hallucination_filter:
+            faithfulness_result: Optional[FaithfulnessResult] = (
+                self.hallucination_filter.calculate_faithfulness(
+                    response=answer_text, context=context_texts
+                )
             )
             logger.info(
                 f"Faithfulness score: {faithfulness_result.score:.3f} "
