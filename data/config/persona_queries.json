@@ -1,0 +1,406 @@
+{
+  "version": "1.0",
+  "description": "Persona-specific query templates for RAG quality evaluation (SPEC-RAG-QUALITY-010)",
+  "personas": {
+    "freshman": {
+      "description": "신입생 - First-year student queries with simple, casual language",
+      "queries": [
+        {
+          "query": "휴학하려면 뭐 해야 해요?",
+          "expected_intent": "PROCEDURE",
+          "key_elements": ["간단한 표현", "친근한 어조", "기본 절차"]
+        },
+        {
+          "query": "성적이 나쁜데 어떡하죠?",
+          "expected_intent": "GENERAL",
+          "key_elements": ["감정적 표현", "걱정 표현", "간단한 질문"]
+        },
+        {
+          "query": "장학금 신청 어떻게 하나요?",
+          "expected_intent": "PROCEDURE",
+          "key_elements": ["기본 절차", "간단한 표현"]
+        },
+        {
+          "query": "수강신청 언제 하나요?",
+          "expected_intent": "DEADLINE",
+          "key_elements": ["기한 질문", "간단한 표현"]
+        },
+        {
+          "query": "기숙사 신청하고 싶어요",
+          "expected_intent": "PROCEDURE",
+          "key_elements": ["기본 절차", "간단한 표현"]
+        },
+        {
+          "query": "교수님께 이메일 어떻게 쓰나요?",
+          "expected_intent": "PROCEDURE",
+          "key_elements": ["실용적 정보", "간단한 표현"]
+        },
+        {
+          "query": "졸업하려면 뭐 필요해요?",
+          "expected_intent": "ELIGIBILITY",
+          "key_elements": ["자격 요건", "간단한 표현"]
+        },
+        {
+          "query": "복학은 어떻게 하나요?",
+          "expected_intent": "PROCEDURE",
+          "key_elements": ["기본 절차", "간단한 표현"]
+        },
+        {
+          "query": "성적증명서 어디서 떼요?",
+          "expected_intent": "PROCEDURE",
+          "key_elements": ["실용적 정보", "간단한 표현"]
+        },
+        {
+          "query": "동아리 만들고 싶어요",
+          "expected_intent": "PROCEDURE",
+          "key_elements": ["기본 절차", "간단한 표현"]
+        },
+        {
+          "query": "학점 몇 개 들어야 해요?",
+          "expected_intent": "ELIGIBILITY",
+          "key_elements": ["자격 요건", "간단한 표현"]
+        },
+        {
+          "query": "도서관 이용시간이 어떻게 돼요?",
+          "expected_intent": "GENERAL",
+          "key_elements": ["기본 정보", "간단한 표현"]
+        }
+      ]
+    },
+    "student": {
+      "description": "재학생 - Enrolled student queries with procedure-focused language",
+      "queries": [
+        {
+          "query": "휴학 신청 절차와 필요 서류를 알려주세요",
+          "expected_intent": "PROCEDURE",
+          "key_elements": ["절차 중심", "구체적 안내", "서류 요청"]
+        },
+        {
+          "query": "전과 신청 자격 요건이 어떻게 되나요?",
+          "expected_intent": "ELIGIBILITY",
+          "key_elements": ["자격 요건", "구체적 질문"]
+        },
+        {
+          "query": "이번 학기 수강철회 기간이 언제까지인가요?",
+          "expected_intent": "DEADLINE",
+          "key_elements": ["기한 질문", "구체적 정보"]
+        },
+        {
+          "query": "등록금 분납 신청 방법과 기한을 알려주세요",
+          "expected_intent": "PROCEDURE",
+          "key_elements": ["절차 중심", "기한 포함"]
+        },
+        {
+          "query": "교내 장학금 종류와 신청 자격은?",
+          "expected_intent": "ELIGIBILITY",
+          "key_elements": ["자격 요건", "정보 요청"]
+        },
+        {
+          "query": "졸업요건 학점 계산 방법을 알고 싶습니다",
+          "expected_intent": "PROCEDURE",
+          "key_elements": ["절차 중심", "실용적 정보"]
+        },
+        {
+          "query": "계절학기 수강 신청 기간과 절차는?",
+          "expected_intent": "PROCEDURE",
+          "key_elements": ["기한", "절차 중심"]
+        },
+        {
+          "query": "학사경고 받으면 어떻게 해야 하나요?",
+          "expected_intent": "GENERAL",
+          "key_elements": ["절차 중심", "대응 방법"]
+        },
+        {
+          "query": "부전공 신청 자격과 절차를 알려주세요",
+          "expected_intent": "PROCEDURE",
+          "key_elements": ["자격", "절차 중심"]
+        },
+        {
+          "query": "복수전공 포기 절차가 어떻게 되나요?",
+          "expected_intent": "PROCEDURE",
+          "key_elements": ["절차 중심", "구체적 질문"]
+        },
+        {
+          "query": "재입학 신청 자격 요건과 절차는?",
+          "expected_intent": "ELIGIBILITY",
+          "key_elements": ["자격 요건", "절차"]
+        },
+        {
+          "query": "성적 이의신청 기간과 방법을 알려주세요",
+          "expected_intent": "DEADLINE",
+          "key_elements": ["기한", "절차 중심"]
+        }
+      ]
+    },
+    "professor": {
+      "description": "교수 - Faculty member queries with technical, policy-focused language",
+      "queries": [
+        {
+          "query": "연구년제도 신청 자격 요건과 관련 조항을 알려주십시오",
+          "expected_intent": "ELIGIBILITY",
+          "key_elements": ["정책 중심", "전문 용어", "조항 인용 요청"]
+        },
+        {
+          "query": "교원 승진 규정 제12조에 따른 심사 기준은?",
+          "expected_intent": "ELIGIBILITY",
+          "key_elements": ["조항 인용", "전문 용어", "기준 질문"]
+        },
+        {
+          "query": "휴직 관련 규정과 복직 절차에 대해 설명해 주십시오",
+          "expected_intent": "PROCEDURE",
+          "key_elements": ["정책 중심", "절차", "전문 용어"]
+        },
+        {
+          "query": "연구비 집행 규정과 적용 범위를 알고 싶습니다",
+          "expected_intent": "GENERAL",
+          "key_elements": ["정책 중심", "규정 인용"]
+        },
+        {
+          "query": "교원 인사 규정에 따른 재계약 기준은 무엇입니까?",
+          "expected_intent": "ELIGIBILITY",
+          "key_elements": ["조항 인용", "기준 질문"]
+        },
+        {
+          "query": "Sabbatical 제도 관련 규정과 신청 절차를 알려주십시오",
+          "expected_intent": "PROCEDURE",
+          "key_elements": ["전문 용어", "절차", "규정"]
+        },
+        {
+          "query": "겸직 허가 기준과 관련 조항은?",
+          "expected_intent": "ELIGIBILITY",
+          "key_elements": ["기준", "조항 인용"]
+        },
+        {
+          "query": "연구업적 평가 규정에 따른 산정 기준을 설명해 주십시오",
+          "expected_intent": "GENERAL",
+          "key_elements": ["정책 중심", "전문 용어", "기준"]
+        },
+        {
+          "query": "교원 보직 규정과 임기 제한에 대해 알려주십시오",
+          "expected_intent": "GENERAL",
+          "key_elements": ["정책 중심", "규정 인용"]
+        },
+        {
+          "query": "산학협력단 연구계약 체결 절차와 규정은?",
+          "expected_intent": "PROCEDURE",
+          "key_elements": ["절차", "규정", "전문 용어"]
+        },
+        {
+          "query": "학사 관련 규정 개정 절차와 발의 요건은?",
+          "expected_intent": "PROCEDURE",
+          "key_elements": ["절차", "규정", "전문 용어"]
+        },
+        {
+          "query": "교원 징계 규정 제8조에 따른 처분 종류는?",
+          "expected_intent": "GENERAL",
+          "key_elements": ["조항 인용", "전문 용어"]
+        }
+      ]
+    },
+    "staff": {
+      "description": "직원 - Administrative staff queries with formal, process-focused language",
+      "queries": [
+        {
+          "query": "연가 신청 절차와 처리 기한을 알려주세요",
+          "expected_intent": "PROCEDURE",
+          "key_elements": ["행정 절차", "처리 기한", "담당 부서"]
+        },
+        {
+          "query": "복무 규정에 따른 근태 관리 기준은?",
+          "expected_intent": "GENERAL",
+          "key_elements": ["행정 절차", "담당 부서", "기준"]
+        },
+        {
+          "query": "직급 승진 심사 기간과 제출 서류를 알려주세요",
+          "expected_intent": "DEADLINE",
+          "key_elements": ["처리 기한", "서류", "담당 부서"]
+        },
+        {
+          "query": "연수 참여 신청 방법과 승인 절차는?",
+          "expected_intent": "PROCEDURE",
+          "key_elements": ["행정 절차", "승인 기관"]
+        },
+        {
+          "query": "비품 구매 신청 기한과 결재 경로를 알려주세요",
+          "expected_intent": "DEADLINE",
+          "key_elements": ["처리 기한", "담당 부서", "절차"]
+        },
+        {
+          "query": "시설 사용 승인 절차와 담당 부서는?",
+          "expected_intent": "PROCEDURE",
+          "key_elements": ["담당 부서", "행정 절차"]
+        },
+        {
+          "query": "인사 평가 기간과 제출 마감일은 언제인가요?",
+          "expected_intent": "DEADLINE",
+          "key_elements": ["처리 기한", "마감일"]
+        },
+        {
+          "query": "출장 신청서 제출 기한과 첨부 서류를 알려주세요",
+          "expected_intent": "DEADLINE",
+          "key_elements": ["처리 기한", "서류", "절차"]
+        },
+        {
+          "query": "급여 정정 신청 기간과 담당 부서는?",
+          "expected_intent": "DEADLINE",
+          "key_elements": ["처리 기한", "담당 부서"]
+        },
+        {
+          "query": "업무 인수인계 절차와 제출 서류를 알려주세요",
+          "expected_intent": "PROCEDURE",
+          "key_elements": ["행정 절차", "서류"]
+        },
+        {
+          "query": "계약직 채용 공고 기간과 절차는?",
+          "expected_intent": "PROCEDURE",
+          "key_elements": ["처리 기한", "행정 절차"]
+        },
+        {
+          "query": "예산 집행 마감 기한과 결재 기준을 알려주세요",
+          "expected_intent": "DEADLINE",
+          "key_elements": ["처리 기한", "기준"]
+        }
+      ]
+    },
+    "parent": {
+      "description": "학부모 - Parent queries with friendly, easy-to-understand language",
+      "queries": [
+        {
+          "query": "우리 아이 장학금 신청 어떻게 하나요?",
+          "expected_intent": "PROCEDURE",
+          "key_elements": ["친절한 설명", "부모 관점", "간단한 표현"]
+        },
+        {
+          "query": "등록금 납부 기간이 언제까지인가요?",
+          "expected_intent": "DEADLINE",
+          "key_elements": ["기한", "친절한 설명"]
+        },
+        {
+          "query": "자녀 성적 확인할 수 있나요?",
+          "expected_intent": "GENERAL",
+          "key_elements": ["부모 관점", "간단한 표현"]
+        },
+        {
+          "query": "기숙사 비용이 얼마인가요?",
+          "expected_intent": "GENERAL",
+          "key_elements": ["비용", "간단한 표현", "친절한 설명"]
+        },
+        {
+          "query": "휴학하면 등록금 돌려받나요?",
+          "expected_intent": "GENERAL",
+          "key_elements": ["비용", "간단한 표현"]
+        },
+        {
+          "query": "학자금 대출 신청 어디서 하나요?",
+          "expected_intent": "PROCEDURE",
+          "key_elements": ["친절한 설명", "연락처 필요"]
+        },
+        {
+          "query": "졸업식 언제인가요?",
+          "expected_intent": "DEADLINE",
+          "key_elements": ["기한", "간단한 표현"]
+        },
+        {
+          "query": "학교 연락처 알려주세요",
+          "expected_intent": "GENERAL",
+          "key_elements": ["연락처 포함", "간단한 표현"]
+        },
+        {
+          "query": "아들이 학사경고 받았는데 어떻게 해야 하나요?",
+          "expected_intent": "GENERAL",
+          "key_elements": ["부모 관점", "걱정 표현", "친절한 설명"]
+        },
+        {
+          "query": "교환학생 프로그램 비용이 어떻게 되나요?",
+          "expected_intent": "GENERAL",
+          "key_elements": ["비용", "간단한 표현"]
+        },
+        {
+          "query": "담당 교수님 연락처 알 수 있나요?",
+          "expected_intent": "GENERAL",
+          "key_elements": ["연락처 포함", "간단한 표현"]
+        },
+        {
+          "query": "성적증명서 부모가 대신 떼올 수 있나요?",
+          "expected_intent": "PROCEDURE",
+          "key_elements": ["부모 관점", "절차"]
+        }
+      ]
+    },
+    "international": {
+      "description": "외국인 유학생 - International student queries with simple Korean",
+      "queries": [
+        {
+          "query": "비자 연장 어떻게 해요?",
+          "expected_intent": "PROCEDURE",
+          "key_elements": ["간단한 한국어", "핵심 정보"]
+        },
+        {
+          "query": "How do I apply for scholarship?",
+          "expected_intent": "PROCEDURE",
+          "key_elements": ["English query", "procedure"]
+        },
+        {
+          "query": "등록금 납부 방법 알려주세요",
+          "expected_intent": "PROCEDURE",
+          "key_elements": ["간단한 한국어", "핵심 정보"]
+        },
+        {
+          "query": "기숙사 신청 when?",
+          "expected_intent": "DEADLINE",
+          "key_elements": ["mixed language", "간단한 표현"]
+        },
+        {
+          "query": "한국어 수업 어디서?",
+          "expected_intent": "GENERAL",
+          "key_elements": ["간단한 한국어", "간결함"]
+        },
+        {
+          "query": "Can I take Korean language classes?",
+          "expected_intent": "ELIGIBILITY",
+          "key_elements": ["English query", "eligibility"]
+        },
+        {
+          "query": "아르바이트 가능해요?",
+          "expected_intent": "ELIGIBILITY",
+          "key_elements": ["간단한 한국어", "자격"]
+        },
+        {
+          "query": "How to extend my visa?",
+          "expected_intent": "PROCEDURE",
+          "key_elements": ["English query", "procedure"]
+        },
+        {
+          "query": "졸업요건 뭐예요?",
+          "expected_intent": "ELIGIBILITY",
+          "key_elements": ["간단한 한국어", "자격"]
+        },
+        {
+          "query": "Where is international student office?",
+          "expected_intent": "GENERAL",
+          "key_elements": ["English query", "location"]
+        },
+        {
+          "query": "건강보험 가입 방법?",
+          "expected_intent": "PROCEDURE",
+          "key_elements": ["간단한 한국어", "핵심 정보"]
+        },
+        {
+          "query": "What documents needed for visa extension?",
+          "expected_intent": "PROCEDURE",
+          "key_elements": ["English query", "documents"]
+        },
+        {
+          "query": "휴학 가능해요?",
+          "expected_intent": "ELIGIBILITY",
+          "key_elements": ["간단한 한국어", "자격"]
+        },
+        {
+          "query": "How to get transcript?",
+          "expected_intent": "PROCEDURE",
+          "key_elements": ["English query", "procedure"]
+        }
+      ]
+    }
+  }
+}
