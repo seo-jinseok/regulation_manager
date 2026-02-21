@@ -75,6 +75,20 @@ class IntentClassifier:
             "작성": 0.5,
             "어떻게 하나": 0.85,
             "어떻게 되나": 0.7,
+            # SPEC-RAG-QUALITY-010: Additional PROCEDURE keywords
+            "어떻게 되나요": 0.75,
+            "진행 방법": 0.85,
+            "신청하려면": 0.85,
+            "어떻게 해야": 0.85,
+            "어떻게 하나요": 0.85,
+            "하는 법": 0.85,
+            "하는 방법": 0.85,
+            "신청 방법": 0.9,
+            "접수": 0.6,
+            "구비서류": 0.7,
+            "구비 서류": 0.7,
+            "재발급": 0.8,
+            "재발급받": 0.85,
         },
         IntentCategory.ELIGIBILITY: {
             # High-weight keywords (strong signal)
@@ -100,6 +114,25 @@ class IntentClassifier:
             "해당하": 0.65,
             "누가": 0.6,
             "누구": 0.55,
+            # SPEC-RAG-QUALITY-010: Additional ELIGIBILITY keywords
+            "자격이 되나": 0.9,
+            "대상이 되나": 0.9,
+            "누가 받을 수": 0.9,
+            "가능한가": 0.85,
+            "되나요": 0.7,
+            "받을 수 있나요": 0.9,
+            "지원 대상": 0.85,
+            "지원대상": 0.85,
+            "신청 자격": 0.9,
+            "신청자격": 0.9,
+            "자격 요건": 0.9,
+            "자격요건": 0.9,
+            "되려면 어떻게": 0.8,
+            "받을 수 있을까": 0.9,
+            "대상이 어떻게": 0.95,
+            "대상이 되나": 0.95,
+            "대상이 되": 0.9,
+            "대상": 0.7,
         },
         IntentCategory.DEADLINE: {
             # High-weight keywords (strong signal)
@@ -118,15 +151,48 @@ class IntentClassifier:
             "일정": 0.6,
             "학기": 0.5,  # Context for period
             "주": 0.4,  # Week context
+            # SPEC-RAG-QUALITY-010: Additional DEADLINE keywords
+            "언제까지인가": 0.95,
+            "언제까지인가요": 0.95,
+            "기한이 언제": 0.9,
+            "신청 기간": 0.9,
+            "신청기간": 0.9,
+            "마감일이": 0.95,
+            "언제까지 할": 0.9,
+            "언제까지 해야": 0.9,
+            "접수 기간": 0.85,
+            "접수기간": 0.85,
+            "등록 기간": 0.85,
+            "등록기간": 0.85,
+            "제출 기한": 0.9,
+            "제출기한": 0.9,
+            "언제까지 제출": 0.95,
+            "일정이 어떻게": 0.95,
+            "학사일정": 0.9,
+            "학사 일정": 0.9,
         },
     }
 
     # Colloquial pattern mappings
+    # SPEC-RAG-QUALITY-010: Enhanced colloquial patterns
     COLLOQUIAL_PATTERNS = [
         (r"게요$", IntentCategory.PROCEDURE),  # "~게요" ending
         (r"게 되나요", IntentCategory.PROCEDURE),  # "~게 되나요"
-        (r"까요\?$", IntentCategory.ELIGIBILITY),  # "~까요?" ending
-        (r"되나요\?$", IntentCategory.DEADLINE),  # timing question
+        (r"까요\?$", IntentCategory.DEADLINE),  # "~까요?" ending (deadline context)
+        (r"나요\?$", IntentCategory.ELIGIBILITY),  # "~나요?" ending (eligibility context)
+        (r"까지\?", IntentCategory.DEADLINE),  # question ending with "까지?"
+    ]
+
+    # High-priority compound patterns that override single keyword matches
+    # Format: (pattern, category, weight)
+    PRIORITY_COMPOUND_PATTERNS = [
+        # ELIGIBILITY patterns with "대상" (target/eligibility)
+        (r"대상이\s*어떻게", IntentCategory.ELIGIBILITY, 0.95),
+        (r"대상이\s*되", IntentCategory.ELIGIBILITY, 0.95),
+        (r"지원\s*대상", IntentCategory.ELIGIBILITY, 0.9),
+        # DEADLINE patterns with "일정" (schedule)
+        (r"일정이\s*어떻게", IntentCategory.DEADLINE, 0.95),
+        (r"학사\s*일정", IntentCategory.DEADLINE, 0.9),
     ]
 
     def __init__(self, confidence_threshold: float = 0.5):
@@ -156,6 +222,15 @@ class IntentClassifier:
             )
 
         query_normalized = query.strip().lower()
+
+        # Check priority compound patterns first (these override single keywords)
+        for pattern, category, weight in self.PRIORITY_COMPOUND_PATTERNS:
+            if re.search(pattern, query_normalized):
+                return IntentClassificationResult(
+                    category=category,
+                    confidence=weight,
+                    matched_keywords=[pattern],
+                )
 
         # Score each category
         scores: dict[IntentCategory, float] = {}
