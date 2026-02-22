@@ -1,6 +1,8 @@
 """
 Focused tests for reranker module to improve coverage from 76% toward 90%.
 Tests target high-value, testable code paths.
+
+SPEC-RAG-Q-011: Updated FakeReranker to use predict() for CrossEncoder.
 """
 
 from unittest.mock import MagicMock, patch
@@ -12,15 +14,30 @@ from src.rag.infrastructure.reranker import (
 
 
 class FakeReranker:
+    """
+    Fake reranker for testing without loading the actual model.
+
+    SPEC-RAG-Q-011: Uses predict() method to match CrossEncoder API.
+    """
+
     def __init__(self, return_float=False):
         self.return_float = return_float
         self.call_count = 0
 
-    def compute_score(self, pairs, normalize=True):
+    def predict(self, pairs):
+        """
+        Return fake scores based on keyword matching.
+        CrossEncoder uses predict() instead of compute_score().
+        """
         self.call_count += 1
         if self.return_float and len(pairs) == 1:
-            return 0.75
-        return [0.5 * (i + 1) for i in range(len(pairs))]
+            # Return a single score for single document
+            # Use a value that maps to ~0.75 after sigmoid: sigmoid(1.1) ≈ 0.75
+            import numpy as np
+            return np.array([1.1])  # sigmoid(1.1) ≈ 0.75
+        # Return raw scores that will be normalized via sigmoid
+        import numpy as np
+        return np.array([0.5 * (i + 1) for i in range(len(pairs))])
 
 
 # Test single document returns float (line 102)
@@ -34,7 +51,8 @@ def test_single_document_float_score():
         result = rerank("query", docs, top_k=1)
 
         assert len(result) == 1
-        assert result[0].score == 0.75
+        # sigmoid(1.1) ≈ 0.750, allow small floating point difference
+        assert abs(result[0].score - 0.750) < 0.001
 
 
 # Test rerank_search_results (lines 139-169)

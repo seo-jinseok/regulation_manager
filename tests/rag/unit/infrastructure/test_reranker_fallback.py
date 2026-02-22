@@ -178,21 +178,21 @@ class TestRerankerFallbackCharacterize:
         """Characterize: get_reranker_status returns correct status on success."""
         clear_reranker()
 
-        # Mock successful FlagEmbedding
-        mock_flag_module = MagicMock()
+        # SPEC-RAG-Q-011: Mock CrossEncoder instead of FlagEmbedding
+        mock_st_module = MagicMock()
         mock_instance = MagicMock()
-        mock_instance.compute_score.return_value = [0.8, 0.5]
-        mock_flag_module.FlagReranker.return_value = mock_instance
+        mock_instance.predict.return_value = [0.8, 0.5]  # CrossEncoder uses predict()
+        mock_st_module.CrossEncoder.return_value = mock_instance
 
-        with patch.dict("sys.modules", {"FlagEmbedding": mock_flag_module}):
+        with patch.dict("sys.modules", {"sentence_transformers": mock_st_module}):
             # Trigger reranker initialization
             docs = [("doc1", "content", {})]
             rerank("test", docs, top_k=1)
 
             status = get_reranker_status()
 
-            # BGE should be available
-            assert status["bge_available"] is True
+            # CrossEncoder should be available
+            assert status["cross_encoder_available"] is True
             assert status["last_error"] is None
 
         clear_reranker()
@@ -201,19 +201,19 @@ class TestRerankerFallbackCharacterize:
         """Characterize: get_reranker_status returns error info on failure."""
         clear_reranker()
 
-        # Mock FlagEmbedding to raise
-        mock_flag_module = MagicMock()
-        mock_flag_module.FlagReranker.side_effect = ImportError("Not found")
+        # SPEC-RAG-Q-011: Mock CrossEncoder to raise
+        mock_st_module = MagicMock()
+        mock_st_module.CrossEncoder.side_effect = ImportError("Not found")
 
-        with patch.dict("sys.modules", {"FlagEmbedding": mock_flag_module}):
+        with patch.dict("sys.modules", {"sentence_transformers": mock_st_module}):
             docs = [("doc1", "content", {})]
             rerank("test", docs, top_k=1)
 
             status = get_reranker_status()
 
-            # BGE should be unavailable
-            assert status["bge_available"] is False
-            assert "import" in status["last_error"].lower()
+            # CrossEncoder should be unavailable
+            assert status["cross_encoder_available"] is False
+            assert "crossencoder" in status["last_error"].lower()
 
         clear_reranker()
 

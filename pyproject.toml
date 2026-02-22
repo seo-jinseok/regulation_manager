@@ -28,7 +28,8 @@ dependencies = [
     "chromadb>=1.4.0",
     "openai>=2.11.0",
     "gradio>=6.2.0",
-    "flagembedding>=1.3.5",
+    # SPEC-RAG-Q-011: FlagEmbedding removed - now using sentence-transformers CrossEncoder
+    # "flagembedding>=1.3.0,<1.4.0",  # No longer needed
     "mcp[cli]>=1.9.0",
     "mlx-lm>=0.29.1",
     "kiwipiepy>=0.20.0",

@@ -2,7 +2,12 @@
 BGE Reranker for Regulation RAG System.
 
 Provides cross-encoder based reranking to improve search result quality.
-Uses BAAI/bge-reranker-v2-m3 for multilingual support (including Korean).
+Uses BAAI/bge-reranker-base for broad compatibility with transformers versions.
+
+SPEC-RAG-Q-011: Switched from bge-reranker-v2-m3 to bge-reranker-base
+- bge-reranker-v2-m3 requires is_torch_fx_available removed in transformers 5.x
+- bge-reranker-base is compatible with transformers 4.x and 5.x
+- Still provides excellent semantic reranking for Korean regulations
 
 Includes BM25 fallback for graceful degradation when cross-encoder fails.
 """
@@ -28,7 +33,9 @@ if TYPE_CHECKING:
 
 # Lazy loading to avoid slow import on startup
 _reranker = None
-_model_name = "BAAI/bge-reranker-v2-m3"
+# SPEC-RAG-Q-011: Use bge-reranker-base for better compatibility
+# bge-reranker-v2-m3 has transformers 5.x incompatibility issues
+_model_name = "BAAI/bge-reranker-base"
 
 # Track reranker status for fallback decisions
 _bge_available: Optional[bool] = None  # None = not tested, True = available, False = failed
@@ -204,13 +211,15 @@ def get_reranker_status() -> Dict[str, any]:
     """
     Get current reranker status for monitoring.
 
+    SPEC-RAG-Q-011: Returns status for CrossEncoder reranker.
+
     Returns:
-        Dict with 'bge_available', 'last_error', 'active_reranker' keys.
+        Dict with 'cross_encoder_available', 'last_error', 'active_reranker' keys.
     """
     return {
-        "bge_available": _bge_available,
+        "cross_encoder_available": _bge_available,
         "last_error": _last_reranker_error,
-        "active_reranker": "BGE" if _reranker is not None else "None",
+        "active_reranker": "CrossEncoder" if _reranker is not None and not isinstance(_reranker, BM25FallbackReranker) else "BM25",
     }
 
 
@@ -218,13 +227,14 @@ def get_reranker(model_name: Optional[str] = None):
     """
     Get or initialize the BGE reranker (singleton pattern).
 
-    If BGE reranker fails, returns a BM25FallbackReranker instead of raising.
+    SPEC-RAG-Q-011: Uses CrossEncoder from sentence-transformers as primary,
+    with BM25FallbackReranker as final fallback.
 
     Args:
-        model_name: Optional model name. Defaults to bge-reranker-v2-m3.
+        model_name: Optional model name. Defaults to bge-reranker-base.
 
     Returns:
-        FlagReranker instance or BM25FallbackReranker if BGE unavailable.
+        CrossEncoder instance or BM25FallbackReranker if unavailable.
     """
     global _reranker, _model_name, _bge_available, _last_reranker_error
 
@@ -232,30 +242,28 @@ def get_reranker(model_name: Optional[str] = None):
         _model_name = model_name
 
     if _reranker is None:
+        # Try CrossEncoder first (more compatible with transformers 5.x)
         try:
-            from FlagEmbedding import FlagReranker
+            from sentence_transformers import CrossEncoder
 
-            _reranker = FlagReranker(
-                _model_name,
-                use_fp16=True,  # Use FP16 for faster inference on Apple Silicon
-            )
+            _reranker = CrossEncoder(_model_name, max_length=512)
             _bge_available = True
             _last_reranker_error = None
-            logger.info(f"BGE reranker initialized successfully: {_model_name}")
+            logger.info(f"CrossEncoder reranker initialized successfully: {_model_name}")
         except ImportError as e:
             _bge_available = False
-            _last_reranker_error = f"FlagEmbedding import failed: {e}"
+            _last_reranker_error = f"CrossEncoder import failed: {e}"
             logger.warning(
-                f"BGE reranker unavailable, using BM25 fallback. "
+                f"CrossEncoder unavailable, using BM25 fallback. "
                 f"Error: {_last_reranker_error}"
             )
             # Return BM25 fallback instead of raising
             _reranker = BM25FallbackReranker()
         except Exception as e:
             _bge_available = False
-            _last_reranker_error = f"BGE initialization failed: {e}"
+            _last_reranker_error = f"CrossEncoder initialization failed: {e}"
             logger.warning(
-                f"BGE reranker initialization failed, using BM25 fallback. "
+                f"CrossEncoder initialization failed, using BM25 fallback. "
                 f"Error: {_last_reranker_error}"
             )
             # Return BM25 fallback instead of raising
@@ -271,11 +279,12 @@ def rerank(
     min_relevance: float = MIN_RELEVANCE_THRESHOLD,
 ) -> List[RerankedResult]:
     """
-    Rerank documents using BGE cross-encoder with BM25 fallback.
+    Rerank documents using CrossEncoder with BM25 fallback.
 
+    SPEC-RAG-Q-011: Uses CrossEncoder from sentence-transformers
     Automatically falls back to BM25 if:
-    - BGE reranker is unavailable
-    - compute_score() raises an exception (e.g., transformers compatibility issue)
+    - CrossEncoder is unavailable
+    - predict() raises an exception
 
     SPEC-RAG-QUALITY-006: Filters out documents below min_relevance threshold
     to improve context relevance score.
@@ -297,7 +306,7 @@ def rerank(
 
     reranker = get_reranker()
 
-    # Check if we're using BM25 fallback (no compute_score method)
+    # Check if we're using BM25 fallback (no predict method)
     if isinstance(reranker, BM25FallbackReranker):
         logger.debug("Using BM25 fallback reranker")
         results = reranker.rerank(query, documents, top_k)
@@ -312,13 +321,23 @@ def rerank(
             for i, (doc_id, content, score, metadata) in enumerate(results)
         ]
 
-    # Try BGE cross-encoder with error handling
+    # Try CrossEncoder with error handling
     try:
         # Prepare query-document pairs
         pairs = [[query, doc[1]] for doc in documents]
 
-        # Compute relevance scores
-        scores = reranker.compute_score(pairs, normalize=True)
+        # Compute relevance scores using CrossEncoder
+        # CrossEncoder.predict returns raw scores, we need to normalize
+        raw_scores = reranker.predict(pairs)
+
+        # Normalize scores to 0-1 range using sigmoid for CrossEncoder
+        import numpy as np
+        if isinstance(raw_scores, np.ndarray):
+            raw_scores = raw_scores.tolist()
+
+        # Apply sigmoid normalization for cross-encoder scores
+        # This maps raw scores (can be negative) to 0-1 range
+        scores = [1 / (1 + np.exp(-s)) for s in raw_scores]
 
         # Handle single document case (returns float instead of list)
         if isinstance(scores, float):
@@ -363,9 +382,9 @@ def rerank(
     except Exception as e:
         # Log error and fall back to BM25
         _bge_available = False
-        _last_reranker_error = f"BGE compute_score failed: {e}"
+        _last_reranker_error = f"CrossEncoder predict failed: {e}"
         logger.warning(
-            f"BGE reranker failed during scoring, falling back to BM25. "
+            f"CrossEncoder failed during scoring, falling back to BM25. "
             f"Error: {_last_reranker_error}"
         )
 

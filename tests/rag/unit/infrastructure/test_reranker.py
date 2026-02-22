@@ -306,20 +306,18 @@ class TestRerankerWarmup:
         clear_reranker()
         assert reranker_module._reranker is None
 
-        # warmup 호출 (실제 모델 로드를 피하기 위해 FlagEmbedding 모듈 mock)
-        with patch.dict("sys.modules", {"FlagEmbedding": MagicMock()}):
-            # get_reranker 내부의 import를 mock하기 위해 모듈 수준에서 처리
-            mock_flag_module = MagicMock()
-            mock_instance = MagicMock()
-            mock_flag_module.FlagReranker.return_value = mock_instance
+        # SPEC-RAG-Q-011: Mock CrossEncoder instead of FlagEmbedding
+        mock_st_module = MagicMock()
+        mock_instance = MagicMock()
+        mock_st_module.CrossEncoder.return_value = mock_instance
 
-            with patch.dict("sys.modules", {"FlagEmbedding": mock_flag_module}):
-                # 기존 캐시된 인스턴스를 지우고 새로 로드
-                clear_reranker()
-                warmup_reranker()
+        with patch.dict("sys.modules", {"sentence_transformers": mock_st_module}):
+            # 기존 캐시된 인스턴스를 지우고 새로 로드
+            clear_reranker()
+            warmup_reranker()
 
-                # 전역 인스턴스가 설정되었는지 확인
-                assert reranker_module._reranker is mock_instance
+            # 전역 인스턴스가 설정되었는지 확인
+            assert reranker_module._reranker is mock_instance
 
         # 정리
         clear_reranker()
@@ -343,18 +341,18 @@ class TestRerankerWarmup:
 
         clear_reranker()
 
-        # FlagEmbedding 모듈 mock
-        mock_flag_module = MagicMock()
+        # SPEC-RAG-Q-011: Mock CrossEncoder instead of FlagEmbedding
+        mock_st_module = MagicMock()
         mock_instance = MagicMock()
-        mock_flag_module.FlagReranker.return_value = mock_instance
+        mock_st_module.CrossEncoder.return_value = mock_instance
 
-        with patch.dict("sys.modules", {"FlagEmbedding": mock_flag_module}):
+        with patch.dict("sys.modules", {"sentence_transformers": mock_st_module}):
             # 여러 번 호출
             warmup_reranker()
             warmup_reranker()
             warmup_reranker()
 
             # 첫 번째 호출에서만 생성되어야 함
-            assert mock_flag_module.FlagReranker.call_count == 1
+            assert mock_st_module.CrossEncoder.call_count == 1
 
         clear_reranker()

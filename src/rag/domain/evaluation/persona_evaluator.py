@@ -5,6 +5,7 @@ Evaluates responses based on persona-specific requirements including
 language level, citation preference, and key requirements.
 
 SPEC-RAG-QUALITY-010 Milestone 6: Persona Evaluation System.
+SPEC-RAG-Q-011 Phase 4: Multilingual Optimization for International Persona.
 
 Clean Architecture: Domain layer contains evaluation logic and business rules.
 """
@@ -16,6 +17,18 @@ from collections import defaultdict
 import re
 
 from .persona_definition import PersonaDefinition, DEFAULT_PERSONAS
+
+# Lazy import to avoid circular dependency
+_language_detector = None
+
+
+def _get_language_detector():
+    """Get or create language detector instance (lazy loading)."""
+    global _language_detector
+    if _language_detector is None:
+        from ...infrastructure.language_detector import LanguageDetector
+        _language_detector = LanguageDetector()
+    return _language_detector
 
 
 @dataclass
@@ -274,9 +287,9 @@ class PersonaEvaluator:
             PersonaEvaluationResult with scores and recommendations
         """
         # Calculate individual scores
-        relevancy = self._evaluate_relevancy(query, response)
-        clarity = self._evaluate_clarity(response, persona)
-        completeness = self._evaluate_completeness(query, response)
+        relevancy = self._evaluate_relevancy(query, response, persona)
+        clarity = self._evaluate_clarity(response, persona, query)
+        completeness = self._evaluate_completeness(query, response, persona)
         citation_quality = self._evaluate_citation(response, persona)
 
         # Calculate overall score (weighted average)
@@ -431,8 +444,23 @@ class PersonaEvaluator:
 
     # Private scoring methods
 
-    def _evaluate_relevancy(self, query: str, response: str) -> float:
-        """Evaluate how relevant the response is to the query."""
+    def _evaluate_relevancy(
+        self, query: str, response: str, persona: Optional[PersonaDefinition] = None
+    ) -> float:
+        """
+        Evaluate how relevant the response is to the query.
+
+        For international persona with English queries, uses cross-language
+        matching to handle Korean responses to English queries.
+
+        Args:
+            query: The user's query
+            response: The generated response
+            persona: Optional persona for context-aware scoring
+
+        Returns:
+            Relevancy score between 0.0 and 1.0
+        """
         if not query or not response:
             return 0.5
 
@@ -446,15 +474,90 @@ class PersonaEvaluator:
         overlap = len(query_words & response_words)
         score = overlap / len(query_words)
 
+        # For international persona, handle cross-language matching
+        if persona and persona.persona_id == "international":
+            try:
+                detector = _get_language_detector()
+                lang_result = detector.detect(query)
+
+                # If query is English-dominant, check for Korean equivalents
+                if lang_result.is_english_dominant():
+                    # Expand English query terms to Korean equivalents
+                    korean_expansions = detector.expand_english_query(query)
+                    if korean_expansions:
+                        # Check if Korean equivalents appear in response
+                        expansion_matches = sum(
+                            1 for term in korean_expansions if term in response
+                        )
+                        # Boost score based on Korean term matches
+                        if expansion_matches > 0:
+                            expansion_score = min(0.4, expansion_matches * 0.1)
+                            score = min(1.0, score + expansion_score)
+            except Exception:
+                # Fall back to standard scoring on error
+                pass
+
         # Scale to 0.5-1.0 range
         return min(0.95, max(0.5, 0.5 + score * 0.45))
 
-    def _evaluate_clarity(self, response: str, persona: PersonaDefinition) -> float:
-        """Evaluate clarity based on persona language level requirements."""
+    def _evaluate_clarity(
+        self, response: str, persona: PersonaDefinition, query: Optional[str] = None
+    ) -> float:
+        """
+        Evaluate clarity based on persona language level requirements.
+
+        For international persona, rewards responses that include English
+        translations or explanations for Korean terms.
+
+        Args:
+            response: The generated response
+            persona: The target persona definition
+            query: Optional query for context-aware scoring
+
+        Returns:
+            Clarity score between 0.0 and 1.0
+        """
         if not response:
             return 0.5
 
         language_level = persona.language_level
+
+        # Special handling for international persona
+        if persona.persona_id == "international":
+            # Base score for international persona
+            score = 0.70
+
+            # Check for Korean patterns
+            formal_count = sum(len(re.findall(p, response)) for p in self.FORMAL_PATTERNS)
+            technical_count = sum(len(re.findall(p, response)) for p in self.TECHNICAL_PATTERNS)
+
+            # Penalize excessive formal/technical Korean
+            penalty = min(0.15, (formal_count + technical_count) * 0.03)
+            score -= penalty
+
+            # Bonus for English explanations or translations
+            # Look for English text in parentheses after Korean terms
+            english_explanations = re.findall(r"\([^)]*[a-zA-Z][^)]*\)", response)
+            bonus = min(0.20, len(english_explanations) * 0.05)
+            score += bonus
+
+            # Bonus for English translations at end of response
+            if re.search(r"\n.*[a-zA-Z]{10,}", response):
+                score += 0.05
+
+            # If query was in English, bonus for English content in response
+            if query:
+                try:
+                    detector = _get_language_detector()
+                    if detector.is_english_query(query):
+                        # Check if response has some English content
+                        english_words = detector.ENGLISH_PATTERN.findall(response)
+                        if len(english_words) >= 3:
+                            score += 0.10
+                except Exception:
+                    pass
+
+            return max(0.5, min(0.95, score))
 
         if language_level == "simple":
             # Simple language: prefer casual patterns, avoid formal/technical
@@ -492,33 +595,101 @@ class PersonaEvaluator:
             # Balanced language
             return 0.75
 
-    def _evaluate_completeness(self, query: str, response: str) -> float:
-        """Evaluate completeness of the response."""
+    def _evaluate_completeness(
+        self, query: str, response: str, persona: Optional[PersonaDefinition] = None
+    ) -> float:
+        """
+        Evaluate completeness of the response.
+
+        For international persona with English queries, uses English keyword
+        detection in addition to Korean keywords.
+
+        Args:
+            query: The user's query
+            response: The generated response
+            persona: Optional persona for context-aware scoring
+
+        Returns:
+            Completeness score between 0.0 and 1.0
+        """
         if not query or not response:
             return 0.5
 
         # Check for completeness indicators
         completeness_score = 0.7  # Base score
 
-        # Check for procedure-related content
-        if any(kw in query for kw in ["어떻게", "방법", "절차", "절차"]):
-            if any(marker in response for marker in ["1.", "첫째", "우선", "단계"]):
-                completeness_score += 0.1
+        # Detect if this is an English query for international persona
+        is_english_query = False
+        if persona and persona.persona_id == "international":
+            try:
+                detector = _get_language_detector()
+                is_english_query = detector.is_english_query(query)
+            except Exception:
+                pass
 
-        # Check for deadline-related content
-        if any(kw in query for kw in ["언제", "기한", "기간", "까지"]):
-            if any(marker in response for marker in ["까지", "기간", "일", "주"]):
-                completeness_score += 0.1
+        # Korean procedure keywords
+        procedure_keywords = ["어떻게", "방법", "절차"]
+        # English procedure keywords
+        english_procedure_keywords = ["how to", "how do", "procedure", "process", "steps"]
 
-        # Check for eligibility-related content
-        if any(kw in query for kw in ["자격", "요건", "조건", "누가"]):
-            if any(marker in response for marker in ["자격", "요건", "조건", "가능"]):
-                completeness_score += 0.1
+        if is_english_query:
+            # Check for English procedure-related content
+            if any(kw in query.lower() for kw in english_procedure_keywords):
+                if any(marker in response for marker in ["1.", "첫째", "우선", "단계", "First", "Step"]):
+                    completeness_score += 0.1
+        else:
+            # Check for Korean procedure-related content
+            if any(kw in query for kw in procedure_keywords):
+                if any(marker in response for marker in ["1.", "첫째", "우선", "단계"]):
+                    completeness_score += 0.1
 
-        # Check for contact-related content
-        if any(kw in query for kw in ["연락", "문의", "어디서"]):
-            if any(marker in response for marker in ["연락", "문의", "부서", "전화"]):
-                completeness_score += 0.1
+        # Korean deadline keywords
+        deadline_keywords = ["언제", "기한", "기간", "까지"]
+        # English deadline keywords
+        english_deadline_keywords = ["when", "deadline", "due", "period", "until"]
+
+        if is_english_query:
+            # Check for English deadline-related content
+            if any(kw in query.lower() for kw in english_deadline_keywords):
+                if any(marker in response for marker in ["까지", "기간", "일", "주", "until", "deadline", "days"]):
+                    completeness_score += 0.1
+        else:
+            # Check for Korean deadline-related content
+            if any(kw in query for kw in deadline_keywords):
+                if any(marker in response for marker in ["까지", "기간", "일", "주"]):
+                    completeness_score += 0.1
+
+        # Korean eligibility keywords
+        eligibility_keywords = ["자격", "요건", "조건", "누가"]
+        # English eligibility keywords
+        english_eligibility_keywords = ["eligibility", "requirements", "who can", "qualify"]
+
+        if is_english_query:
+            # Check for English eligibility-related content
+            if any(kw in query.lower() for kw in english_eligibility_keywords):
+                if any(marker in response for marker in ["자격", "요건", "조건", "가능", "eligible", "requirements"]):
+                    completeness_score += 0.1
+        else:
+            # Check for Korean eligibility-related content
+            if any(kw in query for kw in eligibility_keywords):
+                if any(marker in response for marker in ["자격", "요건", "조건", "가능"]):
+                    completeness_score += 0.1
+
+        # Korean contact keywords
+        contact_keywords = ["연락", "문의", "어디서"]
+        # English contact keywords
+        english_contact_keywords = ["contact", "where", "office", "department"]
+
+        if is_english_query:
+            # Check for English contact-related content
+            if any(kw in query.lower() for kw in english_contact_keywords):
+                if any(marker in response for marker in ["연락", "문의", "부서", "전화", "contact", "office", "phone"]):
+                    completeness_score += 0.1
+        else:
+            # Check for Korean contact-related content
+            if any(kw in query for kw in contact_keywords):
+                if any(marker in response for marker in ["연락", "문의", "부서", "전화"]):
+                    completeness_score += 0.1
 
         # Penalize very short responses
         if len(response) < 50:

@@ -619,3 +619,103 @@ class TestWeakPersonaIdentification:
         assert "international" in recommendations
         # Should get the fallback recommendation for international
         assert "언어" in recommendations["international"] or "시각" in recommendations["international"]
+
+
+class TestInternationalPersonaEnglishQueries:
+    """Tests for international persona with English queries."""
+
+    @pytest.fixture
+    def evaluator(self):
+        """Create a PersonaEvaluator instance."""
+        return PersonaEvaluator()
+
+    def test_english_query_relevancy_with_korean_response(self, evaluator):
+        """Test that English queries get appropriate relevancy scores with Korean responses."""
+        # English query about scholarship
+        english_query = "How do I apply for scholarship?"
+        # Korean response (typical scenario)
+        korean_response = """장학금 신청 방법을 안내해 드리겠습니다.
+
+1. 학생정보시스템에서 장학금 신청서를 작성하세요.
+2. 성적증명서를 첨부하세요.
+3. 학사지원팀에 제출하시면 됩니다.
+
+문의: 학사지원팀"""
+
+        result = evaluator.evaluate_persona(
+            query=english_query,
+            response=korean_response,
+            persona=DEFAULT_PERSONAS["international"],
+        )
+
+        # Should have reasonable relevancy due to Korean term expansion
+        # "scholarship" -> "장학금" should match
+        assert result.scores.relevancy >= 0.5
+        assert result.persona_id == "international"
+
+    def test_english_query_completeness_detection(self, evaluator):
+        """Test completeness scoring for English procedure queries."""
+        # English query about procedure
+        english_query = "What is the procedure for leave of absence?"
+
+        # Response with step-by-step procedure
+        procedure_response = """휴학 신청 절차:
+
+1. 학생정보시스템에서 휴학원 작성
+2. 지도교수 승인
+3. 학사지원팀 제출
+
+기간: 매학기 개시 1개월 전까지"""
+
+        result = evaluator.evaluate_persona(
+            query=english_query,
+            response=procedure_response,
+            persona=DEFAULT_PERSONAS["international"],
+        )
+
+        # Should detect step-by-step format
+        assert result.scores.completeness >= 0.7
+
+    def test_international_clarity_with_english_explanations(self, evaluator):
+        """Test that responses with English explanations score higher for international."""
+        # Response with English explanations in parentheses
+        bilingual_response = """휴학(Leave of Absence) 신청 방법:
+
+1. 학생정보시스템(Student Portal)에서 신청
+2. 지도교수(Advisor) 승인 필요
+3. 학사지원팀(Academic Affairs)에 제출
+
+문의: 학사지원팀 (Academic Affairs Team)"""
+
+        result = evaluator.evaluate_persona(
+            query="휴학 신청 방법 알려주세요",
+            response=bilingual_response,
+            persona=DEFAULT_PERSONAS["international"],
+        )
+
+        # Bilingual explanations should improve clarity
+        assert result.scores.clarity >= 0.6
+
+    def test_international_pure_english_response(self, evaluator):
+        """Test clarity for international with English response."""
+        english_query = "How do I apply for scholarship?"
+        english_response = """Scholarship Application Process:
+
+1. Log in to the Student Portal
+2. Complete the scholarship application form
+3. Attach your transcript
+4. Submit to Academic Affairs Team
+
+For inquiries: Academic Affairs Team"""
+
+        result = evaluator.evaluate_persona(
+            query=english_query,
+            response=english_response,
+            persona=DEFAULT_PERSONAS["international"],
+        )
+
+        # English response to English query should score well on clarity
+        assert result.scores.clarity >= 0.6
+        # Relevancy uses word overlap which works for English-to-English
+        # (scholarship, apply, application etc. will overlap)
+        assert result.scores.relevancy >= 0.5

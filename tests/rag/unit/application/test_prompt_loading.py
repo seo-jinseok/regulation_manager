@@ -72,3 +72,91 @@ class TestPromptLoading:
         assert any(
             keyword in regulation_qa for keyword in ["추측", "명시", "알 수 없", "금지"]
         )
+
+
+class TestEvasiveResponsePreventionGuidelines:
+    """Test evasive response prevention guidelines in prompts (SPEC-RAG-Q-011)."""
+
+    def test_evasive_prevention_section_exists(self):
+        """프롬프트에 회피성 답변 방지 섹션이 있어야 함."""
+        prompts_path = Path("data/config/prompts.json")
+        with open(prompts_path, encoding="utf-8") as f:
+            data = json.load(f)
+
+        regulation_qa = data["regulation_qa"]["prompt"]
+        assert "회피성 답변 방지" in regulation_qa, "Missing evasive response prevention section"
+
+    def test_evasive_prevention_has_specific_citation_guideline(self):
+        """구체적 인용 가이드라인이 포함되어야 함."""
+        prompts_path = Path("data/config/prompts.json")
+        with open(prompts_path, encoding="utf-8") as f:
+            data = json.load(f)
+
+        regulation_qa = data["regulation_qa"]["prompt"]
+        assert "구체적 인용" in regulation_qa, "Missing specific citation guideline"
+
+    def test_evasive_prevention_has_vague_expression_prohibition(self):
+        """모호한 표현 금지 가이드라인이 포함되어야 함."""
+        prompts_path = Path("data/config/prompts.json")
+        with open(prompts_path, encoding="utf-8") as f:
+            data = json.load(f)
+
+        regulation_qa = data["regulation_qa"]["prompt"]
+        assert "모호한 표현" in regulation_qa, "Missing vague expression prohibition"
+        assert "일반적으로" in regulation_qa, "Missing '일반적으로' in vague expressions"
+
+    def test_evasive_prevention_has_info_absence_guideline(self):
+        """정보 부재 시 명확한 안내 가이드라인이 포함되어야 함."""
+        prompts_path = Path("data/config/prompts.json")
+        with open(prompts_path, encoding="utf-8") as f:
+            data = json.load(f)
+
+        regulation_qa = data["regulation_qa"]["prompt"]
+        assert "찾을 수 없습니다" in regulation_qa, "Missing info absence guideline"
+
+    def test_evasive_prevention_has_partial_info_guideline(self):
+        """부분 정보 제공 가이드라인이 포함되어야 함."""
+        prompts_path = Path("data/config/prompts.json")
+        with open(prompts_path, encoding="utf-8") as f:
+            data = json.load(f)
+
+        regulation_qa = data["regulation_qa"]["prompt"]
+        assert "부분 정보" in regulation_qa or "부분적" in regulation_qa, "Missing partial info guideline"
+
+    def test_evasive_patterns_detection_warning(self):
+        """회피성 패턴 감지 경고가 포함되어야 함."""
+        prompts_path = Path("data/config/prompts.json")
+        with open(prompts_path, encoding="utf-8") as f:
+            data = json.load(f)
+
+        regulation_qa = data["regulation_qa"]["prompt"]
+        # Check for evasive pattern detection warning
+        assert "회피성 패턴" in regulation_qa or "회피성 답변" in regulation_qa, "Missing evasive pattern detection warning"
+
+    def test_homepage_deflection_prohibited(self):
+        """홈페이지 참고 유도가 금지되어야 함."""
+        prompts_path = Path("data/config/prompts.json")
+        with open(prompts_path, encoding="utf-8") as f:
+            data = json.load(f)
+
+        regulation_qa = data["regulation_qa"]["prompt"]
+        assert "홈페이지" in regulation_qa, "Missing homepage deflection prohibition"
+
+    def test_department_deflection_prohibited(self):
+        """부서 문의 유도가 금지되어야 함."""
+        prompts_path = Path("data/config/prompts.json")
+        with open(prompts_path, encoding="utf-8") as f:
+            data = json.load(f)
+
+        regulation_qa = data["regulation_qa"]["prompt"]
+        assert "부서" in regulation_qa, "Missing department deflection prohibition"
+
+    def test_prompt_version_updated(self):
+        """프롬프트 버전이 2.5 이상이어야 함."""
+        prompts_path = Path("data/config/prompts.json")
+        with open(prompts_path, encoding="utf-8") as f:
+            data = json.load(f)
+
+        version = data["regulation_qa"]["version"]
+        major, minor = map(int, version.split("."))
+        assert (major, minor) >= (2, 5), f"Prompt version should be >= 2.5, got {version}"

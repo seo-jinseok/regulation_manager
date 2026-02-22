@@ -88,9 +88,9 @@ class FallbackConfig:
 class RerankerConfig:
     """Configuration for reranker models (Cycle 5: Korean Reranker Integration)."""
 
-    # Primary reranker model (multilingual)
+    # Primary reranker model (SPEC-RAG-Q-011: Use bge-reranker-base for compatibility)
     primary_model: str = field(
-        default_factory=lambda: os.getenv("RERANKER_MODEL", "BAAI/bge-reranker-v2-m3")
+        default_factory=lambda: os.getenv("RERANKER_MODEL", "BAAI/bge-reranker-base")
     )
 
     # Korean-specific reranker models for A/B testing
