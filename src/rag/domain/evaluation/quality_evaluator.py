@@ -168,16 +168,19 @@ class RAGQualityEvaluator:
             self._judge_embeddings = LangchainEmbeddingsWrapper(langchain_embeddings)
 
             # Configure RAGAS run settings (0.4.x API)
-            # Note: RunConfig may not be fully compatible with all RAGAS versions
-            try:
-                self._run_config = RunConfig(
-                    timeout=60,  # 60 second timeout per metric
-                    max_retries=2,  # Retry failed requests twice
-                    max_wait=120,  # Max wait time for batch operations
-                )
-            except Exception:
-                # If RunConfig fails, set to None and use defaults
-                self._run_config = None
+            # Note: RunConfig is only compatible with RAGAS 0.4.13+
+            # In 0.4.3, passing RunConfig causes 'on_chain_start' AttributeError
+            self._run_config = None  # Disable RunConfig for RAGAS 0.4.3 compatibility
+            # TODO: Enable RunConfig when RAGAS 0.4.13+ is released
+            # try:
+            #     self._run_config = RunConfig(
+            #         timeout=60,  # 60 second timeout per metric
+            #         max_retries=2,  # Retry failed requests twice
+            #         max_wait=120,  # Max wait time for batch operations
+            #     )
+            # except Exception:
+            #     # If RunConfig fails, set to None and use defaults
+            #     self._run_config = None
 
             # Initialize RAGAS metrics with judge LLM (0.4.x API)
             self._ragas_metrics = {

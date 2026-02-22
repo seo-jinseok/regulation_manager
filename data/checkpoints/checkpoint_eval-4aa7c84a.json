@@ -1,17 +1,17 @@
 {
   "session_id": "eval-4aa7c84a",
   "started_at": "2026-02-21T17:08:42.799766",
-  "updated_at": "2026-02-21T17:14:53.548469",
-  "status": "running",
+  "updated_at": "2026-02-22T09:45:46.136626",
+  "status": "completed",
   "total_queries": 150,
-  "completed_queries": 72,
-  "failed_queries": 72,
+  "completed_queries": 76,
+  "failed_queries": 76,
   "personas": {
     "freshman": {
       "persona_name": "freshman",
       "total_queries": 25,
-      "completed_queries": 25,
-      "failed_queries": 25,
+      "completed_queries": 29,
+      "failed_queries": 29,
       "completed_query_ids": [
         "q_0",
         "q_1",
@@ -37,7 +37,11 @@
         "q_21",
         "q_22",
         "q_23",
-        "q_24"
+        "q_24",
+        "q_0",
+        "q_1",
+        "q_2",
+        "q_3"
       ],
       "failed_query_ids": [
         "q_0",
@@ -64,10 +68,14 @@
         "q_21",
         "q_22",
         "q_23",
-        "q_24"
+        "q_24",
+        "q_0",
+        "q_1",
+        "q_2",
+        "q_3"
       ],
-      "last_query": "q_24",
-      "last_timestamp": "2026-02-21T17:10:22.208196"
+      "last_query": "q_3",
+      "last_timestamp": "2026-02-22T09:45:46.136617"
     },
     "graduate": {
       "persona_name": "graduate",
@@ -506,9 +514,29 @@
     {
       "score": 0.593,
       "query": "연구비 예외 사항이 있는지 확인 필요"
+    },
+    {
+      "score": 0.811,
+      "query": "휴학 어떻게 해요?"
+    },
+    {
+      "score": 0.843,
+      "query": "처음이라 복학를 잘 몰라요"
+    },
+    {
+      "score": 0.718,
+      "query": "성적 신청 방법 알려주실까요?"
+    },
+    {
+      "score": 0.759,
+      "query": "장학금 절차 알려주세요"
     }
   ],
   "errors": [
+    "'ProgressInfo' object has no attribute 'completed'",
+    "'ProgressInfo' object has no attribute 'completed'",
+    "'ProgressInfo' object has no attribute 'completed'",
+    "'ProgressInfo' object has no attribute 'completed'",
     "'ProgressInfo' object has no attribute 'completed'",
     "'ProgressInfo' object has no attribute 'completed'",
     "'ProgressInfo' object has no attribute 'completed'",

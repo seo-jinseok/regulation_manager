@@ -2,7 +2,7 @@
 
 **Status**: Draft
 **Priority**: CRITICAL
-**Created**: 2026-02-21T18:54:32.831031
+**Created**: 2026-02-21T22:55:59.979846
 
 ## Description
 
@@ -40,5 +40,5 @@ Enhance prompts for complete information.
 
 ## Related SPECs
 
-- SPEC-RAG-Q-002
 - SPEC-RAG-Q-001
+- SPEC-RAG-Q-002

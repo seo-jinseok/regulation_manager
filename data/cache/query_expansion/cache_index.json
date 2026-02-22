@@ -75,23 +75,6 @@
     "timestamp": 1770726989.77039,
     "ttl_hours": 168
   },
-  "23992a0c7f52b6cce95a799ec2145692": {
-    "cache_type": "query_expansion",
-    "query_hash": "23992a0c7f52b6cce95a799ec2145692",
-    "data": {
-      "keywords": [
-        "키워드1",
-        "키워드2",
-        "키워드3"
-      ],
-      "intent": "test_intent",
-      "confidence": 0.9,
-      "expanded_query": "영구 캐시 테스트 키워드1 키워드2 키워드3",
-      "method": "llm"
-    },
-    "timestamp": 1771058778.585357,
-    "ttl_hours": 168
-  },
   "1f00721f52d81b26e8a307d2e3dc4bb1": {
     "cache_type": "query_expansion",
     "query_hash": "1f00721f52d81b26e8a307d2e3dc4bb1",
@@ -766,6 +749,235 @@
       "method": "llm"
     },
     "timestamp": 1771657953.93099,
+    "ttl_hours": 168
+  },
+  "23992a0c7f52b6cce95a799ec2145692": {
+    "cache_type": "query_expansion",
+    "query_hash": "23992a0c7f52b6cce95a799ec2145692",
+    "data": {
+      "keywords": [
+        "키워드1",
+        "키워드2",
+        "키워드3"
+      ],
+      "intent": "test_intent",
+      "confidence": 0.9,
+      "expanded_query": "영구 캐시 테스트 키워드1 키워드2 키워드3",
+      "method": "llm"
+    },
+    "timestamp": 1771683104.90137,
+    "ttl_hours": 168
+  },
+  "95498022fef7ea5c409986e55ce92430": {
+    "cache_type": "query_expansion",
+    "query_hash": "95498022fef7ea5c409986e55ce92430",
+    "data": {
+      "keywords": [
+        "연구비",
+        "신청절차",
+        "지원규정",
+        "지급기준",
+        "연구비 관리"
+      ],
+      "intent": "연구비 신청 절차 문의",
+      "confidence": 0.9,
+      "expanded_query": "연구비 절차 상세히 알려주세요 신청절차 지원규정 지급기준",
+      "method": "llm"
+    },
+    "timestamp": 1771721391.825629,
+    "ttl_hours": 168
+  },
+  "c63a4924de39141556b6f231cfdcaa40": {
+    "cache_type": "query_expansion",
+    "query_hash": "c63a4924de39141556b6f231cfdcaa40",
+    "data": {
+      "keywords": [
+        "연구년",
+        "신청절차",
+        "연구년 규정",
+        "연구년 승인",
+        "연구년 기간"
+      ],
+      "intent": "연구년 절차 문의",
+      "confidence": 0.9,
+      "expanded_query": "연구년 절차 상세히 알려주세요 신청절차 연구년 규정 연구년 승인",
+      "method": "llm"
+    },
+    "timestamp": 1771722282.804372,
+    "ttl_hours": 168
+  },
+  "363edd6794a283bc462e99221a0d825f": {
+    "cache_type": "query_expansion",
+    "query_hash": "363edd6794a283bc462e99221a0d825f",
+    "data": {
+      "keywords": [
+        "연구년",
+        "안식년",
+        "절차",
+        "신청방법",
+        "세부사항",
+        "연구년제"
+      ],
+      "intent": "연구년 및 안식년 절차 문의",
+      "confidence": 0.9,
+      "expanded_query": "연구년 절차 상세히 연구년제 안식년 어떻게 과정 방법 구체적으로 세부적으로 신청방법 세부사항",
+      "method": "llm"
+    },
+    "timestamp": 1771722288.720513,
+    "ttl_hours": 168
+  },
+  "981ba434d059ac755a6ada864bd9cafe": {
+    "cache_type": "query_expansion",
+    "query_hash": "981ba434d059ac755a6ada864bd9cafe",
+    "data": {
+      "keywords": [
+        "등록금",
+        "수업료",
+        "납부기한",
+        "장학금",
+        "환불규정"
+      ],
+      "intent": "등록금 관련 문의",
+      "confidence": 0.9,
+      "expanded_query": "tuition fees 등록금 수업료 납부기한",
+      "method": "llm"
+    },
+    "timestamp": 1771722780.356512,
+    "ttl_hours": 168
+  },
+  "5893764ff8376150a229f32b0740026c": {
+    "cache_type": "query_expansion",
+    "query_hash": "5893764ff8376150a229f32b0740026c",
+    "data": {
+      "keywords": [
+        "장학금",
+        "신청방법",
+        "교내장학금",
+        "국가장학금",
+        "학비지원",
+        "등록금감면",
+        "신청서"
+      ],
+      "intent": "장학금 신청 방법 문의",
+      "confidence": 0.95,
+      "expanded_query": "장학금 신청 방법 알려주실까요 관심 장학 장학생 등록금 수업료 학비지원 등록금감면 국가장학금 교내장학금 학자금 싶어 신청서 요청 어떻게 절차 방식 안내해 드릴까요 정보 제공 신청방법",
+      "method": "llm"
+    },
+    "timestamp": 1771726588.589775,
+    "ttl_hours": 168
+  },
+  "4f2b1dc44a4dc788b9d14624bf815cea": {
+    "cache_type": "query_expansion",
+    "query_hash": "4f2b1dc44a4dc788b9d14624bf815cea",
+    "data": {
+      "keywords": [
+        "수강신청",
+        "수업등록",
+        "학기별 수강",
+        "수강신청 기간",
+        "수강신청 방법"
+      ],
+      "intent": "수강신청 절차 문의",
+      "confidence": 0.9,
+      "expanded_query": "수강 어떻게 해요? 수강신청 수업등록 학기별 수강",
+      "method": "llm"
+    },
+    "timestamp": 1771726654.4538748,
+    "ttl_hours": 168
+  },
+  "47926b68bbbb099c02edb48e2efae19f": {
+    "cache_type": "query_expansion",
+    "query_hash": "47926b68bbbb099c02edb48e2efae19f",
+    "data": {
+      "keywords": [
+        "연구비",
+        "자격 요건",
+        "지원 기준",
+        "연구비 지급 규정",
+        "신청 자격"
+      ],
+      "intent": "연구비 자격 요건 문의",
+      "confidence": 0.9,
+      "expanded_query": "연구비 자격 요건이 어떻게 되나요? 자격 요건 지원 기준 연구비 지급 규정",
+      "method": "llm"
+    },
+    "timestamp": 1771726763.8244429,
+    "ttl_hours": 168
+  },
+  "735ade28222246f05eca039d050ee3e1": {
+    "cache_type": "query_expansion",
+    "query_hash": "735ade28222246f05eca039d050ee3e1",
+    "data": {
+      "keywords": [
+        "휴가신청서",
+        "휴가규정",
+        "서식",
+        "휴가절차",
+        "휴가종류"
+      ],
+      "intent": "휴가 관련 서식 문의",
+      "confidence": 0.85,
+      "expanded_query": "휴가 관련 서식 양식 알려주세요 휴가신청서 휴가규정 휴가절차",
+      "method": "llm"
+    },
+    "timestamp": 1771727308.301543,
+    "ttl_hours": 168
+  },
+  "e9a9a71f1aa31398187a3611e01b7075": {
+    "cache_type": "query_expansion",
+    "query_hash": "e9a9a71f1aa31398187a3611e01b7075",
+    "data": {
+      "keywords": [
+        "급여 승인",
+        "권한자",
+        "인사규정",
+        "급여 지급",
+        "승인 절차"
+      ],
+      "intent": "급여 승인 권한자 문의",
+      "confidence": 0.9,
+      "expanded_query": "급여 승인 권한자가 누구인가요? 급여 승인 권한자 인사규정",
+      "method": "llm"
+    },
+    "timestamp": 1771727367.544759,
+    "ttl_hours": 168
+  },
+  "065e8319eeb5966f8f2334af00266e2c": {
+    "cache_type": "query_expansion",
+    "query_hash": "065e8319eeb5966f8f2334af00266e2c",
+    "data": {
+      "keywords": [
+        "사무용품",
+        "업무 처리 절차",
+        "구매 규정",
+        "비품 관리",
+        "예산 집행"
+      ],
+      "intent": "사무용품 업무 처리 절차 문의",
+      "confidence": 0.85,
+      "expanded_query": "사무용품 업무 처리 절차 확인 업무 처리 절차 구매 규정 비품 관리",
+      "method": "llm"
+    },
+    "timestamp": 1771727481.717505,
+    "ttl_hours": 168
+  },
+  "e945e5fac96d442cafdc4393c4cc4e20": {
+    "cache_type": "query_expansion",
+    "query_hash": "e945e5fac96d442cafdc4393c4cc4e20",
+    "data": {
+      "keywords": [
+        "기숙사",
+        "입주서류",
+        "신청서",
+        "서류 제출",
+        "기숙사 규정"
+      ],
+      "intent": "기숙사 입주 서류 문의",
+      "confidence": 0.9,
+      "expanded_query": "기숙사 관련 서류 뭐 필요한가요? 입주서류 신청서 서류 제출",
+      "method": "llm"
+    },
+    "timestamp": 1771727634.842595,
     "ttl_hours": 168
   }
 }
