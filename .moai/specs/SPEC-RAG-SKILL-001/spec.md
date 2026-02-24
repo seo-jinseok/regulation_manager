@@ -5,7 +5,7 @@
 | Field | Value |
 |-------|-------|
 | ID | SPEC-RAG-SKILL-001 |
-| Status | Draft |
+| Status | Completed |
 | Priority | P0 |
 | Complexity | Medium |
 | Estimated Effort | 4-8 hours |
