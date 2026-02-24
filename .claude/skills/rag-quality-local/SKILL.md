@@ -96,40 +96,167 @@ rag-quality-local (Skill Coordinator)
 
 ### Quick Start
 
-**Option 1: Full Evaluation (All Personas, All Scenarios)**
+**1분 만에 평가 실행 (CLI)**
+
+```bash
+# 빠른 평가 (각 페르소나당 5쿼리, 약 2분 소요)
+uv run python run_rag_quality_eval.py --quick --summary
+
+# 결과 확인
+cat data/evaluations/rag_quality_eval_*/report.md
+
+# 웹 대시보드로 확인
+uv run gradio src.rag.interface.web.quality_dashboard:app
+```
+
+**Claude Code 내에서 실행**
 
 ```
-Use the rag-quality-local skill to run a comprehensive RAG quality evaluation:
+/rag-quality quick
+```
 
-1. Spawn all 6 persona sub-agents in parallel
-2. Each sub-agent generates test queries based on their persona profile
-3. Execute queries through the RAG CLI: regulation ask "{query}"
-4. Evaluate responses using LLM-as-Judge
-5. Aggregate results and generate reports
-6. Create improvement SPECs for failing queries
+**상세 평가**
+
+```bash
+# 전체 평가 (150+ 쿼리, 약 15분 소요)
+uv run python run_rag_quality_eval.py --full
+
+# 특정 페르소나만 평가
+uv run python run_rag_quality_eval.py --persona student-undergraduate professor --queries 10
+
+# 회귀 테스트 (이전 결과와 비교)
+uv run python run_rag_quality_eval.py --baseline eval-20260220
+```
+
+**평가 모드 옵션**
+
+| Mode | CLI Flag | Queries | Time |
+|------|----------|---------|------|
+| Quick | `--quick` | 30 | ~2 min |
+| Full | `--full` | 150+ | ~15 min |
+| Status | `--status` | - | Instant |
+
+---
+
+## 결과 확인
+
+### CLI에서 확인
+
+```bash
+# 최신 평가 결과 요약
+uv run python run_rag_quality_eval.py --status
+
+# 상세 보고서
+cat data/evaluations/rag_quality_eval_*/report.md
+
+# JSON 데이터
+cat data/evaluations/rag_quality_eval_*.json | jq '.summary'
+```
+
+### 대시보드에서 확인
+
+```bash
+# 대시보드 실행
+uv run gradio src.rag.interface.web.quality_dashboard:app
+
+# 브라우저에서 http://localhost:7860 접속
+# "품질 평가" 탭 선택
+```
+
+### 결과 파일 위치
+
+| 파일 | 경로 | 설명 |
+|------|------|------|
+| JSON 데이터 | `data/evaluations/rag_quality_eval_*.json` | 전체 평가 데이터 |
+| 마크다운 보고서 | `data/evaluations/rag_quality_eval_*_report.md` | 사람이 읽기 좋은 보고서 |
+| SPEC 문서 | `data/evaluations/spec_*.md` | 개선용 SPEC 템플릿 |
+
+### 메트릭 해석
+
+| Metric | Threshold | Meaning |
+|--------|-----------|---------|
+| Overall Score | >= 0.80 | Pass/Fail 결정 |
+| Accuracy | >= 0.85 | 할루시네이션 없음 |
+| Completeness | >= 0.75 | 모든 핵심 정보 포함 |
+| Citations | >= 0.70 | 정확한 규정 참조 |
+| Context Relevance | >= 0.75 | 관련성 높은 소스 |
+
+---
+
+## 평가 후 후속 조치
+
+### 실패 패턴 분석
+
+평가 완료 후 실패 패턴이 자동으로 분석됩니다:
+
+```bash
+# 실패 패턴 보기 (보고서 하단)
+cat data/evaluations/rag_quality_eval_*_report.md | grep -A 20 "Failure Patterns"
+```
+
+### 개선 SPEC 생성
+
+실패한 쿼리가 3개 이상 동일한 패턴이면 개선 가이드를 참조하세요:
+
+```markdown
+## Common Failure Patterns and Solutions
+
+| Pattern | Cause | Solution |
+|---------|-------|----------|
+| Hallucinated contact info | No validation | Add contact verification |
+| Missing citations | Low retrieval | Tune reranker weights |
+| Incomplete answers | Context limit | Increase top_k |
+| Wrong regulation | Ambiguous query | Add disambiguation |
+```
+
+### MoAI로 개선 실행
+
+```bash
+# SPEC을 MoAI 포맷으로 변환하여 개선 실행
+# 1. 실패 패턴 분석 보고서에서 SPEC 생성
+# 2. .moai/specs/SPEC-RAG-Q-XXX/ 폴더에 spec.md 파일 생성
+# 3. /moai run SPEC-RAG-Q-XXX 실행
+
+# 또는 자동 수정 루프
+/moai loop --spec SPEC-RAG-Q-XXX
+```
+
+### 대시보드에서 추세 확인
+
+여러 번의 평가 결과를 비교하여 개선 추세를 확인할 수 있습니다:
+
+```bash
+# 대시보드 실행
+uv run gradio src.rag.interface.web.quality_dashboard:app
+
+# "히스토리" 탭에서 과거 평가 결과 비교
+```
+
+---
+
+## Detailed Usage Options
+
+**Option 1: Full Evaluation (All Personas, All Scenarios)**
+
+```bash
+uv run python run_rag_quality_eval.py --full
 ```
 
 **Option 2: Targeted Evaluation (Specific Persona or Scenario)**
 
-```
-Run targeted evaluation:
+```bash
+# 특정 페르소나만
+uv run python run_rag_quality_eval.py --persona professor staff-admin
 
-1. Spawn only specific persona sub-agents (e.g., "professor" and "student-international")
-2. Focus on specific scenario categories (e.g., "edge_cases" and "multi_turn")
-3. Execute evaluation
-4. Generate focused report
+# 특정 카테고리만
+uv run python run_rag_quality_eval.py --category edge_cases
 ```
 
 **Option 3: Regression Testing (Compare to Baseline)**
 
-```
-Run regression evaluation against baseline:
-
-1. Load baseline from data/evaluations/baseline.json
-2. Execute current evaluation
-3. Compare metrics to baseline
-4. Identify regressions and improvements
-5. Generate trend report
+```bash
+# 기준선과 비교
+uv run python run_rag_quality_eval.py --baseline eval-20260220
 ```
 
 ### Sub-Agent Personas

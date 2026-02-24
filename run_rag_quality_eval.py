@@ -4,8 +4,12 @@ RAG Quality Evaluation Runner using Parallel Persona Agents.
 
 Executes 6 persona sub-agents in parallel to evaluate RAG system quality.
 Implements the rag-quality-local skill specification.
+
+SPEC: SPEC-RAG-SKILL-001
+REQ: REQ-002 (CLI 진입점 개선)
 """
 
+import argparse
 import asyncio
 import json
 import logging
@@ -13,7 +17,7 @@ import os
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Dict
+from typing import Dict, List, Optional
 
 # Add project root to path
 project_root = Path(__file__).parent
@@ -34,6 +38,26 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+
+# Valid persona and category choices for CLI
+VALID_PERSONAS = [
+    "student-undergraduate",
+    "student-graduate",
+    "professor",
+    "staff-admin",
+    "parent",
+    "student-international",
+]
+
+VALID_CATEGORIES = [
+    "simple",
+    "complex",
+    "multi_turn",
+    "edge_cases",
+    "domain_specific",
+    "adversarial",
+]
 
 
 # 6 personas with their test queries
@@ -379,47 +403,349 @@ def generate_markdown_report(
 
 
 async def main():
-    """Main entry point."""
+    """Main entry point with argparse CLI."""
+    parser = argparse.ArgumentParser(
+        description="RAG 시스템 품질 평가",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  %(prog)s --quick                    # 빠른 평가 (각 페르소나당 5쿼리)
+  %(prog)s --full                     # 전체 평가 (150+ 쿼리)
+  %(prog)s --persona freshman professor  # 특정 페르소나만
+  %(prog)s --category edge_cases      # 특정 카테고리만
+  %(prog)s --status                   # 진행 중인 평가 상태
+        """,
+    )
+
+    # Mode selection (mutually exclusive)
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument(
+        "--quick",
+        action="store_true",
+        help="빠른 평가 (30쿼리, 각 페르소나당 5쿼리)",
+    )
+    mode.add_argument(
+        "--full",
+        action="store_true",
+        help="전체 평가 (150+ 쿼리)",
+    )
+    mode.add_argument(
+        "--status",
+        action="store_true",
+        help="평가 상태 확인",
+    )
+
+    # Targeting options
+    parser.add_argument(
+        "--persona",
+        nargs="+",
+        choices=VALID_PERSONAS,
+        help="대상 페르소나 (여러 개 지정 가능)",
+    )
+    parser.add_argument(
+        "--category",
+        nargs="+",
+        choices=VALID_CATEGORIES,
+        help="시나리오 카테고리 (여러 개 지정 가능)",
+    )
+    parser.add_argument(
+        "--queries",
+        type=int,
+        default=5,
+        help="페르소나당 쿼리 수 (기본값: 5)",
+    )
+
+    # Output options
+    parser.add_argument(
+        "--output",
+        "-o",
+        type=Path,
+        help="출력 파일 경로",
+    )
+    parser.add_argument(
+        "--format",
+        choices=["json", "markdown", "both"],
+        default="both",
+        help="출력 형식 (기본값: both)",
+    )
+    parser.add_argument(
+        "--summary",
+        action="store_true",
+        help="완료 후 요약 출력",
+    )
+
+    # Advanced options
+    parser.add_argument(
+        "--baseline",
+        type=str,
+        help="회귀 테스트용 기준선 ID",
+    )
+    parser.add_argument(
+        "--checkpoint",
+        action="store_true",
+        default=True,
+        help="체크포인트 저장 (기본값: True)",
+    )
+    parser.add_argument(
+        "--resume",
+        type=str,
+        help="중단된 평가 재개 (체크포인트 파일 경로)",
+    )
+
+    args = parser.parse_args()
+
+    # Handle --status mode
+    if args.status:
+        await handle_status_mode()
+        return
+
+    # Determine evaluation parameters
+    personas_to_test = args.persona if args.persona else list(PERSONA_TEST_QUERIES.keys())
+    queries_per_persona = args.queries
+
+    # For --quick mode, limit to 5 queries per persona
+    if args.quick:
+        queries_per_persona = min(queries_per_persona, 5)
+        logger.info("Quick mode: limiting to %d queries per persona", queries_per_persona)
+
+    # For --full mode, use all queries
+    if args.full:
+        queries_per_persona = 150 // len(personas_to_test)  # Distribute 150 queries
+        logger.info("Full mode: using %d queries per persona", queries_per_persona)
+
     logger.info("=" * 60)
     logger.info("RAG Quality Evaluation - Parallel Persona Agents")
     logger.info("=" * 60)
+    logger.info("Mode: %s", "quick" if args.quick else ("full" if args.full else "default"))
+    logger.info("Personas: %s", ", ".join(personas_to_test))
+    logger.info("Queries per persona: %d", queries_per_persona)
+
+    # Filter personas
+    filtered_queries = {
+        p: PERSONA_TEST_QUERIES[p][:queries_per_persona]
+        for p in personas_to_test
+        if p in PERSONA_TEST_QUERIES
+    }
 
     # Run evaluation
-    results, batch = await run_parallel_evaluation(
+    results, batch = await run_parallel_evaluation_with_filter(
         db_path="data/chroma_db",
-        queries_per_persona=5,
-        max_workers=6,
+        persona_queries=filtered_queries,
+        max_workers=len(personas_to_test),
         use_reranker=True,
     )
 
     # Save results
-    filepath = save_evaluation_results(results, batch)
+    output_dir = args.output.parent if args.output else Path("data/evaluations")
+    output_dir.mkdir(parents=True, exist_ok=True)
+    filepath = save_evaluation_results(results, batch, str(output_dir))
 
     # Generate report
     summary = batch.get_summary()
     eval_id = f"rag_quality_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
     report = generate_markdown_report(results, batch, eval_id)
 
-    # Save report
-    report_path = filepath.replace(".json", "_report.md")
-    with open(report_path, "w", encoding="utf-8") as f:
-        f.write(report)
-
-    logger.info(f"Saved report to: {report_path}")
+    # Save report based on format
+    if args.format in ["markdown", "both"]:
+        report_path = filepath.replace(".json", "_report.md")
+        with open(report_path, "w", encoding="utf-8") as f:
+            f.write(report)
+        logger.info("Saved report to: %s", report_path)
 
     # Print summary
     logger.info("=" * 60)
     logger.info("Evaluation Complete!")
     logger.info("=" * 60)
-    logger.info(f"Total Queries: {summary.total_queries}")
-    logger.info(f"Passed: {summary.passed}")
-    logger.info(f"Failed: {summary.failed}")
-    logger.info(f"Pass Rate: {summary.pass_rate:.1%}")
-    logger.info(f"Average Score: {summary.avg_overall_score:.3f}")
+    logger.info("Total Queries: %d", summary.total_queries)
+    logger.info("Passed: %d", summary.passed)
+    logger.info("Failed: %d", summary.failed)
+    logger.info("Pass Rate: %.1f%%", summary.pass_rate * 100)
+    logger.info("Average Score: %.3f", summary.avg_overall_score)
     logger.info("=" * 60)
+
+    # Print summary to console if requested
+    if args.summary:
+        print("\n" + "=" * 60)
+        print("SUMMARY")
+        print("=" * 60)
+        print(f"Total Queries: {summary.total_queries}")
+        print(f"Passed: {summary.passed}")
+        print(f"Failed: {summary.failed}")
+        print(f"Pass Rate: {summary.pass_rate:.1%}")
+        print(f"Average Score: {summary.avg_overall_score:.3f}")
+        print(f"\nResults saved to: {filepath}")
+        print(f"Report saved to: {filepath.replace('.json', '_report.md')}")
+        print("=" * 60)
 
     # Print report to console
     print("\n" + report)
+
+
+async def handle_status_mode():
+    """Handle --status mode to check current evaluation status."""
+    logger.info("Checking evaluation status...")
+
+    # Check for recent evaluation files
+    eval_dir = Path("data/evaluations")
+    if not eval_dir.exists():
+        print("No evaluations found.")
+        return
+
+    # Find recent evaluation files
+    eval_files = sorted(eval_dir.glob("rag_quality_eval_*.json"), reverse=True)
+
+    if not eval_files:
+        print("No evaluations found.")
+        return
+
+    # Show status of most recent evaluation
+    latest = eval_files[0]
+    with open(latest, encoding="utf-8") as f:
+        data = json.load(f)
+
+    print("\n" + "=" * 60)
+    print("LATEST EVALUATION STATUS")
+    print("=" * 60)
+    print(f"Evaluation ID: {data.get('evaluation_id', 'N/A')}")
+    print(f"Timestamp: {data.get('timestamp', 'N/A')}")
+
+    summary = data.get("summary", {})
+    print("\nSummary:")
+    print(f"  Total Queries: {summary.get('total_queries', 0)}")
+    print(f"  Passed: {summary.get('passed', 0)}")
+    print(f"  Failed: {summary.get('failed', 0)}")
+    print(f"  Pass Rate: {summary.get('pass_rate', 0):.1%}")
+    print(f"  Average Score: {summary.get('avg_overall_score', 0):.3f}")
+
+    print(f"\nPersonas Tested: {', '.join(data.get('personas_tested', []))}")
+    print(f"\nFile: {latest}")
+    print("=" * 60)
+
+
+async def run_parallel_evaluation_with_filter(
+    db_path: str = "data/chroma_db",
+    persona_queries: Optional[Dict[str, List[str]]] = None,
+    max_workers: int = 6,
+    use_reranker: bool = True,
+) -> tuple[Dict[str, PersonaEvaluationResult], EvaluationBatch]:
+    """Run parallel persona evaluation with filtered queries.
+
+    Args:
+        db_path: Path to ChromaDB
+        persona_queries: Dict mapping persona ID to list of queries
+        max_workers: Maximum parallel workers
+        use_reranker: Whether to use reranker
+
+    Returns:
+        Tuple of (persona results dict, evaluation batch)
+    """
+    if persona_queries is None:
+        persona_queries = PERSONA_TEST_QUERIES
+
+    logger.info("Starting parallel RAG quality evaluation...")
+
+    # Initialize components
+    config = get_config()
+    llm_client = LLMClientAdapter(
+        provider=config.llm_provider,
+        model=config.llm_model,
+        base_url=config.llm_base_url,
+    )
+
+    store = ChromaVectorStore(persist_directory=db_path)
+    query_handler = QueryHandler(
+        store=store,
+        llm_client=llm_client,
+        use_reranker=use_reranker,
+    )
+
+    judge = LLMJudge(llm_client=llm_client)
+    batch = EvaluationBatch(judge=judge)
+
+    # Evaluate each persona
+    results = {}
+
+    for persona_id, queries in persona_queries.items():
+        logger.info("Evaluating persona: %s", persona_id)
+
+        persona_results = []
+
+        for query in queries:
+            try:
+                # Execute query through RAG system
+                options = QueryOptions(
+                    top_k=5,
+                    use_rerank=use_reranker,
+                    force_mode="ask",
+                )
+
+                result = query_handler.process_query(
+                    query=query,
+                    options=options,
+                )
+
+                # Extract answer and sources
+                answer_text = result.content if result.success else ""
+                sources = []
+
+                if result.data and "tool_results" in result.data:
+                    for tool_result in result.data.get("tool_results", []):
+                        if tool_result.get("tool_name") == "search_regulations":
+                            result_data = tool_result.get("result")
+                            if result_data and isinstance(result_data, dict):
+                                search_results = result_data.get("results", [])
+                                for r in search_results[:5]:
+                                    if isinstance(r, dict):
+                                        sources.append({
+                                            "title": r.get("title", "") or r.get("regulation_title", ""),
+                                            "text": (r.get("text", "") or r.get("content", ""))[:200],
+                                            "rule_code": r.get("rule_code", ""),
+                                            "score": r.get("score", 0.0) or r.get("similarity", 0.0),
+                                        })
+                                break
+
+                # Evaluate with LLM judge
+                judge_result = judge.evaluate_with_llm(
+                    query=query,
+                    answer=answer_text,
+                    sources=sources,
+                    expected_info=None,
+                )
+
+                batch.add_result(judge_result)
+                persona_results.append(judge_result)
+
+                logger.info(
+                    "  Query: %s... Score: %.3f (%s)",
+                    query[:30],
+                    judge_result.overall_score,
+                    "PASS" if judge_result.passed else "FAIL",
+                )
+
+            except Exception as e:
+                logger.error("Error evaluating query '%s': %s", query, e)
+
+        # Calculate persona summary
+        if persona_results:
+            avg_score = sum(r.overall_score for r in persona_results) / len(persona_results)
+            pass_count = sum(1 for r in persona_results if r.passed)
+
+            # Count issues
+            issues = {}
+            for r in persona_results:
+                for issue in r.issues:
+                    issues[issue] = issues.get(issue, 0) + 1
+
+            results[persona_id] = PersonaEvaluationResult(
+                persona=persona_id,
+                queries_tested=len(persona_results),
+                results=persona_results,
+                avg_score=avg_score,
+                pass_rate=pass_count / len(persona_results),
+                issues=issues,
+            )
+
+    return results, batch
 
 
 if __name__ == "__main__":
