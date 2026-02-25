@@ -465,3 +465,86 @@ def test_metadata_to_chunk():
     assert chunk.id == "test_id"
     assert chunk.embedding_text == "test document"
     assert chunk.rule_code == "1-1-1"
+
+
+# ============================================================================
+# SPEC-RAG-QUALITY-011 REQ-004: ChromaDB Health Verification Tests
+# ============================================================================
+
+
+class TestSPEC_RAG_QUALITY_011_Req004:
+    """REQ-004: ChromaDB Health Verification Tests."""
+
+    def test_health_check_method_exists(self):
+        """AC-004.1: health_check 메서드가 존재해야 함."""
+        store = ChromaVectorStore.__new__(ChromaVectorStore)
+        assert hasattr(store, "health_check")
+
+    def test_health_check_empty_collection(self):
+        """AC-004.1: 빈 컬렉션은 unhealthy 상태 반환."""
+        from datetime import datetime
+
+        class DummyCollection:
+            def count(self):
+                return 0
+
+        store = ChromaVectorStore.__new__(ChromaVectorStore)
+        store._collection = DummyCollection()
+        store._embedding_function = None
+
+        health = store.health_check()
+
+        assert health["status"] == "unhealthy"
+        assert "Empty collection" in health["issues"]
+        assert health["collection_count"] == 0
+
+    def test_health_check_missing_embedding_function(self):
+        """AC-004.2: 임베딩 함수 없으면 unhealthy 상태 반환."""
+        class DummyCollection:
+            def count(self):
+                return 100
+
+        store = ChromaVectorStore.__new__(ChromaVectorStore)
+        store._collection = DummyCollection()
+        store._embedding_function = None
+
+        health = store.health_check()
+
+        assert health["status"] == "unhealthy"
+        assert "Embedding function unavailable" in health["issues"]
+        assert health["embedding_function_available"] is False
+
+    def test_health_check_healthy_status(self):
+        """AC-004.3: 정상 상태면 healthy 반환."""
+        class DummyCollection:
+            def count(self):
+                return 100
+
+        store = ChromaVectorStore.__new__(ChromaVectorStore)
+        store._collection = DummyCollection()
+        store._embedding_function = object()  # Non-None
+
+        health = store.health_check()
+
+        assert health["status"] == "healthy"
+        assert health["collection_count"] == 100
+        assert health["embedding_function_available"] is True
+        assert len(health["issues"]) == 0
+
+    def test_health_check_returns_required_fields(self):
+        """health_check 응답에 필수 필드가 포함되어야 함."""
+        class DummyCollection:
+            def count(self):
+                return 50
+
+        store = ChromaVectorStore.__new__(ChromaVectorStore)
+        store._collection = DummyCollection()
+        store._embedding_function = object()
+
+        health = store.health_check()
+
+        assert "status" in health
+        assert "collection_count" in health
+        assert "embedding_function_available" in health
+        assert "last_check" in health
+        assert "issues" in health

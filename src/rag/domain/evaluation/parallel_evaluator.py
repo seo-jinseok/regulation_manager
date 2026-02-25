@@ -2,7 +2,7 @@
 Parallel Persona Evaluation System for RAG Quality Assessment.
 
 Implements parallel execution of 6 persona sub-agents as defined in
-rag-quality-local skill modules/personas.md.
+ragulation-quality skill modules/personas.md.
 
 Phase 1 Integration: Uses enhanced components for better evaluation.
 - SearchUseCase: Integrated query expansion and retrieval
@@ -59,7 +59,7 @@ class ParallelPersonaEvaluator:
     - Uses LLMJudge.evaluate_with_llm() with improved prompts
     """
 
-    # 6 personas defined in rag-quality-local skill
+    # 6 personas defined in ragulation-quality skill
     PERSONA_AGENTS = [
         "student-undergraduate",
         "student-graduate",

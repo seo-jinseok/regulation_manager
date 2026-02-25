@@ -6,8 +6,10 @@ Tests cover:
 - Retrieval necessity check
 - Relevance filtering
 - Integration with search pipeline
+- SPEC-RAG-QUALITY-011: Self-RAG Classification Fix
 """
 
+import time
 from typing import List
 from unittest.mock import MagicMock
 
@@ -283,3 +285,317 @@ class TestSearchUseCaseSelfRAGIntegration:
 
         # Self-RAG pipeline이 초기화되어 있어야 함
         assert hasattr(usecase, "_self_rag_pipeline")
+
+
+# ============================================================================
+# SPEC-RAG-QUALITY-011: Self-RAG Classification Fix Tests
+# ============================================================================
+
+
+class TestSPEC_RAG_QUALITY_011_Req001:
+    """REQ-001: Self-RAG Prompt Improvement Tests."""
+
+    def setup_method(self):
+        """Reset config before each test."""
+        reset_config()
+
+    def teardown_method(self):
+        """Reset config after each test."""
+        reset_config()
+
+    def test_prompt_includes_regulation_domain_context(self):
+        """AC-001.1: 프롬프트에 규정 도메인 컨텍스트가 포함되어야 함."""
+        from src.rag.infrastructure.self_rag import SelfRAGEvaluator
+
+        prompt = SelfRAGEvaluator.RETRIEVAL_NEEDED_PROMPT
+
+        # 프롬프트에 규정 관련 키워드가 포함되어야 함
+        assert "규정" in prompt or "학칙" in prompt or "대학" in prompt
+
+    def test_prompt_defaults_to_retrieval_for_uncertain(self):
+        """AC-001.2: 불확실한 경우 검색을 기본값으로 설정해야 함."""
+        from src.rag.infrastructure.self_rag import SelfRAGEvaluator
+
+        prompt = SelfRAGEvaluator.RETRIEVAL_NEEDED_PROMPT
+
+        # 불확실한 경우 검색하라는 지시가 있어야 함
+        assert "불확실" in prompt or "RETRIEVE_YES" in prompt or "기본" in prompt
+
+    def test_prompt_includes_examples(self):
+        """AC-001.3: 검색이 필요한 경우 예시가 포함되어야 함."""
+        from src.rag.infrastructure.self_rag import SelfRAGEvaluator
+
+        prompt = SelfRAGEvaluator.RETRIEVAL_NEEDED_PROMPT
+
+        # 예시가 포함되어야 함 (질문어 또는 구체적인 예시)
+        assert "어떻게" in prompt or "언제" in prompt or "예시" in prompt or "경우" in prompt
+
+
+class TestSPEC_RAG_QUALITY_011_Req002:
+    """REQ-002: Keyword-Based Pre-Filtering Tests."""
+
+    def setup_method(self):
+        """Reset config before each test."""
+        reset_config()
+
+    def teardown_method(self):
+        """Reset config after each test."""
+        reset_config()
+
+    def test_has_regulation_keywords_method_exists(self):
+        """AC-002.1: _has_regulation_keywords 메서드가 존재해야 함."""
+        from src.rag.infrastructure.self_rag import SelfRAGEvaluator
+
+        evaluator = SelfRAGEvaluator()
+        assert hasattr(evaluator, "_has_regulation_keywords")
+
+    def test_keyword_detection_succeeds(self):
+        """AC-002.1: 키워드가 포함된 쿼리를 감지해야 함."""
+        from src.rag.infrastructure.self_rag import SelfRAGEvaluator
+
+        evaluator = SelfRAGEvaluator()
+
+        # 규정 관련 키워드가 포함된 쿼리
+        assert evaluator._has_regulation_keywords("이 규정에 대해 알려주세요") is True
+        assert evaluator._has_regulation_keywords("학칙 제5조가 뭐야?") is True
+        assert evaluator._has_regulation_keywords("휴학 신청 방법") is True
+
+    def test_no_keyword_detection(self):
+        """AC-002.2: 키워드가 없는 쿼리는 False 반환."""
+        from src.rag.infrastructure.self_rag import SelfRAGEvaluator
+
+        evaluator = SelfRAGEvaluator()
+
+        # 키워드가 없는 일반적인 쿼리
+        assert evaluator._has_regulation_keywords("오늘 날씨 어때?") is False
+        assert evaluator._has_regulation_keywords("안녕하세요") is False
+
+    def test_keyword_matching_completes_quickly(self):
+        """AC-002.3: 키워드 매칭이 1ms 이내에 완료되어야 함."""
+        from src.rag.infrastructure.self_rag import SelfRAGEvaluator
+
+        evaluator = SelfRAGEvaluator()
+
+        # 여러 쿼리에 대한 매칭 시간 측정
+        queries = [
+            "이 규정에 대해 알려주세요",
+            "학칙 제5조가 뭐야?",
+            "휴학 신청 방법",
+            "장학금 신청 자격이 뭐야?",
+            "졸업 요건이 어떻게 돼?",
+        ]
+
+        start_time = time.time()
+        for query in queries:
+            evaluator._has_regulation_keywords(query)
+        elapsed_ms = (time.time() - start_time) * 1000
+
+        # 5개 쿼리 합쳐서 5ms 이내 (각 1ms 이내)
+        assert elapsed_ms < 5.0
+
+
+class TestSPEC_RAG_QUALITY_011_Req003:
+    """REQ-003: Fallback Retrieval Mechanism Tests."""
+
+    def setup_method(self):
+        """Reset config before each test."""
+        reset_config()
+
+    def teardown_method(self):
+        """Reset config after each test."""
+        reset_config()
+
+    def test_keywords_bypass_llm(self):
+        """AC-002.3: 키워드가 있으면 LLM 호출 없이 True 반환."""
+        from src.rag.infrastructure.self_rag import SelfRAGEvaluator
+
+        # LLM이 [RETRIEVE_NO]를 반환하도록 설정해도
+        mock_llm = MagicMock()
+        mock_llm.generate.return_value = "[RETRIEVE_NO]"
+
+        evaluator = SelfRAGEvaluator(llm_client=mock_llm)
+
+        # 키워드가 포함된 쿼리는 LLM 호출 없이 True 반환해야 함
+        result = evaluator.needs_retrieval("휴학 규정이 뭐야?")
+        assert result is True
+
+    def test_override_activates_when_keywords_exist(self):
+        """AC-003.1: LLM이 NO를 반환해도 키워드가 있으면 override."""
+        from src.rag.infrastructure.self_rag import SelfRAGEvaluator
+
+        mock_llm = MagicMock()
+        mock_llm.generate.return_value = "[RETRIEVE_NO]"
+
+        evaluator = SelfRAGEvaluator(llm_client=mock_llm)
+
+        # 키워드가 포함된 쿼리 (override 발생)
+        result = evaluator.needs_retrieval("장학금 신청 자격이 어떻게 돼?")
+        assert result is True
+
+    def test_greeting_returns_false(self):
+        """AC-001.2: 단순 인사말은 False 반환."""
+        from src.rag.infrastructure.self_rag import SelfRAGEvaluator
+
+        mock_llm = MagicMock()
+        mock_llm.generate.return_value = "[RETRIEVE_NO]"
+
+        evaluator = SelfRAGEvaluator(llm_client=mock_llm)
+
+        # 단순 인사말 (키워드 없음, LLM도 NO 반환)
+        result = evaluator.needs_retrieval("안녕하세요")
+        assert result is False
+
+
+class TestSPEC_RAG_QUALITY_011_Req006:
+    """REQ-006: Classification Metrics Tests."""
+
+    def setup_method(self):
+        """Reset config before each test."""
+        reset_config()
+
+    def teardown_method(self):
+        """Reset config after each test."""
+        reset_config()
+
+    def test_get_metrics_method_exists(self):
+        """AC-006.1: get_metrics 메서드가 존재해야 함."""
+        from src.rag.infrastructure.self_rag import SelfRAGEvaluator
+
+        evaluator = SelfRAGEvaluator()
+        assert hasattr(evaluator, "get_metrics")
+
+    def test_metrics_track_retrieval_yes_count(self):
+        """AC-006.1: retrieval_yes_count 추적."""
+        from src.rag.infrastructure.self_rag import SelfRAGEvaluator
+
+        mock_llm = MagicMock()
+        mock_llm.generate.return_value = "[RETRIEVE_YES]"
+
+        evaluator = SelfRAGEvaluator(llm_client=mock_llm)
+
+        # 키워드 없는 쿼리로 LLM 호출 유도
+        evaluator.needs_retrieval("이거 뭐야?")
+
+        metrics = evaluator.get_metrics()
+        assert "retrieval_yes_count" in metrics
+        assert metrics["retrieval_yes_count"] >= 1
+
+    def test_metrics_track_bypass_count(self):
+        """AC-006.1: bypass_count 추적."""
+        from src.rag.infrastructure.self_rag import SelfRAGEvaluator
+
+        evaluator = SelfRAGEvaluator(llm_client=None)
+
+        # 키워드가 포함된 쿼리 (bypass 발생)
+        evaluator.needs_retrieval("휴학 규정 알려줘")
+
+        metrics = evaluator.get_metrics()
+        assert "bypass_count" in metrics
+
+    def test_metrics_track_override_count(self):
+        """AC-003.3: override_count 추적."""
+        from src.rag.infrastructure.self_rag import SelfRAGEvaluator
+
+        mock_llm = MagicMock()
+        mock_llm.generate.return_value = "[RETRIEVE_NO]"
+
+        evaluator = SelfRAGEvaluator(llm_client=mock_llm)
+
+        # 키워드 포함 + LLM NO = override 발생
+        evaluator.needs_retrieval("장학금 규정이 뭐야?")
+
+        metrics = evaluator.get_metrics()
+        assert "override_count" in metrics
+
+
+class TestSPEC_RAG_QUALITY_011_Accuracy:
+    """Classification Accuracy Tests (AC-001.4)."""
+
+    def setup_method(self):
+        """Reset config before each test."""
+        reset_config()
+
+    def teardown_method(self):
+        """Reset config after each test."""
+        reset_config()
+
+    def test_regulation_queries_return_true(self):
+        """규정 관련 쿼리는 True를 반환해야 함."""
+        from src.rag.infrastructure.self_rag import SelfRAGEvaluator
+
+        evaluator = SelfRAGEvaluator()
+
+        regulation_queries = [
+            "휴학 신청 방법이 뭐야?",
+            "졸업 요건이 어떻게 돼?",
+            "장학금 신청 자격이 뭐야?",
+            "학칙 제5조가 뭐야?",
+            "등록금 납부 기간이 언제야?",
+            "교원 임용 규정이 어떻게 돼?",
+            "복수전공 신청은 어떻게 해?",
+            "학점 인정 기준이 뭐야?",
+            "성적 이의신청 방법 알려줘",
+            "휴직 규정이 어떻게 돼?",
+        ]
+
+        correct = 0
+        for query in regulation_queries:
+            if evaluator.needs_retrieval(query):
+                correct += 1
+
+        # 95% 이상 정확도 (10개 중 10개)
+        accuracy = correct / len(regulation_queries)
+        assert accuracy >= 0.95, f"Accuracy {accuracy:.2%} < 95%"
+
+
+class TestSPEC_RAG_QUALITY_011_Req008:
+    """REQ-008: Configuration for Self-RAG Behavior Tests."""
+
+    def setup_method(self):
+        """Reset config before each test."""
+        reset_config()
+
+    def teardown_method(self):
+        """Reset config after each test."""
+        reset_config()
+
+    def test_self_rag_config_fields_exist(self):
+        """AC-008.1, AC-008.2, AC-008.3: Self-RAG 설정 필드가 존재해야 함."""
+        from src.rag.config import RAGConfig
+
+        config = RAGConfig()
+
+        # 기본 설정
+        assert hasattr(config, "enable_self_rag")
+        # SPEC-RAG-QUALITY-011 추가 설정
+        assert hasattr(config, "self_rag_keywords_path")
+        assert hasattr(config, "self_rag_override_on_keywords")
+        assert hasattr(config, "self_rag_log_overrides")
+
+    def test_self_rag_defaults(self):
+        """Self-RAG 기본값 확인."""
+        from src.rag.config import RAGConfig
+
+        config = RAGConfig()
+
+        # 기본적으로 활성화
+        assert config.enable_self_rag is True
+        assert config.self_rag_override_on_keywords is True
+        assert config.self_rag_log_overrides is True
+
+    def test_self_rag_disabled_via_environment(self):
+        """AC-008.1: 환경 변수로 Self-RAG 비활성화."""
+        import os
+
+        from src.rag.config import RAGConfig, reset_config
+
+        # 환경 변수 설정
+        os.environ["ENABLE_SELF_RAG"] = "false"
+        reset_config()
+        config = RAGConfig()
+
+        assert config.enable_self_rag is False
+
+        # 정리
+        del os.environ["ENABLE_SELF_RAG"]
+        reset_config()

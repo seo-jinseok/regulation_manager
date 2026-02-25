@@ -3,11 +3,14 @@ ChromaDB Vector Store for Regulation RAG System.
 
 Provides vector storage and hybrid search using ChromaDB.
 Supports dense (embedding) and sparse (keyword) retrieval.
+
+SPEC-RAG-QUALITY-011 REQ-004: ChromaDB Health Verification
 """
 
 import logging
 import os
-from typing import List, Optional, Set
+from datetime import datetime
+from typing import Any, Dict, List, Optional, Set
 
 try:
     import chromadb
@@ -371,3 +374,58 @@ class ChromaVectorStore(IVectorStore):
         """Context manager exit - ensures cleanup."""
         self.close()
         return False
+
+    def health_check(self) -> Dict[str, Any]:
+        """
+        Check the health status of the ChromaDB collection.
+
+        SPEC-RAG-QUALITY-011 REQ-004: Health Verification
+
+        Returns:
+            Dictionary with health status information:
+            - status: "healthy" | "degraded" | "unhealthy"
+            - collection_count: Number of documents in collection
+            - embedding_function_available: Whether embedding function is set
+            - last_check: Timestamp of health check
+            - issues: List of detected issues
+        """
+        issues: List[str] = []
+
+        # Get collection count
+        try:
+            collection_count = self._collection.count() if self._collection else 0
+        except Exception:
+            collection_count = 0
+            issues.append("Cannot access collection")
+
+        # Check embedding function availability
+        embedding_available = (
+            hasattr(self, "_embedding_function")
+            and self._embedding_function is not None
+        )
+
+        # Check for issues
+        if collection_count == 0:
+            issues.append("Empty collection")
+
+        if not embedding_available:
+            issues.append("Embedding function unavailable")
+
+        # Determine status
+        if len(issues) == 0:
+            status = "healthy"
+        elif (
+            any("Empty" in issue or "Cannot access" in issue for issue in issues)
+            or not embedding_available
+        ):
+            status = "unhealthy"
+        else:
+            status = "degraded"
+
+        return {
+            "status": status,
+            "collection_count": collection_count,
+            "embedding_function_available": embedding_available,
+            "last_check": datetime.now().isoformat(),
+            "issues": issues,
+        }

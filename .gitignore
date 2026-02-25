@@ -196,16 +196,9 @@ dist-ssr/
 .netlify/
 .firebase/
 
-# ===========================================
-# RAG System Generated Files
-# ===========================================
-# Evaluation results
+# User Custom Patterns (preserved by moai update)
 data/evaluations/
 data/checkpoints/
-
-# Cache files
 data/cache/
 .cache/
-
-# Metrics and A/B test results
 .metrics/

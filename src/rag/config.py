@@ -241,6 +241,22 @@ class RAGConfig:
     enable_self_rag: bool = field(
         default_factory=lambda: os.getenv("ENABLE_SELF_RAG", "true").lower() == "true"
     )
+    # SPEC-RAG-QUALITY-011 REQ-008: Self-RAG configuration
+    self_rag_keywords_path: Optional[str] = field(
+        default_factory=lambda: os.getenv(
+            "SELF_RAG_KEYWORDS_PATH", "data/config/self_rag_keywords.json"
+        )
+    )
+    self_rag_override_on_keywords: bool = field(
+        default_factory=lambda: os.getenv(
+            "SELF_RAG_OVERRIDE_ON_KEYWORDS", "true"
+        ).lower()
+        == "true"
+    )
+    self_rag_log_overrides: bool = field(
+        default_factory=lambda: os.getenv("SELF_RAG_LOG_OVERRIDES", "true").lower()
+        == "true"
+    )
     enable_hyde: bool = field(
         default_factory=lambda: os.getenv("ENABLE_HYDE", "true").lower() == "true"
     )

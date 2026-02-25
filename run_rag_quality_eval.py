@@ -3,7 +3,7 @@
 RAG Quality Evaluation Runner using Parallel Persona Agents.
 
 Executes 6 persona sub-agents in parallel to evaluate RAG system quality.
-Implements the rag-quality-local skill specification.
+Implements the ragulation-quality skill specification.
 
 SPEC: SPEC-RAG-SKILL-001
 REQ: REQ-002 (CLI 진입점 개선)

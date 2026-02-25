@@ -8,11 +8,17 @@ Implements self-reflection mechanism where the LLM evaluates:
 
 9 RAG Architectures (#5): Self-RAG adds reflection capabilities to verify
 retrieval necessity and answer grounding, improving response quality.
+
+SPEC-RAG-QUALITY-011: Self-RAG Classification Fix
+- Improved prompt with regulation domain context
+- Keyword-based pre-filtering for fast classification
+- Fallback mechanism with override capability
+- Classification metrics tracking
 """
 
 import concurrent.futures
 import logging
-from typing import TYPE_CHECKING, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from ..config import get_config
 
@@ -24,26 +30,56 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+# SPEC-RAG-QUALITY-011 REQ-002: Regulation-related keywords for pre-filtering
+REGULATION_KEYWORDS = [
+    # Regulation types
+    "규정", "학칙", "지침", "요강", "준칙", "세칙", "규칙", "정관",
+    # Structural references
+    "제", "조", "항", "호", "장", "절",
+    # Common topics
+    "등록", "휴학", "복학", "졸업", "장학금", "성적", "학점",
+    "전공", "부전공", "복수전공", "학부", "학과", "대학원",
+    "교수", "교원", "직원", "임용", "승진", "연구",
+    "휴직", "복직", "재직", "정년",
+    # Question words
+    "어떻게", "언제", "누가", "무엇", "어디서", "왜",
+    # Action words
+    "신청", "제출", "변경", "취소", "이의", "합격",
+    "자격", "요건", "기간", "절차", "방법", "기준",
+]
+
+
 class SelfRAGEvaluator:
     """
     Self-RAG reflection mechanism.
 
     Uses LLM to evaluate retrieval necessity and result relevance,
     enabling more accurate and grounded responses.
+
+    SPEC-RAG-QUALITY-011: Enhanced with keyword pre-filtering,
+    fallback mechanism, and metrics tracking.
     """
 
-    # Prompts for self-reflection
-    RETRIEVAL_NEEDED_PROMPT = """다음 질문에 답하기 위해 외부 문서 검색이 필요한지 판단하세요.
+    # SPEC-RAG-QUALITY-011 REQ-001: Improved prompt with regulation domain context
+    RETRIEVAL_NEEDED_PROMPT = """당신은 대학 규정 검색 시스템의 쿼리 분류기입니다.
 
 질문: {query}
 
-검색이 필요한 경우:
-- 특정 규정, 절차, 자격 요건 등 사실적 정보가 필요한 경우
-- 최신 정보나 특정 조항을 확인해야 하는 경우
+이 질문이 대학 규정, 학칙, 지침, 절차와 관련이 있는지 판단하세요.
 
-검색이 불필요한 경우:
-- 일반적인 인사말이나 간단한 설명 요청
-- 이전 대화 내용에 대한 후속 질문 (컨텍스트가 이미 있는 경우)
+**항상 검색이 필요한 경우:**
+- 특정 규정, 학칙, 지침에 대한 질문
+- 절차, 방법, 기간, 자격 요건에 대한 질문
+- 규정 조항, 항목에 대한 질문
+- "어떻게", "언제", "누가", "무엇"으로 시작하는 질문
+- 학교, 등록, 장학금, 휴학, 졸업 관련 질문
+
+**검색이 불필요한 경우 (매우 드묾):**
+- 단순 인사말 ("안녕하세요", "반갑습니다")
+- 완전히 일반적인 상식 질문 (규정과 무관한)
+
+**중요:** 불확실한 경우 항상 [RETRIEVE_YES]를 선택하세요.
+대학 규정 Q&A 시스템에서는 거짓 양성(불필요한 검색)이 거짓 음성(검색 누락)보다 낫습니다.
 
 답변 형식: [RETRIEVE_YES] 또는 [RETRIEVE_NO] 중 하나만 출력하세요."""
 
@@ -84,6 +120,28 @@ class SelfRAGEvaluator:
             llm_client: LLM client for evaluation (can be set later)
         """
         self._llm_client = llm_client
+        # SPEC-RAG-QUALITY-011 REQ-006: Metrics tracking
+        self._metrics = {
+            "retrieval_yes_count": 0,
+            "retrieval_no_count": 0,
+            "bypass_count": 0,
+            "override_count": 0,
+        }
+
+    def _has_regulation_keywords(self, query: str) -> bool:
+        """
+        Check if query contains regulation-related keywords.
+
+        SPEC-RAG-QUALITY-011 REQ-002: Keyword-based pre-filtering.
+        Fast, deterministic classification for obvious cases.
+
+        Args:
+            query: User's question
+
+        Returns:
+            True if regulation keywords detected
+        """
+        return any(keyword in query for keyword in REGULATION_KEYWORDS)
 
     def set_llm_client(self, llm_client: "ILLMClient") -> None:
         """Set the LLM client for evaluation."""
@@ -92,6 +150,11 @@ class SelfRAGEvaluator:
     def needs_retrieval(self, query: str) -> bool:
         """
         Evaluate if retrieval is needed for this query.
+
+        SPEC-RAG-QUALITY-011 REQ-002, REQ-003:
+        1. Keyword pre-filtering (bypass LLM if keywords found)
+        2. LLM classification for non-obvious cases
+        3. Override mechanism if LLM says NO but keywords exist
 
         For regulation Q&A systems, retrieval is almost always needed.
         Only skip retrieval for very simple greetings/chat.
@@ -102,6 +165,13 @@ class SelfRAGEvaluator:
         Returns:
             True if retrieval is recommended
         """
+        # SPEC-RAG-QUALITY-011 REQ-002: Keyword pre-filtering
+        if self._has_regulation_keywords(query):
+            self._metrics["bypass_count"] += 1
+            logger.debug(f"Query bypassed LLM due to keywords: {query[:50]}...")
+            return True
+
+        # SPEC-RAG-QUALITY-011 REQ-003: Fallback if no LLM
         if not self._llm_client:
             return True  # Default to retrieval if no LLM
 
@@ -122,10 +192,42 @@ class SelfRAGEvaluator:
             )
             # Default to retrieval unless explicitly told not to
             if "[RETRIEVE_NO]" in response.upper():
+                # SPEC-RAG-QUALITY-011 REQ-003: Override check
+                if self._has_regulation_keywords(query):
+                    self._metrics["override_count"] += 1
+                    logger.info(
+                        f"Override: LLM said NO but keywords found in query: {query[:50]}..."
+                    )
+                    return True
+                self._metrics["retrieval_no_count"] += 1
                 return False
+            self._metrics["retrieval_yes_count"] += 1
             return True  # Default to retrieval
         except Exception:
             return True  # Default to retrieval on error
+
+    def get_metrics(self) -> Dict[str, Any]:
+        """
+        Get classification metrics.
+
+        SPEC-RAG-QUALITY-011 REQ-006: Metrics tracking.
+
+        Returns:
+            Dictionary with classification counts and rates
+        """
+        total = (
+            self._metrics["retrieval_yes_count"]
+            + self._metrics["retrieval_no_count"]
+            + self._metrics["bypass_count"]
+        )
+
+        metrics = self._metrics.copy()
+
+        if total > 0:
+            metrics["override_rate"] = self._metrics["override_count"] / total
+            metrics["bypass_rate"] = self._metrics["bypass_count"] / total
+
+        return metrics
 
     def evaluate_relevance(
         self,
