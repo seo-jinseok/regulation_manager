@@ -196,6 +196,36 @@ dist-ssr/
 .netlify/
 .firebase/
 
+# ===========================================
+# Test Artifacts & Reports
+# ===========================================
+test_reports/
+test_results/
+test_scenarios/
+htmlcov_automation/
+
+# ===========================================
+# Tool-specific Caches & Configs
+# ===========================================
+.cache_benchmark/
+.deepeval/
+.serena/
+.agent/
+.backup/
+.data/
+
+# ===========================================
+# Temporary / Dummy Data
+# ===========================================
+dummy/
+output/
+
+# ===========================================
+# Dropbox Conflict Copies
+# ===========================================
+*충돌된 사본*
+*conflicted copy*
+
 # User Custom Patterns (preserved by moai update)
 data/evaluations/
 data/checkpoints/
