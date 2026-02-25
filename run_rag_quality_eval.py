@@ -3,7 +3,7 @@
 RAG Quality Evaluation Runner using Parallel Persona Agents.
 
 Executes 6 persona sub-agents in parallel to evaluate RAG system quality.
-Implements the ragulation-quality skill specification.
+Implements the regulation-quality skill specification.
 
 SPEC: SPEC-RAG-SKILL-001
 REQ: REQ-002 (CLI 진입점 개선)
@@ -18,6 +18,10 @@ import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
+
+import dotenv
+
+dotenv.load_dotenv()
 
 # Add project root to path
 project_root = Path(__file__).parent

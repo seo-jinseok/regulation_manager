@@ -1,7 +1,7 @@
 """
 LLM-as-Judge Evaluation System for RAG Quality Assessment.
 
-Implements the 4-metric evaluation system defined in ragulation-quality skill:
+Implements the 4-metric evaluation system defined in regulation-quality skill:
 1. Accuracy - Factual correctness without hallucination
 2. Completeness - All key information present
 3. Citations - Accurate regulation references

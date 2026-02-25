@@ -87,7 +87,7 @@ __all__ = [
     "CustomLLMJudge",
     "CustomJudgeConfig",
     "CustomEvaluationResult",
-    # New LLM-as-Judge (ragulation-quality skill)
+    # New LLM-as-Judge (regulation-quality skill)
     "LLMJudge",
     "JudgeResult",
     "EvaluationBatch",

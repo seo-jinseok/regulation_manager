@@ -23,11 +23,11 @@
 
 **Key Differences**:
 - `rag-quality`: Basic RAG evaluation, RAGAS integration, basic personas
-- `ragulation-quality`: Advanced skill with sub-agent personas, 150+ scenarios, LLM-as-Judge, SPEC generation
+- `regulation-quality`: Advanced skill with sub-agent personas, 150+ scenarios, LLM-as-Judge, SPEC generation
 
 **When to Use each**:
 - Use `rag-quality` for: Quick evaluations, basic quality checks, dashboard monitoring
-- Use `ragulation-quality` for: Comprehensive testing, persona simulation, improvement SPEC generation
+- Use `regulation-quality` for: Comprehensive testing, persona simulation, improvement SPEC generation
 
 ### test_scenarios/rag_quality_evaluator.py
 
@@ -41,7 +41,7 @@
 - Command-line execution
 - Markdown report generation
 
-**Integration with ragulation-quality**:
+**Integration with regulation-quality**:
 - Can import test queries as baseline scenarios
 - Scoring logic can inform LLM-as-judge prompts
 - Report format compatible with evaluation storage
@@ -268,7 +268,7 @@ python -m ragulation_quality --persona professor --category edge_cases
 
 ## Version History
 ### v1.1.0 (2026-02-24)
-- Rebranded from rag-quality-local to ragulation-quality
+- Rebranded from rag-quality-local to regulation-quality
 - Updated description to reflect "Regulation Manager 규정 Q&A 시스템"
 - Added trigger keywords: "ragulation 평가", "규정 Q&A 품질"
 
@@ -296,8 +296,8 @@ python -m ragulation_quality --persona professor --category edge_cases
 **Discussion**: Team Slack #rag-quality
 
 ### Skill Updates
-**Skill File**: `.claude/skills/ragulation-quality/Skill.md`
-**Modules**: `.claude/skills/ragulation-quality/modules/`
+**Skill File**: `.claude/skills/regulation-quality/Skill.md`
+**Modules**: `.claude/skills/regulation-quality/modules/`
 **Update Frequency**: As needed based on Regulation Manager system changes
 
 ### Feedback and Contributions

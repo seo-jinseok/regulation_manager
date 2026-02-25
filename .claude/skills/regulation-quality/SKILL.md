@@ -1,5 +1,5 @@
 ---
-name: ragulation-quality
+name: regulation-quality
 description: >
   Regulation Manager 규정 Q&A 시스템의 포괄적인 품질 평가 시스템입니다. 6가지 사용자 페르소나를 시뮬레이션하는 서브에이전트(팀원)들이 병렬로 작동하여 150+개의 테스트 시나리오를 실행하고,
   LLM-as-Judge 방식으로 답변 정확도를 평가하며, 자동으로 개선 SPEC을 생성합니다.
@@ -17,7 +17,7 @@ status: "active"
 allowed-tools: Read Write Edit Bash Grep Glob Task
 metadata:
   modularized: "true"
-  tags: "ragulation, evaluation, testing, quality, personas, llm-judge, regulation-qa"
+  tags: "regulation, evaluation, testing, quality, personas, llm-judge, regulation-qa"
   context7-libraries: "ragas,deepeval"
   related-skills: "rag-quality, moai-foundation-quality"
 progressive_disclosure:
@@ -26,7 +26,7 @@ progressive_disclosure:
   level2_tokens: 5000
 triggers:
   keywords:
-    - "ragulation 평가"
+    - "regulation 평가"
     - "규정 Q&A 품질"
     - "RAG 평가"
     - "품질 테스트"
@@ -89,7 +89,7 @@ Comprehensive evaluation system that:
 ### Core Architecture
 
 ```
-ragulation-quality (Skill Coordinator)
+regulation-quality (Skill Coordinator)
     ├── Spawns 6 persona sub-agents in parallel
     ├── Aggregates results
     ├── Runs LLM-as-Judge evaluation
@@ -460,7 +460,7 @@ Markdown reports include:
 ## Module Structure
 
 ```
-.claude/skills/ragulation-quality/
+.claude/skills/regulation-quality/
 ├── SKILL.md                          # Main coordinator skill (this file)
 ├── modules/
 │   ├── personas.md                   # Detailed persona definitions
