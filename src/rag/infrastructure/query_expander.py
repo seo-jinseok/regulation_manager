@@ -319,6 +319,7 @@ class DynamicQueryExpander:
                 system_prompt=QUERY_EXPANSION_PROMPT,
                 user_message=f"질문: {query}",
                 temperature=0.3,
+                max_tokens=256,
             )
 
             elapsed_ms = (time.time() - start_time) * 1000

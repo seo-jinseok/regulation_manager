@@ -229,6 +229,7 @@ class ILLMClient(ABC):
         system_prompt: str,
         user_message: str,
         temperature: float = 0.0,
+        max_tokens: Optional[int] = None,
     ) -> str:
         """
         Generate a response from the LLM.
@@ -237,6 +238,7 @@ class ILLMClient(ABC):
             system_prompt: System instructions.
             user_message: User's question with context.
             temperature: Sampling temperature (0.0 = deterministic).
+            max_tokens: Override max tokens for this call (None = use default).
 
         Returns:
             Generated response text.

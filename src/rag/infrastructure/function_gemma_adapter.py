@@ -899,6 +899,7 @@ class FunctionGemmaAdapter:
                 system_prompt=self.SYSTEM_PROMPT,
                 user_message=conversation,
                 temperature=0.0,
+                max_tokens=512,
             )
 
             # Parse tool calls

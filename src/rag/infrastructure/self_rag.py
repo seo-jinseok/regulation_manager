@@ -189,6 +189,7 @@ class SelfRAGEvaluator:
                 system_prompt="You are a retrieval necessity evaluator.",
                 user_message=prompt,
                 temperature=0.0,
+                max_tokens=256,
             )
             # Default to retrieval unless explicitly told not to
             if "[RETRIEVE_NO]" in response.upper():
@@ -271,6 +272,7 @@ class SelfRAGEvaluator:
                 system_prompt="You are a document relevance evaluator.",
                 user_message=prompt,
                 temperature=0.0,
+                max_tokens=256,
             )
             is_relevant = "[RELEVANT]" in response.upper()
 
@@ -303,6 +305,7 @@ class SelfRAGEvaluator:
                 system_prompt="You are an answer support evaluator.",
                 user_message=prompt,
                 temperature=0.0,
+                max_tokens=256,
             )
 
             response_upper = response.upper()

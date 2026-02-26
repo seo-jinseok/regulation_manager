@@ -568,10 +568,10 @@ class QueryAnalyzer:
         """Clean chatty LLM response to extract just the keywords."""
         # 0. Handle loops/hallucinations: if it contains tags like <user> or <assistant>
         # Just take the part before the first tag if it exists.
-        if "<user>" in text:
-            text = text.split("<user>")[0]
-        if "<assistant>" in text:
-            text = text.split("<assistant>")[0]
+        import re
+
+        text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL)
+        text = re.sub(r"</?(?:system|user|assistant)>", "", text)
         if "---" in text:
             text = text.split("---")[0]
 
@@ -720,6 +720,7 @@ class QueryAnalyzer:
                 system_prompt=self.QUERY_REWRITE_PROMPT,
                 user_message=query,
                 temperature=0.0,
+                max_tokens=512,
             )
 
             # Parse JSON response
@@ -1165,10 +1166,11 @@ class QueryAnalyzer:
                 if token in synonyms and key_term not in expansions:
                     expansions.append(key_term)
 
-            # LLM fallback for unknown terms
+            # LLM fallback for unknown terms (skip HTML-like tags and non-Korean noise)
             if self._llm_client and token not in self._synonyms:
-                llm_synonyms = self._generate_synonyms_cached(token)
-                expansions.extend(llm_synonyms[:2])
+                if not any(c in token for c in "<>{}[]"):
+                    llm_synonyms = self._generate_synonyms_cached(token)
+                    expansions.extend(llm_synonyms[:2])
 
         return expansions
 
@@ -1561,6 +1563,7 @@ class QueryAnalyzer:
                 system_prompt="당신은 대학 규정 검색 시스템의 의도 분류 에이전트입니다.",
                 user_message=prompt,
                 temperature=0.0,
+                max_tokens=256,
             )
 
             # Parse JSON response

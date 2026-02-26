@@ -435,6 +435,7 @@ class ToolExecutor:
             system_prompt=system_prompt,
             user_message=user_message,
             temperature=0.0,
+            max_tokens=1024,
         )
 
         # Post-process answer with quality enhancements

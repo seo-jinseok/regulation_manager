@@ -2821,6 +2821,7 @@ class SearchUseCase:
             system_prompt=system_prompt,
             user_message=user_message,
             temperature=0.0,
+            max_tokens=1024,
         )
 
         # Skip fact check if disabled
@@ -2881,6 +2882,7 @@ class SearchUseCase:
                 system_prompt=REGULATION_QA_PROMPT,
                 user_message=corrected_user_message,
                 temperature=0.0,
+                max_tokens=1024,
             )
 
         return answer_text
@@ -2946,6 +2948,7 @@ class SearchUseCase:
             system_prompt=system_prompt,
             user_message=user_message,
             temperature=0.0,
+            max_tokens=1024,
         )
 
         # Validate with faithfulness validator
@@ -3128,6 +3131,7 @@ class SearchUseCase:
             system_prompt=REGENERATION_STRICT_PROMPT_KO,
             user_message=user_message,
             temperature=0.0,
+            max_tokens=1024,
         )
 
         return answer_text
@@ -3186,6 +3190,7 @@ class SearchUseCase:
             system_prompt=evasive_prompt,
             user_message=user_message,
             temperature=0.0,
+            max_tokens=1024,
         )
 
         return answer_text

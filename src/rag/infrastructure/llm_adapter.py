@@ -307,6 +307,7 @@ class LLMClientAdapter(ILLMClient):
         user_message: str,
         temperature: float = 0.0,
         provider_name: str = "unknown",
+        max_tokens: Optional[int] = None,
     ) -> str:
         """Try to generate a response from a specific client.
 
@@ -334,7 +335,20 @@ class LLMClientAdapter(ILLMClient):
 <assistant>"""
 
         try:
-            response = client.complete(full_prompt)
+            response = client.complete(full_prompt, max_tokens=max_tokens)
+            # Strip model artifacts: <think> reasoning tags and echoed prompt tags
+            import re
+
+            response = re.sub(
+                r"<think>.*?</think>", "", response, flags=re.DOTALL
+            ).strip()
+            # Also strip incomplete <think> blocks (no closing tag, e.g. token limit hit)
+            response = re.sub(
+                r"<think>.*", "", response, flags=re.DOTALL
+            ).strip()
+            response = re.sub(
+                r"</?(?:system|user|assistant)>", "", response
+            ).strip()
             # 빈 응답 검증 - 빈 응답은 실패로 처리하여 재시도 유도
             if not response or not response.strip():
                 logger.warning(
@@ -353,6 +367,7 @@ class LLMClientAdapter(ILLMClient):
         system_prompt: str,
         user_message: str,
         temperature: float = 0.0,
+        max_tokens: Optional[int] = None,
     ) -> tuple[str, List[Dict]]:
         """
         Execute LLM generation with fallback chain.
@@ -378,6 +393,7 @@ class LLMClientAdapter(ILLMClient):
                 user_message,
                 temperature,
                 provider_name=self.provider,
+                max_tokens=max_tokens,
             )
             self._stats["primary_success"] += 1
             attempts.append(
@@ -464,6 +480,7 @@ class LLMClientAdapter(ILLMClient):
                         user_message,
                         temperature,
                         provider_name=provider,
+                        max_tokens=max_tokens,
                     )
 
                     self._stats["fallback_success"] += 1
@@ -548,6 +565,7 @@ class LLMClientAdapter(ILLMClient):
         system_prompt: str,
         user_message: str,
         temperature: float = 0.0,
+        max_tokens: Optional[int] = None,
     ) -> str:
         """
         Generate a response from the LLM with fallback support.
@@ -556,12 +574,13 @@ class LLMClientAdapter(ILLMClient):
             system_prompt: System instructions.
             user_message: User's question with context.
             temperature: Sampling temperature (0.0 = deterministic).
+            max_tokens: Override max tokens for this call (None = use default).
 
         Returns:
             Generated response text.
         """
         response, attempts = self._execute_with_fallback(
-            system_prompt, user_message, temperature
+            system_prompt, user_message, temperature, max_tokens=max_tokens
         )
 
         # Log successful fallback for monitoring
@@ -586,6 +605,35 @@ class LLMClientAdapter(ILLMClient):
             )
 
         return response
+
+    def generate_raw(
+        self,
+        prompt: str,
+        max_tokens: Optional[int] = None,
+        max_retries: int = 3,
+    ) -> str:
+        """Generate using raw prompt without chat template wrapper.
+
+        Useful for structured output where the model needs to use <think> tags.
+        Strips <think> tags from response automatically.
+        Retries on transient errors (400/500).
+        """
+        import re
+        last_error = None
+        for attempt in range(max_retries):
+            try:
+                response = self._client.complete(prompt, max_tokens=max_tokens)
+                response = re.sub(r"<think>.*?</think>", "", response, flags=re.DOTALL).strip()
+                response = re.sub(r"<think>.*", "", response, flags=re.DOTALL).strip()
+                if not response:
+                    raise ValueError("Empty response after think tag stripping")
+                return response
+            except Exception as e:
+                last_error = e
+                logger.warning(f"generate_raw attempt {attempt+1}/{max_retries} failed: {type(e).__name__}: {e}")
+                if attempt < max_retries - 1:
+                    time.sleep(2 ** attempt)
+        raise last_error
 
     def stream_generate(
         self,

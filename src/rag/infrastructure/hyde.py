@@ -486,6 +486,7 @@ class HyDEGenerator:
                 system_prompt=self.SYSTEM_PROMPT,
                 user_message=f"질문: {query}",
                 temperature=0.2,
+                max_tokens=512,
             )
 
             is_valid, validated_doc, quality_score = self._validate_hypothetical_doc(

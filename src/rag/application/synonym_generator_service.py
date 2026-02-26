@@ -83,6 +83,7 @@ class SynonymGeneratorService:
             system_prompt=self.SYSTEM_PROMPT,
             user_message=user_message,
             temperature=0.3,  # Slightly creative but mostly deterministic
+            max_tokens=256,  # Synonym lists are short; limit to prevent long reasoning
         )
 
         # Parse response: split by comma and clean up

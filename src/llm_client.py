@@ -104,6 +104,8 @@ class LLMClient:
                     api_key=self._get_api_key("local"),
                     api_base=self._ensure_v1_suffix(self.base_url or default_base_url),
                     is_chat_model=True,
+                    timeout=600.0,
+                    max_tokens=2048,
                 )
             else:
                 # Fallback: Use a "valid" OpenAI model name to bypass validation if OpenAILike is missing
@@ -119,10 +121,20 @@ class LLMClient:
         else:
             raise ValueError(f"Unsupported provider: {self.provider}")
 
-    def complete(self, prompt: str) -> str:
+    def complete(self, prompt: str, max_tokens: Optional[int] = None) -> str:
         try:
-            response = self.llm.complete(prompt)
-            return response.text
+            # llama-index's _get_model_kwargs overwrites per-call max_tokens
+            # with the constructor value, so we must temporarily patch the instance
+            original_max_tokens = None
+            if max_tokens is not None:
+                original_max_tokens = self.llm.max_tokens
+                self.llm.max_tokens = max_tokens
+            try:
+                response = self.llm.complete(prompt)
+                return response.text
+            finally:
+                if original_max_tokens is not None:
+                    self.llm.max_tokens = original_max_tokens
         except Exception as e:
             import logging
 

@@ -415,27 +415,67 @@ class LLMJudge:
                 expected_info=expected_info
             )
 
-            # Call LLM for evaluation
-            response = self.llm_client.generate(
-                system_prompt=system_prompt,
-                user_message=user_prompt,
-                temperature=0.0,  # Use low temperature for consistent evaluation
-            )
+            # Build a single raw prompt (no chat template) to allow <think> mode
+            raw_prompt = f"{system_prompt}\n\n{user_prompt}"
+
+            # Call LLM using raw mode (bypasses chat template, preserves <think> behavior)
+            # Retry up to 3 times since model sometimes skips <think> mode
+            response = None
+            if hasattr(self.llm_client, 'generate_raw'):
+                for judge_attempt in range(3):
+                    try:
+                        attempt_response = self.llm_client.generate_raw(
+                            prompt=raw_prompt,
+                            max_tokens=4096,
+                        )
+                        if '```json' in attempt_response or '"accuracy"' in attempt_response:
+                            response = attempt_response
+                            break
+                        logger.warning(f"Judge attempt {judge_attempt+1}/3: no JSON in response (len={len(attempt_response)})")
+                    except Exception as e:
+                        logger.warning(f"Judge attempt {judge_attempt+1}/3 failed: {e}")
+                if response is None:
+                    # All attempts failed to produce JSON, use last response anyway
+                    response = attempt_response if 'attempt_response' in dir() else ""
+            else:
+                response = self.llm_client.generate(
+                    system_prompt=system_prompt,
+                    user_message=user_prompt,
+                    temperature=0.0,
+                    max_tokens=4096,
+                )
+
+            # Debug: log raw response for diagnosis
+            logger.debug(f"LLM Judge raw response (len={len(response)}): {repr(response[:300])}")
+            if not response or not response.strip():
+                logger.warning(f"LLM Judge received empty response")
 
             # Parse JSON response
             import json
             try:
-                # Extract JSON from response
-                json_match = re.search(r'```json\n(.*?)\n```', response, re.DOTALL)
+                # Extract JSON from response - try multiple patterns
+                json_str = None
+                # Pattern 1: ```json ... ```
+                json_match = re.search(r'```json\s*(.*?)\s*```', response, re.DOTALL)
                 if json_match:
-                    json_str = json_match.group(1)
-                else:
-                    # Try to find JSON without code blocks
+                    json_str = json_match.group(1).strip()
+                if not json_str:
+                    # Pattern 2: ```\n{...}\n```
+                    json_match = re.search(r'```\s*(\{.*?\})\s*```', response, re.DOTALL)
+                    if json_match:
+                        json_str = json_match.group(1).strip()
+                if not json_str:
+                    # Pattern 3: Raw JSON object
+                    json_match = re.search(r'(\{[^{}]*"accuracy"[^{}]*\})', response, re.DOTALL)
+                    if json_match:
+                        json_str = json_match.group(1).strip()
+                if not json_str:
+                    # Pattern 4: Any JSON object
                     json_match = re.search(r'\{.*\}', response, re.DOTALL)
                     if json_match:
-                        json_str = json_match.group(0)
-                    else:
-                        raise ValueError("No JSON found in LLM response")
+                        json_str = json_match.group(0).strip()
+                if not json_str:
+                    raise ValueError(f"No JSON found in LLM response (len={len(response)}, content={repr(response[:200])})")
 
                 eval_result = json.loads(json_str)
 

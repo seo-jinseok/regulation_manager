@@ -64,6 +64,46 @@ VALID_CATEGORIES = [
 ]
 
 
+def _extract_sources_from_result(result) -> list:
+    """Extract sources from QueryResult, handling both FunctionGemma and ask() pathways."""
+    sources = []
+    if not result.data:
+        return sources
+
+    # Path 1: FunctionGemma pathway (tool_results)
+    if "tool_results" in result.data:
+        for tool_result in result.data.get("tool_results", []):
+            if tool_result.get("tool_name") == "search_regulations":
+                result_data = tool_result.get("result")
+                if result_data and isinstance(result_data, dict):
+                    search_results = result_data.get("results", [])
+                    for r in search_results[:5]:
+                        if isinstance(r, dict):
+                            sources.append({
+                                "title": r.get("title", "") or r.get("regulation_title", ""),
+                                "text": (r.get("text", "") or r.get("content", ""))[:500],
+                                "rule_code": r.get("rule_code", ""),
+                                "score": r.get("score", 0.0) or r.get("similarity", 0.0),
+                            })
+                break
+
+    # Path 2: Traditional ask() pathway (sources/results)
+    if not sources:
+        source_list = result.data.get("sources") or result.data.get("results") or []
+        for r in source_list[:5]:
+            if isinstance(r, dict):
+                relevance = r.get("relevance_pct")
+                score = relevance / 100.0 if relevance else r.get("score", 0.0)
+                sources.append({
+                    "title": r.get("regulation_name", "") or r.get("title", ""),
+                    "text": (r.get("text", "") or r.get("content", ""))[:500],
+                    "rule_code": r.get("rule_code", ""),
+                    "score": score,
+                })
+
+    return sources
+
+
 # 6 personas with their test queries
 PERSONA_TEST_QUERIES = {
     "student-undergraduate": [
@@ -173,23 +213,7 @@ async def run_parallel_evaluation(
 
                 # Extract answer and sources
                 answer_text = result.content if result.success else ""
-                sources = []
-
-                if result.data and "tool_results" in result.data:
-                    for tool_result in result.data.get("tool_results", []):
-                        if tool_result.get("tool_name") == "search_regulations":
-                            result_data = tool_result.get("result")
-                            if result_data and isinstance(result_data, dict):
-                                search_results = result_data.get("results", [])
-                                for r in search_results[:5]:
-                                    if isinstance(r, dict):
-                                        sources.append({
-                                            "title": r.get("title", "") or r.get("regulation_title", ""),
-                                            "text": (r.get("text", "") or r.get("content", ""))[:200],
-                                            "rule_code": r.get("rule_code", ""),
-                                            "score": r.get("score", 0.0) or r.get("similarity", 0.0),
-                                        })
-                                break
+                sources = _extract_sources_from_result(result)
 
                 # Evaluate with LLM judge (using LLM-based evaluation for accurate scoring)
                 judge_result = judge.evaluate_with_llm(
@@ -690,23 +714,7 @@ async def run_parallel_evaluation_with_filter(
 
                 # Extract answer and sources
                 answer_text = result.content if result.success else ""
-                sources = []
-
-                if result.data and "tool_results" in result.data:
-                    for tool_result in result.data.get("tool_results", []):
-                        if tool_result.get("tool_name") == "search_regulations":
-                            result_data = tool_result.get("result")
-                            if result_data and isinstance(result_data, dict):
-                                search_results = result_data.get("results", [])
-                                for r in search_results[:5]:
-                                    if isinstance(r, dict):
-                                        sources.append({
-                                            "title": r.get("title", "") or r.get("regulation_title", ""),
-                                            "text": (r.get("text", "") or r.get("content", ""))[:200],
-                                            "rule_code": r.get("rule_code", ""),
-                                            "score": r.get("score", 0.0) or r.get("similarity", 0.0),
-                                        })
-                                break
+                sources = _extract_sources_from_result(result)
 
                 # Evaluate with LLM judge
                 judge_result = judge.evaluate_with_llm(

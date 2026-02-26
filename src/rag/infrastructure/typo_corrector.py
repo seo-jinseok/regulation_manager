@@ -453,6 +453,7 @@ class TypoCorrector:
                 system_prompt="당신은 한국어 오타 교정 전문가입니다.",
                 user_message=prompt,
                 temperature=0.0,
+                max_tokens=256,
             )
 
             # Clean response
