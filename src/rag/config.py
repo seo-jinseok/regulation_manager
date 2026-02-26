@@ -265,10 +265,16 @@ class RAGConfig:
     )
     corrective_rag_thresholds: dict = field(
         default_factory=lambda: {
-            "simple": 0.3,  # 단순 쿼리는 낮은 임계값
-            "medium": 0.4,  # 기본 임계값
-            "complex": 0.5,  # 복잡 쿼리는 더 엄격
+            "simple": 0.35,  # 단순 쿼리 (SPEC-RAG-003: 0.3→0.35)
+            "medium": 0.45,  # 기본 임계값 (SPEC-RAG-003: 0.4→0.45)
+            "complex": 0.55,  # 복잡 쿼리 (SPEC-RAG-003: 0.5→0.55)
         }
+    )
+    # SPEC-RAG-003 Phase 3: Minimum relevance score for individual documents
+    min_relevance_score: float = field(
+        default_factory=lambda: float(
+            os.getenv("RAG_MIN_RELEVANCE_SCORE", "0.25")
+        )
     )
     hyde_cache_dir: str = field(
         default_factory=lambda: os.getenv("HYDE_CACHE_DIR", "data/cache/hyde")

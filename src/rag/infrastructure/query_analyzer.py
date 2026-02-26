@@ -930,6 +930,14 @@ class QueryAnalyzer:
         query_type = self.analyze(query)
         bm25_w, dense_w = self.WEIGHT_PRESETS[query_type]
 
+        # SPEC-RAG-003 Phase 3: Boost dense weight for English queries
+        # BGE-M3 handles multilingual embeddings well, so dense search is more
+        # effective than BM25 for English queries on Korean regulation documents
+        if self._is_english_query(query):
+            bm25_w = 0.2
+            dense_w = 0.8
+            return bm25_w, dense_w
+
         # If query has synonyms, boost BM25 weight for better keyword matching
         if self.has_synonyms(query):
             # Shift weight towards BM25 (e.g., 0.5/0.5 -> 0.7/0.3)
@@ -937,6 +945,14 @@ class QueryAnalyzer:
             dense_w = max(0.2, dense_w - 0.2)
 
         return bm25_w, dense_w
+
+    @staticmethod
+    def _is_english_query(query: str) -> bool:
+        """Check if query is primarily English."""
+        if not query:
+            return False
+        ascii_count = sum(1 for c in query if ord(c) < 128)
+        return ascii_count / len(query) > 0.7
 
     # Stopwords to remove from queries (너무 일반적인 단어들)
     STOPWORDS = [

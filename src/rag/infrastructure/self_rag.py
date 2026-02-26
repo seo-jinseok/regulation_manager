@@ -31,21 +31,34 @@ logger = logging.getLogger(__name__)
 
 
 # SPEC-RAG-QUALITY-011 REQ-002: Regulation-related keywords for pre-filtering
+# SPEC-RAG-003 Task 1.1: Added English keywords for bilingual support
 REGULATION_KEYWORDS = [
-    # Regulation types
+    # Regulation types (Korean)
     "규정", "학칙", "지침", "요강", "준칙", "세칙", "규칙", "정관",
     # Structural references
     "제", "조", "항", "호", "장", "절",
-    # Common topics
+    # Common topics (Korean)
     "등록", "휴학", "복학", "졸업", "장학금", "성적", "학점",
     "전공", "부전공", "복수전공", "학부", "학과", "대학원",
     "교수", "교원", "직원", "임용", "승진", "연구",
     "휴직", "복직", "재직", "정년",
-    # Question words
+    # Question words (Korean)
     "어떻게", "언제", "누가", "무엇", "어디서", "왜",
-    # Action words
+    # Action words (Korean)
     "신청", "제출", "변경", "취소", "이의", "합격",
     "자격", "요건", "기간", "절차", "방법", "기준",
+    # English: Regulation types
+    "regulation", "rule", "policy", "guideline", "procedure",
+    # English: Common topics
+    "tuition", "fee", "scholarship", "grant",
+    "leave", "absence", "withdrawal", "return",
+    "dormitory", "housing", "residence",
+    "registration", "course", "credit", "grade",
+    "graduation", "degree", "diploma", "thesis",
+    "professor", "faculty", "instructor",
+    "visa", "international",
+    # English: Action/question words
+    "apply", "submit", "requirement", "qualification", "deadline",
 ]
 
 
@@ -60,28 +73,34 @@ class SelfRAGEvaluator:
     fallback mechanism, and metrics tracking.
     """
 
-    # SPEC-RAG-QUALITY-011 REQ-001: Improved prompt with regulation domain context
-    RETRIEVAL_NEEDED_PROMPT = """당신은 대학 규정 검색 시스템의 쿼리 분류기입니다.
+    # SPEC-RAG-003 Task 1.2: Bilingual prompt for retrieval necessity evaluation
+    RETRIEVAL_NEEDED_PROMPT = """You are a query classifier for a university regulation search system.
+This system handles queries in BOTH Korean and English.
 
-질문: {query}
+Query: {query}
 
-이 질문이 대학 규정, 학칙, 지침, 절차와 관련이 있는지 판단하세요.
+Determine if this query is related to university regulations, rules, guidelines, or procedures.
 
-**항상 검색이 필요한 경우:**
-- 특정 규정, 학칙, 지침에 대한 질문
-- 절차, 방법, 기간, 자격 요건에 대한 질문
-- 규정 조항, 항목에 대한 질문
-- "어떻게", "언제", "누가", "무엇"으로 시작하는 질문
-- 학교, 등록, 장학금, 휴학, 졸업 관련 질문
+**ALWAYS needs search (both Korean AND English):**
+- Questions about regulations, rules, guidelines (규정, 학칙, 지침)
+- Questions about procedures, methods, deadlines, qualifications (절차, 방법, 기간, 자격)
+- Questions about tuition, scholarship, leave of absence, graduation
+- Questions about dormitory, housing, registration, courses, grades
+- Questions about professors, faculty, visa, international students
+- Questions starting with "How", "When", "What", "Where", "Who"
+- Questions starting with "어떻게", "언제", "누가", "무엇"
+- Examples: "How do I apply for a leave of absence?", "What are the tuition fees?"
+- Examples: "장학금 신청 방법", "졸업 요건이 뭔가요?"
 
-**검색이 불필요한 경우 (매우 드묾):**
-- 단순 인사말 ("안녕하세요", "반갑습니다")
-- 완전히 일반적인 상식 질문 (규정과 무관한)
+**Does NOT need search (very rare):**
+- Simple greetings ("Hello", "안녕하세요")
+- Completely unrelated general knowledge questions
 
-**중요:** 불확실한 경우 항상 [RETRIEVE_YES]를 선택하세요.
-대학 규정 Q&A 시스템에서는 거짓 양성(불필요한 검색)이 거짓 음성(검색 누락)보다 낫습니다.
+**IMPORTANT:** When in doubt, ALWAYS choose [RETRIEVE_YES].
+In a regulation Q&A system, false positives (unnecessary search) are better than false negatives (missed search).
+If the query mentions ANY university-related topic in ANY language → [RETRIEVE_YES]
 
-답변 형식: [RETRIEVE_YES] 또는 [RETRIEVE_NO] 중 하나만 출력하세요."""
+Answer format: Output only [RETRIEVE_YES] or [RETRIEVE_NO]."""
 
     RELEVANCE_EVAL_PROMPT = """다음 문서가 질문에 답변하는 데 관련이 있는지 평가하세요.
 
@@ -141,7 +160,36 @@ class SelfRAGEvaluator:
         Returns:
             True if regulation keywords detected
         """
-        return any(keyword in query for keyword in REGULATION_KEYWORDS)
+        query_lower = query.lower()
+        return any(keyword in query_lower for keyword in REGULATION_KEYWORDS)
+
+    # SPEC-RAG-003 Task 1.3: University topic words for override mechanism
+    _UNIVERSITY_TOPIC_WORDS = {
+        "tuition", "fee", "scholarship", "leave", "absence",
+        "dormitory", "housing", "course", "registration",
+        "grade", "graduation", "thesis", "professor", "visa",
+        "international", "student", "university", "campus",
+        "semester", "credit", "enroll", "withdraw", "degree",
+        "academic", "faculty", "exam", "gpa",
+    }
+
+    def _has_university_topic_words(self, query: str) -> bool:
+        """
+        Check if query contains university-related topic words (English).
+
+        SPEC-RAG-003 EARS-I-001: Override mechanism for English queries
+        when LLM incorrectly returns RETRIEVE_NO.
+        Requires at least 2 matching topic words for override.
+
+        Args:
+            query: User's question
+
+        Returns:
+            True if 2+ university topic words found
+        """
+        query_words = set(query.lower().split())
+        matches = query_words & self._UNIVERSITY_TOPIC_WORDS
+        return len(matches) >= 2
 
     def set_llm_client(self, llm_client: "ILLMClient") -> None:
         """Set the LLM client for evaluation."""
@@ -186,18 +234,25 @@ class SelfRAGEvaluator:
 
         try:
             response = self._llm_client.generate(
-                system_prompt="You are a retrieval necessity evaluator.",
+                system_prompt="You are a retrieval necessity evaluator for a bilingual university regulation system.",
                 user_message=prompt,
                 temperature=0.0,
                 max_tokens=256,
             )
             # Default to retrieval unless explicitly told not to
             if "[RETRIEVE_NO]" in response.upper():
-                # SPEC-RAG-QUALITY-011 REQ-003: Override check
+                # SPEC-RAG-QUALITY-011 REQ-003: Override check (Korean keywords)
                 if self._has_regulation_keywords(query):
                     self._metrics["override_count"] += 1
                     logger.info(
                         f"Override: LLM said NO but keywords found in query: {query[:50]}..."
+                    )
+                    return True
+                # SPEC-RAG-003 Task 1.3: University topic override for English queries
+                if self._has_university_topic_words(query):
+                    self._metrics["override_count"] += 1
+                    logger.info(
+                        f"Override: LLM said NO but university topics found in query: {query[:50]}..."
                     )
                     return True
                 self._metrics["retrieval_no_count"] += 1

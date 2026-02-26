@@ -111,6 +111,78 @@ class SearchStrategy(Enum):
     TOOL_CALLING = "tool_calling"  # Complex queries - use agent with tools
 
 
+# SPEC-RAG-003 Task 1.4: Language detection for bilingual rejection messages
+def _detect_query_language(query: str) -> str:
+    """
+    Detect query language using ASCII ratio heuristic.
+
+    Args:
+        query: User's question
+
+    Returns:
+        "en" for English, "ko" for Korean
+    """
+    if not query:
+        return "ko"
+    ascii_count = sum(1 for c in query if ord(c) < 128)
+    return "en" if ascii_count / len(query) > 0.7 else "ko"
+
+
+# SPEC-RAG-003: Bilingual rejection messages
+_REJECTION_MESSAGES = {
+    "ko": (
+        "이 질문은 규정 검색이 필요하지 않습니다. 구체적인 규정 관련 질문을 해주세요.\n\n"
+        "▶ 예시: \"장학금 신청 방법\", \"휴학 절차\", \"졸업 요건\""
+    ),
+    "en": (
+        "This question does not appear to require a regulation search. "
+        "Please ask a specific question about university regulations.\n\n"
+        "▶ Examples: \"How to apply for scholarship?\", \"Leave of absence procedure\", "
+        "\"Graduation requirements\""
+    ),
+}
+
+
+# SPEC-RAG-003 Task 2.2: Strip chain-of-thought leakage from LLM answers
+_COT_PATTERNS = [
+    # Numbered analysis steps: "1. **Analyze the User's Request**..."
+    re.compile(
+        r"^\d+\.\s+\*\*(?:Analyze|Check|Identify|Review|Evaluate|Consider|Assess).*?\*\*.*?$",
+        re.MULTILINE,
+    ),
+    # User Persona analysis
+    re.compile(r"\*\*User\s+Persona[:\s]?\*\*.*?$", re.MULTILINE),
+    # Constraint checklist
+    re.compile(r"\*\*Constraint.*?\*\*.*?$", re.MULTILINE),
+    # Step-by-step markers in English
+    re.compile(r"^Step\s+\d+[:\s].*$", re.MULTILINE),
+    # Internal reasoning headers
+    re.compile(
+        r"^#+\s*(?:Analysis|Reasoning|Internal|Chain.of.Thought|Thought Process).*$",
+        re.MULTILINE | re.IGNORECASE,
+    ),
+]
+
+
+def _strip_cot_from_answer(answer: str) -> str:
+    """
+    Remove chain-of-thought (CoT) leakage from LLM-generated answers.
+
+    Strips internal reasoning artifacts like analysis steps, persona assessments,
+    and constraint checklists that should not appear in user-facing answers.
+    """
+    if not answer:
+        return answer
+
+    cleaned = answer
+    for pattern in _COT_PATTERNS:
+        cleaned = pattern.sub("", cleaned)
+
+    # Remove resulting empty lines (collapse triple+ newlines to double)
+    cleaned = re.sub(r"\n{3,}", "\n\n", cleaned)
+    return cleaned.strip()
+
+
 def _extract_regulation_only_query(query: str) -> Optional[str]:
     """
     Extract regulation name if query is ONLY a regulation name.
@@ -191,6 +263,21 @@ def _get_fallback_regulation_qa_prompt() -> str:
     """Fallback prompt if prompts.json is not available."""
     return """당신은 동의대학교 규정 전문가입니다.
 주어진 규정 내용을 바탕으로 사용자의 질문에 **상세하고 친절하게** 답변하세요.
+
+## ⚠️ 출력 형식 (CRITICAL - SPEC-RAG-003 Phase 2)
+- 사용자에게 직접적인 답변만 제공하세요
+- 절대 출력하지 말 것: 분석 과정, 페르소나 분석, 제약 조건 체크리스트
+- "Analyze the User's Request", "User Persona", "Step 1:" 등 내부 추론 과정 절대 금지
+- 답변은 한국어로 바로 시작하세요 (영어 분석 과정 없이)
+- 번호 매기기 분석 단계(1. Analyze, 2. Check constraints...) 절대 금지
+- 첫 문장부터 사용자 질문에 대한 직접적인 답변이어야 합니다
+
+## 📋 답변 완전성 요구사항 (SPEC-RAG-003)
+- 절차가 있으면 단계별로 나열하세요
+- 기한/기간 정보가 [CONTEXT]에 있으면 반드시 포함하세요
+- 자격 요건이 있으면 모두 나열하세요
+- 필요 서류가 [CONTEXT]에 있으면 목록으로 제공하세요
+- 정보가 [CONTEXT]에 없으면 "해당 정보는 규정에서 확인되지 않습니다"라고 명시하세요
 
 ## 🔒 CONTEXT BOUNDARY (CRITICAL - SPEC-RAG-QUALITY-008)
 
@@ -2527,8 +2614,9 @@ class SearchUseCase:
             ):
                 # Simple query that doesn't need retrieval (rare for regulation Q&A)
                 logger.debug("Self-RAG: Skipping retrieval for simple query")
+                lang = _detect_query_language(question)
                 return Answer(
-                    text="이 질문은 규정 검색이 필요하지 않습니다. 구체적인 규정 관련 질문을 해주세요.",
+                    text=_REJECTION_MESSAGES[lang],
                     sources=[],
                     confidence=0.5,
                 )
@@ -2624,6 +2712,39 @@ class SearchUseCase:
                 text=FALLBACK_MESSAGE_KO,
                 sources=[],
                 confidence=confidence,
+            )
+
+        # SPEC-RAG-003 Phase 3: Filter out low-relevance documents
+        min_score = getattr(self.config, 'min_relevance_score', 0.25)
+        high_relevance = [r for r in filtered_results if r.score >= min_score]
+        if high_relevance:
+            filtered_results = high_relevance
+        elif all(r.score < min_score for r in filtered_results):
+            # All docs below threshold → likely no relevant info
+            logger.warning(
+                f"All {len(filtered_results)} results below min_relevance "
+                f"({min_score}), returning no-info response"
+            )
+            query_keywords = question[:30]
+            lang = _detect_query_language(question)
+            if lang == "en":
+                no_info_msg = (
+                    f'Sorry, no regulation information was found for "{query_keywords}"\n\n'
+                    "▶ Try:\n"
+                    "- Search with different keywords\n"
+                    "- Contact the relevant department for details"
+                )
+            else:
+                no_info_msg = (
+                    f'죄송합니다. "{query_keywords}"에 대한 규정 정보를 찾을 수 없습니다.\n\n'
+                    "▶ 다음을 시도해 보세요:\n"
+                    "- 다른 키워드로 검색\n"
+                    "- 관련 부서에 문의"
+                )
+            return Answer(
+                text=no_info_msg,
+                sources=[],
+                confidence=0.0,
             )
 
         # Build context from search results
@@ -2749,6 +2870,9 @@ class SearchUseCase:
                     sources=filtered_results,
                     confidence=faithfulness_result.score,  # Use faithfulness as confidence
                 )
+
+        # SPEC-RAG-003 Phase 2: Strip CoT leakage from answer
+        answer_text = _strip_cot_from_answer(answer_text)
 
         # SPEC-RAG-Q-004: Verify citations against source chunks
         answer_text = self._verify_citations(answer_text, filtered_results)
@@ -3351,6 +3475,9 @@ class SearchUseCase:
                 # Yield safe response and return early
                 yield {"type": "safe_response", "content": safe_response}
                 return
+
+        # SPEC-RAG-003 Phase 2: Strip CoT leakage from streamed answer
+        answer_text = _strip_cot_from_answer(answer_text)
 
         # SPEC-RAG-Q-004: Verify citations against source chunks
         answer_text = self._verify_citations(answer_text, filtered_results)
@@ -4604,7 +4731,7 @@ class SearchUseCase:
             ):
                 logger.debug("Self-RAG: Skipping retrieval for simple query")
                 return Answer(
-                    text="This question does not require regulation search. Please ask a specific regulation-related question.",
+                    text=_REJECTION_MESSAGES["en"],
                     sources=[],
                     confidence=0.5,
                 )
@@ -4732,6 +4859,9 @@ class SearchUseCase:
                     sources=filtered_results,
                     confidence=faithfulness_result.score,
                 )
+
+        # SPEC-RAG-003 Phase 2: Strip CoT leakage
+        answer_text = _strip_cot_from_answer(answer_text)
 
         # SPEC-RAG-Q-004: Verify citations against source chunks
         answer_text = self._verify_citations(answer_text, filtered_results)
