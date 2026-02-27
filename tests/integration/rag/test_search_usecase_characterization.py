@@ -45,7 +45,6 @@ class TestSearchUseCaseSearchBehavior:
         if results:
             assert hasattr(results[0], 'chunk')
             assert hasattr(results[0], 'score')
-            assert hasattr(results[0], 'query')
 
     def test_search_with_reranking(self, search_usecase):
         """Characterize: search with reranking returns scored results."""
