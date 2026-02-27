@@ -8,6 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Reranker score calibration with temperature-scaled sigmoid normalization (SPEC-RAG-QUALITY-012)
+  - `_calibrate_scores()` with T=0.5 for bge-reranker-base logit range
+  - Batch min-max normalization for meaningful score variance (std_dev >= 0.15)
+- Adaptive relevance threshold based on query complexity (SPEC-RAG-QUALITY-012)
+  - Simple: 0.50, Medium: 0.40, Complex: 0.35
+  - Top-1 fallback guarantees at least 1 result
+- International student audience detection (SPEC-RAG-QUALITY-012)
+  - `Audience.INTERNATIONAL` enum type with 12 keywords (유학생, 비자, visa, etc.)
+  - English query auto-routing to international audience
+- Extended faculty keyword coverage with 7 new terms (SPEC-RAG-QUALITY-012)
+  - 겸임, 초빙, 호봉, 임용, 재임용, 봉급, 발령
+- Enhanced CoT stripping with 6 new patterns (SPEC-RAG-QUALITY-012)
+  - `<think>`, `<analysis>` tags, 내부 분석 headers, [검색 전략] markers, 신뢰도 scores
+- 49 new tests for SPEC-RAG-QUALITY-012 (19 characterization + 30 implementation)
 - Real-time RAG monitoring system with --trace and --monitor flags (SPEC-RAG-MONITOR-001)
   - EventEmitter singleton pattern for RAG pipeline events
   - 7 event types: QueryReceived, QueryRewritten, SearchCompleted, RerankingCompleted, LLMGenerationStarted, TokenGenerated, AnswerGenerated
