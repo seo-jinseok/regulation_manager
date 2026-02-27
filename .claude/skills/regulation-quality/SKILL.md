@@ -41,7 +41,6 @@ triggers:
   phases: ["run", "sync"]
   languages: ["python"]
 ---
-
 # Ragulation Quality - Comprehensive Regulation Q&A Evaluation System
 
 Regulation Manager 규정 Q&A 시스템의 포괄적인 품질 평가를 위한 스킬입니다. 6가지 사용자 페르소나를 시뮬레이션하는 서브에이전트들이 병렬로 작동하여 실제 사용자 패턴을 테스트합니다.

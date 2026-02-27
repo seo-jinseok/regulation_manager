@@ -161,6 +161,17 @@ _COT_PATTERNS = [
         r"^#+\s*(?:Analysis|Reasoning|Internal|Chain.of.Thought|Thought Process).*$",
         re.MULTILINE | re.IGNORECASE,
     ),
+    # SPEC-RAG-QUALITY-012 REQ-006: Additional CoT patterns
+    # <think>...</think> tags (single-line and multi-line)
+    re.compile(r"<think>.*?</think>", re.DOTALL),
+    # <analysis>...</analysis> tags (single-line and multi-line)
+    re.compile(r"<analysis>.*?</analysis>", re.DOTALL),
+    # ## 내부 분석 section (Korean internal analysis header + content until next ##)
+    re.compile(r"^##\s*내부\s*분석\b.*?(?=^##\s|\Z)", re.MULTILINE | re.DOTALL),
+    # [검색 전략] markers
+    re.compile(r"^\[검색\s*전략\][:\s].*$", re.MULTILINE),
+    # Confidence score text: 신뢰도: 0.XX
+    re.compile(r"신뢰도[:\s]+\d+\.?\d*", re.MULTILINE),
 ]
 
 

@@ -42,6 +42,8 @@ class Audience(Enum):
     STUDENT = "student"
     FACULTY = "faculty"
     STAFF = "staff"
+    # SPEC-RAG-QUALITY-012 REQ-005: International student audience
+    INTERNATIONAL = "international"
 
 
 @dataclass(frozen=True)
@@ -182,6 +184,14 @@ class QueryAnalyzer:
         "저는 교수",
         "교수로서",
         "교원으로서",
+        # SPEC-RAG-QUALITY-012 REQ-004: Extended faculty keywords
+        "겸임",
+        "초빙",
+        "호봉",
+        "임용",
+        "재임용",
+        "봉급",
+        "발령",
     ]
     STUDENT_KEYWORDS = [
         "학생",
@@ -213,6 +223,22 @@ class QueryAnalyzer:
         "전보",
         "직원인데",
     ]
+    # SPEC-RAG-QUALITY-012 REQ-005: International student keywords
+    INTERNATIONAL_KEYWORDS = [
+        "유학생",
+        "외국인",
+        "비자",
+        "visa",
+        "체류",
+        "출입국",
+        "d-2",
+        "d-4",
+        "어학연수",
+        "교환학생",
+        "외국인등록",
+        "topik",
+    ]
+
     AMBIGUOUS_AUDIENCE_KEYWORDS = ["징계", "처분", "위반", "제재", "윤리", "고충"]
 
     # Context keywords for better audience detection
@@ -878,15 +904,24 @@ class QueryAnalyzer:
         matches: List[Audience] = []
 
         # Primary keywords (explicit audience mention)
+        # SPEC-RAG-QUALITY-012 REQ-005: Check international first (more specific)
+        if any(k in query_lower for k in self.INTERNATIONAL_KEYWORDS):
+            matches.append(Audience.INTERNATIONAL)
         if any(k in query_lower for k in self.FACULTY_KEYWORDS):
             matches.append(Audience.FACULTY)
         if any(k in query_lower for k in self.STUDENT_KEYWORDS):
-            matches.append(Audience.STUDENT)
+            # Don't double-match "유학생" as STUDENT when already INTERNATIONAL
+            if Audience.INTERNATIONAL not in matches:
+                matches.append(Audience.STUDENT)
         if any(k in query_lower for k in self.STAFF_KEYWORDS):
             matches.append(Audience.STAFF)
 
         if matches:
             return matches
+
+        # SPEC-RAG-QUALITY-012 REQ-005: English queries → international
+        if self._is_english_query(query):
+            return [Audience.INTERNATIONAL]
 
         # Secondary: Context-based detection (when no explicit keywords)
         context_matches: List[Audience] = []

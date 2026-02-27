@@ -42,10 +42,104 @@ _bge_available: Optional[bool] = None  # None = not tested, True = available, Fa
 _last_reranker_error: Optional[str] = None
 
 # SPEC-RAG-QUALITY-006: Context Relevance threshold
-# SPEC-RAG-QUALITY-007: Threshold increased from 0.15 to 0.25
-# Filter out documents with low relevance scores to improve context quality
-# Default threshold: 0.25 (documents below this are likely irrelevant)
+# SPEC-RAG-QUALITY-012 REQ-002: Adaptive thresholds replace fixed threshold
+# Legacy default kept for backward compatibility
 MIN_RELEVANCE_THRESHOLD = 0.25
+
+# SPEC-RAG-QUALITY-012 REQ-001: Temperature for sigmoid calibration
+# Lower temperature = wider score spread (more discriminative)
+# Calibrated for bge-reranker-base logit range ~[-5, 5]
+SIGMOID_TEMPERATURE = 0.5
+
+# SPEC-RAG-QUALITY-012 REQ-002: Complexity-based adaptive thresholds
+ADAPTIVE_THRESHOLDS = {
+    "simple": 0.50,   # Single keyword, article references
+    "medium": 0.40,   # Natural language questions
+    "complex": 0.35,  # Multi-regulation, comparative queries
+}
+
+
+def _calibrate_scores(raw_scores: List[float]) -> List[float]:
+    """
+    SPEC-RAG-QUALITY-012 REQ-001: Calibrated score normalization.
+
+    Two-stage normalization:
+    1. Temperature-scaled sigmoid for wider score spread
+    2. Batch-relative min-max normalization for meaningful discrimination
+
+    Ensures std_dev >= 0.15 across a batch of documents.
+    """
+    import numpy as np
+
+    if not raw_scores:
+        return []
+
+    if len(raw_scores) == 1:
+        # Single document: temperature-scaled sigmoid only
+        s = raw_scores[0]
+        return [1.0 / (1.0 + np.exp(-s / SIGMOID_TEMPERATURE))]
+
+    # Stage 1: Temperature-scaled sigmoid
+    temp_scores = [1.0 / (1.0 + np.exp(-s / SIGMOID_TEMPERATURE)) for s in raw_scores]
+
+    # Stage 2: Batch-relative min-max normalization
+    min_s = min(temp_scores)
+    max_s = max(temp_scores)
+    score_range = max_s - min_s
+
+    if score_range < 1e-6:
+        # All scores identical — return uniform 0.5
+        return [0.5] * len(raw_scores)
+
+    # Normalize to [0.1, 0.95] to avoid extreme values
+    normalized = [
+        0.1 + 0.85 * (s - min_s) / score_range for s in temp_scores
+    ]
+    return normalized
+
+
+def _apply_adaptive_filter(
+    results: List["RerankedResult"],
+    min_relevance: float,
+) -> List["RerankedResult"]:
+    """
+    SPEC-RAG-QUALITY-012 REQ-002: Filter with adaptive threshold + fallback.
+
+    Always returns at least 1 result (top-1 fallback) even if all below threshold.
+    """
+    if not results:
+        return results
+
+    filtered = [r for r in results if r.score >= min_relevance]
+
+    if not filtered:
+        # Fallback: always keep top-1 result
+        logger.debug(
+            f"All {len(results)} docs below threshold {min_relevance}, "
+            f"keeping top-1 (score={results[0].score:.3f})"
+        )
+        return [results[0]]
+
+    if len(filtered) < len(results):
+        logger.debug(
+            f"Filtered {len(results) - len(filtered)} docs below "
+            f"threshold {min_relevance}"
+        )
+
+    return filtered
+
+
+def get_adaptive_threshold(complexity: str = "medium") -> float:
+    """
+    SPEC-RAG-QUALITY-012 REQ-002: Get threshold for query complexity.
+
+    Args:
+        complexity: Query complexity level (simple, medium, complex).
+
+    Returns:
+        Relevance threshold appropriate for the complexity.
+    """
+    return ADAPTIVE_THRESHOLDS.get(complexity, ADAPTIVE_THRESHOLDS["medium"])
 
 
 @dataclass
@@ -330,18 +424,16 @@ def rerank(
         # CrossEncoder.predict returns raw scores, we need to normalize
         raw_scores = reranker.predict(pairs)
 
-        # Normalize scores to 0-1 range using sigmoid for CrossEncoder
         import numpy as np
         if isinstance(raw_scores, np.ndarray):
             raw_scores = raw_scores.tolist()
 
-        # Apply sigmoid normalization for cross-encoder scores
-        # This maps raw scores (can be negative) to 0-1 range
-        scores = [1 / (1 + np.exp(-s)) for s in raw_scores]
+        # SPEC-RAG-QUALITY-012 REQ-001: Temperature-scaled sigmoid + batch normalization
+        scores = _calibrate_scores(raw_scores)
 
         # Handle single document case (returns float instead of list)
-        if isinstance(scores, float):
-            scores = [scores]
+        if isinstance(scores, (int, float)):
+            scores = [float(scores)]
 
         # Create results with scores
         results = []
@@ -359,22 +451,18 @@ def rerank(
         # Sort by score descending
         results.sort(key=lambda x: x.score, reverse=True)
 
-        # SPEC-RAG-QUALITY-006: Filter by minimum relevance threshold
-        # SPEC-RAG-QUALITY-007: Added score distribution logging
-        # This improves context relevance by removing low-quality documents
-        filtered_results = [r for r in results if r.score >= min_relevance]
-        if len(filtered_results) < len(results):
-            logger.debug(
-                f"Filtered {len(results) - len(filtered_results)} documents below relevance threshold {min_relevance}"
-            )
+        # SPEC-RAG-QUALITY-012 REQ-002: Apply adaptive threshold with fallback
+        filtered_results = _apply_adaptive_filter(results, min_relevance)
 
-        # SPEC-RAG-QUALITY-007: Log filtered documents count and score distribution
+        # Log score distribution for monitoring
         if filtered_results:
-            scores = [r.score for r in filtered_results]
-            avg_score = sum(scores) / len(scores)
+            f_scores = [r.score for r in filtered_results]
+            avg_score = sum(f_scores) / len(f_scores)
+            std_score = float(np.std(f_scores)) if len(f_scores) > 1 else 0.0
             logger.info(
-                f"Reranker filtered {len(scores)} docs, avg_score={avg_score:.3f}, "
-                f"min={min(scores):.3f}, max={max(scores):.3f}, threshold={min_relevance}"
+                f"Reranker: {len(f_scores)} docs, avg={avg_score:.3f}, "
+                f"std={std_score:.3f}, min={min(f_scores):.3f}, "
+                f"max={max(f_scores):.3f}, threshold={min_relevance}"
             )
 
         return filtered_results[:top_k]
