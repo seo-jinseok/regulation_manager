@@ -282,8 +282,14 @@ class FaithfulnessValidator:
         total_claims = len(grounded_claims) + len(ungrounded_claims)
 
         if total_claims == 0:
-            # No claims: use context keyword overlap
-            return self._calculate_context_overlap(answer, context)
+            # No specific verifiable claims (citations, dates, numbers, etc.)
+            # Absence of claims is not evidence of fabrication.
+            # Use boosted overlap: base credit (0.5) + actual overlap when
+            # there is meaningful keyword overlap with the context.
+            overlap = self._calculate_context_overlap(answer, context)
+            if overlap >= 0.1:
+                return min(0.5 + overlap, 1.0)
+            return overlap
 
         # Claim verification ratio
         claim_score = len(grounded_claims) / total_claims

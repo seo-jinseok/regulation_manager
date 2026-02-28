@@ -462,6 +462,7 @@ class SearchUseCase:
         from ..infrastructure.llm_adapter import LLMClientAdapter
 
         config = get_config()
+        self.config = config
 
         self.store = store
 
