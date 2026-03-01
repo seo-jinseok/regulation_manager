@@ -98,7 +98,6 @@ if TYPE_CHECKING:
     from .academic_calendar_service import AcademicCalendarService
     from ..infrastructure.period_keyword_detector import PeriodKeywordDetector
     from ..domain.evaluation.faithfulness_validator import FaithfulnessValidator
-    from ..domain.evaluation.evasive_detector import EvasiveResponseDetector
     from ..domain.citation.citation_verification_service import (
         CitationVerificationService,
     )

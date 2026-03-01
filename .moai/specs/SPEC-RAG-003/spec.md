@@ -1,9 +1,9 @@
 ---
 id: SPEC-RAG-003
-version: "1.0.0"
-status: draft
+version: "1.1.0"
+status: completed
 created: "2026-02-26"
-updated: "2026-02-26"
+updated: "2026-03-01"
 author: MoAI
 priority: critical
 ---
@@ -13,6 +13,7 @@ priority: critical
 | Version | Date | Author | Description |
 |---------|------|--------|-------------|
 | 1.0.0 | 2026-02-26 | MoAI | Initial SPEC creation from evaluation report analysis |
+| 1.1.0 | 2026-03-01 | MoAI | Mark as completed after implementation and sync |
 
 ---
 
@@ -179,3 +180,34 @@ src/rag/infrastructure/retrieval_evaluator.py ← Module 4 (임계값 조정)
 - 평가 데이터: `data/evaluations/rag_quality_eval_20260226_155729.json`
 - 연구 문서: `.moai/specs/SPEC-RAG-003/research.md`
 - 이전 SPEC: SPEC-RAG-001 (7개 컴포넌트), SPEC-RAG-002 (품질 개선, 87.3% 커버리지)
+
+---
+
+## 7. Implementation Notes (2026-03-01)
+
+### 구현 결과
+
+SPEC-RAG-003은 커밋 `e2700c6`에서 구현되었으며, 이후 SPEC-RAG-QUALITY-013에서 추가 개선되어 최종 **Pass Rate 90.0% (27/30)**을 달성했습니다.
+
+### 변경 파일
+
+| File | Changes | Module |
+|------|---------|--------|
+| `src/rag/infrastructure/self_rag.py` | 영어 키워드 추가, 이중언어 프롬프트, 토픽 오버라이드 | Module 1, 2 |
+| `src/rag/application/search_usecase.py` | CoT 억제, 답변 품질 개선, 관련성 필터링, 환각 방지 | Module 2, 3, 4, 5 |
+| `src/rag/infrastructure/query_analyzer.py` | 영어 쿼리 언어 감지 | Module 1 |
+| `src/rag/config.py` | 이중언어 설정 추가 | Module 1 |
+
+### 테스트
+
+- 59개 테스트 전체 통과 (4개 테스트 파일)
+- `tests/characterization/test_spec_rag_003_characterize.py` (기존 동작 보존)
+- `tests/rag/unit/application/test_answer_quality_phase2.py` (답변 품질)
+- `tests/rag/unit/infrastructure/test_self_rag_bilingual.py` (이중언어 Self-RAG)
+- `tests/rag/unit/test_phase3_search_quality.py` (검색 품질)
+
+### 스코프 변경
+
+- 계획 대비 추가 구현: 없음
+- 미구현/연기 사항: hybrid_search.py, retrieval_evaluator.py 변경은 SPEC-RAG-QUALITY-013에서 대체
+- 기타: 후속 SPEC-RAG-QUALITY-013에서 Pass Rate 16.7% → 90.0%까지 추가 개선

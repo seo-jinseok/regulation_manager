@@ -8,6 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Bilingual Self-RAG support for English regulation queries (SPEC-RAG-003)
+  - English regulation keywords in Self-RAG pre-filter (40+ terms)
+  - Bilingual LLM evaluation prompt with Korean/English examples
+  - University topic override mechanism for false-negative prevention
+  - Bilingual rejection messages (English for English queries, Korean for Korean)
+- Answer generation quality improvements (SPEC-RAG-003)
+  - CoT (Chain-of-Thought) suppression in user-facing responses
+  - Specific citation format enforcement (규정명 + 제X조)
+  - Relevance-based document filtering before LLM generation
+  - Hallucination prevention for low-relevance contexts
+- 59 new tests for SPEC-RAG-003 (characterization + unit)
 - Reranker score calibration with temperature-scaled sigmoid normalization (SPEC-RAG-QUALITY-012)
   - `_calibrate_scores()` with T=0.5 for bge-reranker-base logit range
   - Batch min-max normalization for meaningful score variance (std_dev >= 0.15)
