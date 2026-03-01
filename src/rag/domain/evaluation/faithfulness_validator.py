@@ -81,6 +81,11 @@ class FaithfulnessValidator:
         r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"
     )
 
+    # URL patterns (SPEC-RAG-Q-001: prevent fabricated URLs)
+    URL_PATTERN: Pattern = re.compile(
+        r"https?://[a-zA-Z0-9._~:/?#\[\]@!$&'()*+,;=%\-]+"
+    )
+
     def __init__(self):
         """Initialize faithfulness validator."""
         logger.info("Initialized FaithfulnessValidator")
@@ -191,6 +196,9 @@ class FaithfulnessValidator:
 
         # Extract emails
         claims.extend(self.EMAIL_PATTERN.findall(text))
+
+        # Extract URLs (SPEC-RAG-Q-001)
+        claims.extend(self.URL_PATTERN.findall(text))
 
         # Remove duplicates while preserving order
         seen = set()

@@ -633,3 +633,96 @@ class TestEdgeCases:
 
         # Should recognize (02) 1234-5678 matches 02-1234-5678
         assert len(result[1]) == 0  # No issues since it matches
+
+
+class TestValidateUrls:
+    """Test URL validation (SPEC-RAG-Q-001)."""
+
+    def test_url_in_context_is_kept(self):
+        """
+        WHEN URL in response is present in context
+        THEN should keep the URL and report no issues
+        """
+        filter_service = HallucinationFilter()
+        response = "자세한 내용은 https://www.example.ac.kr/info 에서 확인하세요."
+        context = ["학교 홈페이지 https://www.example.ac.kr/info 참조"]
+
+        sanitized, issues = filter_service.validate_urls(response, context)
+
+        assert "https://www.example.ac.kr/info" in sanitized
+        assert len(issues) == 0
+
+    def test_url_not_in_context_is_sanitized(self):
+        """
+        WHEN URL in response is NOT in context
+        THEN should replace with fallback message
+        """
+        filter_service = HallucinationFilter()
+        response = "자세한 사항은 https://fake.example.com/page 를 참조하세요."
+        context = ["관련 규정에 대한 내용입니다."]
+
+        sanitized, issues = filter_service.validate_urls(response, context)
+
+        assert "https://fake.example.com/page" not in sanitized
+        assert len(issues) == 1
+        assert "Unverified URL" in issues[0]
+
+    def test_www_pattern_detected(self):
+        """
+        WHEN response contains www. URL without http scheme
+        THEN should detect and validate it
+        """
+        filter_service = HallucinationFilter()
+        response = "www.university.ac.kr 에서 확인 가능합니다."
+        context = ["관련 안내"]
+
+        sanitized, issues = filter_service.validate_urls(response, context)
+
+        assert "www.university.ac.kr" not in sanitized
+        assert len(issues) == 1
+
+    def test_multiple_urls_mixed_validity(self):
+        """
+        WHEN response has valid and invalid URLs
+        THEN should keep valid and sanitize invalid
+        """
+        filter_service = HallucinationFilter()
+        response = (
+            "신청: https://portal.ac.kr/apply, "
+            "문의: https://fake.site.com/help"
+        )
+        context = ["신청 링크: https://portal.ac.kr/apply"]
+
+        sanitized, issues = filter_service.validate_urls(response, context)
+
+        assert "https://portal.ac.kr/apply" in sanitized
+        assert "https://fake.site.com/help" not in sanitized
+        assert len(issues) == 1
+
+    def test_no_urls_in_response(self):
+        """
+        WHEN response has no URLs
+        THEN should return response unchanged with no issues
+        """
+        filter_service = HallucinationFilter()
+        response = "학칙 제10조에 따라 처리됩니다."
+        context = ["학칙 제10조"]
+
+        sanitized, issues = filter_service.validate_urls(response, context)
+
+        assert sanitized == response
+        assert len(issues) == 0
+
+    def test_url_validation_in_filter_response(self):
+        """
+        WHEN filter_response is called with fabricated URL
+        THEN should sanitize the URL in final output
+        """
+        filter_service = HallucinationFilter()
+        response = "자세한 내용은 https://hallucinated.url.com 에서 확인하세요."
+        context = ["관련 규정 안내"]
+
+        result = filter_service.filter_response(response, context)
+
+        assert "https://hallucinated.url.com" not in result.sanitized_response
+        assert result.is_modified is True

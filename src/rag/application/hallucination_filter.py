@@ -8,6 +8,7 @@ Key features:
 - Contact information validation (phone, email) - REQ-001
 - Department name validation - REQ-002
 - Citation grounding validation - REQ-003
+- URL validation - REQ-004 (SPEC-RAG-Q-001)
 - Faithfulness score calculation - SPEC-RAG-QUALITY-004
 - Multiple filter modes (warn, sanitize, block, passthrough)
 """
@@ -93,6 +94,12 @@ class HallucinationFilter:
         r"([가-힣]{1,20}과)"
     )
 
+    # URL patterns (SPEC-RAG-Q-001 REQ-004)
+    URL_PATTERNS = [
+        re.compile(r"https?://[^\s)>\]]+"),  # http:// or https://
+        re.compile(r"www\.[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}[^\s)>\]]*"),  # www.example.com
+    ]
+
     # Citation patterns - extract just the article number part
     CITATION_PATTERNS = [
         re.compile(r"(학칙|규정|지침|령)\s*제\d+조"),
@@ -106,6 +113,7 @@ class HallucinationFilter:
     CONTACT_FALLBACK = "자세한 연락처는 해당 부서에 직접 문의해 주시기 바랍니다"
     DEPARTMENT_FALLBACK = "담당 부서"
     CITATION_FALLBACK = "관련 규정"
+    URL_FALLBACK = "정확한 주소는 학교 홈페이지에서 확인하시기 바랍니다"
 
     def __init__(self, mode: FilterMode = FilterMode.SANITIZE):
         """
@@ -159,6 +167,12 @@ class HallucinationFilter:
         issues.extend(citation_issues)
         if citation_issues:
             warnings.append(f"Citation validation issues: {len(citation_issues)}")
+
+        # Validate URLs (SPEC-RAG-Q-001 REQ-004)
+        sanitized, url_issues = self.validate_urls(sanitized, context)
+        issues.extend(url_issues)
+        if url_issues:
+            warnings.append(f"URL validation issues: {len(url_issues)}")
 
         is_modified = sanitized != response
 
@@ -364,6 +378,52 @@ class HallucinationFilter:
 
         return sanitized, issues
 
+    def validate_urls(
+        self, response: str, context: List[str]
+    ) -> Tuple[str, List[str]]:
+        """
+        Validate URLs against context.
+
+        SPEC-RAG-Q-001 REQ-004: URL Grounding
+
+        Args:
+            response: The response to validate
+            context: List of context documents
+
+        Returns:
+            Tuple of (sanitized_response, list_of_issues)
+        """
+        issues: List[str] = []
+        sanitized = response
+        context_text = " ".join(context)
+
+        # Extract URLs from context for comparison
+        context_urls: set = set()
+        for pattern in self.URL_PATTERNS:
+            for match in pattern.finditer(context_text):
+                context_urls.add(self._normalize_url(match.group(0)))
+
+        # Check URLs in response
+        for pattern in self.URL_PATTERNS:
+            matches = list(pattern.finditer(sanitized))
+            for match in reversed(matches):
+                url = match.group(0)
+                normalized = self._normalize_url(url)
+
+                if normalized not in context_urls:
+                    issues.append(f"Unverified URL: {url}")
+                    sanitized = (
+                        sanitized[: match.start()]
+                        + self.URL_FALLBACK
+                        + sanitized[match.end() :]
+                    )
+
+        return sanitized, issues
+
+    def _normalize_url(self, url: str) -> str:
+        """Normalize URL for comparison by stripping trailing punctuation."""
+        return url.rstrip(".,;:!?)")
+
     def _normalize_phone(self, phone: str) -> str:
         """
         Normalize phone number for comparison.
@@ -437,10 +497,11 @@ class HallucinationFilter:
         _, contact_issues = self.validate_contacts(response, context)
         _, dept_issues = self.validate_departments(response, context)
         _, citation_issues = self.validate_citations(response, context)
+        _, url_issues = self.validate_urls(response, context)
 
-        total_issues = len(contact_issues) + len(dept_issues) + len(citation_issues)
+        total_issues = len(contact_issues) + len(dept_issues) + len(citation_issues) + len(url_issues)
 
-        # Count total claims (contacts, departments, citations found in response)
+        # Count total claims (contacts, departments, citations, URLs found in response)
         total_claims = 0
         verified_claims = 0
 
@@ -455,6 +516,10 @@ class HallucinationFilter:
 
         # Count citations in response
         for pattern in self.CITATION_PATTERNS:
+            total_claims += len(pattern.findall(response))
+
+        # Count URLs in response (SPEC-RAG-Q-001)
+        for pattern in self.URL_PATTERNS:
             total_claims += len(pattern.findall(response))
 
         # Verified claims = total claims - issues

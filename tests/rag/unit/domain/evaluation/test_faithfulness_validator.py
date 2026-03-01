@@ -375,3 +375,33 @@ class TestFaithfulnessValidationResult:
         # Score should be a valid float
         assert isinstance(result.score, float)
         assert 0.0 <= result.score <= 1.0
+
+
+class TestUrlClaimExtraction:
+    """Test URL claim extraction in FaithfulnessValidator (SPEC-RAG-Q-001)."""
+
+    def test_url_extracted_as_claim(self):
+        """WHEN answer contains URL, THEN it should be extracted as a claim."""
+        validator = FaithfulnessValidator()
+        claims = validator._extract_claims(
+            "자세한 내용은 https://www.example.ac.kr/info 에서 확인하세요."
+        )
+        assert "https://www.example.ac.kr/info" in claims
+
+    def test_url_grounded_in_context(self):
+        """WHEN URL exists in context, THEN it should be grounded."""
+        validator = FaithfulnessValidator()
+        result = validator.validate_answer(
+            "참조: https://portal.ac.kr/apply",
+            ["신청 링크는 https://portal.ac.kr/apply 입니다."],
+        )
+        assert "https://portal.ac.kr/apply" in result.grounded_claims
+
+    def test_url_not_grounded(self):
+        """WHEN URL is fabricated (not in context), THEN it should be ungrounded."""
+        validator = FaithfulnessValidator()
+        result = validator.validate_answer(
+            "자세한 사항은 https://fake.example.com 참조",
+            ["관련 규정 안내"],
+        )
+        assert "https://fake.example.com" in result.ungrounded_claims
