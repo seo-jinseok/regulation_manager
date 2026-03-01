@@ -219,7 +219,6 @@ class QueryAnalyzer:
         "사무",
         "참사",
         "주사",
-        "승진",
         "전보",
         "직원인데",
     ]
@@ -239,7 +238,8 @@ class QueryAnalyzer:
         "topik",
     ]
 
-    AMBIGUOUS_AUDIENCE_KEYWORDS = ["징계", "처분", "위반", "제재", "윤리", "고충"]
+    # SPEC-RAG-QUALITY-014 EARS-U-002: '승진' applies to both faculty and staff
+    AMBIGUOUS_AUDIENCE_KEYWORDS = ["징계", "처분", "위반", "제재", "윤리", "고충", "승진"]
 
     # Context keywords for better audience detection
     STUDENT_CONTEXT_KEYWORDS = [

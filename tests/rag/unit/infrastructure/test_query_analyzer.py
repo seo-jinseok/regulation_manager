@@ -132,16 +132,16 @@ class TestQueryAnalyzer:
         assert dense_w == 0.15
 
     def test_get_weights_question(self, analyzer: QueryAnalyzer):
-        """NATURAL_QUESTION도 BM25 강조 (한국어 시맨틱 서치 성능 문제로 BM25 강조)"""
+        """NATURAL_QUESTION: Dense 강화 (자연어 질문 - 의미적 이해)"""
         bm25_w, dense_w = analyzer.get_weights("이건 뭔가요?")
-        assert bm25_w == 0.75
-        assert dense_w == 0.25
+        assert bm25_w == 0.65
+        assert dense_w == 0.35
 
     def test_get_weights_intent(self, analyzer: QueryAnalyzer):
-        """INTENT는 BM25 강조 (한국어 시맨틱 서치 성능 문제로 BM25 강조, 의도 키워드 주입됨)"""
+        """INTENT: Dense 강화 (의도 기반 검색 - 맥락 이해)"""
         bm25_w, dense_w = analyzer.get_weights("학교에 가기 싫어")
-        assert bm25_w == 0.85
-        assert dense_w == 0.15
+        assert bm25_w == 0.70
+        assert dense_w == 0.30
 
     def test_detects_new_intents(self, analyzer: QueryAnalyzer):
         """새로 추가된 의도 패턴 감지 확인"""
@@ -151,10 +151,10 @@ class TestQueryAnalyzer:
         assert analyzer.analyze("창업 지원 받고 싶어") == QueryType.INTENT
 
     def test_get_weights_general(self, analyzer: QueryAnalyzer):
-        """GENERAL도 BM25 강조 (한국어 시맨틱 서치 성능 문제로 BM25 강조)"""
+        """GENERAL: 균형 잡힌 기본 검색"""
         bm25_w, dense_w = analyzer.get_weights("일반 검색어")
-        assert bm25_w == 0.85
-        assert dense_w == 0.15
+        assert bm25_w == 0.75
+        assert dense_w == 0.25
 
 
 class TestHybridSearcherDynamicWeights:
@@ -286,6 +286,24 @@ class TestAudienceDetection:
     def test_audience_single(self):
         analyzer = QueryAnalyzer()
         assert analyzer.is_audience_ambiguous("학생 휴학 절차") is False
+
+    def test_faculty_promotion_not_ambiguous(self):
+        """SPEC-RAG-QUALITY-014 EARS-U-002: '교원 승진' resolves to FACULTY only."""
+        from src.rag.infrastructure.query_analyzer import Audience
+
+        analyzer = QueryAnalyzer()
+        candidates = analyzer.detect_audience_candidates("교원 승진 관련 편/장/조 구체적 근거")
+        assert candidates == [Audience.FACULTY], (
+            f"Expected [FACULTY] but got {candidates}. '승진' should not trigger STAFF."
+        )
+
+    def test_staff_promotion_still_resolves(self):
+        """SPEC-RAG-QUALITY-014 EARS-U-002: '직원 승진' still resolves to STAFF."""
+        from src.rag.infrastructure.query_analyzer import Audience
+
+        analyzer = QueryAnalyzer()
+        candidates = analyzer.detect_audience_candidates("직원 승진")
+        assert candidates == [Audience.STAFF]
 
     def test_rewrite_blank_llm_falls_back(self, mock_llm):
         """LLM이 빈 응답을 반환하면 규칙 기반으로 폴백."""

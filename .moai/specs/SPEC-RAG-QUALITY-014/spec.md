@@ -1,8 +1,9 @@
 ---
 id: SPEC-RAG-QUALITY-014
 version: 1.0.0
-status: draft
+status: implemented
 created: 2026-03-01
+implemented: 2026-03-01
 author: MoAI
 priority: high
 title: "RAG Query Classification Bottleneck Fix"

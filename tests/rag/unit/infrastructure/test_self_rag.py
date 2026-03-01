@@ -394,6 +394,48 @@ class TestSPEC_RAG_QUALITY_011_Req002:
         assert elapsed_ms < 5.0
 
 
+class TestSPEC_RAG_QUALITY_014_StaffKeywords:
+    """SPEC-RAG-QUALITY-014 EARS-U-001: Staff/admin regulation keywords."""
+
+    def setup_method(self):
+        reset_config()
+
+    def teardown_method(self):
+        reset_config()
+
+    def test_staff_admin_keywords_detected(self):
+        """EARS-U-001: Staff/admin terms must be recognized as regulation keywords."""
+        from src.rag.infrastructure.self_rag import SelfRAGEvaluator
+
+        evaluator = SelfRAGEvaluator()
+
+        staff_queries = [
+            "급여 관련 서식 양식 알려주세요",
+            "수당 지급 기준이 어떻게 되나요",
+            "보수 규정 안내",
+            "복무 처리 기한",
+            "출장 신청 절차",
+            "휴가 규정 알려줘",
+            "퇴직 관련 서류",
+            "인사 발령 기준",
+            "겸직 허가 절차",
+            "복리후생 규정",
+        ]
+
+        for query in staff_queries:
+            assert evaluator._has_regulation_keywords(query), (
+                f"FAIL: '{query}' should be detected as regulation query"
+            )
+
+    def test_form_related_keywords_detected(self):
+        """EARS-U-001: '서식', '양식' must trigger retrieval."""
+        from src.rag.infrastructure.self_rag import SelfRAGEvaluator
+
+        evaluator = SelfRAGEvaluator()
+        assert evaluator._has_regulation_keywords("서식 다운로드")
+        assert evaluator._has_regulation_keywords("양식 제출")
+
+
 class TestSPEC_RAG_QUALITY_011_Req003:
     """REQ-003: Fallback Retrieval Mechanism Tests."""
 

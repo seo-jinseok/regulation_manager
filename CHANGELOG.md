@@ -57,10 +57,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Confidence scoring for citation validation (SPEC-RAG-QUALITY-005)
 - Fallback messages for edge case queries (SPEC-RAG-QUALITY-005)
 
+- Staff/admin regulation keyword expansion in Self-RAG pre-filter (SPEC-RAG-QUALITY-014)
+  - 15 new keywords: 급여, 보수, 수당, 서식, 양식, 복무, 근무, 출장, 휴가, 연수, 퇴직, 인사, 복리후생, 보험, 겸직
+  - Prevents false-negative "no retrieval needed" for staff-related queries
+- Audience detection fix for '승진' keyword (SPEC-RAG-QUALITY-014)
+  - Moved '승진' from STAFF-only to AMBIGUOUS_AUDIENCE_KEYWORDS
+  - '교원 승진' correctly resolves to FACULTY, '직원 승진' to STAFF
+- 20 new tests for SPEC-RAG-QUALITY-014 (audience detection + keyword coverage)
+
 ### Changed
 - Enhanced typo correction with 30+ new patterns (SPEC-RAG-QUALITY-005)
 - Improved clarification detection for vague/ambiguous queries (SPEC-RAG-QUALITY-005)
 - Extended staff persona topics to include 입찰 (SPEC-RAG-QUALITY-005)
+- WEIGHT_PRESETS updated for improved Dense search utilization (SPEC-RAG-QUALITY-006)
+  - NATURAL_QUESTION: 0.75/0.25 → 0.65/0.35 (Dense 강화)
+  - INTENT: 0.85/0.15 → 0.70/0.30 (Dense 강화)
+  - GENERAL: 0.85/0.15 → 0.75/0.25 (균형 조정)
 
 ## [2.6.0] - 2026-02-15
 
