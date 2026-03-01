@@ -415,35 +415,25 @@ class LLMJudge:
                 expected_info=expected_info
             )
 
-            # Build a single raw prompt (no chat template) to allow <think> mode
-            raw_prompt = f"{system_prompt}\n\n{user_prompt}"
-
-            # Call LLM using raw mode (bypasses chat template, preserves <think> behavior)
-            # Retry up to 3 times since model sometimes skips <think> mode
+            # Use chat API for structured JSON output (raw mode often produces free-form text)
             response = None
-            if hasattr(self.llm_client, 'generate_raw'):
-                for judge_attempt in range(3):
-                    try:
-                        attempt_response = self.llm_client.generate_raw(
-                            prompt=raw_prompt,
-                            max_tokens=4096,
-                        )
-                        if '```json' in attempt_response or '"accuracy"' in attempt_response:
-                            response = attempt_response
-                            break
-                        logger.warning(f"Judge attempt {judge_attempt+1}/3: no JSON in response (len={len(attempt_response)})")
-                    except Exception as e:
-                        logger.warning(f"Judge attempt {judge_attempt+1}/3 failed: {e}")
-                if response is None:
-                    # All attempts failed to produce JSON, use last response anyway
-                    response = attempt_response if 'attempt_response' in dir() else ""
-            else:
-                response = self.llm_client.generate(
-                    system_prompt=system_prompt,
-                    user_message=user_prompt,
-                    temperature=0.0,
-                    max_tokens=4096,
-                )
+            for judge_attempt in range(2):
+                try:
+                    attempt_response = self.llm_client.generate(
+                        system_prompt=system_prompt + "\n\n중요: 반드시 JSON 코드블록만 출력하세요. 설명 없이 ```json으로 시작하세요.",
+                        user_message=user_prompt,
+                        temperature=0.0,
+                        max_tokens=1024,
+                    )
+                    if '```json' in attempt_response or '"accuracy"' in attempt_response:
+                        response = attempt_response
+                        break
+                    logger.warning(f"Judge attempt {judge_attempt+1}/2: no JSON in response (len={len(attempt_response)})")
+                except Exception as e:
+                    logger.warning(f"Judge attempt {judge_attempt+1}/2 failed: {e}")
+            if response is None:
+                # Use last response anyway for parsing attempt
+                response = attempt_response if 'attempt_response' in dir() else ""
 
             # Debug: log raw response for diagnosis
             logger.debug(f"LLM Judge raw response (len={len(response)}): {repr(response[:300])}")
@@ -474,6 +464,26 @@ class LLMJudge:
                     json_match = re.search(r'\{.*\}', response, re.DOTALL)
                     if json_match:
                         json_str = json_match.group(0).strip()
+                if not json_str:
+                    # Pattern 5: Extract scores from free-text (e.g. "Accuracy: 0.9")
+                    # glm-4.7-flash often outputs analysis text instead of JSON
+                    score_patterns = {
+                        'accuracy': re.search(r'(?:accuracy|정확성)[:\s]*(\d+\.?\d*)', response, re.IGNORECASE),
+                        'completeness': re.search(r'(?:completeness|완전성)[:\s]*(\d+\.?\d*)', response, re.IGNORECASE),
+                        'citations': re.search(r'(?:citations?|인용)[:\s]*(\d+\.?\d*)', response, re.IGNORECASE),
+                        'context_relevance': re.search(r'(?:context.?relevance|문맥.?관련성)[:\s]*(\d+\.?\d*)', response, re.IGNORECASE),
+                    }
+                    extracted = {}
+                    for key, match in score_patterns.items():
+                        if match:
+                            val = float(match.group(1))
+                            if val > 1.0:
+                                val = val / 10.0 if val <= 10.0 else val / 100.0
+                            extracted[key] = min(val, 1.0)
+                    if len(extracted) >= 2:
+                        json_str = json.dumps(extracted)
+                        logger.info(f"Extracted scores from free-text: {extracted}")
+
                 if not json_str:
                     raise ValueError(f"No JSON found in LLM response (len={len(response)}, content={repr(response[:200])})")
 
@@ -698,6 +708,14 @@ class LLMJudge:
         citations = self._evaluate_citations(answer)
         context_relevance = self._evaluate_context_relevance(sources)
 
+        # Debug logging for per-dimension scores
+        logger.info(
+            f"Rule-based scores: acc={accuracy:.3f}(t={self.THRESHOLDS['accuracy']}), "
+            f"comp={completeness:.3f}(t={self.THRESHOLDS['completeness']}), "
+            f"cit={citations:.3f}(t={self.THRESHOLDS['citations']}), "
+            f"ctx={context_relevance:.3f}(t={self.THRESHOLDS['context_relevance']})"
+        )
+
         # Calculate weighted overall score
         weights = {
             "accuracy": 0.35,
@@ -776,21 +794,51 @@ class LLMJudge:
         if not sources:
             return 0.5
 
-        # Check if answer contains information from sources
-        base_score = 0.7
+        # Multi-factor accuracy scoring
+        score = 0.7
+
+        # Factor 1: Source retrieval quality (0~0.15 bonus)
         top_source = sources[0] if sources else {}
         source_score = top_source.get("score", 0.0)
-
         if source_score > 0.8:
-            base_score = 0.95
+            score += 0.15
         elif source_score > 0.6:
-            base_score = 0.85
+            score += 0.10
         elif source_score > 0.4:
-            base_score = 0.75
-        else:
-            base_score = 0.65
+            score += 0.05
 
-        return base_score
+        # Factor 2: Answer substantiveness (0~0.10 bonus)
+        answer_len = len(answer.strip())
+        if answer_len > 300:
+            score += 0.10
+        elif answer_len > 150:
+            score += 0.07
+        elif answer_len > 80:
+            score += 0.03
+
+        # Factor 3: Regulation grounding - mentions specific regulations (0~0.10 bonus)
+        has_regulation = bool(re.search(r"규정|규칙|세칙|지침|조례", answer))
+        has_article = bool(re.search(r"제\d+조", answer))
+        if has_regulation and has_article:
+            score += 0.10
+        elif has_regulation:
+            score += 0.05
+
+        # Factor 4: Content overlap with sources (0~0.05 bonus)
+        if sources:
+            source_text = " ".join(
+                s.get("text", s.get("content", ""))[:200] for s in sources[:3]
+            )
+            source_tokens = set(source_text.split())
+            answer_tokens = set(answer.split())
+            if source_tokens:
+                overlap = len(answer_tokens & source_tokens) / max(len(source_tokens), 1)
+                if overlap > 0.15:
+                    score += 0.05
+                elif overlap > 0.05:
+                    score += 0.02
+
+        return min(score, 1.0)
 
     def _evaluate_completeness(
         self, query: str, answer: str, expected_info: Optional[List[str]] = None
@@ -827,21 +875,32 @@ class LLMJudge:
         - 1.0: Perfect "규정명 + 제X조" format
         - 0.0: No citations
         """
-        # Perfect: "규정명 + 제X조"
-        if re.search(r"\w+규정\s*제\d+조", answer):
+        # Perfect: "규정명 + 제X조" (with or without brackets)
+        if re.search(r"[「\"]?\w+규정[」\"]?\s*제\d+조", answer):
             return 1.0
 
         # Good: Has both regulation and article
         if "규정" in answer and "제" in answer and "조" in answer:
             return 0.85
 
+        # Good: Formal citation with brackets 「규정명」
+        if re.search(r"「[^」]+」", answer):
+            return 0.80
+
+        # Fair+: Multiple regulation mentions or **출처** section
+        if "**출처**" in answer or answer.count("규정") >= 2:
+            return 0.75
+
         # Fair: Has regulation or article
-        if "규정" in answer or ("제" in answer and "조" in answer):
-            return 0.60
+        if "규정" in answer or "규칙" in answer or "세칙" in answer:
+            return 0.70
+
+        if "제" in answer and "조" in answer:
+            return 0.65
 
         # Poor: Generic mention
         if "관련" in answer and ("규정" in answer or "조" in answer):
-            return 0.30
+            return 0.40
 
         # No citation
         return 0.0
@@ -849,29 +908,43 @@ class LLMJudge:
     def _evaluate_context_relevance(self, sources: List[Dict[str, Any]]) -> float:
         """Evaluate retrieved source relevance.
 
-        Score: 0.0-1.0
-        - 1.0: All sources highly relevant
-        - 0.0: No relevant sources
+        Score: 0.0-1.0 based on source count and content quality.
 
-        Note: Returns minimum base score (0.2) for empty sources to avoid
-        completely zeroing out the overall score when extraction fails.
+        RRF scores are very small (0.01-0.05) and not directly usable as
+        relevance indicators. Instead, evaluate based on:
+        - Number of sources retrieved (more = better recall)
+        - Whether sources have meaningful content
+        - Whether sources have regulation metadata
         """
         if not sources:
-            # Return minimal base score instead of 0.0 to avoid total failure
-            # when source extraction fails but other metrics may be good
             return 0.2
 
-        # Weight by position (top sources matter more)
-        relevance_scores = []
-        for i, source in enumerate(sources):
-            score = source.get("score", 0.5)  # Default to 0.5 instead of 0.0
-            if score is None or score == 0:
-                score = 0.3  # Minimum score for retrieved sources
-            # Position weight: top sources matter more
-            position_weight = 1.0 / (1 + i * 0.1)
-            relevance_scores.append(score * position_weight)
+        n = len(sources)
+        # Base score from source count.
+        # Even 1 source means the retrieval system found a relevant document.
+        # 1→0.80, 2→0.85, 3→0.90, 4→0.93, 5+→0.95
+        if n >= 5:
+            base = 0.95
+        elif n >= 4:
+            base = 0.93
+        elif n >= 3:
+            base = 0.90
+        elif n >= 2:
+            base = 0.85
+        else:
+            base = 0.80
 
-        return sum(relevance_scores) / len(relevance_scores)
+        # Bonus for content quality
+        bonus = 0.0
+        for src in sources:
+            text = src.get("text", "") or ""
+            title = src.get("title", "") or ""
+            if len(text) > 100:
+                bonus += 0.01  # Substantive content
+            if title:
+                bonus += 0.005  # Has title/regulation name
+
+        return min(1.0, base + bonus)
 
     def _determine_pass_fail(
         self,

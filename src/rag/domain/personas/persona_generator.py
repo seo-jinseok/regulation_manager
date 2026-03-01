@@ -89,6 +89,12 @@ class PersonaAwareGenerator:
 - 3단계: 승인 권자와 처리 기한 정보
 - 4단계: 관련 규정 인용 (업무 지침 중심)
 - 5단계: 주의사항이나 자주 묻는 질문 언급
+
+**REQ-014 규정 준수 강조**:
+- 관련 규정 간의 상호 참조를 반드시 포함 (예: 「학칙」 + 「학사관리규정」)
+- 법적 근거와 절차적 요구사항을 명확히 구분
+- 위반 시 제재 사항이 규정에 있으면 반드시 언급
+- 서류 보관 기간, 결재 단계 등 행정 실무 정보 포함
 """,
         "parent": """
 
@@ -119,6 +125,12 @@ class PersonaAwareGenerator:
 - 3단계: 복잡한 용어은 풀이하여 설명
 - 4단계: 필요시 English로 번역 제공
 - 5단계: International Student Team 문의 안내
+
+**REQ-015 이중 언어 용어 지원**:
+- 핵심 행정 용어를 한국어/영어로 병기: 예) 수강신청(Course Registration), 휴학(Leave of Absence), 졸업(Graduation)
+- 비자 관련 용어: 체류자격(Visa Status), 출입국관리사무소(Immigration Office), D-2비자(D-2 Student Visa)
+- 학사 용어: 학점(Credits), 성적(GPA/Grades), 등록금(Tuition), 장학금(Scholarship)
+- 절차 용어: 신청(Application), 승인(Approval), 제출(Submission), 기한(Deadline)
 
 **For English support**: If the query is in English, provide answer in English while referencing Korean regulations.
 """,

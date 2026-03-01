@@ -172,6 +172,25 @@ _COT_PATTERNS = [
     re.compile(r"^\[검색\s*전략\][:\s].*$", re.MULTILINE),
     # Confidence score text: 신뢰도: 0.XX
     re.compile(r"신뢰도[:\s]+\d+\.?\d*", re.MULTILINE),
+    # SPEC-RAG-QUALITY-013 REQ-007: glm-4.7-flash analysis format patterns
+    # * **Role:** University Regulation Expert
+    re.compile(r"^\*\s*\*\*Role[:\s]?\*\*.*$", re.MULTILINE),
+    # * **Input Question:** "..."
+    re.compile(r"^\*\s*\*\*Input\s*(?:Question)?[:\s]?\*\*.*$", re.MULTILINE),
+    # * **Provided Context:** ...
+    re.compile(r"^\*\s*\*\*Provided\s*Context[:\s]?\*\*.*$", re.MULTILINE),
+    # * **Constraint:** ... or * **Constraints:** ...
+    re.compile(r"^\*\s*\*\*Constraints?[:\s]?\*\*.*$", re.MULTILINE),
+    # * **Question:** ...
+    re.compile(r"^\*\s*\*\*Question[:\s]?\*\*.*$", re.MULTILINE),
+    # * **Input:** ...
+    re.compile(r"^\*\s*\*\*Input[:\s]?\*\*.*$", re.MULTILINE),
+    # * **Output:** ... (analysis output marker)
+    re.compile(r"^\*\s*\*\*Output[:\s]?\*\*.*$", re.MULTILINE),
+    # * **Analysis:** ...
+    re.compile(r"^\*\s*\*\*Analysis[:\s]?\*\*.*$", re.MULTILINE),
+    # * **Summary:** ... (when followed by English analysis)
+    re.compile(r"^\*\s*\*\*Summary[:\s]?\*\*.*$", re.MULTILINE),
 ]
 
 
@@ -192,6 +211,91 @@ def _strip_cot_from_answer(answer: str) -> str:
     # Remove resulting empty lines (collapse triple+ newlines to double)
     cleaned = re.sub(r"\n{3,}", "\n\n", cleaned)
     return cleaned.strip()
+
+
+# SPEC-RAG-QUALITY-013 REQ-004/008: Conclusion/Korean extraction markers
+_CONCLUSION_MARKERS = re.compile(
+    r"(?:^|\n)\s*(?:\*\*)?(?:결론|답변|요약|Final\s*Answer|최종\s*답변|Korean\s*Answer|한국어\s*답변)[:\s]*(?:\*\*)?",
+    re.IGNORECASE | re.MULTILINE,
+)
+
+# Detect if the response is entirely in analysis format (English-heavy)
+_ANALYSIS_FORMAT_INDICATORS = [
+    "* **Role:**",
+    "* **Input Question:**",
+    "* **Provided Context:**",
+    "* **Constraint",
+    "**Role:**",
+    "**Input:**",
+    "**Output:**",
+]
+
+
+def _normalize_llm_output(answer: str) -> str:
+    """
+    SPEC-RAG-QUALITY-013 REQ-004/008: Normalize LLM output.
+
+    When the LLM produces English analysis-format output with embedded Korean,
+    extract only the Korean answer portion. If the response is entirely analysis
+    with a conclusion section, extract the conclusion.
+    """
+    if not answer:
+        return answer
+
+    # Check if this is an analysis-format response
+    indicator_count = sum(1 for ind in _ANALYSIS_FORMAT_INDICATORS if ind in answer)
+    if indicator_count < 2:
+        # Not an analysis format, return as-is
+        return answer
+
+    logger.debug(
+        f"Detected analysis-format output ({indicator_count} indicators), normalizing"
+    )
+
+    # Strategy 1: Try to extract content after conclusion markers
+    match = _CONCLUSION_MARKERS.search(answer)
+    if match:
+        conclusion = answer[match.end():].strip()
+        if conclusion and len(conclusion) > 20:
+            # Clean up any remaining markers
+            conclusion = re.sub(r"\n{3,}", "\n\n", conclusion)
+            logger.debug("Extracted conclusion section from analysis output")
+            return conclusion.strip()
+
+    # Strategy 2: Extract Korean paragraphs (continuous Korean text blocks)
+    korean_blocks = []
+    current_block = []
+    for line in answer.split("\n"):
+        stripped = line.strip()
+        if not stripped:
+            if current_block:
+                korean_blocks.append("\n".join(current_block))
+                current_block = []
+            continue
+
+        # Skip lines that are clearly English analysis markers
+        if any(ind in stripped for ind in _ANALYSIS_FORMAT_INDICATORS):
+            continue
+        if re.match(r"^\*\s*\*\*\w+[:\s]?\*\*", stripped):
+            continue
+
+        # Check if line has substantial Korean content (>50% Korean chars)
+        korean_chars = len(re.findall(r"[가-힣]", stripped))
+        total_chars = len(stripped.replace(" ", ""))
+        if total_chars > 0 and korean_chars / total_chars > 0.3:
+            current_block.append(line)
+
+    if current_block:
+        korean_blocks.append("\n".join(current_block))
+
+    if korean_blocks:
+        result = "\n\n".join(korean_blocks).strip()
+        if len(result) > 30:
+            logger.debug(f"Extracted {len(korean_blocks)} Korean blocks from analysis")
+            return result
+
+    # Strategy 3: If nothing worked, return the original (CoT stripping already done)
+    return answer
 
 
 def _extract_regulation_only_query(query: str) -> Optional[str]:
@@ -384,10 +488,20 @@ def _get_fallback_regulation_qa_prompt() -> str:
 
 
 # System prompt for regulation Q&A (loaded from prompts.json)
-# System prompt for regulation Q&A (loaded from prompts.json)
 REGULATION_QA_PROMPT = (
     _load_prompt("regulation_qa") or _get_fallback_regulation_qa_prompt()
 )
+
+# SPEC-RAG-QUALITY-013 REQ-005: Compact prompt for small LLMs (≤800 tokens)
+REGULATION_QA_COMPACT_PROMPT = _load_prompt("regulation_qa_compact") or ""
+
+# Model name patterns indicating small LLMs (< 10B parameters)
+_SMALL_MODEL_PATTERNS = [
+    "flash", "mini", "small", "tiny", "nano", "lite",
+    "1b", "2b", "3b", "4b", "7b", "8b", "9b",
+    "1.5b", "2.5b", "3.5b", "4.7b", "6b", "6.7b",
+    "glm-4", "phi-3", "phi-2",
+]
 
 
 @dataclass(frozen=True)
@@ -686,6 +800,22 @@ class SearchUseCase:
         if self._use_hybrid and not self._hybrid_initialized:
             self._ensure_hybrid_searcher()
         return self._hybrid_searcher
+
+    def _get_default_system_prompt(self) -> str:
+        """Select appropriate system prompt based on model size.
+
+        REQ-005: Use compact prompt for small LLMs to reduce prompt overhead.
+        """
+        if not REGULATION_QA_COMPACT_PROMPT:
+            return REGULATION_QA_PROMPT
+        model_name = getattr(self.llm, "model", "") or ""
+        model_lower = model_name.lower()
+        if any(p in model_lower for p in _SMALL_MODEL_PATTERNS):
+            logger.debug(
+                "Using compact prompt for small model: %s", model_name
+            )
+            return REGULATION_QA_COMPACT_PROMPT
+        return REGULATION_QA_PROMPT
 
     def _ensure_hybrid_searcher(self) -> None:
         """Initialize HybridSearcher with documents from vector store."""
@@ -2706,6 +2836,9 @@ class SearchUseCase:
         # Self-RAG: Apply relevance filtering
         results = self._apply_self_rag_relevance_filter(question, results)
 
+        # SPEC-RAG-QUALITY-013 REQ-003: Topic mismatch filtering
+        results = self._filter_topic_relevance(question, results)
+
         # Filter out low-signal headings when possible
         filtered_results = self._select_answer_sources(results, top_k)
         if not filtered_results:
@@ -2727,7 +2860,8 @@ class SearchUseCase:
             )
 
         # SPEC-RAG-003 Phase 3: Filter out low-relevance documents
-        min_score = getattr(self.config, 'min_relevance_score', 0.25)
+        # SPEC-RAG-QUALITY-013 REQ-001: Raise threshold from 0.25 to 0.40
+        min_score = getattr(self.config, 'min_relevance_score', 0.40)
         high_relevance = [r for r in filtered_results if r.score >= min_score]
         if high_relevance:
             filtered_results = high_relevance
@@ -2771,7 +2905,7 @@ class SearchUseCase:
 
         if debug:
             logger.debug("=" * 40 + " PROMPT " + "=" * 40)
-            logger.debug(f"[System]\n{custom_prompt or REGULATION_QA_PROMPT}\n")
+            logger.debug(f"[System]\n{custom_prompt or self._get_default_system_prompt()}\n")
             logger.debug(f"[User]\n{user_message}")
             logger.debug("=" * 80)
 
@@ -2886,6 +3020,31 @@ class SearchUseCase:
         # SPEC-RAG-003 Phase 2: Strip CoT leakage from answer
         answer_text = _strip_cot_from_answer(answer_text)
 
+        # SPEC-RAG-QUALITY-013 REQ-004/008: Normalize output (extract Korean from analysis)
+        answer_text = _normalize_llm_output(answer_text)
+
+        # SPEC-RAG-QUALITY-013 REQ-006: Analysis-only retry
+        # If normalization failed to extract Korean content, retry once
+        if self._is_analysis_only(answer_text):
+            logger.info("Analysis-only output detected, retrying with direct-answer prompt")
+            retry_text = self._retry_for_korean_answer(
+                question, context, history_text, answer_text
+            )
+            if retry_text:
+                answer_text = retry_text
+
+        # SPEC-RAG-QUALITY-013 REQ-009: Convert reg-XXXX codes to 「규정명」
+        answer_text = self._convert_reg_codes_to_names(answer_text, filtered_results)
+
+        # SPEC-RAG-QUALITY-013 REQ-013: Procedural completeness check
+        proc_keywords = ["절차", "방법", "신청", "과정", "단계", "어떻게"]
+        is_procedural = any(k in question for k in proc_keywords)
+        has_steps = bool(re.search(r"(?:^\d+\.|^\d+\)|\d+\.\s)", answer_text, re.MULTILINE))
+        if is_procedural and not has_steps and len(answer_text) > 50:
+            step_info = self._extract_procedure_from_sources(filtered_results)
+            if step_info:
+                answer_text = f"{answer_text}\n\n**절차:**\n{step_info}"
+
         # SPEC-RAG-Q-004: Verify citations against source chunks
         answer_text = self._verify_citations(answer_text, filtered_results)
 
@@ -2943,8 +3102,8 @@ class SearchUseCase:
         else:
             user_message = self._build_user_message(question, context, history_text)
 
-        # Use custom prompt if provided, otherwise use default
-        system_prompt = custom_prompt or REGULATION_QA_PROMPT
+        # Use custom prompt if provided, otherwise use model-appropriate default
+        system_prompt = custom_prompt or self._get_default_system_prompt()
 
         # TAG-005: Enhance prompt with persona-specific instructions
         if persona and not custom_prompt:
@@ -3015,7 +3174,7 @@ class SearchUseCase:
                 logger.debug(f"Regenerating with feedback:\n{feedback}")
 
             answer_text = self.llm.generate(
-                system_prompt=REGULATION_QA_PROMPT,
+                system_prompt=self._get_default_system_prompt(),
                 user_message=corrected_user_message,
                 temperature=0.0,
                 max_tokens=1024,
@@ -3073,7 +3232,7 @@ class SearchUseCase:
         user_message = self._build_user_message(question, context, history_text)
 
         # Determine system prompt
-        system_prompt = custom_prompt or REGULATION_QA_PROMPT
+        system_prompt = custom_prompt or self._get_default_system_prompt()
         if persona and not custom_prompt:
             system_prompt = self._enhance_prompt_with_persona(
                 system_prompt, persona, question
@@ -3434,7 +3593,7 @@ class SearchUseCase:
         # Stream LLM response token by token
         answer_tokens = []
         for token in self.llm.stream_generate(
-            system_prompt=REGULATION_QA_PROMPT,
+            system_prompt=self._get_default_system_prompt(),
             user_message=user_message,
             temperature=0.0,
         ):
@@ -3784,6 +3943,91 @@ class SearchUseCase:
 
         return "\n\n".join(context_parts)
 
+    # Common Korean synonym groups for topic matching
+    _TOPIC_SYNONYMS: dict[str, set[str]] = {
+        "기숙사": {"생활관", "기숙", "합숙"},
+        "생활관": {"기숙사", "기숙", "합숙"},
+        "등록금": {"수업료", "납부금", "학비"},
+        "수업료": {"등록금", "납부금", "학비"},
+        "장학금": {"장학", "학비지원", "학자금"},
+        "휴학": {"휴학생", "학업중단", "학사휴학"},
+        "졸업": {"수료", "학위수여", "졸업생"},
+        "성적": {"학점", "GPA", "평점"},
+        "학점": {"성적", "이수", "평점"},
+        "수강": {"수업", "강의", "과목", "이수"},
+        "전과": {"전공변경", "학과변경"},
+        "편입": {"편입학", "전입"},
+        "비용": {"금액", "요금", "수수료", "납부"},
+    }
+
+    def _filter_topic_relevance(
+        self,
+        query: str,
+        results: List[SearchResult],
+    ) -> List[SearchResult]:
+        """
+        SPEC-RAG-QUALITY-013 REQ-003: Topic-mismatch detection.
+
+        Compares query keywords against retrieved document titles/paths/content
+        and excludes documents with zero topical overlap.
+        Uses synonym expansion and broader content matching.
+        """
+        if not results or not query:
+            return results
+
+        # Extract meaningful Korean noun-like tokens from query (2+ chars)
+        query_tokens = set()
+        for token in re.findall(r"[가-힣]{2,}", query):
+            query_tokens.add(token)
+
+        if not query_tokens:
+            return results
+
+        # Expand query tokens with synonyms
+        expanded_tokens = set(query_tokens)
+        for token in query_tokens:
+            synonyms = self._TOPIC_SYNONYMS.get(token, set())
+            expanded_tokens.update(synonyms)
+
+        filtered = []
+        for r in results:
+            chunk = r.chunk
+            if chunk is None:
+                continue
+
+            # Build document text from title, parent_path, rule_code, AND content
+            doc_text_parts = []
+            if chunk.title:
+                doc_text_parts.append(chunk.title)
+            if chunk.parent_path:
+                doc_text_parts.append(" ".join(chunk.parent_path))
+            if chunk.rule_code:
+                doc_text_parts.append(chunk.rule_code)
+            if chunk.text:
+                doc_text_parts.append(chunk.text[:300])
+
+            doc_text = " ".join(doc_text_parts)
+
+            # Check if any expanded query token overlaps with document
+            has_overlap = any(token in doc_text for token in expanded_tokens)
+
+            if has_overlap:
+                filtered.append(r)
+            else:
+                logger.debug(
+                    f"Topic mismatch: query='{query[:30]}' vs doc='{chunk.title or chunk.rule_code}'"
+                )
+
+        # If filtering removed everything, return original (avoid empty results)
+        if not filtered:
+            logger.warning(
+                f"Topic filter removed all {len(results)} results for '{query[:30]}', "
+                "keeping originals"
+            )
+            return results
+
+        return filtered
+
     def _select_answer_sources(
         self,
         results: List[SearchResult],
@@ -4025,6 +4269,131 @@ class SearchUseCase:
 
         return safe_response
 
+    def _convert_reg_codes_to_names(
+        self, answer_text: str, sources: List[SearchResult]
+    ) -> str:
+        """
+        SPEC-RAG-QUALITY-013 REQ-009: Auto-convert reg-XXXX codes to 「규정명」 format.
+
+        Scans answer for raw regulation codes like 'reg-0800' and replaces them
+        with the human-readable regulation name from chunk metadata.
+        """
+        if not answer_text or not sources:
+            return answer_text
+
+        # Build a mapping from rule_code to human-readable name
+        code_to_name: Dict[str, str] = {}
+        for s in sources:
+            chunk = s.chunk
+            if chunk is None:
+                continue
+            code = chunk.rule_code
+            if not code:
+                continue
+            # Use title or parent_path as the regulation name
+            name = ""
+            if chunk.parent_path:
+                # First element of parent_path is typically the regulation name
+                name = chunk.parent_path[0]
+            elif chunk.title:
+                name = chunk.title
+
+            if name and code not in code_to_name:
+                code_to_name[code] = name
+
+        if not code_to_name:
+            return answer_text
+
+        # Replace occurrences of raw reg codes in the answer
+        result = answer_text
+        for code, name in code_to_name.items():
+            if code in result:
+                # Replace "reg-XXXX" with 「규정명」
+                formatted_name = f"「{name}」" if not name.startswith("「") else name
+                result = result.replace(code, formatted_name)
+                logger.debug(f"Converted reg code '{code}' → '{formatted_name}'")
+
+        return result
+
+    @staticmethod
+    def _is_analysis_only(text: str) -> bool:
+        """Check if text is analysis-format output without usable Korean answer."""
+        if not text or len(text) < 10:
+            return True
+        korean_chars = len(re.findall(r"[가-힣]", text))
+        # If less than 10 Korean characters, it's likely analysis-only
+        if korean_chars < 10:
+            return True
+        # If >60% of content is English analysis markers
+        indicator_count = sum(1 for ind in _ANALYSIS_FORMAT_INDICATORS if ind in text)
+        return indicator_count >= 3
+
+    def _retry_for_korean_answer(
+        self,
+        question: str,
+        context: str,
+        history_text: str,
+        previous_answer: str,
+    ) -> Optional[str]:
+        """REQ-006: Retry once with a direct-answer prompt when only analysis was returned."""
+        if not self.llm:
+            return None
+        retry_prompt = (
+            "위 분석을 바탕으로 사용자에게 한국어로 직접 답변해주세요. "
+            "분석 과정은 생략하고, 핵심 내용만 자연스러운 한국어 문장으로 답변하세요."
+        )
+        user_message = self._build_user_message(question, context, history_text)
+        user_message = f"{user_message}\n\n---\n이전 분석:\n{previous_answer[:500]}\n\n{retry_prompt}"
+        try:
+            retry_text = self.llm.generate(
+                system_prompt=self._get_default_system_prompt(),
+                user_message=user_message,
+                temperature=0.0,
+                max_tokens=1024,
+            )
+            retry_text = _strip_cot_from_answer(retry_text)
+            retry_text = _normalize_llm_output(retry_text)
+            if retry_text and not self._is_analysis_only(retry_text):
+                logger.info("Retry succeeded: got Korean answer")
+                return retry_text
+            logger.warning("Retry also returned analysis-only output")
+        except Exception as e:
+            logger.warning(f"Analysis-only retry failed: {e}")
+        return None
+
+    def _extract_procedure_from_sources(
+        self, sources: List[SearchResult]
+    ) -> Optional[str]:
+        """REQ-013: Extract procedural steps from source chunk metadata."""
+        steps = []
+        for s in sources:
+            chunk = s.chunk
+            if chunk is None:
+                continue
+            text = chunk.text or ""
+            # Look for numbered items in chunk text
+            found = re.findall(
+                r"(?:^|\n)\s*(\d+)[.)\s]+(.+?)(?=\n\s*\d+[.)\s]|\n\n|$)",
+                text,
+                re.DOTALL,
+            )
+            for num, content in found:
+                line = content.strip().split("\n")[0].strip()
+                if len(line) > 5:
+                    steps.append((int(num), line))
+        if not steps:
+            return None
+        # Deduplicate and sort
+        seen = set()
+        unique = []
+        for num, line in sorted(steps):
+            if line not in seen:
+                seen.add(line)
+                unique.append(line)
+        if len(unique) < 2:
+            return None
+        return "\n".join(f"{i+1}. {s}" for i, s in enumerate(unique[:8]))
+
     def _enhance_answer_citations(
         self, answer_text: str, sources: List[SearchResult]
     ) -> str:
@@ -4236,13 +4605,19 @@ class SearchUseCase:
                     reg_name = None
                     if result.chunk.parent_path:
                         reg_name = result.chunk.parent_path[0]
-                        if reg_name and reg_name not in context_sources:
-                            context_sources.append(reg_name)
+                    elif result.chunk.title:
+                        reg_name = result.chunk.title
+                    if reg_name and reg_name not in context_sources:
+                        context_sources.append(reg_name)
                     # Collect article number for forced citation generation
-                    if reg_name and result.chunk.article_number:
-                        citations_data.append(
-                            (reg_name, result.chunk.article_number)
-                        )
+                    article = result.chunk.article_number
+                    if not article and result.chunk.title:
+                        # Try extracting article number from title (e.g. "제5조 (장학금)")
+                        m = re.search(r"(제\d+조(?:의\d+)?)", result.chunk.title)
+                        if m:
+                            article = m.group(1)
+                    if reg_name and article:
+                        citations_data.append((reg_name, article))
 
             # Validate citation format
             validation_result = validator.validate_citation(answer, context_sources)
@@ -4259,20 +4634,33 @@ class SearchUseCase:
                 for issue in validation_result.issues:
                     logger.debug(f"Citation issue: {issue}")
 
-            # SPEC-RAG-QUALITY-006: Force citation generation if no citations
-            if validation_result.citation_count == 0 and citations_data:
-                # Deduplicate citations
-                unique_citations = list(set(citations_data))
-                # Format citations: "「규정명」 제X조"
-                formatted = [
-                    f"「{reg}」 {art}"
-                    for reg, art in unique_citations[:5]  # Max 5 citations
-                ]
-                citation_section = "\n\n**출처**: " + ", ".join(formatted)
-                logger.info(
-                    f"Forced citation generation: {len(formatted)} citations added"
-                )
-                return answer + citation_section
+            # SPEC-RAG-QUALITY-006 + REQ-010/011: Force citation when missing or sparse
+            needs_citation = (
+                validation_result.citation_count == 0
+                or (validation_result.citation_density < 0.01 and len(answer) > 50)
+            )
+            if needs_citation:
+                if citations_data:
+                    # Deduplicate citations
+                    unique_citations = list(set(citations_data))
+                    # Format citations: "「규정명」 제X조"
+                    formatted = [
+                        f"「{reg}」 {art}"
+                        for reg, art in unique_citations[:5]  # Max 5 citations
+                    ]
+                    citation_section = "\n\n**출처**: " + ", ".join(formatted)
+                    logger.info(
+                        f"Forced citation generation: {len(formatted)} citations added"
+                    )
+                    return answer + citation_section
+                elif context_sources:
+                    # Fallback: just cite regulation names without article numbers
+                    formatted = [f"「{reg}」" for reg in context_sources[:3]]
+                    citation_section = "\n\n**출처**: " + ", ".join(formatted)
+                    logger.info(
+                        f"Forced citation generation (name-only): {len(formatted)} citations"
+                    )
+                    return answer + citation_section
 
             # If citations are missing or invalid, try to enrich
             has_issues = (
