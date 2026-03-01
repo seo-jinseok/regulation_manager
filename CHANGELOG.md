@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- URL hallucination prevention in RAG responses (SPEC-RAG-Q-001)
+  - `validate_urls()` in HallucinationFilter detects and blocks fabricated URLs
+  - URL pattern matching integrated into `filter_response()` pipeline
+  - `URL_PATTERN` in FaithfulnessValidator for claim-level URL grounding
+  - 10 new tests (7 URL validation + 3 faithfulness URL grounding)
 - Bilingual Self-RAG support for English regulation queries (SPEC-RAG-003)
   - English regulation keywords in Self-RAG pre-filter (40+ terms)
   - Bilingual LLM evaluation prompt with Korean/English examples
