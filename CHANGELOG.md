@@ -8,6 +8,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Perpetual Quality Discovery Engine - 5 new evaluation modules (SPEC-RAG-EVAL-002)
+  - **Module 1: Dynamic Query Universe** (`query_synthesizer.py`, 518 lines)
+    - Regulation-based query auto-generation from `data/output/` JSON content
+    - L1-L5 difficulty tier query synthesis (single fact → multi-turn context)
+    - Cross-regulation queries requiring 2+ document synthesis (L3+)
+    - Adversarial queries: out-of-domain, hallucination triggers, ambiguous, typos (L4-L5)
+    - Cache system with force regeneration support
+    - Target: 200+ dynamic queries from regulation content
+  - **Module 2: Extended Quality Metrics** (`extended_metrics.py`, 509 lines)
+    - `LatencyTracker`: p50/p95/p99 response time measurement per persona/tier
+    - `ConsistencyChecker`: 3-run answer similarity with cosine similarity (threshold: 0.85)
+    - `CitationVerifier`: Verify cited articles (제X조) exist in vector database
+    - `ReadabilityScorer`: Structure/length/Korean quality scoring
+  - **Module 3: System Health Radar** (`system_health.py`, 435 lines)
+    - `CodeQualityScanner`: bare except:pass, TODO/FIXME/HACK, magic numbers, long functions via AST
+    - `CoverageDeltaChecker`: coverage.json delta tracking, flag modules <80%
+    - `ConfigDriftDetector`: env var validation, hardcoded API key detection, config range checks
+    - Results persisted to `data/evaluations/health_scan.json` with trend tracking
+  - **Module 4: Adaptive Difficulty Progression** (`difficulty_manager.py`, 224 lines)
+    - L1-L5 difficulty tier system with mastery tracking
+    - Auto-escalation when pass rate ≥95% for 2 consecutive runs
+    - State persisted in `data/evaluations/difficulty_state.json`
+    - Manual tier override via `--tier L3`
+    - Display: "L1 ✓ | L2 ✓ | L3 78% | L4 -- | L5 --"
+  - **Module 5: Improvement Roadmap Engine** (`improvement_radar.py`, 441 lines)
+    - `FailureClusterer`: Group failures by root cause pattern (retrieval/synthesis/citation/etc.)
+    - `RoadmapGenerator`: Prioritized improvements with file:line, complexity, suggested SPEC
+    - `TrendAnalyzer`: Score trends over 3+ historical evaluations with moving average
+    - "Never nothing to improve" guarantee (EARS-E-004)
+  - **CLI Integration** in `run_rag_quality_eval.py`
+    - New flags: `--generate`, `--regenerate`, `--consistency`, `--health`, `--tier`, `--trend`, `--full-extended`
+    - `--full-extended` activates all extended evaluation features
+    - Standalone `--health` and `--trend` modes (no RAG query needed)
+    - Backward compatible: existing `--quick`/`--full`/`--status` unchanged
+  - **111 tests** across 5 test files (24+23+21+22+21), all passing
+  - **Coverage**: query_synthesizer 94.58%, difficulty_manager 95.41%, improvement_radar 91.44%, extended_metrics 90.39%, system_health 88.26%
+
 - URL hallucination prevention in RAG responses (SPEC-RAG-Q-001)
   - `validate_urls()` in HallucinationFilter detects and blocks fabricated URLs
   - URL pattern matching integrated into `filter_response()` pipeline

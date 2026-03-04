@@ -340,6 +340,39 @@ src/rag/automation/
 
 > RAG 테스팅 자동화는 Clean Architecture로 구현되었으며, 120개의 단위 테스트로 검증되었습니다.
 
+### 확장 품질 평가 (Perpetual Quality Discovery Engine)
+
+정적 30쿼리/4메트릭 평가의 구조적 한계(ceiling effect)를 해결하기 위한 5개 모듈 확장 평가 시스템입니다.
+
+```bash
+# 확장 전체 평가 (모든 모듈 활성화)
+python run_rag_quality_eval.py --full-extended
+
+# 시스템 건강 진단만 실행 (RAG 쿼리 불필요)
+python run_rag_quality_eval.py --health
+
+# 규정 기반 동적 쿼리 생성 (200+)
+python run_rag_quality_eval.py --generate
+
+# 품질 추세 분석 (3+ 평가 이력 필요)
+python run_rag_quality_eval.py --trend
+
+# 특정 난이도 티어 테스트
+python run_rag_quality_eval.py --full --tier L3
+```
+
+**5개 모듈**:
+
+| 모듈 | 설명 |
+|------|------|
+| **Dynamic Query Universe** | 규정 JSON에서 200+ 쿼리 자동 생성 (L1-L5 난이도) |
+| **Extended Metrics** | 응답 지연, 일관성, 인용 실존, 가독성 측정 |
+| **System Health Radar** | 코드 품질, 테스트 커버리지, 설정 드리프트 검사 |
+| **Adaptive Difficulty** | 95% 통과 시 자동 난이도 상승, 마스터리 추적 |
+| **Improvement Roadmap** | 실패 패턴 클러스터링, 우선순위 로드맵, 추세 분석 |
+
+> 확장 평가는 기존 `--quick`/`--full` 평가와 완전히 하위 호환됩니다.
+
 ### RAG 실시간 모니터링 (v2.7.0+)
 
 RAG 파이프라인의 내부 처리 과정을 실시간으로 모니터링하는 기능을 제공합니다. 사용자와 동일한 CLI 환경에서 시스템 동작을 직접 관찰할 수 있습니다.
@@ -480,6 +513,13 @@ uv run regulation serve --mcp
 | `python -m src.rag.automation.interface.automation_cli test` | RAG 자동 테스트 실행 |
 | `python -m src.rag.automation.interface.automation_cli list-sessions` | 테스트 세션 목록 |
 | `python -m src.rag.automation.interface.automation_cli report` | 테스트 리포트 생성 |
+| `python run_rag_quality_eval.py --quick` | 기본 30쿼리 빠른 품질 평가 |
+| `python run_rag_quality_eval.py --full` | 전체 품질 평가 |
+| `python run_rag_quality_eval.py --full-extended` | 확장 평가 (동적 쿼리+건강 진단+트렌드) |
+| `python run_rag_quality_eval.py --health` | 시스템 건강 진단 (코드 품질/커버리지/설정) |
+| `python run_rag_quality_eval.py --generate` | 규정 기반 동적 쿼리 생성 (200+) |
+| `python run_rag_quality_eval.py --trend` | 품질 추세 분석 (3+ 평가 이력) |
+| `python run_rag_quality_eval.py --tier L3` | 특정 난이도 티어 평가 |
 
 ---
 

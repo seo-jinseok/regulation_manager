@@ -32,6 +32,16 @@ from src.rag.domain.evaluation.llm_judge import EvaluationBatch, LLMJudge
 from src.rag.domain.evaluation.parallel_evaluator import (
     PersonaEvaluationResult,
 )
+from src.rag.domain.evaluation.query_synthesizer import QuerySynthesizer
+from src.rag.domain.evaluation.extended_metrics import (
+    CitationVerifier,
+    ConsistencyChecker,
+    LatencyTracker,
+    ReadabilityScorer,
+)
+from src.rag.domain.evaluation.system_health import run_health_scan
+from src.rag.domain.evaluation.difficulty_manager import DifficultyManager
+from src.rag.domain.evaluation.improvement_radar import run_improvement_radar
 from src.rag.infrastructure.chroma_store import ChromaVectorStore
 from src.rag.infrastructure.llm_adapter import LLMClientAdapter
 from src.rag.interface.query_handler import QueryHandler, QueryOptions
@@ -520,11 +530,91 @@ Examples:
         help="중단된 평가 재개 (체크포인트 파일 경로)",
     )
 
+    # SPEC-RAG-EVAL-002: Extended evaluation options
+    parser.add_argument(
+        "--generate",
+        action="store_true",
+        help="동적 쿼리 생성 (규정 콘텐츠 기반 200+ 쿼리)",
+    )
+    parser.add_argument(
+        "--regenerate",
+        action="store_true",
+        help="캐시 무시하고 쿼리 재생성",
+    )
+    parser.add_argument(
+        "--consistency",
+        action="store_true",
+        help="일관성 검사 (동일 쿼리 3회 실행)",
+    )
+    parser.add_argument(
+        "--health",
+        action="store_true",
+        help="시스템 건강 스캔 (코드 품질, 커버리지, 설정)",
+    )
+    parser.add_argument(
+        "--tier",
+        type=int,
+        choices=[1, 2, 3, 4, 5],
+        help="난이도 티어 지정 (L1-L5)",
+    )
+    parser.add_argument(
+        "--trend",
+        action="store_true",
+        help="평가 추세 분석 (과거 평가 비교)",
+    )
+    parser.add_argument(
+        "--full-extended",
+        action="store_true",
+        help="확장 전체 평가 (generate + consistency + health + trend)",
+    )
+
     args = parser.parse_args()
+
+    # Expand --full-extended into individual flags
+    if args.full_extended:
+        args.generate = True
+        args.consistency = True
+        args.health = True
+        args.trend = True
 
     # Handle --status mode
     if args.status:
         await handle_status_mode()
+        return
+
+    # Handle --health mode (standalone, no RAG query needed)
+    if args.health and not args.quick and not args.full and not args.generate:
+        report = run_health_scan(
+            src_dir=str(project_root / "src"),
+            coverage_path=str(project_root / "coverage.json"),
+        )
+        print("\n" + "=" * 60)
+        print("SYSTEM HEALTH SCAN")
+        print("=" * 60)
+        print(f"Status: {report.status}")
+        print(f"Code Findings: {len(report.code_quality.findings)}")
+        if report.coverage_delta:
+            print(f"Coverage: {report.coverage_delta.current_total:.1f}%")
+        print(f"Config Issues: {len(report.config_drift.issues)}")
+        report.save(str(project_root / "data" / "evaluations"))
+        print("=" * 60)
+        return
+
+    # Handle --trend mode (standalone)
+    if args.trend and not args.quick and not args.full and not args.generate:
+        from src.rag.domain.evaluation.improvement_radar import TrendAnalyzer
+        analyzer = TrendAnalyzer(str(project_root / "data" / "evaluations"))
+        analysis = analyzer.analyze()
+        print("\n" + "=" * 60)
+        print("TREND ANALYSIS")
+        print("=" * 60)
+        print(f"Data Points: {len(analysis.points)}")
+        print(f"Trend: {analysis.trend_direction}")
+        if analysis.points:
+            latest = analysis.points[-1]
+            print(f"Latest Score: {latest.avg_score:.3f}")
+            print(f"Latest Pass Rate: {latest.pass_rate:.1%}")
+        print("=" * 60)
         return
 
     # Determine evaluation parameters
@@ -566,6 +656,94 @@ Examples:
     # Save results
     output_dir = args.output.parent if args.output else Path("data/evaluations")
     output_dir.mkdir(parents=True, exist_ok=True)
+
+    # --- SPEC-RAG-EVAL-002: Extended evaluation pipeline ---
+    extended_results = {}
+
+    # Module 1: Dynamic query generation
+    if args.generate:
+        logger.info("Generating dynamic queries from regulations...")
+        synthesizer = QuerySynthesizer(
+            regulations_dir=str(project_root / "data" / "processed"),
+            cache_dir=str(output_dir),
+        )
+        synthesizer.load_regulations()
+        generated = synthesizer.generate_all(
+            target_count=200,
+            force_regenerate=args.regenerate,
+        )
+        extended_results["generated_queries"] = {
+            "count": len(generated),
+            "by_tier": {},
+        }
+        for q in generated:
+            tier = q.difficulty_tier
+            extended_results["generated_queries"]["by_tier"][tier] = (
+                extended_results["generated_queries"]["by_tier"].get(tier, 0) + 1
+            )
+        logger.info("Generated %d dynamic queries", len(generated))
+
+    # Module 2: Consistency check
+    if args.consistency:
+        logger.info("Running consistency checks...")
+        checker = ConsistencyChecker(runs=3)
+        consistency_results = []
+        sample_queries = list(filtered_queries.values())[:1]  # first persona
+        if sample_queries:
+            for query in sample_queries[0][:3]:  # up to 3 queries
+                result = checker.check(
+                    query=query,
+                    query_fn=lambda q: query_handler.process_query(
+                        query=q,
+                        options=QueryOptions(top_k=5, use_rerank=True, force_mode="ask"),
+                    ).content if query_handler.process_query(
+                        query=q,
+                        options=QueryOptions(top_k=5, use_rerank=True, force_mode="ask"),
+                    ).success else "",
+                )
+                consistency_results.append(result.to_dict())
+            extended_results["consistency"] = consistency_results
+            logger.info("Consistency check complete: %d queries tested", len(consistency_results))
+
+    # Module 3: System health
+    if args.health:
+        logger.info("Running system health scan...")
+        health_report = run_health_scan(
+            src_dir=str(project_root / "src"),
+            coverage_path=str(project_root / "coverage.json"),
+        )
+        extended_results["system_health"] = health_report.to_dict()
+        health_report.save(str(output_dir))
+        logger.info("Health scan: %s", health_report.status)
+
+    # Module 4: Difficulty management
+    if args.tier:
+        logger.info("Recording difficulty tier L%d results...", args.tier)
+        dm = DifficultyManager(state_path=str(output_dir / "difficulty_state.json"))
+        for persona_result in results.values():
+            for r in persona_result.results:
+                dm.record_result(args.tier, r.passed)
+        new_tier = dm.check_escalation()
+        dm.save_state()
+        extended_results["difficulty"] = dm.get_summary()
+        if new_tier:
+            logger.info("Difficulty escalated to L%d!", new_tier)
+
+    # Module 5: Improvement radar
+    radar_report = run_improvement_radar(
+        results=results,
+        evaluations_dir=str(output_dir),
+    )
+    extended_results["improvement_radar"] = radar_report.to_dict()
+
+    # Module 5: Trend analysis
+    if args.trend:
+        from src.rag.domain.evaluation.improvement_radar import TrendAnalyzer
+        analyzer = TrendAnalyzer(str(output_dir))
+        trend = analyzer.analyze()
+        extended_results["trend"] = trend.to_dict()
+        logger.info("Trend: %s", trend.trend_direction)
+
     filepath = save_evaluation_results(results, batch, str(output_dir))
 
     # Generate report
@@ -580,6 +758,13 @@ Examples:
             f.write(report)
         logger.info("Saved report to: %s", report_path)
 
+    # Save extended results alongside main results
+    if extended_results:
+        extended_path = filepath.replace(".json", "_extended.json")
+        with open(extended_path, "w", encoding="utf-8") as f:
+            json.dump(extended_results, f, ensure_ascii=False, indent=2, default=str)
+        logger.info("Saved extended results to: %s", extended_path)
+
     # Print summary
     logger.info("=" * 60)
     logger.info("Evaluation Complete!")
@@ -589,6 +774,17 @@ Examples:
     logger.info("Failed: %d", summary.failed)
     logger.info("Pass Rate: %.1f%%", summary.pass_rate * 100)
     logger.info("Average Score: %.3f", summary.avg_overall_score)
+
+    # Print improvement radar (AC-NF-4: never "nothing to improve")
+    if radar_report.roadmap:
+        logger.info("-" * 40)
+        logger.info("Improvement Roadmap:")
+        for item in radar_report.roadmap[:5]:
+            logger.info("  [P%d] %s (impact: %.0f%%)", item.priority, item.title, item.impact * 100)
+    elif radar_report.never_nothing_to_improve:
+        logger.info("-" * 40)
+        logger.info("Next Steps: %s", radar_report.never_nothing_to_improve)
+
     logger.info("=" * 60)
 
     # Print summary to console if requested

@@ -82,6 +82,16 @@ User Query → NFC Normalize → Route by Type → [Tool Calling | Traditional S
 | BM25 KoNLPy | `BM25_TOKENIZE_MODE=konlpy` | Morpheme-based tokenization |
 | Corrective RAG | Dynamic thresholds | simple: 0.3, medium: 0.4, complex: 0.5 |
 
+### Extended Evaluation Modules (SPEC-RAG-EVAL-002)
+
+| Module | File | Description |
+|--------|------|-------------|
+| Query Synthesizer | `src/rag/domain/evaluation/query_synthesizer.py` | Dynamic 200+ query generation from regulation JSON |
+| Extended Metrics | `src/rag/domain/evaluation/extended_metrics.py` | Latency, consistency, citation existence, readability |
+| System Health | `src/rag/domain/evaluation/system_health.py` | Code quality, coverage delta, config drift |
+| Difficulty Manager | `src/rag/domain/evaluation/difficulty_manager.py` | L1-L5 adaptive difficulty with auto-escalation |
+| Improvement Radar | `src/rag/domain/evaluation/improvement_radar.py` | Failure clustering, roadmap, trend analysis |
+
 ---
 
 For detailed pipeline documentation, see [QUERY_PIPELINE.md](../QUERY_PIPELINE.md).
